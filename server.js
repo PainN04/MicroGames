@@ -7,6 +7,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { DatabaseSync } = require('node:sqlite');
 const { checkSubmission, groupByGame } = require('./lib/rules');
+const { logVitals } = require('./lib/vitals');
 
 const PORT = Number(process.env.PORT) || 3000;
 
@@ -48,6 +49,11 @@ const server = http.createServer(async (req, res) => {
     // A página compara essa versão pra se recarregar sozinha quando o index.html muda.
     if (url.pathname === '/api/version' && req.method === 'GET') {
       return send(res, 200, { version: fs.statSync(path.join(__dirname, 'index.html')).mtimeMs });
+    }
+    if (url.pathname === '/api/vitals' && req.method === 'POST') {
+      try { logVitals(JSON.parse(await readBody(req))); } catch {}
+      res.writeHead(204).end();
+      return;
     }
     if (url.pathname === '/api/scores' && req.method === 'GET') {
       return send(res, 200, groupByGame(allScores.all()));
