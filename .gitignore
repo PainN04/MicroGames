@@ -1,0 +1,11 @@
+node_modules/
+.vercel/
+.env*
+
+# banco local e backups (têm os nomes do pessoal) — ficam só no PC
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+.claude/
