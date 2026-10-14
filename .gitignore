@@ -8,4 +8,7 @@ node_modules/
 *.db-wal
 *.db-shm
 
+# ferramentas locais (Claude Code, skills de agente do Neon)
 .claude/
+.agents/
+skills-lock.json
