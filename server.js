@@ -1,6 +1,6 @@
 // Servidor local do MicroGame (rede do escritório): serve o index.html e guarda as pontuações em SQLite.
 // Em produção o jogo roda na Vercel (api/*.js + Neon); este arquivo é só pra rodar sem internet.
-// Uso: node server.js   (porta padrão 3000, mude com PORT=xxxx)
+// Uso: node server.js   (porta padrão 8080, mude com PORT=xxxx)
 const http = require('node:http');
 const fs = require('node:fs');
 const os = require('node:os');
@@ -9,7 +9,7 @@ const { DatabaseSync } = require('node:sqlite');
 const { checkSubmission, groupByGame } = require('./lib/rules');
 const { logVitals } = require('./lib/vitals');
 
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = Number(process.env.PORT) || 8080;
 
 const db = new DatabaseSync(path.join(__dirname, 'microgame.db'));
 db.exec(`
@@ -76,7 +76,7 @@ const server = http.createServer(async (req, res) => {
 server.on('error', err => {
   if (err.code !== 'EADDRINUSE') throw err;
   console.error(`Porta ${PORT} já está em uso (o MicroGame já está rodando?).`);
-  console.error(`Feche o outro processo ou use outra porta: $env:PORT=3001; node server.js`);
+  console.error(`Feche o outro processo ou use outra porta: $env:PORT=8081; node server.js`);
   process.exit(1);
 });
 

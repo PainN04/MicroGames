@@ -7,7 +7,7 @@ Reflexo · Clique Maluco · Digitação · Memória · Mira · Cobrinha · Conta
 ## Como roda
 
 - **Vercel (produção):** `index.html` estático + funções em `api/` + banco Neon Postgres (`DATABASE_URL`). Cada push na `main` publica sozinho.
-- **Rede local (sem internet):** `npm run local` sobe `server.js` com SQLite (`microgame.db`) na porta 3000.
+- **Rede local (sem internet):** `npm run local` sobe `server.js` com SQLite (`microgame.db`) na porta 8080.
 
 ## Bibliotecas (via CDN, sem build)
 
