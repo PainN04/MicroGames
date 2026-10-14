@@ -448,9 +448,8 @@ const GAMES = {
       // pointerdown = mouse e toque; Espaço/Enter também valem (sem repetição de tecla segurada)
       box.onkeydown = e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); press(); } };
       box.onpointerdown = () => press();
-      // Anti-spam: clicar antes do verde (ou reagir em menos de MIN_MS, que é chute) zera as 3 rodadas
-      // e trava os cliques por 1s — senão compensava ficar metralhando o botão até pegar um tempo bom.
-      const MIN_MS = 100;
+      // Anti-spam: clicar antes do verde zera as 3 rodadas e trava os cliques por 1s
+      // — senão compensava ficar metralhando o botão até pegar um tempo bom.
       let lockedUntil = 0;
       const early = msg => {
         clearTimeout(timer);
@@ -465,9 +464,7 @@ const GAMES = {
         if (state === 'wait') early('Cedo demais!');
         else if (state === 'early') { if (performance.now() >= lockedUntil) wait(); }
         else if (state === 'go') {
-          const ms = Math.round(performance.now() - startAt);
-          if (ms < MIN_MS) return early(`${ms} ms é chute!`);
-          times.push(ms);
+          times.push(Math.round(performance.now() - startAt));
           if (times.length === 3) return done(Math.round(times.reduce((a, b) => a + b) / 3));
           state = 'between'; set('between', `${times.at(-1)} ms — clique pra próxima`);
         } else if (state === 'between') wait();
