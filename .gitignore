@@ -12,3 +12,6 @@ node_modules/
 .claude/
 .agents/
 skills-lock.json
+
+# backups do banco da Vercel/Neon
+*backup*.json
