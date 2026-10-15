@@ -2176,7 +2176,7 @@ function setMe(user) {
   player = user?.name || '';
   $('#pname').textContent = player || '—';
   $('#mAdmin').hidden = user?.role !== 'admin';
-  $('#mRecords').hidden = user?.role !== 'admin';
+  $('#mRecords').hidden = !user?.canEditRecords;
 }
 
 function loginModal(msg = '') {
@@ -2410,7 +2410,7 @@ async function loadOnline() {
 // ---------- editor de recordes (só admin) ----------
 const recState = { mode: 'game', game: FEATURED[0], userId: null };
 function showRecords() {
-  if (me?.role !== 'admin') return;
+  if (!me?.canEditRecords) return; // só a conta dona (o servidor também confere)
   stop();
   currentView = 'records';
   setTimeout(pingSession, 0);
@@ -2557,12 +2557,12 @@ async function loadUsers() {
         <td>${esc(u.username)}</td>
         <td>${u.geikoId ? esc(u.geikoId) : '<span class="hint">—</span>'}</td>
         <td><span class="pill-role ${u.role}">${u.role === 'admin' ? 'Admin' : 'Jogador'}</span></td>
-        <td><div class="actions">
+        <td><div class="actions">${u.canEditRecords && u.id !== me.id ? '<span class="hint">conta do dono</span>' : `
           ${u.id === me.id ? '' : u.block ? '<button class="btn ghost" data-act="unblock">🔓 Desbloquear</button>' : '<button class="btn ghost" data-act="block">🔒 Bloquear</button>'}
           ${u.geikoId ? '<button class="btn ghost" data-act="test">Fila</button>' : ''}
           <button class="btn ghost" data-act="edit">Editar</button>
           <button class="btn ghost" data-act="reset">Nova senha</button>
-          ${u.id === me.id ? '' : `<button class="btn ghost" data-act="toggle">${u.active ? 'Desativar' : 'Reativar'}</button>`}
+          ${u.id === me.id ? '' : `<button class="btn ghost" data-act="toggle">${u.active ? 'Desativar' : 'Reativar'}</button>`}`}
         </div></td></tr>`).join('') + '</tbody>';
     table.querySelectorAll('[data-act]').forEach(b => b.onclick = () => userAction(b.dataset.act, users.find(u => u.id === +b.closest('tr').dataset.id)));
     loadOnline(); // bloquear/desbloquear também muda a lista de online
@@ -2734,7 +2734,7 @@ $('#mPass').onclick = () => { toggleAcct(false); passwordModal(false); };
 $('#mLogout').onclick = () => { toggleAcct(false); logout(); };
 $('#mAdmin').onclick = () => { toggleAcct(false); showAdmin(); };
 $('#mRecords').onclick = () => { toggleAcct(false); showRecords(); };
-addEventListener('hashchange', () => { if (location.hash === '#recordes' && me?.role === 'admin') showRecords(); });
+addEventListener('hashchange', () => { if (location.hash === '#recordes' && me?.canEditRecords) showRecords(); });
 $('#mute').onclick = () => { muted = !muted; localStorage.setItem('mg_mute', muted ? '1' : '0'); renderMute(); if (!muted) sfx.good(); };
 renderMute();
 // atualiza o bloqueio a cada minuto enquanto estiver no menu
@@ -2748,7 +2748,7 @@ setInterval(() => { if (currentView === 'menu' && !document.hidden) refreshGate(
   try { me0 = await api('api/auth/me'); } catch {}
   const { user = null, gate: g = null, reason } = me0 || {};
   if (user) { setMe(user); if (!user.mustChange) gate = g; }
-  if (user && !user.mustChange && location.hash === '#recordes' && user.role === 'admin') return showRecords();
+  if (user && !user.mustChange && location.hash === '#recordes' && user.canEditRecords) return showRecords();
   showMenu();
   if (!me0) return loginModal('Não consegui falar com o servidor. Tente de novo.');
   if (!user) return loginModal(reason === 'other-device' ? 'Sua conta entrou em outro dispositivo — só dá pra usar em um por vez.' : '');
