@@ -2019,7 +2019,9 @@ function refreshMenu() {
 
 async function showMenu() {
   stop();
+  const changed = currentView !== 'menu';
   currentView = 'menu';
+  if (changed) setTimeout(pingSession, 0);
   swap(renderMenu);
   await fetchScores();
   if (currentView === 'menu') refreshMenu();
@@ -2040,6 +2042,7 @@ function play(id) {
   if (gate?.blocked) return gateDialog();
   stop();
   currentView = id;
+  setTimeout(pingSession, 0); // avisa o painel "online" que trocou de jogo
   const g = GAMES[id];
   swap(() => {
     main.innerHTML = `<div class="layout">
@@ -2136,7 +2139,7 @@ function kicked(msg) {
 async function pingSession() {
   if (!me || document.hidden) return;
   try {
-    const { block } = await api('api/auth/ping');
+    const { block } = await api('api/auth/ping?view=' + encodeURIComponent(currentView));
     // admin bloqueou (ou liberou): atualiza; se estava jogando, encerra a partida
     if (!!block !== !!gate?.manual) {
       const playing = GAMES[currentView];
@@ -2325,6 +2328,7 @@ function showAdmin() {
   if (me?.role !== 'admin') return;
   stop();
   currentView = 'admin';
+  setTimeout(pingSession, 0);
   swap(() => {
     main.classList.remove('game-view');
     main.innerHTML = `<div class="admin">
@@ -2332,6 +2336,11 @@ function showAdmin() {
         <button class="btn ghost" id="back" aria-label="Voltar ao menu">←</button>
         <div class="title"><h2>⚙️ Painel admin</h2><p>Contas de quem joga, vínculo com o Geiko e a regra de bloqueio por fila.</p></div>
       </div>
+      <section class="glass">
+        <h2>🟢 Online agora <span class="hint" id="onCount" style="font-size:var(--fs-sm)"></span></h2>
+        <p class="note">Quem está com o site aberto e visível (atualiza a cada 15s). Quem minimiza ou troca de aba sai da lista em ~1 min.</p>
+        <div id="onlineList"><p class="hint" style="text-align:left">Carregando...</p></div>
+      </section>
       <section class="glass">
         <h2>Contas</h2>
         <form class="row" id="newUser" autocomplete="off">
@@ -2367,8 +2376,35 @@ function showAdmin() {
     };
     loadUsers();
     loadRules();
+    loadOnline();
   });
 }
+
+// ---------- quem está online ----------
+const ago = ms => { const s = Math.max(0, Math.round(ms / 1000)); return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)} min` : `${Math.floor(s / 3600)}h${String(Math.floor(s % 3600 / 60)).padStart(2, '0')}`; };
+const viewLabel = v => GAMES[v] ? `🎮 jogando <b>${GAMES[v].emoji} ${GAMES[v].name}</b>` : v === 'admin' ? '⚙️ no painel admin' : '🏠 no menu';
+async function loadOnline() {
+  const box = $('#onlineList');
+  if (!box) return;
+  try {
+    const { now, online, recent } = await api('api/admin/online');
+    $('#onCount').textContent = `· ${online.length} ${online.length === 1 ? 'pessoa' : 'pessoas'}`;
+    box.innerHTML = (online.length
+      ? `<table class="tickets users"><tbody>${online.map(p => `<tr data-id="${p.id}">
+          <td><b>${esc(p.name)}</b>${p.id === me.id ? ' <span class="tag">• você</span>' : ''}${p.block ? ` <span class="tag" style="color:var(--red)">• 🔒 ${untilText(p.block.until)}</span>` : ''}</td>
+          <td>${viewLabel(p.view)} <span class="hint">há ${ago(now - p.since)}</span></td>
+          <td><div class="actions">${p.id === me.id ? '' : p.block ? '<button class="btn ghost" data-act="unblock">🔓 Desbloquear</button>' : '<button class="btn ghost" data-act="block">🔒 Bloquear</button>'}</div></td>
+        </tr>`).join('')}</tbody></table>`
+      : '<p class="hint" style="text-align:left">Ninguém online agora.</p>')
+      + (recent.length ? `<p class="note" style="margin:var(--space-sm) 0 0">Visto nas últimas 24h: ${recent.map(p =>
+          `${esc(p.name)} <span class="hint">(${new Date(p.lastSeen).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}${GAMES[p.view] ? ', ' + GAMES[p.view].name : ''})</span>`).join(' · ')}</p>` : '');
+    box.querySelectorAll('[data-act]').forEach(b => b.onclick = async () => {
+      await userAction(b.dataset.act, online.find(p => p.id === +b.closest('tr').dataset.id));
+    });
+  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+}
+// enquanto o painel estiver aberto e visível, atualiza a lista
+setInterval(() => { if (currentView === 'admin' && !document.hidden && !$('.modal')) { loadOnline(); } }, 15_000);
 
 async function previewHtml(geikoId) {
   try {
@@ -2420,6 +2456,7 @@ async function loadUsers() {
           ${u.id === me.id ? '' : `<button class="btn ghost" data-act="toggle">${u.active ? 'Desativar' : 'Reativar'}</button>`}
         </div></td></tr>`).join('') + '</tbody>';
     table.querySelectorAll('[data-act]').forEach(b => b.onclick = () => userAction(b.dataset.act, users.find(u => u.id === +b.closest('tr').dataset.id)));
+    loadOnline(); // bloquear/desbloquear também muda a lista de online
   } catch (err) { table.innerHTML = `<tbody><tr><td class="err">${esc(err.message)}</td></tr></tbody>`; }
 }
 
