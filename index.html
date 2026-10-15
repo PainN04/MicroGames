@@ -356,6 +356,7 @@ async function postScore(entry) {
   if (!r.ok) {
     const err = new Error((await r.json().catch(() => ({}))).error || 'HTTP ' + r.status);
     err.rejected = r.status >= 400 && r.status < 500;
+    err.status = r.status;
     throw err;
   }
 }
@@ -409,6 +410,8 @@ async function saveScore(gameId, score, proof) {
     await fetchScores();
     return 'ok';
   } catch (e) {
+    // sem login (sessão expirou, ou página antiga aberta antes do login existir): guarda e salva depois de entrar
+    if (e.status === 401) { unsavedScore = { gameId, score, proof }; return 'login'; }
     if (e.rejected) return e.message;
     localStorage.setItem('mg_pending', JSON.stringify([...pending(), entry]));
     // mostra no ranking local enquanto não sobe pro servidor
@@ -1451,7 +1454,8 @@ function play(id) {
       el.innerHTML = `<div class="result">
         <span class="label">Resultado</span>
         <span class="score">${fmt(g, score)}</span>
-        ${!ok ? `<span class="badge warn">🤖 Não valeu: ${esc(status)}. Resultado não foi salvo.</span>`
+        ${status === 'login' ? '<span class="badge warn">🔑 Você não estava logado — entre pra salvar este resultado.</span><button class="btn" id="loginSave">Entrar e salvar</button>'
+          : !ok ? `<span class="badge warn">🤖 Não valeu: ${esc(status)}. Resultado não foi salvo.</span>`
           : champ ? '<span class="badge">👑 Recorde geral!</span>'
           : record ? '<span class="badge">🎉 Novo recorde pessoal!</span>'
           : prev ? `<span class="hint">Seu recorde: ${fmt(g, prev[1])}</span>` : ''}
@@ -1462,6 +1466,7 @@ function play(id) {
       if (record) { confetti(); sfx.record(); }
       $('#again').onclick = () => play(id);
       $('#again').focus();
+      $('#loginSave')?.addEventListener('click', () => { setMe(null); loginModal(); });
     });
   });
 }
@@ -1577,14 +1582,28 @@ function passwordModal(forced) {
       const { user } = await api('api/auth/password', { method: 'POST', body: { current: f.get('current'), next: f.get('next') } });
       close();
       setMe(user);
-      if (forced) { await refreshGate(); showMenu(); }
+      if (forced) { await saveUnsaved(); await refreshGate(); showMenu(); }
     } catch (err) { el.querySelector('#perr').textContent = err.message; }
   };
+}
+
+// Partida que terminou sem login e ficou esperando: depois de entrar, salva na conta.
+let unsavedScore = null;
+async function saveUnsaved() {
+  if (!unsavedScore || !me || me.mustChange) return;
+  const { gameId, score, proof } = unsavedScore;
+  unsavedScore = null;
+  const status = await saveScore(gameId, score, proof);
+  const g = GAMES[gameId];
+  modal(`<h2>${status === 'ok' || status === 'queued' ? '✅ Resultado salvo' : '⚠️ Não deu pra salvar'}</h2>
+    <p>${g.name}: <b>${fmt(g, score)}</b>${status === 'ok' || status === 'queued' ? ' — já está no ranking.' : ' — ' + esc(status)}</p>
+    <button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`);
 }
 
 async function afterLogin(user) {
   setMe(user);
   if (user.mustChange) return passwordModal(true);
+  await saveUnsaved();
   await refreshGate();
   showMenu();
 }
