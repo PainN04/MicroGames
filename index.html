@@ -2135,7 +2135,15 @@ function kicked(msg) {
 }
 async function pingSession() {
   if (!me || document.hidden) return;
-  try { await api('api/auth/ping'); }
+  try {
+    const { block } = await api('api/auth/ping');
+    // admin bloqueou (ou liberou): atualiza; se estava jogando, encerra a partida
+    if (!!block !== !!gate?.manual) {
+      const playing = GAMES[currentView];
+      await refreshGate(true);
+      if (block && playing) { stop(); showMenu(); gateDialog(); }
+    }
+  }
   catch (err) { if (err.status === 401) kicked(err.reason === 'other-device' ? err.message : 'Sua sessão expirou. Entre de novo.'); }
 }
 setInterval(pingSession, 20_000);
@@ -2251,7 +2259,18 @@ async function refreshGate(force = false) {
 }
 
 const fmtW = n => String(n).replace('.', ',');
+// "até 14:30", "até 16/10 09:00" ou "até o admin liberar"
+function untilText(ms) {
+  if (!ms || ms > 1e15) return 'até o admin liberar';
+  const d = new Date(ms), today = new Date().toDateString() === d.toDateString();
+  return 'até ' + (today ? '' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' ') + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
 function gateHtml() {
+  if (gate?.manual) {
+    return `<div class="msg"><b>🔒 Jogos bloqueados pelo admin</b>
+      <p>Bloqueado ${untilText(gate.manual.until)}.${gate.manual.reason ? ` Motivo: ${esc(gate.manual.reason)}` : ''}</p></div>
+      <button class="btn ghost" id="gateRefresh">↻ Atualizar</button>`;
+  }
   if (!gate || !gate.linked || !gate.enabled) return '';
   const pct = Math.min(100, gate.limit ? (gate.total / gate.limit) * 100 : 100);
   return `<div class="msg">
@@ -2283,6 +2302,13 @@ function ticketsTable(tickets) {
 }
 function gateDialog() {
   if (!gate) return;
+  if (gate.manual) {
+    const { el, close } = modal(`<h2>🔒 Jogos bloqueados</h2>
+      <p>O admin bloqueou seus jogos ${untilText(gate.manual.until)}.</p>
+      ${gate.manual.reason ? `<p><b>Motivo:</b> ${esc(gate.manual.reason)}</p>` : ''}
+      <button class="btn" id="gclose">Ok</button>`);
+    return (el.querySelector('#gclose').onclick = close);
+  }
   const { el, close } = modal(`
     <h2>${gate.blocked ? '🔒 Fila cheia' : 'Sua fila no Geiko'}</h2>
     <p>Cada ticket tem um peso: sem prioridade ou sem interação pesa mais; aguardando o cliente pesa menos.
@@ -2382,11 +2408,12 @@ async function loadUsers() {
     const { users } = await api('api/admin/users');
     table.innerHTML = `<thead><tr><th>Nome</th><th>Usuário</th><th>ID Geiko</th><th>Papel</th><th></th></tr></thead><tbody>` +
       users.map(u => `<tr class="${u.active ? '' : 'off'}" data-id="${u.id}">
-        <td>${esc(u.name)}${u.mustChange ? ' <span class="tag" title="Ainda não trocou a senha temporária">• senha temporária</span>' : ''}${u.active ? '' : ' <span class="tag">• desativada</span>'}</td>
+        <td>${esc(u.name)}${u.mustChange ? ' <span class="tag" title="Ainda não trocou a senha temporária">• senha temporária</span>' : ''}${u.active ? '' : ' <span class="tag">• desativada</span>'}${u.block ? ` <span class="tag" style="color:var(--red)" title="${esc(u.block.reason || '')}">• 🔒 bloqueado ${untilText(u.block.until)}</span>` : ''}</td>
         <td>${esc(u.username)}</td>
         <td>${u.geikoId ? esc(u.geikoId) : '<span class="hint">—</span>'}</td>
         <td><span class="pill-role ${u.role}">${u.role === 'admin' ? 'Admin' : 'Jogador'}</span></td>
         <td><div class="actions">
+          ${u.id === me.id ? '' : u.block ? '<button class="btn ghost" data-act="unblock">🔓 Desbloquear</button>' : '<button class="btn ghost" data-act="block">🔒 Bloquear</button>'}
           ${u.geikoId ? '<button class="btn ghost" data-act="test">Fila</button>' : ''}
           <button class="btn ghost" data-act="edit">Editar</button>
           <button class="btn ghost" data-act="reset">Nova senha</button>
@@ -2397,6 +2424,36 @@ async function loadUsers() {
 }
 
 async function userAction(act, u) {
+  if (act === 'unblock') {
+    try { await api(`api/admin/users/${u.id}/unblock`, { method: 'POST', body: {} }); loadUsers(); }
+    catch (err) { alert(err.message); }
+  }
+  if (act === 'block') {
+    const endOfDay = () => { const d = new Date(); d.setHours(23, 59, 0, 0); return Math.max(1, Math.round((d - Date.now()) / 60000)); };
+    const { el, close } = modal(`
+      <h2>🔒 Bloquear ${esc(u.name)}</h2>
+      <p>A pessoa continua entrando e vendo o ranking, mas não joga. Se estiver jogando, a partida é encerrada em até ~20s.</p>
+      <form id="bf" class="admin">
+        <label>Por quanto tempo
+          <select name="minutes">
+            <option value="15">15 minutos</option><option value="30">30 minutos</option><option value="60" selected>1 hora</option>
+            <option value="120">2 horas</option><option value="eod">Até o fim do dia</option><option value="0">Até eu desbloquear</option>
+          </select></label>
+        <label>Motivo (opcional — a pessoa vê)<input name="reason" maxlength="120" placeholder="ex.: fila de tickets cheia"></label>
+        <p class="err" id="berr"></p>
+        <button class="btn">Bloquear</button>
+        <button type="button" class="btn ghost" id="bcancel">Cancelar</button>
+      </form>`, { wide: true });
+    el.querySelector('#bcancel').onclick = close;
+    el.querySelector('#bf').onsubmit = async e => {
+      e.preventDefault();
+      const f = new FormData(e.target), v = f.get('minutes');
+      try {
+        await api(`api/admin/users/${u.id}/block`, { method: 'POST', body: { minutes: v === 'eod' ? endOfDay() : Number(v), reason: f.get('reason') } });
+        close(); loadUsers();
+      } catch (err) { el.querySelector('#berr').textContent = err.message; }
+    };
+  }
   if (act === 'test') {
     const { el, close } = modal(`<h2>Fila de ${esc(u.name)}</h2><div id="pv"><p>Consultando o Geiko...</p></div><button class="btn" id="pvc">Fechar</button>`, { wide: true });
     el.querySelector('#pvc').onclick = close;
