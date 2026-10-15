@@ -6,7 +6,8 @@
   "scripts": {
     "local": "node server.js",
     "admin": "node scripts/create-admin.js",
-    "migrate": "node scripts/migrate-to-neon.js"
+    "migrate": "node scripts/migrate-to-neon.js",
+    "importar": "node scripts/import-attendants.js"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",

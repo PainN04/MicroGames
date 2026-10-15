@@ -15,3 +15,6 @@ skills-lock.json
 
 # backups do banco da Vercel/Neon
 *backup*.json
+
+# senhas temporárias geradas pelo npm run importar
+contas-*.csv
