@@ -1274,11 +1274,14 @@ function kingsHtml() {
 // Desenha o menu na hora com o ranking que já temos (cache da última visita) — não espera a API (LCP).
 // Reaproveita o .hero que veio no HTML: recriar o maior elemento da tela contaria como um LCP novo (mais tarde).
 const heroNode = main.querySelector('.hero');
+// Jogos em destaque aparecem primeiro no menu; o resto segue a ordem do GAMES.
+const FEATURED = ['blocos'];
+const menuOrder = () => [...FEATURED, ...Object.keys(GAMES).filter(id => !FEATURED.includes(id))].map(id => [id, GAMES[id]]);
 function renderMenu() {
   main.replaceChildren(heroNode);
   main.insertAdjacentHTML('beforeend', `
     <section class="grid" aria-label="Jogos">` +
-    Object.entries(GAMES).map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}">
+    menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}">
         <span class="icon" aria-hidden="true">${g.emoji}</span>
         <h3>${g.name}</h3><p>${g.desc}</p>
         <span class="rec">${recHtml(id)}</span>
