@@ -232,6 +232,29 @@
   .hole.up span { transform: translateY(0); }
   .hole.hit { background: radial-gradient(ellipse at 50% 70%, oklch(40% 0.12 150) 0 45%, var(--surface-2) 46%); }
   .hole.boom { background: radial-gradient(ellipse at 50% 70%, oklch(45% 0.18 18) 0 45%, var(--surface-2) 46%); }
+  /* 2048 */
+  .g2048 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 10px; border-radius: 16px; background: var(--surface-2);
+    border: 1px solid var(--border); width: min(400px, 100%, calc(var(--avail) - 90px)); aspect-ratio: 1; touch-action: none; user-select: none; }
+  .g2048 .t { border-radius: 10px; display: grid; place-items: center; font-weight: 700; font-size: clamp(1rem, 4.6vw, 1.9rem); background: oklch(100% 0 0 / 0.04); font-variant-numeric: tabular-nums; }
+  .g2048 .t.pop { animation: pop .16s var(--ease-spring); }
+  .g2048 .t.merge { animation: bump .2s var(--ease-spring); }
+  @keyframes bump { 50% { transform: scale(1.14); } }
+  /* Campo Minado */
+  .mines { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px; width: min(420px, 100%, calc(var(--avail) - 110px)); user-select: none; touch-action: manipulation; }
+  .mc { aspect-ratio: 1; border: 0; border-radius: 6px; padding: 0; font: inherit; font-weight: 700; font-size: clamp(.8rem, 3.4vw, 1.2rem); cursor: pointer; color: var(--text);
+    background: linear-gradient(160deg, oklch(36% 0.03 275), oklch(28% 0.03 275)); box-shadow: inset 0 -2px 0 oklch(0% 0 0 / .3); -webkit-tap-highlight-color: transparent; }
+  .mc:hover { filter: brightness(1.15); }
+  .mc.open { background: oklch(19% 0.02 275); box-shadow: none; cursor: default; }
+  .mc.boom { background: var(--red); }
+  .mc.n1 { color: var(--blue); } .mc.n2 { color: var(--green); } .mc.n3 { color: var(--red); } .mc.n4 { color: var(--primary); }
+  .mc.n5 { color: var(--accent); } .mc.n6 { color: oklch(78% 0.13 200); } .mc.n7, .mc.n8 { color: var(--yellow); }
+  /* Anagrama */
+  .tiles { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; min-height: 3.2rem; }
+  .tile { width: clamp(2.4rem, 9vw, 3.2rem); aspect-ratio: 1; display: grid; place-items: center; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--surface-2);
+    color: var(--text); font: inherit; font-size: var(--fs-lg); font-weight: 700; cursor: pointer; transition: transform var(--duration-fast), opacity var(--duration-fast); }
+  .tile:hover { transform: translateY(-2px); }
+  .tile.used { opacity: .25; pointer-events: none; }
+  .row-btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
   /* Conta */
   .math { font-size: var(--fs-3xl); font-weight: 700; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
 
@@ -324,7 +347,7 @@
   <!-- já vem no HTML: é o maior elemento da tela (LCP) e aparece antes de qualquer JS -->
   <section class="hero">
     <h1>Hora do <em>intervalo</em>.</h1>
-    <p>13 minigames rápidos. Bata o recorde da galera.</p>
+    <p>20 minigames rápidos. Bata o recorde da galera.</p>
   </section>
 </main>
 <div class="sr-only" role="status" aria-live="polite" id="live"></div>
@@ -1342,6 +1365,602 @@ const GAMES = {
         },
       });
     }
+  },
+  tijolos: {
+    name: 'Quebra-Tijolos', emoji: '🧨', hue: 0, desc: 'Rebata a bola e quebre os tijolos. Mouse, dedo ou ←→ movem; clique ou Espaço lança. 3 vidas.',
+    better: 'high', unit: 'pontos', phaser: true,
+    start(el, done) {
+      const W = 480, H = 560, PW = 84, PH = 12, PY = H - 40, R = 7, COLS = 8, ROWS = 6, BW = 52, BH = 18, GAP = 4, TOP = 70;
+      const LEFT = (W - (COLS * BW + (COLS - 1) * GAP)) / 2, MAX_SPEED = 560;
+      el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Vidas<b id="v">❤️❤️❤️</b></span><span class="stat">Fase<b id="f">1</b></span></div><div class="phaser-wrap" id="pw"></div>';
+      const hud = { p: el.querySelector('#p'), v: el.querySelector('#v'), f: el.querySelector('#f') };
+      const rowColor = ['--red', '--accent', '--yellow', '--green', '--blue', '--primary'].map(hex);
+      return mountPhaser(el.querySelector('#pw'), W, H, {
+        create() {
+          dotTexture(this);
+          let px = W / 2, target = null, bx = 0, by = 0, vx = 0, vy = 0, stuck = true, lives = 3, score = 0, level = 1, alive = true, bricks = [];
+          const g = this.add.graphics();
+          const burst = this.add.particles(0, 0, 'dot', { speed: { min: 60, max: 200 }, lifespan: 380, scale: { start: 1, end: 0 }, emitting: false });
+          const msg = this.add.text(W / 2, H / 2 + 40, 'Clique ou Espaço pra lançar', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '20px', color: '#c9cce0' }).setOrigin(0.5);
+          const build = () => { bricks = []; for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) bricks.push({ x: LEFT + c * (BW + GAP), y: TOP + r * (BH + GAP), row: r, alive: true }); };
+          const baseSpeed = () => 330 + (level - 1) * 30;
+          const resetBall = () => { stuck = true; vx = vy = 0; msg.setVisible(true); };
+          const launch = () => {
+            if (!stuck || !alive) return;
+            stuck = false; msg.setVisible(false);
+            const a = Phaser.Math.DegToRad(rand(-30, 30)), s = baseSpeed();
+            vx = s * Math.sin(a); vy = -s * Math.cos(a);
+          };
+          const loseLife = () => {
+            lives--;
+            hud.v.textContent = '❤️'.repeat(lives) || '—';
+            sfx.bad();
+            this.cameras.main.shake(200, 0.01);
+            if (lives <= 0) { alive = false; msg.setText('Fim de jogo').setVisible(true); this.time.delayedCall(900, () => done(score)); }
+            else resetBall();
+          };
+          const keys = this.input.keyboard.addKeys('LEFT,RIGHT,A,D');
+          this.input.keyboard.addCapture('LEFT,RIGHT,SPACE');
+          this.input.keyboard.on('keydown', e => { if (e.key === ' ' && !e.repeat) launch(); });
+          this.input.on('pointermove', p => { target = p.x; });
+          this.input.on('pointerdown', p => { target = p.x; launch(); });
+          build();
+          this.events.on('update', (time, delta) => {
+            const dt = Math.min(delta, 50) / 1000;
+            if (alive) {
+              const dir = (keys.RIGHT.isDown || keys.D.isDown) - (keys.LEFT.isDown || keys.A.isDown);
+              if (dir) { px += dir * 560 * dt; target = null; }
+              else if (target !== null) px += Phaser.Math.Clamp(target - px, -1000 * dt, 1000 * dt);
+              px = Phaser.Math.Clamp(px, PW / 2, W - PW / 2);
+              if (stuck) { bx = px; by = PY - PH / 2 - R - 1; }
+              else {
+                // passos pequenos pra bola rápida não atravessar tijolo
+                const steps = Math.max(1, Math.ceil(Math.hypot(vx, vy) * dt / 5));
+                for (let s = 0; s < steps && !stuck && alive; s++) {
+                  const h = dt / steps;
+                  bx += vx * h; by += vy * h;
+                  if (bx < R) { bx = R; vx = Math.abs(vx); }
+                  if (bx > W - R) { bx = W - R; vx = -Math.abs(vx); }
+                  if (by < R) { by = R; vy = Math.abs(vy); }
+                  if (vy > 0 && by + R >= PY - PH / 2 && by - R <= PY + PH / 2 && bx >= px - PW / 2 - R && bx <= px + PW / 2 + R) {
+                    // onde bate na raquete define o ângulo (até 60°)
+                    const rel = Phaser.Math.Clamp((bx - px) / (PW / 2), -1, 1), sp = Math.hypot(vx, vy), ang = rel * Phaser.Math.DegToRad(60);
+                    vx = sp * Math.sin(ang); vy = -sp * Math.cos(ang); by = PY - PH / 2 - R;
+                    beep(330, 40, 'triangle', 0.03);
+                  }
+                  for (const b of bricks) {
+                    if (!b.alive) continue;
+                    const nx = Phaser.Math.Clamp(bx, b.x, b.x + BW), ny = Phaser.Math.Clamp(by, b.y, b.y + BH);
+                    if ((bx - nx) ** 2 + (by - ny) ** 2 >= R * R) continue;
+                    b.alive = false;
+                    const overlapX = Math.min(bx + R - b.x, b.x + BW - (bx - R)), overlapY = Math.min(by + R - b.y, b.y + BH - (by - R));
+                    if (overlapX < overlapY) vx = -vx; else vy = -vy;
+                    score += (ROWS - b.row) * 10;
+                    hud.p.textContent = score;
+                    const sp = Math.hypot(vx, vy);
+                    if (sp < MAX_SPEED) { vx *= 1.015; vy *= 1.015; }
+                    burst.setParticleTint(rowColor[b.row]);
+                    burst.explode(10, b.x + BW / 2, b.y + BH / 2);
+                    beep(500 + (ROWS - b.row) * 60, 50, 'triangle', 0.035);
+                    break;
+                  }
+                  if (by > H + R) { loseLife(); break; }
+                }
+                if (alive && bricks.every(b => !b.alive)) {
+                  level++; hud.f.textContent = level;
+                  floatText(this, W / 2, H / 2, `Fase ${level}!`, '#7cffb0');
+                  sfx.record();
+                  build(); resetBall();
+                }
+              }
+            }
+            g.clear();
+            for (const b of bricks) if (b.alive) g.fillStyle(rowColor[b.row]).fillRoundedRect(b.x, b.y, BW, BH, 5);
+            g.fillStyle(0xe8eaf6).fillRoundedRect(px - PW / 2, PY - PH / 2, PW, PH, 6);
+            g.fillStyle(hex('--yellow')).fillCircle(bx, by, R);
+          });
+        },
+      });
+    }
+  },
+  g2048: {
+    name: '2048', emoji: '🧮', hue: 45, desc: 'Deslize (setas, WASD ou o dedo) e junte números iguais. 3 minutos ou até travar.',
+    better: 'high', unit: 'pontos',
+    start(el, done) {
+      const N = 4, DUR = 180;
+      let grid = Array(N * N).fill(0), score = 0, t0 = 0, iv, over = false;
+      el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Maior<b id="m">2</b></span><span class="stat">Tempo<b id="t">3:00</b></span></div>
+        <div class="g2048" id="b"></div><p class="hint">O tempo começa no primeiro movimento.</p>`;
+      const board = el.querySelector('#b');
+      const style = v => {
+        if (!v) return '';
+        const k = Math.log2(v);
+        return `background:oklch(${Math.max(48, 88 - k * 3.6)}% ${Math.min(0.2, 0.06 + k * 0.014)} ${(95 - k * 24 + 720) % 360});color:${v <= 4 ? '#1d1f2e' : '#fff'}`;
+      };
+      const render = (fresh = new Set(), merged = new Set()) => {
+        board.innerHTML = grid.map((v, i) => `<div class="t${fresh.has(i) ? ' pop' : ''}${merged.has(i) ? ' merge' : ''}" style="${style(v)}">${v || ''}</div>`).join('');
+        el.querySelector('#m').textContent = Math.max(...grid);
+      };
+      const addTile = () => {
+        const empty = grid.map((v, i) => (v ? -1 : i)).filter(i => i >= 0);
+        if (!empty.length) return -1;
+        const i = empty[rand(0, empty.length - 1)];
+        grid[i] = Math.random() < 0.9 ? 2 : 4;
+        return i;
+      };
+      const lines = dir => Array.from({ length: N }, (_, a) => Array.from({ length: N }, (_, b) => {
+        if (dir === 'L') return a * N + b;
+        if (dir === 'R') return a * N + (N - 1 - b);
+        if (dir === 'U') return b * N + a;
+        return (N - 1 - b) * N + a;
+      }));
+      const canMove = () => grid.some((v, i) => !v
+        || (i % N < N - 1 && grid[i + 1] === v) || (i < N * (N - 1) && grid[i + N] === v));
+      const finish = () => { if (over) return; over = true; clearInterval(iv); done(score); };
+      const move = dir => {
+        if (over) return;
+        let moved = false;
+        const merged = new Set();
+        for (const idx of lines(dir)) {
+          const vals = idx.map(i => grid[i]).filter(Boolean), out = [];
+          for (let k = 0; k < vals.length; k++) {
+            if (vals[k] === vals[k + 1]) { out.push(vals[k] * 2); score += vals[k] * 2; merged.add(idx[out.length - 1]); k++; }
+            else out.push(vals[k]);
+          }
+          idx.forEach((i, k) => { const nv = out[k] || 0; if (grid[i] !== nv) moved = true; grid[i] = nv; });
+        }
+        if (!moved) return;
+        if (!t0) {
+          t0 = performance.now();
+          iv = setInterval(() => {
+            const left = Math.max(0, DUR - (performance.now() - t0) / 1000);
+            el.querySelector('#t').textContent = `${Math.floor(left / 60)}:${String(Math.floor(left % 60)).padStart(2, '0')}`;
+            if (left <= 0) finish();
+          }, 200);
+        }
+        el.querySelector('#p').textContent = score;
+        merged.size ? beep(440 + Math.log2(Math.max(...[...merged].map(i => grid[i]))) * 40, 60, 'triangle', 0.035) : beep(260, 25, 'sine', 0.02);
+        const fresh = addTile();
+        render(new Set([fresh]), merged);
+        if (!canMove()) { sfx.bad(); setTimeout(finish, 600); }
+      };
+      const KEYS = { ArrowLeft: 'L', a: 'L', ArrowRight: 'R', d: 'R', ArrowUp: 'U', w: 'U', ArrowDown: 'D', s: 'D' };
+      const onKey = e => {
+        const d = KEYS[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+        if (!d) return;
+        e.preventDefault();
+        move(d);
+      };
+      let sx = 0, sy = 0;
+      board.onpointerdown = e => { sx = e.clientX; sy = e.clientY; };
+      board.onpointerup = e => {
+        const dx = e.clientX - sx, dy = e.clientY - sy;
+        if (Math.max(Math.abs(dx), Math.abs(dy)) < 24) return;
+        move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'R' : 'L') : (dy > 0 ? 'D' : 'U'));
+      };
+      window.addEventListener('keydown', onKey);
+      const a = addTile(), b = addTile();
+      render(new Set([a, b]));
+      return () => { over = true; clearInterval(iv); window.removeEventListener('keydown', onKey); };
+    }
+  },
+  torre: {
+    name: 'Torre', emoji: '🏗️', hue: 195, desc: 'Clique, toque ou Espaço pra soltar o bloco na torre. O que passar da borda é cortado. Acertos perfeitos aumentam o bloco.',
+    better: 'high', unit: 'andares', phaser: true,
+    start(el, done) {
+      const W = 400, H = 600, BH = 26, BASE_W = 220, BASE_Y = H - 70, TOP_SCREEN = 250;
+      el.innerHTML = '<div class="hud"><span class="stat">Andares<b id="a">0</b></span><span class="stat">Perfeitos seguidos<b id="c">0</b></span></div><div class="phaser-wrap" id="pw"></div>';
+      const hud = { a: el.querySelector('#a'), c: el.querySelector('#c') };
+      return mountPhaser(el.querySelector('#pw'), W, H, {
+        create() {
+          dotTexture(this);
+          const color = i => Phaser.Display.Color.HSLToColor(((190 + i * 11) % 360) / 360, 0.62, 0.6).color;
+          const blocks = [{ x: (W - BASE_W) / 2, w: BASE_W }], falling = [];
+          let cur = { x: -BASE_W / 2, w: BASE_W, dir: 1 }, speed = 170, floors = 0, combo = 0, alive = true, cam = 0, camTarget = 0;
+          const g = this.add.graphics();
+          const burst = this.add.particles(0, 0, 'dot', { speed: { min: 40, max: 160 }, lifespan: 420, scale: { start: 1, end: 0 }, tint: 0xffffff, emitting: false });
+          const yOf = i => BASE_Y - i * BH - cam; // i = andar (0 = base)
+          const msg = this.add.text(W / 2, 140, 'Clique pra soltar', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '22px', color: '#c9cce0' }).setOrigin(0.5);
+          const gameOver = () => {
+            alive = false;
+            sfx.bad();
+            this.cameras.main.shake(250, 0.01);
+            this.time.delayedCall(1000, () => done(floors));
+          };
+          const drop = () => {
+            if (!alive) return;
+            msg.setVisible(false);
+            const prev = blocks.at(-1), i = blocks.length;
+            const left = Math.max(cur.x, prev.x), right = Math.min(cur.x + cur.w, prev.x + prev.w);
+            if (right - left <= 0) { falling.push({ x: cur.x, y: yOf(i), w: cur.w, vy: 0, c: color(i) }); return gameOver(); }
+            let nx = left, nw = right - left;
+            if (Math.abs(cur.x - prev.x) < 5) {
+              // perfeito: encaixa, e a partir do 3º seguido o bloco cresce um pouco
+              combo++;
+              nx = prev.x; nw = prev.w;
+              if (combo >= 3 && nw < BASE_W) { const grow = Math.min(10, BASE_W - nw); nx = Phaser.Math.Clamp(nx - grow / 2, 0, W - nw - grow); nw += grow; }
+              burst.explode(14, nx + nw / 2, yOf(i));
+              floatText(this, nx + nw / 2, yOf(i) - 10, combo >= 3 ? 'Perfeito! +' : 'Perfeito!', '#ffd34d');
+              beep(660 + Math.min(combo, 8) * 50, 90, 'triangle', 0.05);
+            } else {
+              combo = 0;
+              const cut = cur.x < prev.x ? { x: cur.x, w: prev.x - cur.x } : { x: right, w: cur.x + cur.w - right };
+              falling.push({ ...cut, y: yOf(i), vy: 0, c: color(i) });
+              beep(330, 60, 'triangle', 0.04);
+            }
+            blocks.push({ x: nx, w: nw });
+            floors++;
+            hud.a.textContent = floors; hud.c.textContent = combo;
+            speed = Math.min(430, 170 + floors * 7);
+            const fromLeft = blocks.length % 2 === 0;
+            cur = { x: fromLeft ? -nw / 2 : W - nw / 2, w: nw, dir: fromLeft ? 1 : -1 };
+            camTarget = Math.min(0, (BASE_Y - blocks.length * BH) - TOP_SCREEN);
+          };
+          this.input.keyboard.addCapture('SPACE');
+          this.input.keyboard.on('keydown', e => { if (e.key === ' ' && !e.repeat) drop(); });
+          this.input.on('pointerdown', drop);
+          this.events.on('update', (time, delta) => {
+            const dt = Math.min(delta, 50) / 1000;
+            if (alive) {
+              cur.x += cur.dir * speed * dt;
+              if (cur.x < -cur.w / 2) { cur.x = -cur.w / 2; cur.dir = 1; }
+              if (cur.x > W - cur.w / 2) { cur.x = W - cur.w / 2; cur.dir = -1; }
+            }
+            cam += (camTarget - cam) * Math.min(1, dt * 6);
+            for (const f of falling) { f.vy += 1100 * dt; f.y += f.vy * dt; }
+            while (falling.length && falling[0].y > H + 60) falling.shift();
+            g.clear();
+            blocks.forEach((b, i) => { const y = yOf(i); if (y < H + BH) g.fillStyle(color(i)).fillRect(b.x, y, b.w, BH - 2); });
+            if (alive) g.fillStyle(color(blocks.length)).fillRect(cur.x, yOf(blocks.length), cur.w, BH - 2);
+            for (const f of falling) g.fillStyle(f.c, 0.8).fillRect(f.x, f.y, f.w, BH - 2);
+          });
+        },
+      });
+    }
+  },
+  invasores: {
+    name: 'Invasores', emoji: '👾', hue: 285, desc: 'Desvie dos tiros e destrua as naves. ←→ / A D ou arraste — o tiro é automático. 3 vidas.',
+    better: 'high', unit: 'pontos', phaser: true,
+    start(el, done) {
+      const W = 480, H = 560, PY = H - 40, COLS = 8, ROWS = 4, SX = 46, SY = 40;
+      el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Vidas<b id="v">❤️❤️❤️</b></span><span class="stat">Onda<b id="o">1</b></span></div><div class="phaser-wrap" id="pw"></div>';
+      const hud = { p: el.querySelector('#p'), v: el.querySelector('#v'), o: el.querySelector('#o') };
+      const EMOJI_FONT = '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+      return mountPhaser(el.querySelector('#pw'), W, H, {
+        create() {
+          dotTexture(this);
+          let px = W / 2, target = null, lives = 3, score = 0, wave = 1, alive = true, fireIn = 0, enemyFireIn = 1200, invuln = 0;
+          let enemies = [], offX = 0, offY = 0, dir = 1;
+          const shots = [], bombs = [];
+          const g = this.add.graphics();
+          const burst = this.add.particles(0, 0, 'dot', { speed: { min: 60, max: 220 }, lifespan: 420, scale: { start: 1.1, end: 0 }, tint: [hex('--primary'), hex('--accent')], emitting: false });
+          const buildWave = () => {
+            for (const e of enemies) e.o.destroy();
+            enemies = []; offX = 0; offY = 0; dir = 1;
+            for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
+              const o = this.add.text(0, 0, r < 2 ? '👾' : '👽', { fontFamily: EMOJI_FONT, fontSize: '28px' }).setOrigin(0.5);
+              enemies.push({ bx: 60 + c * SX, by: 70 + r * SY, row: r, alive: true, o });
+            }
+          };
+          const gameOver = () => { alive = false; sfx.bad(); this.cameras.main.shake(300, 0.012); this.time.delayedCall(1000, () => done(score)); };
+          const keys = this.input.keyboard.addKeys('LEFT,RIGHT,A,D');
+          this.input.keyboard.addCapture('LEFT,RIGHT,SPACE');
+          this.input.on('pointerdown', p => { target = p.x; });
+          // mouse: segue o cursor; dedo: só enquanto está encostado
+          this.input.on('pointermove', p => { if (p.isDown || !p.wasTouch) target = p.x; });
+          buildWave();
+          this.events.on('update', (time, delta) => {
+            const dt = Math.min(delta, 50) / 1000;
+            if (alive) {
+              const dirKey = (keys.RIGHT.isDown || keys.D.isDown) - (keys.LEFT.isDown || keys.A.isDown);
+              if (dirKey) { px += dirKey * 340 * dt; target = null; }
+              else if (target !== null) px += Phaser.Math.Clamp(target - px, -420 * dt, 420 * dt);
+              px = Phaser.Math.Clamp(px, 20, W - 20);
+              invuln = Math.max(0, invuln - delta);
+              // tiro automático
+              fireIn -= delta;
+              if (fireIn <= 0) { shots.push({ x: px, y: PY - 18 }); fireIn = 380; beep(880, 25, 'square', 0.012); }
+              // formação anda de lado e desce ao bater na borda; acelera conforme sobram menos naves
+              const living = enemies.filter(e => e.alive);
+              const speed = 35 + (1 - living.length / enemies.length) * 140 + wave * 12;
+              offX += dir * speed * dt;
+              const xs = living.map(e => e.bx + offX);
+              if (Math.max(...xs) > W - 20 && dir > 0) { dir = -1; offY += 16; }
+              if (Math.min(...xs) < 20 && dir < 0) { dir = 1; offY += 16; }
+              for (const e of enemies) if (e.alive) e.o.setPosition(e.bx + offX, e.by + offY);
+              // naves de baixo de cada coluna atiram
+              enemyFireIn -= delta;
+              if (enemyFireIn <= 0 && living.length) {
+                const shooters = Object.values(living.reduce((m, e) => ((!m[e.bx] || m[e.bx].by < e.by) && (m[e.bx] = e), m), {}));
+                const s = shooters[rand(0, shooters.length - 1)];
+                bombs.push({ x: s.bx + offX, y: s.by + offY + 14 });
+                enemyFireIn = Math.max(320, 1000 - wave * 80) * (0.6 + Math.random() * 0.8);
+              }
+              for (const s of shots) {
+                s.y -= 520 * dt;
+                for (const e of enemies) {
+                  if (!e.alive || Math.abs(e.bx + offX - s.x) > 17 || Math.abs(e.by + offY - s.y) > 15) continue;
+                  e.alive = false; e.o.setVisible(false); s.y = -99;
+                  score += [30, 20, 10, 10][e.row] * wave;
+                  hud.p.textContent = score;
+                  burst.explode(14, e.bx + offX, e.by + offY);
+                  beep(220 + e.row * 40, 60, 'sawtooth', 0.025);
+                  break;
+                }
+              }
+              for (const b of bombs) {
+                b.y += (230 + wave * 15) * dt;
+                if (!invuln && Math.abs(b.x - px) < 16 && Math.abs(b.y - PY) < 14) {
+                  b.y = H + 99;
+                  lives--; hud.v.textContent = '❤️'.repeat(lives) || '—';
+                  invuln = 1500; sfx.bad(); this.cameras.main.shake(180, 0.01);
+                  if (lives <= 0) return gameOver();
+                }
+              }
+              if (living.some(e => e.by + offY > PY - 30)) return gameOver();
+              if (!living.length) {
+                wave++; hud.o.textContent = wave;
+                floatText(this, W / 2, H / 2, `Onda ${wave}!`, '#7cffb0'); sfx.record();
+                shots.length = 0; bombs.length = 0; buildWave();
+              }
+            }
+            for (let i = shots.length - 1; i >= 0; i--) if (shots[i].y < -10) shots.splice(i, 1);
+            for (let i = bombs.length - 1; i >= 0; i--) if (bombs[i].y > H + 10) bombs.splice(i, 1);
+            g.clear();
+            if (alive && !(invuln && Math.floor(time / 100) % 2)) g.fillStyle(hex('--green')).fillTriangle(px, PY - 16, px - 16, PY + 12, px + 16, PY + 12);
+            g.fillStyle(hex('--yellow'));
+            for (const s of shots) g.fillRect(s.x - 2, s.y - 8, 4, 12);
+            g.fillStyle(hex('--red'));
+            for (const b of bombs) g.fillCircle(b.x, b.y, 4);
+          });
+        },
+      });
+    }
+  },
+  minado: {
+    name: 'Campo Minado', emoji: '🚩', hue: 135, desc: 'Abra todas as casas sem mina. Clique abre; botão direito, toque longo ou o modo 🚩 marca. O 1º clique é sempre seguro.',
+    better: 'low', unit: 's', decimals: 1,
+    start(el, done) {
+      const N = 9, MINES = 10;
+      let mines = null, t0 = 0, iv, over = false, flagMode = false, longPress = null, longFired = false;
+      const open = new Set(), flags = new Set();
+      el.innerHTML = `<div class="hud"><span class="stat">Minas<b id="m">${MINES}</b></span><span class="stat">Tempo<b id="t">0.0s</b></span></div>
+        <div class="mines" id="mf">${Array.from({ length: N * N }, (_, i) => `<button class="mc" data-i="${i}" aria-label="casa ${i + 1}"></button>`).join('')}</div>
+        <button class="btn ghost" id="flag" aria-pressed="false">🚩 Modo marcar: desligado</button>`;
+      const cells = [...el.querySelectorAll('.mc')];
+      const around = i => {
+        const r = Math.floor(i / N), c = i % N, out = [];
+        for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) {
+          if (!dr && !dc) continue;
+          const rr = r + dr, cc = c + dc;
+          if (rr >= 0 && rr < N && cc >= 0 && cc < N) out.push(rr * N + cc);
+        }
+        return out;
+      };
+      const count = i => around(i).filter(j => mines.has(j)).length;
+      const placeMines = first => {
+        // o 1º clique e os vizinhos nunca têm mina (abre uma área pra começar)
+        const safe = new Set([first, ...around(first)]);
+        const pool = cells.map((_, i) => i).filter(i => !safe.has(i));
+        mines = new Set();
+        while (mines.size < MINES) mines.add(pool.splice(rand(0, pool.length - 1), 1)[0]);
+      };
+      const elapsed = () => (performance.now() - t0) / 1000;
+      const lose = i => {
+        over = true; clearInterval(iv);
+        for (const m of mines) { cells[m].textContent = '💣'; cells[m].classList.add('open'); }
+        cells[i].classList.add('boom');
+        sfx.bad();
+        setTimeout(() => done(null, 'Explodiu! 💣 Partida perdida não vai pro ranking — tenta de novo.'), 1000);
+      };
+      const reveal = i => {
+        if (over || open.has(i) || flags.has(i)) return;
+        if (!mines) {
+          placeMines(i);
+          t0 = performance.now();
+          iv = setInterval(() => el.querySelector('#t').textContent = elapsed().toFixed(1) + 's', 100);
+        }
+        if (mines.has(i)) return lose(i);
+        const stack = [i];
+        while (stack.length) {
+          const j = stack.pop();
+          if (open.has(j) || flags.has(j)) continue;
+          open.add(j);
+          const n = count(j);
+          cells[j].classList.add('open');
+          if (n) { cells[j].textContent = n; cells[j].classList.add('n' + n); }
+          else stack.push(...around(j));
+        }
+        beep(520, 30, 'triangle', 0.025);
+        if (open.size === N * N - MINES) {
+          over = true; clearInterval(iv);
+          const score = +elapsed().toFixed(1);
+          el.querySelector('#t').textContent = score.toFixed(1) + 's';
+          for (const m of mines) cells[m].textContent = '🚩';
+          setTimeout(() => done(score), 500);
+        }
+      };
+      const toggleFlag = i => {
+        if (over || open.has(i)) return;
+        flags.has(i) ? flags.delete(i) : flags.add(i);
+        cells[i].textContent = flags.has(i) ? '🚩' : '';
+        el.querySelector('#m').textContent = MINES - flags.size;
+        beep(700, 30, 'sine', 0.02);
+      };
+      cells.forEach((cell, i) => {
+        cell.oncontextmenu = e => { e.preventDefault(); toggleFlag(i); };
+        cell.onpointerdown = e => {
+          if (e.button === 2) return;
+          longFired = false;
+          longPress = setTimeout(() => { longFired = true; toggleFlag(i); }, 450);
+        };
+        cell.onpointerup = cell.onpointerleave = () => clearTimeout(longPress);
+        cell.onclick = () => { if (longFired) { longFired = false; return; } flagMode ? toggleFlag(i) : reveal(i); };
+      });
+      el.querySelector('#flag').onclick = e => {
+        flagMode = !flagMode;
+        e.target.textContent = `🚩 Modo marcar: ${flagMode ? 'ligado' : 'desligado'}`;
+        e.target.setAttribute('aria-pressed', flagMode);
+      };
+      return () => { over = true; clearInterval(iv); clearTimeout(longPress); };
+    }
+  },
+  ritmo: {
+    name: 'Ritmo', emoji: '🎵', hue: 320, desc: 'Aperte D F J K (ou toque na faixa) quando a nota chegar na linha. Combo multiplica os pontos. 45s.',
+    better: 'high', unit: 'pontos', phaser: true,
+    start(el, done) {
+      const W = 400, H = 560, LANES = 4, LW = W / LANES, HIT_Y = H - 80, TRAVEL = 1500, DUR = 45000;
+      const PERFECT = 60, GOOD = 120;
+      el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Combo<b id="c">0</b></span><span class="stat">Tempo<b id="t">45s</b></span></div><div class="phaser-wrap" id="pw"></div>';
+      const hud = { p: el.querySelector('#p'), c: el.querySelector('#c'), t: el.querySelector('#t') };
+      const laneColor = ['--green', '--red', '--yellow', '--blue'].map(hex);
+      const TONES = [392, 440, 523, 587];
+      // música gerada: BPM sobe de 100 a 150; depois de 12s aparecem notas no contratempo e acordes
+      const notes = [];
+      for (let t = 2000, lastLane = -1; t < DUR; ) {
+        const bpm = 100 + (t / DUR) * 50, beat = 60000 / bpm;
+        let lane; do lane = rand(0, LANES - 1); while (lane === lastLane && Math.random() < 0.6);
+        notes.push({ lane, t, done: false });
+        if (t > 12000 && Math.random() < 0.12) notes.push({ lane: (lane + rand(1, 3)) % LANES, t, done: false });
+        lastLane = lane;
+        t += beat * (t > 8000 && Math.random() < 0.3 ? 0.5 : 1);
+      }
+      const end = notes.at(-1).t + 900;
+      return mountPhaser(el.querySelector('#pw'), W, H, {
+        create() {
+          let now = 0, score = 0, combo = 0, over = false;
+          const pressed = [0, 0, 0, 0];
+          const g = this.add.graphics();
+          const font = { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '18px', color: '#9aa0b4' };
+          ['D', 'F', 'J', 'K'].forEach((k, i) => this.add.text(i * LW + LW / 2, HIT_Y + 40, k, font).setOrigin(0.5));
+          const judge = (text, color, lane) => floatText(this, lane * LW + LW / 2, HIT_Y - 30, text, color);
+          const mult = () => Math.min(4, 1 + Math.floor(combo / 10) * 0.5);
+          const press = lane => {
+            if (over) return;
+            pressed[lane] = 120;
+            let best = null;
+            for (const n of notes) if (!n.done && n.lane === lane && Math.abs(n.t - now) <= GOOD && (!best || Math.abs(n.t - now) < Math.abs(best.t - now))) best = n;
+            if (!best) {
+              // apertar sem nota quebra o combo (senão compensava metralhar as teclas)
+              if (combo) judge('Errou', '#ff6b8a', lane);
+              combo = 0; hud.c.textContent = 0;
+              return;
+            }
+            best.done = true;
+            const perfect = Math.abs(best.t - now) <= PERFECT;
+            combo++;
+            score += Math.round((perfect ? 100 : 50) * mult());
+            hud.p.textContent = score; hud.c.textContent = combo;
+            judge(perfect ? 'Perfeito' : 'Bom', perfect ? '#ffd34d' : '#7cffb0', lane);
+            beep(TONES[lane] * (perfect ? 2 : 1), 90, 'triangle', 0.05);
+          };
+          const KEY_LANE = { d: 0, f: 1, j: 2, k: 3, ArrowLeft: 0, ArrowDown: 1, ArrowUp: 2, ArrowRight: 3 };
+          this.input.keyboard.addCapture('LEFT,RIGHT,UP,DOWN');
+          this.input.keyboard.on('keydown', e => {
+            const lane = KEY_LANE[e.key.length === 1 ? e.key.toLowerCase() : e.key];
+            if (lane !== undefined && !e.repeat) press(lane);
+          });
+          this.input.on('pointerdown', p => press(Phaser.Math.Clamp(Math.floor(p.x / LW), 0, LANES - 1)));
+          this.events.on('update', (time, delta) => {
+            if (!over) {
+              now += Math.min(delta, 50);
+              hud.t.textContent = Math.max(0, Math.ceil((DUR - now) / 1000)) + 's';
+              for (const n of notes) if (!n.done && now - n.t > GOOD) {
+                n.done = true;
+                if (combo) judge('Perdeu', '#ff6b8a', n.lane);
+                combo = 0; hud.c.textContent = 0;
+              }
+              if (now > end) { over = true; this.time.delayedCall(400, () => done(score)); }
+            }
+            for (let i = 0; i < LANES; i++) pressed[i] = Math.max(0, pressed[i] - delta);
+            g.clear();
+            for (let i = 0; i < LANES; i++) {
+              g.fillStyle(i % 2 ? 0x1d1f2e : 0x22253a).fillRect(i * LW, 0, LW, H);
+              if (pressed[i]) g.fillStyle(laneColor[i], 0.18 * (pressed[i] / 120)).fillRect(i * LW, 0, LW, H);
+            }
+            g.fillStyle(0xffffff, 0.55).fillRect(0, HIT_Y - 2, W, 4);
+            for (let i = 0; i < LANES; i++) g.lineStyle(2, laneColor[i], 0.7).strokeRoundedRect(i * LW + 10, HIT_Y - 12, LW - 20, 24, 8);
+            for (const n of notes) {
+              if (n.done) continue;
+              const y = HIT_Y - ((n.t - now) / TRAVEL) * (HIT_Y + 20);
+              if (y < -30 || y > H) continue;
+              g.fillStyle(laneColor[n.lane]).fillRoundedRect(n.lane * LW + 12, y - 10, LW - 24, 20, 8);
+            }
+          });
+        },
+      });
+    }
+  },
+  anagrama: {
+    name: 'Anagrama', emoji: '🔤', hue: 60, desc: 'Desembaralhe as palavras em 60s. Digite e Enter (ou clique nas letras). Palavra maior vale mais. Pular não custa ponto.',
+    better: 'high', unit: 'pontos',
+    start(el, done) {
+      const WORDS = ('AMIGO BANANA CABELO CADEIRA CAMISA CANETA CARRO CAVALO CHAVE CINEMA COELHO COMIDA CORAGEM CORRIDA DESENHO DINHEIRO DOMINGO ESCOLA ESPELHO ESTRELA '
+        + 'FAMILIA FESTA FLORESTA FORMIGA FUTEBOL GALINHA GARRAFA GELADO GIRAFA GUITARRA HOSPITAL JANELA JARDIM LARANJA LIVRO MACACO MALETA MANTEIGA MARTELO MOCHILA '
+        + 'MONITOR MORANGO MOTOR NAVIO OVELHA PANELA PAPEL PEPINO PERFUME PIJAMA PIMENTA PINCEL PIPOCA PLANETA PORTA PRAIA PRESENTE PRINCESA QUEIJO SABONETE SAPATO '
+        + 'SEGREDO SORVETE TAPETE TECLADO TELHADO TESOURA TIGRE TOMATE TRABALHO TRATOR VENTO VIAGEM VIOLINO ABACAXI ALFACE ANIMAL BALEIA BARCO BATATA BICICLETA BONECA '
+        + 'CAMELO CEBOLA CENOURA CHOCOLATE CIDADE COLHER CORUJA DENTISTA ELEFANTE ESCADA FOGUETE FRANGO GATINHO GOLFINHO LAGARTO MELANCIA MERCADO MOEDA NUVEM PALAVRA '
+        + 'PEIXE PIRATA PLANTA POLVO QUADRO RAPOSA SALADA SERPENTE SOLDADO TARTARUGA TELEFONE URSO VAMPIRO VASSOURA ZEBRA').split(' ');
+      const sorted = w => [...w].sort().join('');
+      const DUR = 60;
+      const deck = [...WORDS].sort(() => Math.random() - 0.5);
+      let word = '', pts = 0, solved = 0, t0 = 0, iv, over = false;
+      el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Palavras<b id="w">0</b></span><span class="stat">Tempo<b id="t">60s</b></span></div>
+        <div class="tiles" id="tiles"></div>
+        <input class="txt" id="in" placeholder="digite a palavra + Enter" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Palavra">
+        <div class="row-btns"><button class="btn ghost" id="clr">⌫ Apagar</button><button class="btn ghost" id="skip">Pular ⏭</button></div>`;
+      const inp = el.querySelector('#in'), tilesEl = el.querySelector('#tiles');
+      const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
+      const syncTiles = () => {
+        // marca como usadas as letras que já estão digitadas
+        const typed = [...norm(inp.value)];
+        tilesEl.querySelectorAll('.tile').forEach(t => {
+          const k = typed.indexOf(t.dataset.l);
+          t.classList.toggle('used', k >= 0);
+          if (k >= 0) typed.splice(k, 1);
+        });
+      };
+      const next = () => {
+        word = deck.pop() || WORDS[rand(0, WORDS.length - 1)];
+        let mix;
+        do mix = [...word].sort(() => Math.random() - 0.5).join(''); while (mix === word);
+        tilesEl.innerHTML = [...mix].map(l => `<button class="tile" data-l="${l}">${l}</button>`).join('');
+        tilesEl.querySelectorAll('.tile').forEach(t => t.onclick = () => { startClock(); inp.value += t.dataset.l; syncTiles(); inp.focus(); });
+        inp.value = '';
+      };
+      const startClock = () => {
+        if (t0) return;
+        t0 = performance.now();
+        iv = setInterval(() => {
+          const left = DUR - (performance.now() - t0) / 1000;
+          el.querySelector('#t').textContent = Math.max(0, Math.ceil(left)) + 's';
+          if (left <= 0 && !over) { over = true; clearInterval(iv); inp.disabled = true; done(pts); }
+        }, 100);
+      };
+      const submit = () => {
+        if (over) return;
+        const guess = norm(inp.value);
+        if (!guess) return;
+        startClock();
+        // vale qualquer palavra da lista com as mesmas letras (ex.: outra ordem válida)
+        if (sorted(guess) === sorted(word) && WORDS.includes(guess)) {
+          pts += word.length; solved++;
+          el.querySelector('#p').textContent = pts; el.querySelector('#w').textContent = solved;
+          sfx.good();
+          next();
+        } else {
+          beep(160, 120, 'square', 0.03);
+          inp.classList.remove('wrong'); void inp.offsetWidth; inp.classList.add('wrong');
+        }
+      };
+      inp.oninput = () => { startClock(); syncTiles(); };
+      inp.onkeydown = e => { if (e.key === 'Enter') submit(); };
+      el.querySelector('#clr').onclick = () => { inp.value = ''; syncTiles(); inp.focus(); };
+      el.querySelector('#skip').onclick = () => { if (over) return; startClock(); beep(300, 50, 'sine', 0.02); next(); inp.focus(); };
+      next();
+      inp.focus();
+      return () => { over = true; clearInterval(iv); };
+    }
   }
 };
 
@@ -1443,6 +2062,14 @@ function play(id) {
     const el = $('#game');
     cleanup = g.start(el, async (score, proof) => {
       stop();
+      // done(null, 'motivo'): partida acabou sem pontuação (ex.: explodiu no Campo Minado) — nada é salvo
+      if (score === null) {
+        el.innerHTML = `<div class="result"><span class="label">Fim de jogo</span><span class="score">💥</span>
+          <span class="hint">${esc(proof || 'Não completou — nada foi salvo.')}</span><button class="btn" id="again">Jogar de novo</button></div>`;
+        $('#again').onclick = () => play(id);
+        $('#again').focus();
+        return;
+      }
       const prev = bestPerPlayer(id).find(([n]) => n === player);
       const cheat = g.check?.(score, proof);
       const status = cheat || await saveScore(id, score, proof);
