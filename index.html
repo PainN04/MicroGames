@@ -314,6 +314,44 @@
   .admin .checks { display: flex; flex-wrap: wrap; gap: 6px 14px; }
   .admin .checks label { flex-direction: row; align-items: center; gap: 6px; color: var(--text); font-size: var(--fs-sm); }
   .admin .checks input { min-height: 0; }
+  /* ---------- relatório (dataviz: 1 série = 1 cor; heatmap = rampa sequencial de 1 matiz; validados no fundo escuro) ---------- */
+  .report { --viz-1: #3987e5; --viz-grid: oklch(100% 0 0 / 0.07); --viz-axis: oklch(100% 0 0 / 0.14);
+    --heat-1: #184f95; --heat-2: #256abf; --heat-3: #3987e5; --heat-4: #6da7ec; --heat-5: #9ec5f4; }
+  .seg { display: inline-flex; padding: 4px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); gap: 2px; }
+  .seg button { font: inherit; font-size: var(--fs-sm); border: 0; background: none; color: var(--muted); padding: .45em 1em; border-radius: 999px; cursor: pointer; min-height: 36px; }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); font-weight: 700; box-shadow: var(--elev-1); }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: var(--space-sm); }
+  .kpi { padding: var(--space-sm) var(--space-md); }
+  .kpi .l { color: var(--muted); font-size: var(--fs-xs); }
+  .kpi .v { font-size: var(--fs-xl); font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .kpi .d { font-size: var(--fs-xs); color: var(--muted); }
+  .kpi .d.up { color: var(--green); } .kpi .d.down { color: oklch(78% 0.12 18); }
+  .heat-wrap { overflow-x: auto; }
+  .heat { border-collapse: separate; border-spacing: 2px; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
+  .heat th { font-weight: 500; color: var(--muted); padding: 4px 6px; white-space: nowrap; }
+  .heat thead th { font-size: 1.15rem; min-width: 2.2em; }
+  .heat tbody th { text-align: left; color: var(--text); }
+  .heat td { text-align: center; min-width: 2.2em; height: 2.1em; border-radius: 4px; padding: 0 4px; cursor: default; }
+  .heat td.z { color: oklch(100% 0 0 / 0.18); }
+  .heat td.tot, .heat tfoot td { font-weight: 700; background: none; color: var(--text); }
+  .heat td.last { text-align: left; color: var(--muted); font-size: var(--fs-xs); white-space: nowrap; }
+  .heat-legend { display: flex; align-items: center; gap: 6px; font-size: var(--fs-xs); color: var(--muted); margin-top: 8px; }
+  .heat-legend i { width: 22px; height: 10px; border-radius: 2px; display: inline-block; }
+  .cols { position: relative; height: 170px; display: flex; align-items: flex-end; gap: 2px; padding-left: 2.2em; border-bottom: 1px solid var(--viz-axis); }
+  .cols .grid { position: absolute; left: 2.2em; right: 0; border-top: 1px solid var(--viz-grid); }
+  .cols .grid span { position: absolute; left: -2.2em; top: -.6em; width: 2em; text-align: right; font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .cols .c { flex: 1; display: flex; align-items: flex-end; justify-content: center; height: 100%; position: relative; outline-offset: 2px; }
+  .cols .c i { display: block; width: min(24px, 100%); background: var(--viz-1); border-radius: 4px 4px 0 0; min-height: 0; }
+  .cols .c b { position: absolute; font-size: var(--fs-xs); font-weight: 500; color: var(--text); transform: translateY(-1.3em); }
+  .cols .c:hover i, .cols .c:focus-visible i { filter: brightness(1.25); }
+  .xlabels { display: flex; gap: 2px; padding-left: 2.2em; margin-top: 4px; font-size: var(--fs-xs); color: var(--muted); }
+  .xlabels span { flex: 1; text-align: center; white-space: nowrap; overflow: visible; }
+  .hbars { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; align-items: center; font-size: var(--fs-sm); }
+  .hbars .t { height: 14px; display: flex; }
+  .hbars .t i { display: block; height: 100%; background: var(--viz-1); border-radius: 0 4px 4px 0; }
+  .hbars .n { font-variant-numeric: tabular-nums; color: var(--text); text-align: right; }
+  .viz-tip { position: fixed; z-index: 40; pointer-events: none; padding: 6px 10px; border-radius: 8px; background: oklch(12% 0.02 275 / 0.95); border: 1px solid var(--border-strong); font-size: var(--fs-xs); color: var(--text); box-shadow: var(--elev-3); }
+  .report details summary { cursor: pointer; color: var(--muted); font-size: var(--fs-xs); margin-top: 8px; }
   .secret { font-family: ui-monospace, Consolas, monospace; font-size: var(--fs-lg); padding: .4em .8em; border-radius: 10px; background: var(--surface-2); border: 1px dashed var(--border-strong); user-select: all; }
   .pill-role { font-size: var(--fs-xs); padding: .15em .6em; border-radius: 99px; border: 1px solid var(--border); color: var(--muted); }
   .pill-role.admin { color: var(--yellow); border-color: oklch(86% 0.17 92 / 0.4); }
@@ -339,6 +377,7 @@
     <span class="chip acct">👤 <b id="pname">—</b><button class="btn ghost" id="acctBtn" aria-haspopup="menu" aria-expanded="false">Conta ▾</button>
       <span class="acct-menu glass" id="acctMenu" role="menu" hidden>
         <button role="menuitem" id="mAdmin" hidden>⚙️ Painel admin</button>
+        <button role="menuitem" id="mReport" hidden>📊 Relatório</button>
         <button role="menuitem" id="mRecords" hidden>🛠️ Editor de recordes</button>
         <button role="menuitem" id="mPass">🔑 Trocar senha</button>
         <button role="menuitem" id="mLogout">🚪 Sair</button>
@@ -2142,7 +2181,7 @@ function kicked(msg) {
 async function pingSession() {
   if (!me || document.hidden) return;
   try {
-    const { block } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' ? 'admin' : currentView));
+    const { block } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' || currentView === 'report' ? 'admin' : currentView));
     // admin bloqueou (ou liberou): atualiza; se estava jogando, encerra a partida
     if (!!block !== !!gate?.manual) {
       const playing = GAMES[currentView];
@@ -2177,6 +2216,7 @@ function setMe(user) {
   $('#pname').textContent = player || '—';
   $('#mAdmin').hidden = user?.role !== 'admin';
   $('#mRecords').hidden = !user?.canEditRecords;
+  $('#mReport').hidden = user?.role !== 'admin';
 }
 
 function loginModal(msg = '') {
@@ -2512,6 +2552,144 @@ async function recordAction(btn) {
   } catch (err) { alert(err.message); }
 }
 
+// ---------- relatório (admin) ----------
+const reportState = { days: 7 };
+function showReport() {
+  if (me?.role !== 'admin') return;
+  stop();
+  currentView = 'report';
+  setTimeout(pingSession, 0);
+  swap(() => {
+    main.classList.remove('game-view');
+    main.innerHTML = `<div class="admin report">
+      <div class="stage-head">
+        <button class="btn ghost" id="back" aria-label="Voltar ao menu">←</button>
+        <div class="title"><h2>📊 Relatório</h2><p>Quanto o pessoal está jogando — por pessoa, por jogo, por dia e por hora.</p></div>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <div class="seg" role="group" aria-label="Período">
+          ${[[1, 'Hoje'], [7, '7 dias'], [30, '30 dias'], [0, 'Tudo']].map(([d, l]) => `<button data-days="${d}" aria-pressed="${reportState.days === d}">${l}</button>`).join('')}
+        </div>
+        <button class="btn ghost" id="csv">⬇️ Exportar CSV</button>
+      </div>
+      <div id="rep"><p class="hint" style="text-align:left">Carregando...</p></div>
+    </div>`;
+    $('#back').onclick = showMenu;
+    main.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+      reportState.days = +b.dataset.days;
+      main.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+      loadReport();
+    });
+    loadReport();
+  });
+}
+
+let reportData = null;
+async function loadReport() {
+  const box = $('#rep');
+  if (!box) return;
+  box.style.opacity = reportData ? 0.5 : 1; // mantém o anterior meio apagado enquanto carrega (sem pulo)
+  try {
+    reportData = await api(`api/admin/report?days=${reportState.days}&tz=${-new Date().getTimezoneOffset()}`);
+    renderReport();
+  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+  box.style.opacity = 1;
+}
+
+function renderReport() {
+  const d = reportData, box = $('#rep');
+  const games = menuOrder();
+  const periodo = { 1: 'hoje', 7: 'nos últimos 7 dias', 30: 'nos últimos 30 dias', 0: 'desde o começo' }[d.days];
+  const prevLabel = { 1: 'ontem', 7: '7 dias anteriores', 30: '30 dias anteriores' }[d.days];
+  const topGame = Object.entries(d.byGame).sort((a, b) => b[1] - a[1])[0];
+  const top = d.people[0];
+  let delta = '';
+  if (d.prevTotal !== null) {
+    const diff = d.total - d.prevTotal;
+    delta = d.prevTotal === 0 ? (d.total ? `<span class="d up">▲ novo — ${prevLabel}: 0</span>` : `<span class="d">igual a ${prevLabel}</span>`)
+      : `<span class="d ${diff > 0 ? 'up' : diff < 0 ? 'down' : ''}">${diff > 0 ? '▲' : diff < 0 ? '▼' : '='} ${Math.abs(Math.round(diff / d.prevTotal * 100))}% vs ${prevLabel} (${d.prevTotal})</span>`;
+  }
+  const kpis = `<div class="kpis">
+    <div class="kpi glass"><div class="l">Partidas ${periodo}</div><div class="v">${d.total.toLocaleString('pt-BR')}</div>${delta}</div>
+    <div class="kpi glass"><div class="l">Pessoas que jogaram</div><div class="v">${d.people.length}</div></div>
+    <div class="kpi glass"><div class="l">Jogo mais jogado</div><div class="v">${topGame ? `${GAMES[topGame[0]].emoji} ${GAMES[topGame[0]].name}` : '—'}</div>${topGame ? `<span class="d">${topGame[1]} partidas</span>` : ''}</div>
+    <div class="kpi glass"><div class="l">Quem mais jogou</div><div class="v">${top ? esc(top.name) : '—'}</div>${top ? `<span class="d">${top.total} partidas</span>` : ''}</div>
+  </div>`;
+  if (!d.total) { box.innerHTML = kpis + '<section class="glass" style="margin-top:var(--space-md)"><p class="hint" style="text-align:left">Ninguém jogou nesse período.</p></section>'; return; }
+
+  // heatmap pessoa × jogo: mais partidas = tom mais claro da mesma rampa azul
+  const max = Math.max(...d.people.flatMap(p => Object.values(p.games)));
+  const step = n => Math.min(5, 1 + Math.floor((n / max) * 4.999));
+  const cell = (n, who, g) => n
+    ? `<td style="background:var(--heat-${step(n)});color:${step(n) >= 4 ? '#0b0b0b' : '#fff'}" data-tip="${esc(who)} · ${GAMES[g].name}: ${n} partida${n > 1 ? 's' : ''}">${n}</td>`
+    : `<td class="z" data-tip="${esc(who)} · ${GAMES[g].name}: nenhuma">·</td>`;
+  const colTot = games.map(([g]) => d.byGame[g] || 0);
+  const heat = `<section class="glass" style="margin-top:var(--space-md)">
+    <h2>Partidas por pessoa e jogo</h2>
+    <div class="heat-wrap"><table class="heat">
+      <thead><tr><th></th>${games.map(([id, g]) => `<th title="${g.name}" data-tip="${g.name}">${g.emoji}</th>`).join('')}<th style="font-size:var(--fs-xs)">Total</th><th style="font-size:var(--fs-xs);text-align:left">Jogou por último</th></tr></thead>
+      <tbody>${d.people.map(p => `<tr><th>${esc(p.name)}</th>${games.map(([g]) => cell(p.games[g] || 0, p.name, g)).join('')}
+        <td class="tot">${p.total}</td><td class="last">há ${ago(Date.now() - p.last)} · ${GAMES[p.lastGame] ? GAMES[p.lastGame].emoji + ' ' + GAMES[p.lastGame].name : ''}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><th style="text-align:left;color:var(--text)">Total</th>${colTot.map(n => `<td>${n || '·'}</td>`).join('')}<td>${d.total}</td><td></td></tr></tfoot>
+    </table></div>
+    <div class="heat-legend">menos ${[1, 2, 3, 4, 5].map(i => `<i style="background:var(--heat-${i})"></i>`).join('')} mais <span style="margin-left:8px">(máximo numa célula: ${max})</span></div>
+  </section>`;
+
+  // colunas (1 série, 1 cor): rótulo só no maior valor; o resto fica no eixo, na dica e na tabela
+  const columns = (items, labelEvery, tipOf, title) => {
+    const m = Math.max(1, ...items.map(i => i.v)), maxIdx = items.findIndex(i => i.v === m);
+    const nice = m <= 4 ? m : Math.ceil(m / 4) * 4;
+    return `<div class="cols" role="img" aria-label="${title}">
+      ${[nice, nice / 2].map(v => `<div class="grid" style="bottom:${(v / nice) * 100}%"><span>${Number.isInteger(v) ? v : v.toFixed(1)}</span></div>`).join('')}
+      ${items.map((it, i) => `<div class="c" tabindex="0" data-tip="${tipOf(it)}" aria-label="${tipOf(it)}">
+        <i style="height:${(it.v / nice) * 100}%"></i>${i === maxIdx && it.v ? `<b style="bottom:${(it.v / nice) * 100}%">${it.v}</b>` : ''}</div>`).join('')}
+    </div>
+    <div class="xlabels">${items.map((it, i) => `<span>${i % labelEvery === 0 || i === items.length - 1 ? it.l : ''}</span>`).join('')}</div>
+    <details><summary>Ver como tabela</summary><table class="tickets" style="margin-top:6px">${items.map(it => `<tr><td>${it.full || it.l}</td><td class="w">${it.v}</td></tr>`).join('')}</table></details>`;
+  };
+  const fmtDay = s => { const [y, mo, dd] = s.split('-'); return `${dd}/${mo}`; };
+  const weekday = s => new Date(s + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+  const days = d.byDay.map(x => ({ l: fmtDay(x.day), full: `${weekday(x.day)} ${fmtDay(x.day)}`, v: x.count }));
+  const hours = d.byHour.map((v, h) => ({ l: `${h}h`, full: `${h}h–${h + 1}h`, v }));
+  const charts = `<div class="kpis" style="margin-top:var(--space-md);grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))">
+    ${days.length > 1 ? `<section class="glass" style="padding:var(--space-md)"><h2>Partidas por dia</h2>
+      ${columns(days, Math.ceil(days.length / 8), it => `${it.full}: ${it.v} partida${it.v === 1 ? '' : 's'}`, 'Partidas por dia')}</section>` : ''}
+    <section class="glass" style="padding:var(--space-md)"><h2>Horário de pico</h2>
+      ${columns(hours, 3, it => `${it.full}: ${it.v} partida${it.v === 1 ? '' : 's'}`, 'Partidas por hora do dia')}</section>
+  </div>`;
+  const ranked = games.map(([g, gg]) => ({ g, gg, n: d.byGame[g] || 0 })).sort((a, b) => b.n - a.n);
+  const hmax = Math.max(1, ranked[0].n);
+  const hbars = `<section class="glass" style="margin-top:var(--space-md)"><h2>Jogos mais jogados</h2>
+    <div class="hbars">${ranked.map(r => `<span>${r.gg.emoji} ${r.gg.name}</span><span class="t" data-tip="${r.gg.name}: ${r.n} partidas"><i style="width:${(r.n / hmax) * 100}%"></i></span><span class="n">${r.n}</span>`).join('')}</div>
+  </section>`;
+  box.innerHTML = kpis + heat + charts + hbars;
+  bindVizTips(box);
+}
+
+// dica que segue o mouse (e o foco do teclado) em qualquer [data-tip]
+function bindVizTips(root) {
+  let tip = $('.viz-tip');
+  if (!tip) { tip = document.createElement('div'); tip.className = 'viz-tip'; tip.hidden = true; document.body.appendChild(tip); }
+  const show = (el, x, y) => { tip.textContent = el.dataset.tip; tip.hidden = false; tip.style.left = Math.min(innerWidth - tip.offsetWidth - 8, x + 12) + 'px'; tip.style.top = Math.max(8, y - tip.offsetHeight - 10) + 'px'; };
+  root.querySelectorAll('[data-tip]').forEach(el => {
+    el.addEventListener('mousemove', e => show(el, e.clientX, e.clientY));
+    el.addEventListener('mouseleave', () => (tip.hidden = true));
+    el.addEventListener('focus', () => { const r = el.getBoundingClientRect(); show(el, r.left + r.width / 2, r.top); });
+    el.addEventListener('blur', () => (tip.hidden = true));
+  });
+}
+
+document.addEventListener('click', e => {
+  if (e.target.id !== 'csv' || !reportData) return;
+  // CSV da tabela pessoa × jogo (abre no Excel: separador ; e BOM pra acentuar certo)
+  const games = menuOrder();
+  const lines = [['Pessoa', ...games.map(([, g]) => g.name), 'Total'].join(';'),
+    ...reportData.people.map(p => [p.name, ...games.map(([g]) => p.games[g] || 0), p.total].join(';'))];
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `microgame-relatorio-${reportState.days || 'tudo'}d.csv` });
+  a.click(); URL.revokeObjectURL(a.href);
+});
+
 // enquanto o painel estiver aberto e visível, atualiza a lista
 setInterval(() => { if (currentView === 'admin' && !document.hidden && !$('.modal')) { loadOnline(); } }, 15_000);
 
@@ -2734,6 +2912,7 @@ $('#mPass').onclick = () => { toggleAcct(false); passwordModal(false); };
 $('#mLogout').onclick = () => { toggleAcct(false); logout(); };
 $('#mAdmin').onclick = () => { toggleAcct(false); showAdmin(); };
 $('#mRecords').onclick = () => { toggleAcct(false); showRecords(); };
+$('#mReport').onclick = () => { toggleAcct(false); showReport(); };
 addEventListener('hashchange', () => { if (location.hash === '#recordes' && me?.canEditRecords) showRecords(); });
 $('#mute').onclick = () => { muted = !muted; localStorage.setItem('mg_mute', muted ? '1' : '0'); renderMute(); if (!muted) sfx.good(); };
 renderMute();
