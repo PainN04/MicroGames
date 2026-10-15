@@ -105,6 +105,8 @@
   .pill.on .dot { background: var(--green); box-shadow: 0 0 0 4px oklch(76% 0.18 150 / 0.2); }
   .chip { display: inline-flex; align-items: center; gap: .6em; padding: .25em .25em .25em .9em; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-weight: 500; }
   .chip .btn { min-height: 36px; padding: 0 .9rem; font-size: var(--fs-xs); }
+  /* largura fixa: o nome chega depois do login ("—" → "Fulano") e não pode mudar o tamanho do topo (CLS) */
+  #pname { display: inline-block; width: 8.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
 
   main { max-width: 1120px; margin: 0 auto; padding: var(--space-lg) var(--space-md) var(--space-xl); }
 
@@ -337,6 +339,7 @@
     <span class="chip acct">👤 <b id="pname">—</b><button class="btn ghost" id="acctBtn" aria-haspopup="menu" aria-expanded="false">Conta ▾</button>
       <span class="acct-menu glass" id="acctMenu" role="menu" hidden>
         <button role="menuitem" id="mAdmin" hidden>⚙️ Painel admin</button>
+        <button role="menuitem" id="mRecords" hidden>🛠️ Editor de recordes</button>
         <button role="menuitem" id="mPass">🔑 Trocar senha</button>
         <button role="menuitem" id="mLogout">🚪 Sair</button>
       </span>
@@ -2139,7 +2142,7 @@ function kicked(msg) {
 async function pingSession() {
   if (!me || document.hidden) return;
   try {
-    const { block } = await api('api/auth/ping?view=' + encodeURIComponent(currentView));
+    const { block } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' ? 'admin' : currentView));
     // admin bloqueou (ou liberou): atualiza; se estava jogando, encerra a partida
     if (!!block !== !!gate?.manual) {
       const playing = GAMES[currentView];
@@ -2173,6 +2176,7 @@ function setMe(user) {
   player = user?.name || '';
   $('#pname').textContent = player || '—';
   $('#mAdmin').hidden = user?.role !== 'admin';
+  $('#mRecords').hidden = user?.role !== 'admin';
 }
 
 function loginModal(msg = '') {
@@ -2403,6 +2407,111 @@ async function loadOnline() {
     });
   } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
 }
+// ---------- editor de recordes (só admin) ----------
+const recState = { mode: 'game', game: FEATURED[0], userId: null };
+function showRecords() {
+  if (me?.role !== 'admin') return;
+  stop();
+  currentView = 'records';
+  setTimeout(pingSession, 0);
+  if (location.hash !== '#recordes') history.replaceState(null, '', '#recordes');
+  swap(() => {
+    main.classList.remove('game-view');
+    main.innerHTML = `<div class="admin">
+      <div class="stage-head">
+        <button class="btn ghost" id="back" aria-label="Voltar ao menu">←</button>
+        <div class="title"><h2>🛠️ Editor de recordes</h2>
+          <p>Só admins. Mudar aqui altera o ranking na hora. Pra abrir direto numa aba nova: <a href="${location.pathname}#recordes" target="_blank" style="color:var(--primary)">${esc(location.host)}/#recordes</a></p></div>
+      </div>
+      <section class="glass">
+        <div class="row" style="margin-bottom:var(--space-sm)">
+          <label>Ver<select id="recMode"><option value="game">Por jogo</option><option value="user">Por pessoa</option></select></label>
+          <label><span id="recPickName">Jogo</span><select id="recPick"></select></label>
+          <span class="hint" id="recMsg"></span>
+        </div>
+        <div id="recTable"><p class="hint" style="text-align:left">Carregando...</p></div>
+      </section>
+    </div>`;
+    $('#back').onclick = () => { history.replaceState(null, '', location.pathname); showMenu(); };
+    $('#recMode').value = recState.mode;
+    $('#recMode').onchange = e => { recState.mode = e.target.value; renderRecords(); };
+    $('#recPick').onchange = e => { recState.mode === 'game' ? (recState.game = e.target.value) : (recState.userId = +e.target.value); renderRecords(); };
+    loadRecords();
+  });
+}
+
+let recData = { records: [], users: [] };
+async function loadRecords(msg = '') {
+  try {
+    const [{ records }, { users }] = await Promise.all([api('api/admin/records'), api('api/admin/users')]);
+    recData = { records, users: users.filter(u => u.active) };
+    recState.userId ??= recData.users[0]?.id ?? null;
+    renderRecords();
+    if (msg) $('#recMsg').textContent = msg;
+  } catch (err) { $('#recTable') && ($('#recTable').innerHTML = `<p class="err">${esc(err.message)}</p>`); }
+}
+
+function renderRecords() {
+  const box = $('#recTable');
+  if (!box) return;
+  $('#recMsg').textContent = '';
+  const pick = $('#recPick');
+  const unitOf = id => `<span class="hint">${GAMES[id].unit}</span>`;
+  const valueInput = (v, enabled = true) => `<input type="number" step="any" min="0" class="rec-v" value="${v ?? ''}" ${enabled ? '' : 'disabled'} style="width:8em">`;
+  if (recState.mode === 'game') {
+    $('#recPickName').textContent = 'Jogo';
+    pick.innerHTML = menuOrder().map(([id, g]) => `<option value="${id}" ${id === recState.game ? 'selected' : ''}>${g.emoji} ${g.name}</option>`).join('');
+    const g = GAMES[recState.game];
+    const rows = recData.records.filter(r => r.game === recState.game).sort((a, b) => (better(g, a.best, b.best) ? -1 : 1));
+    const have = new Set(rows.map(r => r.userId));
+    const free = recData.users.filter(u => !have.has(u.id));
+    box.innerHTML = `<table class="tickets users"><thead><tr><th>#</th><th>Pessoa</th><th>Recorde</th><th>Partidas</th><th></th></tr></thead><tbody>
+      ${rows.map((r, i) => `<tr data-game="${recState.game}" data-user="${r.userId ?? ''}" data-name="${esc(r.name)}">
+        <td>${['🥇', '🥈', '🥉'][i] || i + 1}</td><td>${esc(r.name)}${r.userId == null ? ' <span class="tag">• sem conta</span>' : ''}</td>
+        <td>${valueInput(r.best, r.userId != null)} ${unitOf(recState.game)}</td><td>${r.count}</td>
+        <td><div class="actions">${r.userId != null ? '<button class="btn ghost" data-act="save">Salvar</button>' : ''}<button class="btn ghost" data-act="del">Apagar</button></div></td></tr>`).join('')
+        || '<tr><td colspan="5" class="hint">Ninguém tem recorde nesse jogo ainda.</td></tr>'}
+      </tbody></table>
+      ${free.length ? `<div class="row" style="margin-top:var(--space-sm)" data-game="${recState.game}">
+        <label>Adicionar recorde pra<select class="rec-u">${free.map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('')}</select></label>
+        <label>Valor (${g.unit})${valueInput('')}</label><button class="btn" data-act="add">+ Adicionar</button></div>` : ''}`;
+  } else {
+    $('#recPickName').textContent = 'Pessoa';
+    pick.innerHTML = recData.users.map(u => `<option value="${u.id}" ${u.id === recState.userId ? 'selected' : ''}>${esc(u.name)}</option>`).join('');
+    const mine = new Map(recData.records.filter(r => r.userId === recState.userId).map(r => [r.game, r]));
+    box.innerHTML = `<table class="tickets users"><thead><tr><th>Jogo</th><th>Recorde</th><th>Partidas</th><th></th></tr></thead><tbody>
+      ${menuOrder().map(([id, g]) => {
+        const r = mine.get(id);
+        return `<tr data-game="${id}" data-user="${recState.userId}">
+          <td>${g.emoji} ${g.name}</td><td>${valueInput(r?.best)} ${unitOf(id)}</td><td>${r ? r.count : '<span class="hint">—</span>'}</td>
+          <td><div class="actions"><button class="btn ghost" data-act="save">${r ? 'Salvar' : '+ Adicionar'}</button>${r ? '<button class="btn ghost" data-act="del">Apagar</button>' : ''}</div></td></tr>`;
+      }).join('')}</tbody></table>`;
+  }
+  box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => recordAction(b));
+}
+
+async function recordAction(btn) {
+  const row = btn.closest('[data-game]'), game = row.dataset.game, g = GAMES[game];
+  const act = btn.dataset.act;
+  const userId = act === 'add' ? +row.querySelector('.rec-u').value : row.dataset.user ? +row.dataset.user : null;
+  const who = act === 'add' ? row.querySelector('.rec-u').selectedOptions[0].textContent
+    : row.dataset.name || recData.users.find(u => u.id === userId)?.name || '';
+  try {
+    if (act === 'del') {
+      if (!confirm(`Apagar TODAS as partidas de ${who} em ${g.name}? Não dá pra desfazer.`)) return;
+      const { removed } = await api('api/admin/records/delete', { method: 'POST', body: { game, userId, name: row.dataset.name } });
+      await loadRecords(`🗑️ ${who}: ${removed} partida(s) apagada(s) em ${g.name}.`);
+    } else {
+      const raw = row.querySelector('.rec-v').value;
+      if (raw === '') return alert('Digite um valor.');
+      const value = Number(raw);
+      const { removed } = await api('api/admin/records', { method: 'PUT', body: { game, userId, value } });
+      await loadRecords(`✅ ${who} — ${g.name}: recorde agora é ${fmt(g, value)}${removed ? ` (${removed} partida(s) melhor(es) removida(s))` : ''}.`);
+    }
+    fetchScores(); // atualiza o ranking que o resto da página mostra
+  } catch (err) { alert(err.message); }
+}
+
 // enquanto o painel estiver aberto e visível, atualiza a lista
 setInterval(() => { if (currentView === 'admin' && !document.hidden && !$('.modal')) { loadOnline(); } }, 15_000);
 
@@ -2624,24 +2733,26 @@ $('#acctBtn').onclick = () => toggleAcct();
 $('#mPass').onclick = () => { toggleAcct(false); passwordModal(false); };
 $('#mLogout').onclick = () => { toggleAcct(false); logout(); };
 $('#mAdmin').onclick = () => { toggleAcct(false); showAdmin(); };
+$('#mRecords').onclick = () => { toggleAcct(false); showRecords(); };
+addEventListener('hashchange', () => { if (location.hash === '#recordes' && me?.role === 'admin') showRecords(); });
 $('#mute').onclick = () => { muted = !muted; localStorage.setItem('mg_mute', muted ? '1' : '0'); renderMute(); if (!muted) sfx.good(); };
 renderMute();
 // atualiza o bloqueio a cada minuto enquanto estiver no menu
 setInterval(() => { if (currentView === 'menu' && !document.hidden) refreshGate(); }, 60_000);
 
+// Primeiro descobre quem está logado (e o bloqueio), DEPOIS desenha os cards: se o aviso de fila aparecesse
+// acima dos cards já desenhados, empurraria tudo pra baixo (CLS). O título "Hora do intervalo" já vem no HTML.
 (async function boot() {
+  if (localMode) return showMenu(); // aberto direto do arquivo: sem servidor, sem login
+  let me0 = null;
+  try { me0 = await api('api/auth/me'); } catch {}
+  const { user = null, gate: g = null, reason } = me0 || {};
+  if (user) { setMe(user); if (!user.mustChange) gate = g; }
+  if (user && !user.mustChange && location.hash === '#recordes' && user.role === 'admin') return showRecords();
   showMenu();
-  if (localMode) return; // aberto direto do arquivo: sem servidor, sem login
-  try {
-    const { user, gate: g, reason } = await api('api/auth/me');
-    if (!user) return loginModal(reason === 'other-device' ? 'Sua conta entrou em outro dispositivo — só dá pra usar em um por vez.' : '');
-    setMe(user);
-    if (user.mustChange) return passwordModal(true);
-    gate = g;
-    renderGate();
-  } catch {
-    loginModal('Não consegui falar com o servidor. Tente de novo.');
-  }
+  if (!me0) return loginModal('Não consegui falar com o servidor. Tente de novo.');
+  if (!user) return loginModal(reason === 'other-device' ? 'Sua conta entrou em outro dispositivo — só dá pra usar em um por vez.' : '');
+  if (user.mustChange) return passwordModal(true);
 })();
 </script>
 <script async src="https://cdn.jsdelivr.net/npm/web-vitals@6.2.3/dist/web-vitals.attribution.iife.js" onload="reportVitals()"></script>
