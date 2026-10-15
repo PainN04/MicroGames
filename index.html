@@ -1488,9 +1488,26 @@ function confetti() {
 async function api(path, { method = 'GET', body } = {}) {
   const r = await fetch(path, { method, headers: body !== undefined ? { 'Content-Type': 'application/json' } : {}, body: body !== undefined ? JSON.stringify(body) : undefined });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw Object.assign(new Error(j.error || `Erro ${r.status}`), { status: r.status });
+  if (r.status === 401 && j.reason === 'other-device') kicked(j.error);
+  if (!r.ok) throw Object.assign(new Error(j.error || `Erro ${r.status}`), { status: r.status, reason: j.reason });
   return j;
 }
+
+// Uma conta = um aparelho: se alguém logou com esta conta em outro lugar, este aparelho sai na hora.
+function kicked(msg) {
+  if (!me) return;
+  stop();
+  setMe(null); gate = null;
+  showMenu();
+  loginModal(msg || 'Sua conta entrou em outro dispositivo — só dá pra usar em um por vez.');
+}
+async function pingSession() {
+  if (!me || document.hidden) return;
+  try { await api('api/auth/ping'); }
+  catch (err) { if (err.status === 401) kicked(err.reason === 'other-device' ? err.message : 'Sua sessão expirou. Entre de novo.'); }
+}
+setInterval(pingSession, 20_000);
+addEventListener('visibilitychange', () => { if (!document.hidden) pingSession(); });
 
 // Janela modal genérica. `locked` = não fecha com Esc/clique fora (login e troca de senha obrigatória).
 function modal(html, { locked = false, wide = false } = {}) {
@@ -1517,7 +1534,7 @@ function setMe(user) {
 
 function loginModal(msg = '') {
   const { el, close } = modal(`
-    <h2>Entrar</h2><p>Use o usuário e a senha que o admin te passou.</p>
+    <h2>Entrar</h2><p>Use o usuário e a senha que o admin te passou. Cada conta funciona em um aparelho por vez — entrar aqui desconecta os outros.</p>
     <form id="lf">
       <input class="txt" name="username" autocomplete="username" placeholder="usuário" aria-label="Usuário" required>
       <input class="txt" name="password" type="password" autocomplete="current-password" placeholder="senha" aria-label="Senha" required>
@@ -1876,8 +1893,8 @@ setInterval(() => { if (currentView === 'menu' && !document.hidden) refreshGate(
   showMenu();
   if (localMode) return; // aberto direto do arquivo: sem servidor, sem login
   try {
-    const { user, gate: g } = await api('api/auth/me');
-    if (!user) return loginModal();
+    const { user, gate: g, reason } = await api('api/auth/me');
+    if (!user) return loginModal(reason === 'other-device' ? 'Sua conta entrou em outro dispositivo — só dá pra usar em um por vez.' : '');
     setMe(user);
     if (user.mustChange) return passwordModal(true);
     gate = g;

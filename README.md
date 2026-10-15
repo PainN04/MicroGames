@@ -12,6 +12,7 @@ Reflexo · Clique Maluco · Digitação · Memória · Mira · Cobrinha · Conta
 ## Login e bloqueio por fila do Geiko
 
 - Cada pessoa tem conta própria (senha com scrypt, sessão em cookie httpOnly assinado com `SESSION_SECRET`). O nome no ranking é o da conta.
+- Uma conta = um aparelho: cada login grava um `session_id` novo na conta e derruba a sessão anterior; a página confere a cada 20s (`/api/auth/ping`) e mostra o aviso.
 - Contas com **ID do Geiko** vinculado têm os jogos bloqueados quando a fila de tickets abertos passa do limite. A regra (pesos por prioridade, × sem interação, × status de espera, limite) fica no **Painel admin** e é guardada na tabela `settings`. Quem não tem ID do Geiko nunca é bloqueado.
 - A consulta é a mesma do GeikoDashboard: `POST /attendance/search` com `attendantIds` + `openAttendance` (cache de 60s por atendente). Se o Geiko cair, libera em vez de travar todo mundo.
 - Contas dos atendentes: `npm run importar -- "<.env do GeikoDashboard>" [--producao]` lê a tabela `attendants` do GeikoDashboard (só leitura), cria uma conta por atendente já com o ID do Geiko e grava as senhas temporárias num `contas-*.csv` (fora do Git). Pula quem já tem conta.
