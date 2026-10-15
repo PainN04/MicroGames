@@ -240,6 +240,58 @@
   .modal .box { width: 100%; max-width: 380px; padding: var(--space-lg); display: flex; flex-direction: column; gap: var(--space-sm); text-align: center; animation: pop .35s var(--ease-spring); }
   .modal h2 { margin: 0; font-size: var(--fs-xl); letter-spacing: -0.03em; }
   .modal p { margin: 0; color: var(--muted); font-size: var(--fs-sm); }
+  .modal form { display: flex; flex-direction: column; gap: var(--space-sm); }
+  .modal .err { color: oklch(80% 0.14 18); font-size: var(--fs-sm); min-height: 1.2em; margin: 0; }
+  .modal .box.wide { max-width: 560px; text-align: left; }
+  .modal input.txt { max-width: none; font-size: var(--fs-base); text-align: left; }
+
+  /* ---------- conta (menu do topo) ---------- */
+  .acct { position: relative; }
+  .acct-menu { position: absolute; right: 0; top: calc(100% + 8px); min-width: 200px; padding: 6px; display: flex; flex-direction: column; gap: 2px; z-index: 15; }
+  .acct-menu[hidden] { display: none; }
+  .acct-menu button { font: inherit; text-align: left; background: none; border: 0; color: var(--text); padding: .6em .8em; border-radius: 10px; cursor: pointer; min-height: 40px; }
+  .acct-menu button:hover { background: var(--surface-2); }
+
+  /* ---------- bloqueio por fila do Geiko ---------- */
+  .gate { margin: 0 0 var(--space-md); padding: var(--space-sm) var(--space-md); display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
+  .gate .msg { flex: 1; min-width: 220px; }
+  .gate b { font-size: var(--fs-base); }
+  .gate p { margin: .15rem 0 0; color: var(--muted); font-size: var(--fs-sm); }
+  .gate.blocked { border-color: oklch(66% 0.22 18 / 0.55); background: oklch(30% 0.08 18 / 0.45); }
+  .gate.ok { border-color: oklch(76% 0.18 150 / 0.4); }
+  .gate .meter { width: 100%; height: 8px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+  .gate .meter i { display: block; height: 100%; border-radius: inherit; background: var(--green); }
+  .gate.blocked .meter i { background: var(--red); }
+  .card.locked { opacity: .45; filter: grayscale(.7); }
+  .card.locked::after { content: '🔒'; position: absolute; top: 12px; right: 14px; font-size: 1.3rem; }
+  .tickets { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
+  .tickets th, .tickets td { text-align: left; padding: .45em .5em; border-bottom: 1px solid var(--border); }
+  .tickets th { color: var(--muted); font-weight: 500; }
+  .tickets td.w { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+  .tickets .tag { font-size: var(--fs-xs); color: var(--yellow); }
+  .scroll { max-height: min(50vh, 420px); overflow: auto; }
+
+  /* ---------- painel admin ---------- */
+  .admin { display: flex; flex-direction: column; gap: var(--space-md); }
+  .admin section { padding: var(--space-md); }
+  .admin h2 { margin: 0 0 var(--space-sm); font-size: var(--fs-lg); letter-spacing: -0.02em; }
+  .admin .row { display: flex; gap: var(--space-xs); flex-wrap: wrap; align-items: end; }
+  .admin label { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-xs); color: var(--muted); }
+  .admin input, .admin select { font: inherit; font-size: var(--fs-sm); color: var(--text); background: oklch(12% 0.02 275 / 0.7); border: 1px solid var(--border-strong); border-radius: 10px; padding: .55em .7em; min-height: 40px; }
+  .admin input:focus, .admin select:focus { outline: none; border-color: var(--primary); }
+  .admin input[type=number] { width: 6.5em; }
+  .admin .btn { min-height: 40px; }
+  .admin .users td { vertical-align: middle; }
+  .admin .users .actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .admin .users .actions .btn { min-height: 34px; padding: 0 .75rem; font-size: var(--fs-xs); }
+  .admin .off { opacity: .45; }
+  .admin .note { color: var(--muted); font-size: var(--fs-sm); margin: 0 0 var(--space-sm); }
+  .admin .checks { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .admin .checks label { flex-direction: row; align-items: center; gap: 6px; color: var(--text); font-size: var(--fs-sm); }
+  .admin .checks input { min-height: 0; }
+  .secret { font-family: ui-monospace, Consolas, monospace; font-size: var(--fs-lg); padding: .4em .8em; border-radius: 10px; background: var(--surface-2); border: 1px dashed var(--border-strong); user-select: all; }
+  .pill-role { font-size: var(--fs-xs); padding: .15em .6em; border-radius: 99px; border: 1px solid var(--border); color: var(--muted); }
+  .pill-role.admin { color: var(--yellow); border-color: oklch(86% 0.17 92 / 0.4); }
   @keyframes fade { from { opacity: 0; } }
 
   .confetti { position: fixed; top: -16px; width: 9px; height: 14px; border-radius: 2px; pointer-events: none; z-index: 30; animation: fall linear forwards; }
@@ -259,7 +311,13 @@
   <div class="who">
     <span class="pill" id="db"><span class="dot"></span><span id="dbtxt">conectando...</span></span>
     <button class="btn ghost icon-btn" id="mute" aria-label="Desligar som">🔊</button>
-    <span class="chip">👤 <b id="pname">—</b><button class="btn ghost" id="switch">Trocar</button></span>
+    <span class="chip acct">👤 <b id="pname">—</b><button class="btn ghost" id="acctBtn" aria-haspopup="menu" aria-expanded="false">Conta ▾</button>
+      <span class="acct-menu glass" id="acctMenu" role="menu" hidden>
+        <button role="menuitem" id="mAdmin" hidden>⚙️ Painel admin</button>
+        <button role="menuitem" id="mPass">🔑 Trocar senha</button>
+        <button role="menuitem" id="mLogout">🚪 Sair</button>
+      </span>
+    </span>
   </div>
 </header>
 <main id="main">
@@ -277,7 +335,8 @@ const main = $('#main');
 const rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-let player = localStorage.getItem('mg_player') || '';
+// Conta logada (vem de /api/auth/me) e o resultado do bloqueio por fila do Geiko.
+let me = null, gate = null, player = '';
 let cleanup = null;
 
 // ---------- placar ----------
@@ -1317,6 +1376,7 @@ function renderMenu() {
   main.classList.remove('game-view');
   main.replaceChildren(heroNode);
   main.insertAdjacentHTML('beforeend', `
+    <section class="gate glass" id="gate" hidden aria-live="polite"></section>
     <section class="grid" aria-label="Jogos">` +
     menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}">
         <span class="icon" aria-hidden="true">${g.emoji}</span>
@@ -1325,6 +1385,7 @@ function renderMenu() {
       </button>`).join('') + `</section>
     <section class="kings glass" id="kings">${kingsHtml()}</section>`);
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
+  renderGate();
   prefetchPhaser();
 }
 // Quando o ranking novo chega, só troca os textos (sem redesenhar nem reanimar os cards).
@@ -1341,6 +1402,7 @@ async function showMenu() {
   await fetchScores();
   if (currentView === 'menu') refreshMenu();
   checkVersion();
+  if (me && !me.mustChange) refreshGate();
 }
 
 function boardHtml(id) {
@@ -1351,6 +1413,9 @@ function boardHtml(id) {
 }
 
 function play(id) {
+  if (!localMode && !me) return loginModal();
+  if (me?.mustChange) return passwordModal(true);
+  if (gate?.blocked) return gateDialog();
   stop();
   currentView = id;
   const g = GAMES[id];
@@ -1418,27 +1483,347 @@ function confetti() {
   }
 }
 
-function askName() {
+// ---------- conta: login, senha, menu ----------
+// Chamada à API em JSON. Lança Error com a mensagem do servidor (e .status) quando não dá certo.
+async function api(path, { method = 'GET', body } = {}) {
+  const r = await fetch(path, { method, headers: body !== undefined ? { 'Content-Type': 'application/json' } : {}, body: body !== undefined ? JSON.stringify(body) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(j.error || `Erro ${r.status}`), { status: r.status });
+  return j;
+}
+
+// Janela modal genérica. `locked` = não fecha com Esc/clique fora (login e troca de senha obrigatória).
+function modal(html, { locked = false, wide = false } = {}) {
+  $('.modal')?.remove();
   const m = document.createElement('div');
   m.className = 'modal';
-  m.innerHTML = `<div class="box glass" role="dialog" aria-modal="true" aria-labelledby="mt">
-    <h2 id="mt">Quem tá jogando?</h2><p>Seu nome aparece no ranking.</p>
-    <input class="txt" id="nm" maxlength="16" placeholder="seu nome" aria-label="Seu nome">
-    <button class="btn" id="ok">Entrar</button></div>`;
+  m.innerHTML = `<div class="box glass${wide ? ' wide' : ''}" role="dialog" aria-modal="true">${html}</div>`;
   document.body.appendChild(m);
-  const nm = m.querySelector('#nm'); nm.value = player; nm.focus(); nm.select();
   const close = () => m.remove();
-  const go = () => {
-    const v = nm.value.trim(); if (!v) return nm.focus();
-    player = v; localStorage.setItem('mg_player', v); $('#pname').textContent = v; close(); showMenu();
-  };
-  m.querySelector('#ok').onclick = go;
-  nm.onkeydown = e => {
-    if (e.key === 'Enter') go();
-    if (e.key === 'Escape' && player) close();
-  };
-  m.onclick = e => { if (e.target === m && player) close(); };
+  if (!locked) {
+    m.addEventListener('click', e => { if (e.target === m) close(); });
+    m.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  }
+  m.querySelector('input, button')?.focus();
+  return { el: m, close };
 }
+
+function setMe(user) {
+  me = user;
+  player = user?.name || '';
+  $('#pname').textContent = player || '—';
+  $('#mAdmin').hidden = user?.role !== 'admin';
+}
+
+function loginModal(msg = '') {
+  const { el, close } = modal(`
+    <h2>Entrar</h2><p>Use o usuário e a senha que o admin te passou.</p>
+    <form id="lf">
+      <input class="txt" name="username" autocomplete="username" placeholder="usuário" aria-label="Usuário" required>
+      <input class="txt" name="password" type="password" autocomplete="current-password" placeholder="senha" aria-label="Senha" required>
+      <p class="err" id="lerr">${esc(msg)}</p>
+      <button class="btn">Entrar</button>
+    </form>`, { locked: true });
+  el.querySelector('#lf').onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(e.target), btn = e.target.querySelector('button');
+    btn.disabled = true; el.querySelector('#lerr').textContent = '';
+    try {
+      const { user } = await api('api/auth/login', { method: 'POST', body: { username: f.get('username'), password: f.get('password') } });
+      close();
+      await afterLogin(user);
+    } catch (err) {
+      el.querySelector('#lerr').textContent = err.message;
+      btn.disabled = false;
+    }
+  };
+}
+
+function passwordModal(forced) {
+  const { el, close } = modal(`
+    <h2>${forced ? 'Crie sua senha' : 'Trocar senha'}</h2>
+    <p>${forced ? 'Primeiro acesso: troque a senha temporária por uma sua.' : 'Mínimo de 8 caracteres.'}</p>
+    <form id="pf">
+      <input class="txt" name="current" type="password" autocomplete="current-password" placeholder="${forced ? 'senha temporária' : 'senha atual'}" required>
+      <input class="txt" name="next" type="password" autocomplete="new-password" placeholder="nova senha (mín. 8)" minlength="8" required>
+      <input class="txt" name="again" type="password" autocomplete="new-password" placeholder="repita a nova senha" required>
+      <p class="err" id="perr"></p>
+      <button class="btn">Salvar senha</button>
+      ${forced ? '' : '<button type="button" class="btn ghost" id="pcancel">Cancelar</button>'}
+    </form>`, { locked: forced });
+  el.querySelector('#pcancel')?.addEventListener('click', close);
+  el.querySelector('#pf').onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    if (f.get('next') !== f.get('again')) return (el.querySelector('#perr').textContent = 'As senhas novas não batem.');
+    try {
+      const { user } = await api('api/auth/password', { method: 'POST', body: { current: f.get('current'), next: f.get('next') } });
+      close();
+      setMe(user);
+      if (forced) { await refreshGate(); showMenu(); }
+    } catch (err) { el.querySelector('#perr').textContent = err.message; }
+  };
+}
+
+async function afterLogin(user) {
+  setMe(user);
+  if (user.mustChange) return passwordModal(true);
+  await refreshGate();
+  showMenu();
+}
+
+async function logout() {
+  await api('api/auth/logout', { method: 'POST', body: {} }).catch(() => {});
+  setMe(null); gate = null;
+  stop(); showMenu();
+  loginModal();
+}
+
+// ---------- bloqueio por fila do Geiko ----------
+async function refreshGate(force = false) {
+  if (!me || me.mustChange) return (gate = null);
+  try { gate = await api('api/gate' + (force ? '?force=1' : '')); } catch { /* sem rede: mantém o último */ }
+  if (currentView === 'menu') renderGate();
+  return gate;
+}
+
+const fmtW = n => String(n).replace('.', ',');
+function gateHtml() {
+  if (!gate || !gate.linked || !gate.enabled) return '';
+  const pct = Math.min(100, gate.limit ? (gate.total / gate.limit) * 100 : 100);
+  return `<div class="msg">
+      <b>${gate.blocked ? '🔒 Jogos bloqueados' : '✅ Liberado pra jogar'}</b>
+      <p>${gate.error ? esc(gate.error) : `Sua fila no Geiko soma <b>${fmtW(gate.total)}</b> pontos — o limite é ${fmtW(gate.limit)}. ${gate.blocked ? 'Resolva os tickets pra liberar.' : ''}`}</p>
+      <div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>
+    </div>
+    <button class="btn ghost" id="gateSee">Ver tickets</button>
+    <button class="btn ghost" id="gateRefresh">↻ Atualizar</button>`;
+}
+function renderGate() {
+  const box = $('#gate');
+  if (box) {
+    const html = gateHtml();
+    box.hidden = !html;
+    box.className = `gate glass ${gate?.blocked ? 'blocked' : 'ok'}`;
+    box.innerHTML = html;
+    $('#gateSee')?.addEventListener('click', () => gateDialog());
+    $('#gateRefresh')?.addEventListener('click', async e => { e.target.disabled = true; await refreshGate(true); });
+  }
+  document.querySelectorAll('.card').forEach(c => c.classList.toggle('locked', !!gate?.blocked));
+}
+
+function ticketsTable(tickets) {
+  if (!tickets.length) return '<p class="hint" style="text-align:left">Nenhum ticket aberto. 🎉</p>';
+  return `<div class="scroll"><table class="tickets"><thead><tr><th>Ticket</th><th>Prioridade</th><th>Status</th><th style="text-align:right">Peso</th></tr></thead><tbody>
+    ${tickets.map(t => `<tr><td>#${t.id}${t.reason ? `<br><span class="tag">${esc(t.reason)}</span>` : ''}</td><td>${esc(t.priority)}</td><td>${esc(t.status)}</td><td class="w">${fmtW(t.weight)}</td></tr>`).join('')}
+  </tbody></table></div>`;
+}
+function gateDialog() {
+  if (!gate) return;
+  const { el, close } = modal(`
+    <h2>${gate.blocked ? '🔒 Fila cheia' : 'Sua fila no Geiko'}</h2>
+    <p>Cada ticket tem um peso: sem prioridade ou sem interação pesa mais; aguardando o cliente pesa menos.
+      Soma atual <b>${fmtW(gate.total)}</b>, limite <b>${fmtW(gate.limit)}</b>.</p>
+    ${ticketsTable(gate.tickets)}
+    <button class="btn" id="gclose">Fechar</button>`, { wide: true });
+  el.querySelector('#gclose').onclick = close;
+}
+
+// ---------- painel admin ----------
+const PRIO_FIELDS = [['URG', 'Urgente'], ['ALT', 'Alta'], ['MED', 'Média'], ['NOR', 'Normal'], ['BAI', 'Baixa'], ['none', 'Sem prioridade']];
+
+function showAdmin() {
+  if (me?.role !== 'admin') return;
+  stop();
+  currentView = 'admin';
+  swap(() => {
+    main.classList.remove('game-view');
+    main.innerHTML = `<div class="admin">
+      <div class="stage-head">
+        <button class="btn ghost" id="back" aria-label="Voltar ao menu">←</button>
+        <div class="title"><h2>⚙️ Painel admin</h2><p>Contas de quem joga, vínculo com o Geiko e a regra de bloqueio por fila.</p></div>
+      </div>
+      <section class="glass">
+        <h2>Contas</h2>
+        <form class="row" id="newUser" autocomplete="off">
+          <label>Nome (aparece no ranking)<input name="name" maxlength="40" required></label>
+          <label>Usuário (login)<input name="username" maxlength="32" pattern="[A-Za-z0-9._\\-]{3,32}" required></label>
+          <label>ID do Geiko<input name="geikoId" inputmode="numeric" pattern="\\d*" placeholder="vazio = sem fila"></label>
+          <label>Papel<select name="role"><option value="player">Jogador</option><option value="admin">Admin</option></select></label>
+          <button class="btn">+ Criar conta</button>
+        </form>
+        <p class="err" id="nuErr" style="color:oklch(80% 0.14 18)"></p>
+        <div class="scroll" style="max-height:none"><table class="tickets users" id="usersTable"><tbody><tr><td>Carregando...</td></tr></tbody></table></div>
+      </section>
+      <section class="glass">
+        <h2>Regra de bloqueio</h2>
+        <p class="note">Cada ticket aberto do atendente vale um peso. Se a soma passar do limite, os jogos ficam bloqueados.
+          Peso = prioridade × multiplicador (sem interação ou status de espera). Quem não tem ID do Geiko nunca é bloqueado.</p>
+        <form id="rulesForm"><p class="hint" style="text-align:left">Carregando...</p></form>
+      </section>
+      <section class="glass">
+        <h2>Testar ID do Geiko</h2>
+        <p class="note">Confere a fila de um atendente com a regra atual (útil pra validar o vínculo antes de criar a conta).</p>
+        <form class="row" id="testForm"><label>ID do Geiko<input name="geikoId" inputmode="numeric" pattern="\\d+" required></label><button class="btn ghost">Testar</button></form>
+        <div id="testOut" style="margin-top:var(--space-sm)"></div>
+      </section>
+    </div>`;
+    $('#back').onclick = showMenu;
+    $('#newUser').onsubmit = createUser;
+    $('#testForm').onsubmit = async e => {
+      e.preventDefault();
+      const id = new FormData(e.target).get('geikoId');
+      $('#testOut').innerHTML = '<p class="hint" style="text-align:left">Consultando o Geiko...</p>';
+      $('#testOut').innerHTML = await previewHtml(id);
+    };
+    loadUsers();
+    loadRules();
+  });
+}
+
+async function previewHtml(geikoId) {
+  try {
+    const g = await api('api/admin/preview?geikoId=' + encodeURIComponent(geikoId));
+    if (g.error) return `<p class="err">${esc(g.error)}</p>`;
+    return `<p style="margin:0 0 8px"><b>${g.blocked ? '🔒 Bloqueado' : '✅ Liberado'}</b> — ${g.tickets.length} tickets, soma <b>${fmtW(g.total)}</b> (limite ${fmtW(g.limit)})</p>${ticketsTable(g.tickets)}`;
+  } catch (err) { return `<p class="err">${esc(err.message)}</p>`; }
+}
+
+function tempPasswordDialog(name, pass) {
+  const { el, close } = modal(`
+    <h2>Senha temporária</h2>
+    <p>Passe pra <b>${esc(name)}</b>. No primeiro login a pessoa cria a própria senha. <b>Ela não aparece de novo.</b></p>
+    <div class="secret">${esc(pass)}</div>
+    <button class="btn ghost" id="copyPass">Copiar</button>
+    <button class="btn" id="okPass">Pronto</button>`, { locked: true });
+  el.querySelector('#copyPass').onclick = async e => { await navigator.clipboard?.writeText(pass).catch(() => {}); e.target.textContent = 'Copiado ✓'; };
+  el.querySelector('#okPass').onclick = close;
+}
+
+async function createUser(e) {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  $('#nuErr').textContent = '';
+  try {
+    const { user, tempPassword } = await api('api/admin/users', { method: 'POST', body: Object.fromEntries(f) });
+    e.target.reset();
+    loadUsers();
+    tempPasswordDialog(user.name, tempPassword);
+  } catch (err) { $('#nuErr').textContent = err.message; }
+}
+
+async function loadUsers() {
+  const table = $('#usersTable');
+  if (!table) return;
+  try {
+    const { users } = await api('api/admin/users');
+    table.innerHTML = `<thead><tr><th>Nome</th><th>Usuário</th><th>ID Geiko</th><th>Papel</th><th></th></tr></thead><tbody>` +
+      users.map(u => `<tr class="${u.active ? '' : 'off'}" data-id="${u.id}">
+        <td>${esc(u.name)}${u.mustChange ? ' <span class="tag" title="Ainda não trocou a senha temporária">• senha temporária</span>' : ''}${u.active ? '' : ' <span class="tag">• desativada</span>'}</td>
+        <td>${esc(u.username)}</td>
+        <td>${u.geikoId ? esc(u.geikoId) : '<span class="hint">—</span>'}</td>
+        <td><span class="pill-role ${u.role}">${u.role === 'admin' ? 'Admin' : 'Jogador'}</span></td>
+        <td><div class="actions">
+          ${u.geikoId ? '<button class="btn ghost" data-act="test">Fila</button>' : ''}
+          <button class="btn ghost" data-act="edit">Editar</button>
+          <button class="btn ghost" data-act="reset">Nova senha</button>
+          ${u.id === me.id ? '' : `<button class="btn ghost" data-act="toggle">${u.active ? 'Desativar' : 'Reativar'}</button>`}
+        </div></td></tr>`).join('') + '</tbody>';
+    table.querySelectorAll('[data-act]').forEach(b => b.onclick = () => userAction(b.dataset.act, users.find(u => u.id === +b.closest('tr').dataset.id)));
+  } catch (err) { table.innerHTML = `<tbody><tr><td class="err">${esc(err.message)}</td></tr></tbody>`; }
+}
+
+async function userAction(act, u) {
+  if (act === 'test') {
+    const { el, close } = modal(`<h2>Fila de ${esc(u.name)}</h2><div id="pv"><p>Consultando o Geiko...</p></div><button class="btn" id="pvc">Fechar</button>`, { wide: true });
+    el.querySelector('#pvc').onclick = close;
+    el.querySelector('#pv').innerHTML = await previewHtml(u.geikoId);
+  }
+  if (act === 'reset') {
+    if (!confirm(`Gerar uma nova senha temporária pra ${u.name}? A senha atual deixa de funcionar e a pessoa é deslogada.`)) return;
+    try { const { tempPassword } = await api(`api/admin/users/${u.id}/reset-password`, { method: 'POST', body: {} }); loadUsers(); tempPasswordDialog(u.name, tempPassword); }
+    catch (err) { alert(err.message); }
+  }
+  if (act === 'toggle') {
+    if (u.active && !confirm(`Desativar ${u.name}? A pessoa é deslogada e não consegue mais entrar.`)) return;
+    try { await api(`api/admin/users/${u.id}`, { method: 'PATCH', body: { active: !u.active } }); loadUsers(); }
+    catch (err) { alert(err.message); }
+  }
+  if (act === 'edit') {
+    const { el, close } = modal(`
+      <h2>Editar conta</h2>
+      <form id="ef" class="admin">
+        <label>Nome (aparece no ranking)<input name="name" maxlength="40" value="${esc(u.name)}" required></label>
+        <label>Usuário (login)<input name="username" maxlength="32" value="${esc(u.username)}" required></label>
+        <label>ID do Geiko (vazio = sem fila, nunca bloqueia)<input name="geikoId" inputmode="numeric" value="${esc(u.geikoId || '')}"></label>
+        <label>Papel<select name="role" ${u.id === me.id ? 'disabled' : ''}><option value="player">Jogador</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option></select></label>
+        <p class="err" id="eerr"></p>
+        <button class="btn">Salvar</button>
+        <button type="button" class="btn ghost" id="ecancel">Cancelar</button>
+      </form>`, { wide: true });
+    el.querySelector('#ecancel').onclick = close;
+    el.querySelector('#ef').onsubmit = async e => {
+      e.preventDefault();
+      const body = Object.fromEntries(new FormData(e.target));
+      if (u.id === me.id) delete body.role;
+      try {
+        const { user } = await api(`api/admin/users/${u.id}`, { method: 'PATCH', body });
+        if (user.id === me.id) setMe({ ...me, ...user });
+        close(); loadUsers();
+      } catch (err) { el.querySelector('#eerr').textContent = err.message; }
+    };
+  }
+}
+
+async function loadRules() {
+  const form = $('#rulesForm');
+  if (!form) return;
+  try {
+    const { rules, situations } = await api('api/admin/rules');
+    const sitEntries = Object.entries(situations).sort((a, b) => a[1].localeCompare(b[1]));
+    form.innerHTML = `
+      <div class="row" style="margin-bottom:var(--space-sm)">
+        <label class="checks"><label><input type="checkbox" name="enabled" ${rules.enabled ? 'checked' : ''}> Bloqueio ligado</label></label>
+        <label>Bloqueia quando a soma passar de<input type="number" name="limit" step="0.25" min="0" value="${rules.limit}"></label>
+      </div>
+      <p class="note" style="margin-bottom:6px">Peso por prioridade</p>
+      <div class="row" style="margin-bottom:var(--space-sm)">
+        ${PRIO_FIELDS.map(([k, label]) => `<label>${label}<input type="number" name="p_${k}" step="0.25" min="0" value="${rules.priority[k]}"></label>`).join('')}
+      </div>
+      <div class="row" style="margin-bottom:var(--space-sm)">
+        <label>× sem interação do atendente<input type="number" name="noInteractionMult" step="0.05" min="0" value="${rules.noInteractionMult}"></label>
+        <label>× status de espera (abaixo)<input type="number" name="waitingClientMult" step="0.05" min="0" value="${rules.waitingClientMult}"></label>
+      </div>
+      <p class="note" style="margin-bottom:6px">Status de espera — ticket com interação nesses status pesa menos (o atendente depende de outra pessoa):</p>
+      <div class="checks" style="margin-bottom:var(--space-sm)">
+        ${sitEntries.length ? sitEntries.map(([id, name]) => `<label><input type="checkbox" name="sit" value="${id}" ${rules.waitingClientSituationIds.includes(+id) ? 'checked' : ''}> ${esc(name)}</label>`).join('')
+          : '<span class="hint">Não consegui buscar os status no Geiko agora.</span>'}
+      </div>
+      <div class="row"><button class="btn">Salvar regra</button><span id="rulesMsg" class="hint"></span></div>`;
+    form.onsubmit = async e => {
+      e.preventDefault();
+      const f = new FormData(form);
+      const body = {
+        enabled: f.get('enabled') === 'on',
+        limit: f.get('limit'),
+        priority: Object.fromEntries(PRIO_FIELDS.map(([k]) => [k, f.get('p_' + k)])),
+        noInteractionMult: f.get('noInteractionMult'),
+        waitingClientMult: f.get('waitingClientMult'),
+        // sem a lista do Geiko na tela, mantém a que já estava salva
+        waitingClientSituationIds: sitEntries.length ? f.getAll('sit').map(Number) : rules.waitingClientSituationIds,
+      };
+      try { await api('api/admin/rules', { method: 'PUT', body }); $('#rulesMsg').textContent = '✅ Regra salva — vale a partir da próxima consulta de cada um.'; refreshGate(true); }
+      catch (err) { $('#rulesMsg').textContent = '⚠️ ' + err.message; }
+    };
+  } catch (err) { form.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+}
+
+// menu da conta (topo)
+function toggleAcct(open = $('#acctMenu').hidden) {
+  $('#acctMenu').hidden = !open;
+  $('#acctBtn').setAttribute('aria-expanded', open);
+}
+document.addEventListener('click', e => { if (!e.target.closest('.acct')) toggleAcct(false); });
 
 function esc(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
 
@@ -1478,10 +1863,29 @@ checkVersion();
 setInterval(checkVersion, 30000);
 
 $('#home').onclick = showMenu;
-$('#switch').onclick = askName;
+$('#acctBtn').onclick = () => toggleAcct();
+$('#mPass').onclick = () => { toggleAcct(false); passwordModal(false); };
+$('#mLogout').onclick = () => { toggleAcct(false); logout(); };
+$('#mAdmin').onclick = () => { toggleAcct(false); showAdmin(); };
 $('#mute').onclick = () => { muted = !muted; localStorage.setItem('mg_mute', muted ? '1' : '0'); renderMute(); if (!muted) sfx.good(); };
 renderMute();
-if (player) { $('#pname').textContent = player; showMenu(); } else { fetchScores(); askName(); }
+// atualiza o bloqueio a cada minuto enquanto estiver no menu
+setInterval(() => { if (currentView === 'menu' && !document.hidden) refreshGate(); }, 60_000);
+
+(async function boot() {
+  showMenu();
+  if (localMode) return; // aberto direto do arquivo: sem servidor, sem login
+  try {
+    const { user, gate: g } = await api('api/auth/me');
+    if (!user) return loginModal();
+    setMe(user);
+    if (user.mustChange) return passwordModal(true);
+    gate = g;
+    renderGate();
+  } catch {
+    loginModal('Não consegui falar com o servidor. Tente de novo.');
+  }
+})();
 </script>
 <script async src="https://cdn.jsdelivr.net/npm/web-vitals@6.2.3/dist/web-vitals.attribution.iife.js" onload="reportVitals()"></script>
 </body>

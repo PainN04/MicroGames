@@ -5,9 +5,11 @@
   "description": "Minigames de navegador com ranking compartilhado",
   "scripts": {
     "local": "node server.js",
+    "admin": "node scripts/create-admin.js",
     "migrate": "node scripts/migrate-to-neon.js"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.0.2"
+    "@neondatabase/serverless": "^1.0.2",
+    "jose": "^6.2.12"
   }
 }

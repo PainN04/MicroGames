@@ -6,8 +6,16 @@ Reflexo · Clique Maluco · Digitação · Memória · Mira · Cobrinha · Conta
 
 ## Como roda
 
-- **Vercel (produção):** `index.html` estático + funções em `api/` + banco Neon Postgres (`DATABASE_URL`). Cada push na `main` publica sozinho.
-- **Rede local (sem internet):** `npm run local` sobe `server.js` com SQLite (`microgame.db`) na porta 8080.
+- **Vercel (produção):** `index.html` estático + uma função `api/index.js` (rotas em `lib/router.js`) + banco Neon Postgres (`DATABASE_URL`). Cada push na `main` publica sozinho.
+- **Teste local:** `npm run local` sobe `server.js` na porta 8080 com as mesmas rotas, mas banco SQLite (`microgame.db`) — nunca o de produção.
+
+## Login e bloqueio por fila do Geiko
+
+- Cada pessoa tem conta própria (senha com scrypt, sessão em cookie httpOnly assinado com `SESSION_SECRET`). O nome no ranking é o da conta.
+- Contas com **ID do Geiko** vinculado têm os jogos bloqueados quando a fila de tickets abertos passa do limite. A regra (pesos por prioridade, × sem interação, × status de espera, limite) fica no **Painel admin** e é guardada na tabela `settings`. Quem não tem ID do Geiko nunca é bloqueado.
+- A consulta é a mesma do GeikoDashboard: `POST /attendance/search` com `attendantIds` + `openAttendance` (cache de 60s por atendente). Se o Geiko cair, libera em vez de travar todo mundo.
+- Primeiro admin: `npm run admin -- <usuario> "<Nome>"` (teste local) ou com `--producao` (banco da Vercel). Ele mostra uma senha temporária uma vez; o resto das contas se cria no painel.
+- Variáveis: `SESSION_SECRET` (mín. 32 caracteres), `GEIKO_API_KEY`, `GEIKO_API_URL` — no `.env.local` (teste) e no projeto da Vercel (produção).
 
 ## Bibliotecas (via CDN, sem build)
 

@@ -11,7 +11,9 @@ if (!process.env.DATABASE_URL && fs.existsSync(envFile)) {
     if (m) process.env[m[1]] = m[2];
   }
 }
-const { sql, ensureSchema } = require('../lib/db');
+process.env.MICROGAME_SQLITE = '';
+const { sql } = require('../lib/store');
+const { ensureSchema } = require('../lib/schema');
 
 (async () => {
   await ensureSchema();

@@ -1,88 +1,55 @@
-// Servidor local do MicroGame (rede do escritório): serve o index.html e guarda as pontuações em SQLite.
-// Em produção o jogo roda na Vercel (api/*.js + Neon); este arquivo é só pra rodar sem internet.
-// Uso: node server.js   (porta padrão 8080, mude com PORT=xxxx)
+// Servidor de TESTE local do MicroGame: serve o index.html e as mesmas rotas /api/* da Vercel (lib/router.js),
+// mas com o banco SQLite local (microgame.db) — nunca encosta no banco de produção.
+// Uso: npm run local   (porta padrão 8080, mude com $env:PORT=xxxx)
 const http = require('node:http');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { DatabaseSync } = require('node:sqlite');
-const { checkSubmission, groupByGame } = require('./lib/rules');
-const { logVitals } = require('./lib/vitals');
+
+// Do .env.local só pega o que o teste precisa (chave do Geiko e segredo de sessão).
+// DATABASE_URL de lá é o banco de PRODUÇÃO e fica de fora de propósito.
+const envFile = path.join(__dirname, '.env.local');
+if (fs.existsSync(envFile)) {
+  for (const line of fs.readFileSync(envFile, 'utf8').split(/\r?\n/)) {
+    const m = line.match(/^(GEIKO_API_KEY|GEIKO_API_URL|GEIKO_URL|SESSION_SECRET|SESSION_TTL_HOURS)="?([^"]*)"?$/);
+    if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
+  }
+}
+process.env.MICROGAME_SQLITE ||= path.join(__dirname, 'microgame.db');
+
+const { handle } = require('./lib/router');
+const { ensureSchema } = require('./lib/schema');
 
 const PORT = Number(process.env.PORT) || 8080;
+const INDEX = path.join(__dirname, 'index.html');
+// A página compara essa versão pra se recarregar sozinha quando o index.html muda.
+const version = () => String(fs.statSync(INDEX).mtimeMs);
 
-const db = new DatabaseSync(path.join(__dirname, 'microgame.db'));
-db.exec(`
-  CREATE TABLE IF NOT EXISTS scores (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    game       TEXT    NOT NULL,
-    player     TEXT    NOT NULL,
-    score      REAL    NOT NULL,
-    created_at INTEGER NOT NULL
-  );
-  CREATE INDEX IF NOT EXISTS idx_scores_game ON scores (game);
-`);
-
-const insertScore = db.prepare('INSERT INTO scores (game, player, score, created_at) VALUES (?, ?, ?, ?)');
-const allScores = db.prepare('SELECT game, player AS name, score, created_at AS date FROM scores');
-
-function send(res, status, body, type = 'application/json; charset=utf-8') {
-  res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store' });
-  res.end(type.startsWith('application/json') ? JSON.stringify(body) : body);
-}
-
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', chunk => {
-      data += chunk;
-      if (data.length > 1e4) { reject(new Error('body too large')); req.destroy(); }
-    });
-    req.on('end', () => resolve(data));
-    req.on('error', reject);
-  });
-}
-
-const server = http.createServer(async (req, res) => {
-  const url = new URL(req.url, 'http://x');
-  try {
-    // A página compara essa versão pra se recarregar sozinha quando o index.html muda.
-    if (url.pathname === '/api/version' && req.method === 'GET') {
-      return send(res, 200, { version: fs.statSync(path.join(__dirname, 'index.html')).mtimeMs });
-    }
-    if (url.pathname === '/api/vitals' && req.method === 'POST') {
-      try { logVitals(JSON.parse(await readBody(req))); } catch {}
-      res.writeHead(204).end();
-      return;
-    }
-    if (url.pathname === '/api/scores' && req.method === 'GET') {
-      return send(res, 200, groupByGame(allScores.all()));
-    }
-    if (url.pathname === '/api/scores' && req.method === 'POST') {
-      const { status, error, entry } = checkSubmission(JSON.parse(await readBody(req)));
-      if (error) return send(res, status, { error });
-      insertScore.run(entry.game, entry.player, entry.score, Date.now());
-      return send(res, 201, { ok: true });
-    }
-    if (url.pathname === '/' || url.pathname === '/index.html') {
-      return send(res, 200, fs.readFileSync(path.join(__dirname, 'index.html')), 'text/html; charset=utf-8');
-    }
-    send(res, 404, { error: 'não encontrado' });
-  } catch (err) {
-    send(res, 400, { error: err.message });
+const server = http.createServer((req, res) => {
+  const { pathname } = new URL(req.url, 'http://x');
+  if (pathname.startsWith('/api/')) return handle(req, res, { version });
+  if (pathname === '/' || pathname === '/index.html') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+    return res.end(fs.readFileSync(INDEX));
   }
+  res.writeHead(404, { 'Content-Type': 'application/json' });
+  res.end('{"error":"não encontrado"}');
 });
 
 server.on('error', err => {
   if (err.code !== 'EADDRINUSE') throw err;
   console.error(`Porta ${PORT} já está em uso (o MicroGame já está rodando?).`);
-  console.error(`Feche o outro processo ou use outra porta: $env:PORT=8081; node server.js`);
+  console.error(`Feche o outro processo ou use outra porta: $env:PORT=8081; npm run local`);
   process.exit(1);
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`MicroGame rodando em http://localhost:${PORT}`);
-  for (const nets of Object.values(os.networkInterfaces())) {
-    for (const n of nets) if (n.family === 'IPv4' && !n.internal) console.log(`  Na rede: http://${n.address}:${PORT}`);
-  }
+ensureSchema().then(() => {
+  if (!process.env.SESSION_SECRET) console.warn('⚠️  SESSION_SECRET não está no .env.local — o login não vai funcionar.');
+  if (!process.env.GEIKO_API_KEY) console.warn('⚠️  GEIKO_API_KEY não está no .env.local — o bloqueio por tickets fica desligado (libera todo mundo).');
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`MicroGame (teste, banco local) em http://localhost:${PORT}`);
+    for (const nets of Object.values(os.networkInterfaces())) {
+      for (const n of nets) if (n.family === 'IPv4' && !n.internal) console.log(`  Na rede: http://${n.address}:${PORT}`);
+    }
+  });
 });
