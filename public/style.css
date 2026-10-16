@@ -114,7 +114,7 @@
     animation: rise .55s var(--ease-spring) both; animation-delay: calc(var(--i) * 60ms);
     transition: transform var(--duration) var(--ease-spring), border-color var(--duration), box-shadow var(--duration);
   }
-  .card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(120% 80% at 0% 0%, oklch(70% 0.15 var(--h) / 0.16), transparent 60%); pointer-events: none; }
+  .card::before { content: ''; position: absolute; inset: 0; z-index: -2; border-radius: inherit; background: radial-gradient(120% 80% at 0% 0%, oklch(70% 0.15 var(--h) / 0.16), transparent 60%); pointer-events: none; }
   .card:hover { transform: translateY(-6px); border-color: oklch(72% 0.15 var(--h) / 0.55); box-shadow: 0 18px 40px oklch(60% 0.15 var(--h) / 0.25); }
   .card:active { transform: scale(0.97); }
   .card .icon { position: relative; width: 56px; height: 56px; display: grid; place-items: center; font-size: 28px; border-radius: 16px; background: oklch(70% 0.15 var(--h) / 0.18); border: 1px solid oklch(72% 0.15 var(--h) / 0.3); transition: transform var(--duration) var(--ease-spring); }
@@ -222,7 +222,43 @@
   .card.is-daily { border-color: oklch(86% 0.17 92 / 0.45); }
   @media (max-width: 700px) { .daily { grid-template-columns: 1fr; } .daily-main { flex-wrap: wrap; } .daily-main .btn { width: 100%; } }
   /* temporadas: seletor Mês/Geral e Hall da fama */
-  .menu-bar { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-sm); margin: 0 0 var(--space-md); }
+  .menu-bar { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-sm); margin: 0 0 var(--space-md); flex-wrap: wrap; }
+
+  /* ---------- visual "minimal": sem ícone, cena grande no centro, nome embaixo ---------- */
+  .grid[data-layout="min"] { grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+  .grid[data-layout="min"] .card { min-height: 220px; justify-content: flex-end; gap: .2rem; }
+  .grid[data-layout="min"] .card .icon { display: none; }
+  .grid[data-layout="min"] .card .z3d { top: 50%; left: 50%; right: auto; width: 210px; height: 210px; translate: -50% -62%; opacity: 1;
+    -webkit-mask-image: radial-gradient(circle, #000 50%, transparent 70%); mask-image: radial-gradient(circle, #000 50%, transparent 70%); }
+  .grid[data-layout="min"] .card .scene { -webkit-mask-image: none; mask-image: none; }
+  .grid[data-layout="min"] .card h3 { margin: 0; font-size: var(--fs-base); text-align: center; }
+  .grid[data-layout="min"] .card .rec { margin: 0; padding: 0; justify-content: center; opacity: .8; }
+  .grid[data-layout="min"] .card::before { background: radial-gradient(80% 60% at 50% 38%, oklch(70% 0.15 var(--h) / 0.16), transparent 70%); }
+
+  /* ---------- visual "capa": palco colorido com a cena + faixa com nome e recorde ---------- */
+  .grid[data-layout="capa"] { grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); }
+  .grid[data-layout="capa"] .card { padding: 0; min-height: 0; gap: 0; }
+  .grid[data-layout="capa"] .card .icon { display: none; }
+  /* palco: fundo na cor do jogo, com "chão" e sombra */
+  .grid[data-layout="capa"] .card::before { inset: 0 0 auto 0; height: 170px; border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+    background: radial-gradient(70% 55% at 50% 88%, oklch(10% 0.02 var(--h) / .55), transparent 70%),
+      radial-gradient(120% 100% at 50% 0%, oklch(62% 0.16 var(--h) / .55), oklch(30% 0.09 var(--h) / .55) 70%); }
+  .grid[data-layout="capa"] .card .z3d { top: -10px; left: 50%; right: auto; width: 190px; height: 190px; translate: -50% 0; opacity: 1; -webkit-mask-image: none; mask-image: none; }
+  .grid[data-layout="capa"] .card .scene { inset: 0 0 auto 0; height: 170px; -webkit-mask-image: none; mask-image: none; opacity: .9; }
+  .grid[data-layout="capa"] .card h3 { margin: 170px 0 0; padding: .7rem var(--space-md) 0; font-size: var(--fs-base);
+    border-top: 1px solid oklch(72% 0.15 var(--h) / .35); }
+  .grid[data-layout="capa"] .card .rec { padding: .25rem var(--space-md) .8rem; margin: 0; }
+  .grid[data-layout="capa"] .card.is-daily::after { top: 10px; right: 10px; }
+  /* celular: Minimal e Capa em 2 colunas, cena um pouco menor */
+  @media (max-width: 560px) {
+    .grid[data-layout="min"], .grid[data-layout="capa"] { grid-template-columns: 1fr 1fr; }
+    .grid[data-layout="min"] .card { min-height: 180px; padding: var(--space-sm); }
+    .grid[data-layout="min"] .card .z3d { width: 170px; height: 170px; }
+    .grid[data-layout="capa"] .card::before, .grid[data-layout="capa"] .card .scene { height: 130px; }
+    .grid[data-layout="capa"] .card .z3d { width: 150px; height: 150px; top: -10px; }
+    .grid[data-layout="capa"] .card h3 { margin-top: 130px; padding: .5rem var(--space-sm) 0; }
+    .grid[data-layout="capa"] .card .rec { padding: .2rem var(--space-sm) .6rem; }
+  }
   .board .season-seg { margin: 0 0 var(--space-sm); }
   .board .season-seg button { padding: .35em .8em; min-height: 32px; }
   .hall { display: grid; gap: var(--space-xs); }

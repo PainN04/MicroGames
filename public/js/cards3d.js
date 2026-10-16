@@ -474,14 +474,17 @@ async function enhanceCards() {
   if (!document.querySelector('.grid .card')) return;
   io?.disconnect(); visible.clear();
   scenes3d = [];
+  // tamanho da cena por visual: no "minimal" e na "capa" ela é a imagem principal do card
+  const size = { atual: 150, min: 210, capa: 190 }[document.querySelector('.grid')?.dataset.layout] || 150;
   document.querySelectorAll('.grid .card').forEach(card => {
     const build = SCENES_3D[card.dataset.id];
     if (!build) return;
     card.querySelector('.scene')?.remove();
-    const canvas = Object.assign(document.createElement('canvas'), { className: 'z3d', width: 150, height: 150 });
+    const canvas = Object.assign(document.createElement('canvas'), { className: 'z3d', width: size, height: size });
     canvas.setAttribute('aria-hidden', 'true');
     card.prepend(canvas);
-    const illo = new Zdog.Illustration({ element: canvas }) // a Zdog já ajusta pra telas de alta densidade;
+    // zoom proporcional (as cenas foram desenhadas pra 150px); a Zdog já ajusta pra telas de alta densidade
+    const illo = new Zdog.Illustration({ element: canvas, zoom: size / 150 });
     scenes3d.push({ canvas, illo, update: build(Zdog, illo) });
     io?.observe(canvas);
   });
