@@ -17,20 +17,20 @@
   <button class="logo" id="home" aria-label="Voltar ao menu">Micro<span>Game</span></button>
   <div class="who">
     <span class="pill compact" id="db" title="conectando..."><span class="dot"></span><span id="dbtxt">conectando...</span></span>
-    <button class="btn ghost icon-btn" id="mute" aria-label="Desligar som">🔊</button>
-    <button class="btn ghost icon-btn" id="fx3d" aria-pressed="true" aria-label="Animações 3D dos cards" title="Animações 3D: ligadas (clique pra desligar se ficar pesado)">✨</button>
+    <button class="btn ghost icon-btn" id="mute" aria-label="Desligar som"></button>
+    <button class="btn ghost icon-btn" id="fx3d" aria-pressed="true" aria-label="Animações 3D dos cards" title="Animações 3D: ligadas (clique pra desligar se ficar pesado)"></button>
     <span class="gate-wrap" id="gateWrap" hidden>
       <button class="gate-pill" id="gatePill" aria-haspopup="dialog" aria-expanded="false" aria-controls="gatePop"></button>
       <span class="gate-pop glass" id="gatePop" role="dialog" aria-label="Sua fila no Geiko" hidden></span>
     </span>
-    <span class="acct"><button class="btn ghost acct-btn" id="acctBtn" aria-haspopup="menu" aria-expanded="false">👤 <b id="pname">—</b> <span aria-hidden="true">▾</span></button>
+    <span class="acct"><button class="btn ghost acct-btn" id="acctBtn" aria-haspopup="menu" aria-expanded="false"><span class="av" id="pav" aria-hidden="true"></span><b id="pname">—</b><span class="chev" aria-hidden="true"></span></button>
       <span class="acct-menu glass" id="acctMenu" role="menu" hidden>
-        <button role="menuitem" id="mProfile">👤 Meu perfil</button>
-        <button role="menuitem" id="mAdmin" hidden>⚙️ Painel admin</button>
-        <button role="menuitem" id="mReport" hidden>📊 Relatório</button>
-        <button role="menuitem" id="mRecords" hidden>🛠️ Editor de recordes</button>
-        <button role="menuitem" id="mPass">🔑 Trocar senha</button>
-        <button role="menuitem" id="mLogout">🚪 Sair</button>
+        <button role="menuitem" id="mProfile"><span data-ic="user"></span>Meu perfil</button>
+        <button role="menuitem" id="mAdmin" hidden><span data-ic="settings"></span>Painel admin</button>
+        <button role="menuitem" id="mReport" hidden><span data-ic="chart-column"></span>Relatório</button>
+        <button role="menuitem" id="mRecords" hidden><span data-ic="wrench"></span>Editor de recordes</button>
+        <button role="menuitem" id="mPass"><span data-ic="key-round"></span>Trocar senha</button>
+        <button role="menuitem" id="mLogout"><span data-ic="log-out"></span>Sair</button>
       </span>
     </span>
   </div>
@@ -44,6 +44,7 @@
 </main>
 <div class="sr-only" role="status" aria-live="polite" id="live"></div>
 
+<script src="js/icons.js"></script>
 <script src="js/core.js"></script>
 <script src="js/games/reflexo.js"></script>
 <script src="js/games/clique.js"></script>

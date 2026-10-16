@@ -1,5 +1,5 @@
 GAMES.toupeira = {
-  name: 'Toupeira', emoji: '🐹', hue: 35, desc: 'Acerte as toupeiras em 30s. ⭐ vale 3, 💣 tira 3. Teclado numérico também vale.',
+  name: 'Toupeira', icon: 'hammer', hue: 35, desc: 'Acerte as toupeiras em 30s. Estrela vale 3, bomba tira 3. Teclado numérico também vale.',
   better: 'high', unit: 'pontos',
   start(el, done) {
     const DUR = 30;
@@ -22,7 +22,7 @@ GAMES.toupeira = {
       if (!free.length) return;
       const i = free[rand(0, free.length - 1)], tt = elapsed(), r = Math.random();
       const kind = tt > 8 && r < 0.15 ? 'bomb' : r > 0.9 ? 'star' : 'mole';
-      holes[i].querySelector('span').textContent = { bomb: '💣', star: '⭐', mole: '🐹' }[kind];
+      holes[i].querySelector('span').innerHTML = icon({ bomb: 'bomb', star: 'star', mole: 'rat' }[kind], { cls: 'k-' + kind });
       holes[i].classList.add('up');
       state[i] = { kind, timer: setTimeout(() => hide(i), Math.max(550, 1000 - tt * 15)) };
     }

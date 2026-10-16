@@ -1,5 +1,5 @@
 GAMES.blocos = {
-  name: 'Blocos', emoji: '🧱', hue: 255, desc: 'Estilo Tetris. ←→ move, ↑ gira, ↓ desce, Espaço solta. No celular: toque gira, arraste move, deslize pra baixo solta.',
+  name: 'Blocos', icon: 'blocks', hue: 255, desc: 'Estilo Tetris. ←→ move, ↑ gira, ↓ desce, Espaço solta. No celular: toque gira, arraste move, deslize pra baixo solta.',
   better: 'high', unit: 'pontos', phaser: true,
   start(el, done) {
     const COLS = 10, ROWS = 20, S = 26, BW = COLS * S, W = BW + 130, H = ROWS * S;

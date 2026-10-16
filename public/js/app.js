@@ -8,13 +8,13 @@ function announce(msg) { $('#live').textContent = msg; }
 
 function recHtml(id) {
   const g = GAMES[id], top = bestPerPlayer(id)[0];
-  return top ? `🏆 <b>${esc(top[0])}</b> · ${fmt(g, top[1])}`
+  return top ? `${icon('trophy')} <b>${esc(top[0])}</b> · ${fmt(g, top[1])}`
     : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()}`;
 }
 function kingsHtml() {
   const kings = champions();
   return (kings.length
-    ? '<ol>' + kings.map(([n, c], k) => `<li>${['🥇', '🥈', '🥉'][k] || '•'} <a href="#" data-profile="${esc(n)}">${esc(n)}</a>${ticketStar(n)} — <b>${c}</b> ${c > 1 ? 'recordes' : 'recorde'}</li>`).join('') + '</ol>'
+    ? '<ol>' + kings.map(([n, c], k) => `<li>${rankBadge(k + 1)} <a href="#" data-profile="${esc(n)}">${esc(n)}</a>${ticketStar(n)} <b>${c}</b> ${c > 1 ? 'recordes' : 'recorde'}</li>`).join('') + '</ol>'
     : '<p class="hint" style="text-align:left;margin:0">Ninguém tem recorde ainda.</p>');
 }
 // campeões dos meses que já acabaram
@@ -24,14 +24,14 @@ function hallHtml() {
   return '<div class="hall">' + hall.map(({ key, kings, games }) => {
     const [king] = kings;
     return `<details class="hall-month"><summary><span class="m">${monthName(key, true)}</span>
-        ${king ? `<span>👑 <b><a href="#" data-profile="${esc(king[0])}">${esc(king[0])}</a></b> · ${king[1]} ${king[1] > 1 ? 'recordes' : 'recorde'}</span>` : ''}</summary>
-      <ul>${games.map(([id, [n, s]]) => `<li><span>${GAMES[id].emoji} ${GAMES[id].name}</span><span>${esc(n)} · ${fmt(GAMES[id], s)}</span></li>`).join('')}</ul>
+        ${king ? `<span>${icon('crown')} <b><a href="#" data-profile="${esc(king[0])}">${esc(king[0])}</a></b> · ${king[1]} ${king[1] > 1 ? 'recordes' : 'recorde'}</span>` : ''}</summary>
+      <ul>${games.map(([id, [n, s]]) => `<li><span>${icon(GAMES[id].icon)} ${GAMES[id].name}</span><span>${esc(n)} · ${fmt(GAMES[id], s)}</span></li>`).join('')}</ul>
     </details>`;
   }).join('') + '</div>';
 }
 // destaque da semana no Geiko: quem mais resolveu tickets desde segunda (vem de /api/geiko/week)
 let weekData = null;
-const ticketStar = n => (weekData?.champion && n === weekData.champion.name ? ' <span title="Quem mais resolveu tickets na semana">🎫</span>' : '');
+const ticketStar = n => (weekData?.champion && n === weekData.champion.name ? ` <span class="tk" title="Quem mais resolveu tickets na semana">${icon('ticket')}</span>` : '');
 async function loadWeek() {
   if (!me || localMode) return;
   try { weekData = await api('api/geiko/week'); } catch { weekData = null; }
@@ -44,32 +44,37 @@ function renderWeek() {
   if (!d || (!d.champion && d.me == null)) { box.hidden = true; return; }
   box.hidden = false;
   const list = d.people?.filter(p => p.count > 0).slice(0, 5);
-  box.innerHTML = `<span class="i" aria-hidden="true">🎫</span>
+  box.innerHTML = `<span class="ic">${icon('ticket')}</span>
     <div><b>${d.champion ? `Destaque da semana: <a href="#" data-profile="${esc(d.champion.name)}">${esc(d.champion.name)}</a> — ${d.champion.count} ticket${d.champion.count > 1 ? 's' : ''} resolvido${d.champion.count > 1 ? 's' : ''}` : 'Ninguém resolveu ticket esta semana ainda'}</b>
-      <small>${list?.length > 1 ? list.map((p, k) => `${k + 1}º ${esc(p.name)} ${p.count}`).join(' · ') + ' · ' : ''}${d.me != null ? `Você: ${d.me} desde segunda.` : ''} Quem mais resolver até sexta ganha o 🎫 no ranking.</small></div>`;
+      <small>${list?.length > 1 ? list.map((p, k) => `${k + 1}º ${esc(p.name)} ${p.count}`).join(' · ') + ' · ' : ''}${d.me != null ? `Você: ${d.me} desde segunda.` : ''} Quem mais resolver até sexta ganha o selo de ticket no ranking.</small></div>`;
 }
 
 // quadro do desafio do dia (topo do menu)
 function dailyHtml() {
+  const id = dailyGame(), g = GAMES[id];
+  const hoursLeft = Math.max(1, Math.ceil((dayStart(dayIndex() + 1) - Date.now()) / 3_600_000));
+  return `<div class="daily-stage" data-id="${id}"><span class="icon">${icon(g.icon)}</span></div>
+    <div class="daily-info">
+      <span class="tag">${icon('star')} Desafio de hoje · acaba em ${hoursLeft}h</span>
+      <h2>${g.name}</h2>
+      <p class="hint">Vale a sua melhor partida de hoje. Amanhã é outro jogo.</p>
+      <button class="btn" id="dailyPlay">${icon('play')} Jogar</button>
+    </div>
+    <div class="daily-side">${dailySideHtml()}</div>`;
+}
+// ranking do dia (atualiza sozinho quando o placar chega, sem redesenhar o palco 3D)
+function dailySideHtml() {
   const id = dailyGame(), g = GAMES[id], rows = bestPerPlayer(id, dayRange()).slice(0, 3);
   const wins = dailyWinsThisMonth().slice(0, 5);
-  const hoursLeft = Math.max(1, Math.ceil((dayStart(dayIndex() + 1) - Date.now()) / 3_600_000));
-  return `<div class="daily-main">
-      <span class="icon" aria-hidden="true">${g.emoji}</span>
-      <div><span class="tag">⭐ Desafio de hoje · acaba em ${hoursLeft}h</span><h2>${g.name}</h2>
-        <p class="hint" style="text-align:left;margin:0">Vale a sua melhor partida de hoje. Amanhã é outro jogo.</p></div>
-      <button class="btn" id="dailyPlay">Jogar</button>
-    </div>
-    <div class="daily-side">
-      ${rows.length ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}">${['🥇', '🥈', '🥉'][k]} <a href="#" data-profile="${esc(n)}">${esc(n)}</a> <b>${fmt(g, s)}</b></li>`).join('') + '</ol>'
+  return `<h3>Ranking de hoje</h3>
+      ${rows.length ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}">${rankBadge(k + 1)} <a href="#" data-profile="${esc(n)}">${esc(n)}</a> <b>${fmt(g, s)}</b></li>`).join('') + '</ol>'
         : '<p class="hint" style="text-align:left;margin:0">Ninguém jogou hoje ainda — saia na frente.</p>'}
-      ${wins.length ? `<p class="hint" style="text-align:left;margin:var(--space-xs) 0 0">Vitórias em ${monthName(monthKey(Date.now())).toLowerCase()}: ${wins.map(([n, c]) => `${esc(n)} <b>${c}</b>`).join(' · ')}</p>` : ''}
-    </div>`;
+      ${wins.length ? `<p class="hint wins">Vitórias em ${monthName(monthKey(Date.now())).toLowerCase()}: ${wins.map(([n, c]) => `${esc(n)} <b>${c}</b>`).join(' · ')}</p>` : ''}`;
 }
 function bindDaily() { $('#dailyPlay') && ($('#dailyPlay').onclick = () => play(dailyGame())); }
 function seasonSeg() {
   return `<div class="seg season-seg" role="group" aria-label="Ranking">
-    ${[['month', `🗓️ ${monthName(monthKey(Date.now()))}`], ['all', '🏛️ Geral']].map(([m, l]) => `<button data-season="${m}" aria-pressed="${seasonMode === m}">${l}</button>`).join('')}
+    ${[['month', `${icon('calendar')} ${monthName(monthKey(Date.now()))}`], ['all', `${icon('landmark')} Geral`]].map(([m, l]) => `<button data-season="${m}" aria-pressed="${seasonMode === m}">${l}</button>`).join('')}
   </div>`;
 }
 function bindSeasonSeg(root, onChange) {
@@ -91,10 +96,10 @@ function renderMenu() {
   main.insertAdjacentHTML('beforeend', `
     <section class="daily glass" id="daily" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
     <section class="week glass" id="week" hidden></section>
-    <div class="menu-bar"><span class="hint">Ranking:</span>${seasonSeg()}</div>
+    <div class="menu-bar"><h2>Jogos</h2><span class="hint">Ranking:</span>${seasonSeg()}</div>
     <section class="grid" aria-label="Jogos">` +
     menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
-        <span class="icon" aria-hidden="true">${g.emoji}</span>
+        <span class="icon">${icon(g.icon)}</span>
         <h3>${g.name}</h3>
         <span class="rec">${recHtml(id)}</span>
       </button>`).join('') + `</section>
@@ -105,7 +110,8 @@ function renderMenu() {
   bindDaily();
   renderWeek();
   // card do jogo do dia ganha um selo
-  $(`.card[data-id="${dailyGame()}"]`)?.classList.add('is-daily');
+  const dc = $(`.card[data-id="${dailyGame()}"]`);
+  if (dc) { dc.classList.add('is-daily'); dc.insertAdjacentHTML('beforeend', `<span class="daily-badge" title="Desafio de hoje">${icon('star')}</span>`); }
   renderGate();
   prefetchPhaser();
   enhanceCards();
@@ -115,8 +121,8 @@ function refreshMenu() {
   if (!$('#kings')) return;
   for (const id in GAMES) { const rec = $(`.card[data-id="${id}"] .rec`); if (rec) rec.innerHTML = recHtml(id); }
   renderKings();
-  $('#daily').innerHTML = dailyHtml();
-  bindDaily();
+  const side = $('#daily .daily-side');
+  if (side) side.innerHTML = dailySideHtml();
 }
 // rodapé do menu: "Quem manda" (do período escolhido) e "Hall da fama" (meses encerrados) em abas
 let kingsTab = 'kings';
@@ -125,9 +131,9 @@ function renderKings() {
   if (!box) return;
   const hall = hallHtml();
   if (!hall) kingsTab = 'kings';
-  const who = seasonMode === 'all' ? '👑 Quem manda (geral)' : `👑 Quem manda em ${seasonLabel().toLowerCase()}`;
+  const who = seasonMode === 'all' ? `${icon('crown')} Quem manda (geral)` : `${icon('crown')} Quem manda em ${seasonLabel().toLowerCase()}`;
   box.innerHTML = `<div class="kings-head">${hall
-      ? `<div class="seg" role="tablist" aria-label="Ranking do escritório">${[['kings', who], ['hall', '🏛️ Hall da fama']].map(([t, l]) =>
+      ? `<div class="seg" role="tablist" aria-label="Ranking do escritório">${[['kings', who], ['hall', `${icon('landmark')} Hall da fama`]].map(([t, l]) =>
           `<button role="tab" data-tab="${t}" aria-selected="${kingsTab === t}" aria-pressed="${kingsTab === t}">${l}</button>`).join('')}</div>`
       : `<h2>${who}</h2>`}</div>
     ${kingsTab === 'hall' ? hall : kingsHtml()}`;
@@ -150,8 +156,8 @@ async function showMenu() {
 
 function boardHtml(id) {
   const g = GAMES[id], rows = bestPerPlayer(id).slice(0, 10);
-  return `<h3>🏆 Ranking</h3>${seasonSeg()}` + (rows.length
-    ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${['🥇', '🥈', '🥉'][k] || k + 1}</span><a class="name" href="#" data-profile="${esc(n)}">${esc(n)}${ticketStar(n)}</a><span>${fmt(g, s)}</span></li>`).join('') + '</ol>'
+  return `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}` + (rows.length
+    ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${rankBadge(k + 1)}</span><a class="name" href="#" data-profile="${esc(n)}">${esc(n)}${ticketStar(n)}</a><span>${fmt(g, s)}</span></li>`).join('') + '</ol>'
     : `<p class="empty">${seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`);
 }
 // desenha o ranking da partida e liga o seletor Mês/Geral
@@ -174,9 +180,9 @@ function play(id) {
     main.innerHTML = `<div class="layout">
       <section class="stage glass" style="--h:${g.hue}">
         <div class="stage-head">
-          <button class="btn ghost" id="back" aria-label="Voltar ao menu">←</button>
-          <div class="title"><h2><span aria-hidden="true">${g.emoji}</span>${g.name}</h2><p>${g.desc}</p></div>
-          <button class="btn ghost" id="restart">↻ Reiniciar</button>
+          <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
+          <div class="title"><h2>${icon(g.icon)}${g.name}</h2><p>${g.desc}</p></div>
+          <button class="btn ghost" id="restart">${icon('rotate-ccw')}<span>Reiniciar</span></button>
         </div>
         <div class="game" id="game"></div>
       </section>
@@ -194,7 +200,7 @@ function play(id) {
       stop();
       // done(null, 'motivo'): partida acabou sem pontuação (ex.: explodiu no Campo Minado) — nada é salvo
       if (score === null) {
-        el.innerHTML = `<div class="result"><span class="label">Fim de jogo</span><span class="score">💥</span>
+        el.innerHTML = `<div class="result"><span class="label">Fim de jogo</span><span class="score">${icon('bomb', { cls: 'big' })}</span>
           <span class="hint">${esc(proof || 'Não completou — nada foi salvo.')}</span><button class="btn" id="again">Jogar de novo</button></div>`;
         $('#again').onclick = () => play(id);
         $('#again').focus();
@@ -221,16 +227,16 @@ function play(id) {
       el.innerHTML = `<div class="result">
         <span class="label">Resultado</span>
         <span class="score">${fmt(g, score)}</span>
-        ${status === 'login' ? '<span class="badge warn">🔑 Você não estava logado — entre pra salvar este resultado.</span><button class="btn" id="loginSave">Entrar e salvar</button>'
-          : !ok ? `<span class="badge warn">🤖 Não valeu: ${esc(status)}. Resultado não foi salvo.</span>`
-          : champ ? '<span class="badge">👑 Recorde geral!</span>'
-          : monthChamp ? `<span class="badge">🗓️ Liderando ${month}!</span>`
-          : dailyLead ? '<span class="badge">⭐ Liderando o desafio de hoje!</span>'
-          : record ? '<span class="badge">🎉 Novo recorde pessoal!</span>'
-          : monthBest ? `<span class="badge">📈 Seu melhor de ${month}!</span>`
+        ${status === 'login' ? `<span class="badge warn">${icon('key-round')} Você não estava logado — entre pra salvar este resultado.</span><button class="btn" id="loginSave">Entrar e salvar</button>`
+          : !ok ? `<span class="badge warn">${icon('bot')} Não valeu: ${esc(status)}. Resultado não foi salvo.</span>`
+          : champ ? `<span class="badge">${icon('crown')} Recorde geral!</span>`
+          : monthChamp ? `<span class="badge">${icon('calendar')} Liderando ${month}!</span>`
+          : dailyLead ? `<span class="badge">${icon('star')} Liderando o desafio de hoje!</span>`
+          : record ? `<span class="badge">${icon('party-popper')} Novo recorde pessoal!</span>`
+          : monthBest ? `<span class="badge">${icon('trending-up')} Seu melhor de ${month}!</span>`
           : prev ? `<span class="hint">Seu recorde: ${fmt(g, prev[1])}${prevMonth ? ` · em ${month}: ${fmt(g, prevMonth[1])}` : ''}</span>` : ''}
-        ${newAch.map(x => `<span class="badge ach-new">🏅 Conquista nova: ${x.icon} ${x.name}</span>`).join('')}
-        ${status === 'queued' ? '<span class="badge warn">⚠️ Servidor fora do ar — resultado guardado, envio automático quando ele voltar</span>' : ''}
+        ${newAch.map(x => `<span class="badge ach-new">${icon(x.icon)} Conquista nova: ${x.name}</span>`).join('')}
+        ${status === 'queued' ? `<span class="badge warn">${icon('triangle-alert')} Servidor fora do ar — resultado guardado, envio automático quando ele voltar</span>` : ''}
         <button class="btn" id="again">Jogar de novo</button>
       </div>`;
       announce(`Resultado: ${fmt(g, score)}. ${!ok ? 'Não foi salvo.' : record ? 'Novo recorde!' : ''}`);
@@ -306,7 +312,7 @@ function showNotes(notes) {
     const where = n.kind === 'geral' ? 'o recorde geral' : `a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`;
     const t = document.createElement('button');
     t.className = 'toast glass';
-    t.innerHTML = `<span class="i" aria-hidden="true">😈</span><span><b>${esc(n.by)}</b> tomou ${where} no ${g.emoji} ${g.name}
+    t.innerHTML = `<span class="ic">${icon('swords')}</span><span><b>${esc(n.by)}</b> tomou ${where} no ${g.name}
       <small>${fmt(g, n.score)} (o seu era ${fmt(g, n.old)}) · toque pra revidar</small></span>`;
     t.onclick = () => { t.remove(); play(n.game); };
     box.appendChild(t);
@@ -414,7 +420,7 @@ async function saveUnsaved() {
   unsavedScore = null;
   const status = await saveScore(gameId, score, proof);
   const g = GAMES[gameId];
-  modal(`<h2>${status === 'ok' || status === 'queued' ? '✅ Resultado salvo' : '⚠️ Não deu pra salvar'}</h2>
+  modal(`<h2>${status === 'ok' || status === 'queued' ? `${icon('circle-check')} Resultado salvo` : `${icon('triangle-alert')} Não deu pra salvar`}</h2>
     <p>${g.name}: <b>${fmt(g, score)}</b>${status === 'ok' || status === 'queued' ? ' — já está no ranking.' : ' — ' + esc(status)}</p>
     <button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`);
 }
@@ -453,21 +459,21 @@ function untilText(ms) {
 // clicar abre o painel com os detalhes.
 const gateVisible = () => !!gate && (!!gate.manual || (gate.linked && gate.enabled));
 function gatePillHtml() {
-  if (gate.manual) return '🔒 <span>Bloqueado</span>';
-  if (gate.error) return '⚠️ <span>Geiko</span>';
-  return `${gate.blocked ? '🔒' : '✅'} <span>${fmtW(gate.total)}<small>/${fmtW(gate.limit)}</small></span>`;
+  if (gate.manual) return `${icon('lock')} <span>Bloqueado</span>`;
+  if (gate.error) return `${icon('triangle-alert')} <span>Geiko</span>`;
+  return `${icon(gate.blocked ? 'lock' : 'circle-check')} <span>${fmtW(gate.total)}<small>/${fmtW(gate.limit)}</small></span>`;
 }
 function gatePopHtml() {
   if (gate.manual) {
-    return `<b>🔒 Jogos bloqueados pelo admin</b>
+    return `<b>${icon('lock')} Jogos bloqueados pelo admin</b>
       <p>Bloqueado ${untilText(gate.manual.until)}.${gate.manual.reason ? ` Motivo: ${esc(gate.manual.reason)}` : ''}</p>
-      <div class="acts"><button class="btn ghost" id="gateRefresh">↻ Atualizar</button></div>`;
+      <div class="acts"><button class="btn ghost" id="gateRefresh">${icon('refresh-cw')} Atualizar</button></div>`;
   }
   const pct = Math.min(100, gate.limit ? (gate.total / gate.limit) * 100 : 100);
-  return `<b>${gate.blocked ? '🔒 Jogos bloqueados' : '✅ Liberado pra jogar'}</b>
+  return `<b>${gate.blocked ? icon('lock') + ' Jogos bloqueados' : icon('circle-check') + ' Liberado pra jogar'}</b>
     <p>${gate.error ? esc(gate.error) : `Sua fila no Geiko soma <b>${fmtW(gate.total)}</b> pontos — o limite é ${fmtW(gate.limit)}. ${gateHint()}`}</p>
     <div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>
-    <div class="acts"><button class="btn ghost" id="gateSee">Ver tickets</button><button class="btn ghost" id="gateRefresh">↻ Atualizar</button></div>`;
+    <div class="acts"><button class="btn ghost" id="gateSee">Ver tickets</button><button class="btn ghost" id="gateRefresh">${icon('refresh-cw')} Atualizar</button></div>`;
 }
 function toggleGatePop(open = $('#gatePop').hidden) {
   const pop = $('#gatePop');
@@ -516,7 +522,7 @@ function renderGate() {
 }
 
 function ticketsTable(tickets) {
-  if (!tickets.length) return '<p class="hint" style="text-align:left">Nenhum ticket aberto. 🎉</p>';
+  if (!tickets.length) return '<p class="hint" style="text-align:left">Nenhum ticket aberto.</p>';
   return `<div class="scroll"><table class="tickets"><thead><tr><th>Ticket</th><th>Prioridade</th><th>Status</th><th style="text-align:right">Peso</th></tr></thead><tbody>
     ${tickets.map(t => `<tr><td>#${t.id}${t.reason ? `<br><span class="tag">${esc(t.reason)}</span>` : ''}</td><td>${esc(t.priority)}</td><td>${esc(t.status)}</td><td class="w">${fmtW(t.weight)}</td></tr>`).join('')}
   </tbody></table></div>`;
@@ -524,14 +530,14 @@ function ticketsTable(tickets) {
 function gateDialog() {
   if (!gate) return;
   if (gate.manual) {
-    const { el, close } = modal(`<h2>🔒 Jogos bloqueados</h2>
+    const { el, close } = modal(`<h2>${icon('lock')} Jogos bloqueados</h2>
       <p>O admin bloqueou seus jogos ${untilText(gate.manual.until)}.</p>
       ${gate.manual.reason ? `<p><b>Motivo:</b> ${esc(gate.manual.reason)}</p>` : ''}
       <button class="btn" id="gclose">Ok</button>`);
     return (el.querySelector('#gclose').onclick = close);
   }
   const { el, close } = modal(`
-    <h2>${gate.blocked ? '🔒 Fila cheia' : 'Sua fila no Geiko'}</h2>
+    <h2>${gate.blocked ? icon('lock') + ' Fila cheia' : 'Sua fila no Geiko'}</h2>
     <p>Cada ticket tem um peso: sem prioridade ou sem interação pesa mais; aguardando o cliente pesa menos.
       Soma atual <b>${fmtW(gate.total)}</b>, limite <b>${fmtW(gate.limit)}</b>.</p>
     ${ticketsTable(gate.tickets)}

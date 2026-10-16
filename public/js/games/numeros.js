@@ -1,12 +1,12 @@
 GAMES.numeros = {
-  name: 'Caça Números', emoji: '🔢', hue: 110, desc: 'Aperte Começar e clique de 1 a 25 em ordem, o mais rápido possível. Erro = +0,5s.',
+  name: 'Caça Números', icon: 'hash', hue: 110, desc: 'Aperte Começar e clique de 1 a 25 em ordem, o mais rápido possível. Erro = +0,5s.',
   better: 'low', unit: 's', decimals: 2,
   start(el, done) {
     let next = 1, miss = 0, t0 = 0, iv;
     // Grade escondida até apertar Começar: os números nem existem na página antes (nada de decorar as posições).
     el.innerHTML = `<div class="hud"><span class="stat">Próximo<b id="n">1</b></span><span class="stat">Erros<b id="m">0</b></span><span class="stat">Tempo<b id="t">0.00s</b></span></div>
       <div class="schulte-wrap"><div class="schulte hidden">${'<button class="cell" disabled aria-hidden="true">?</button>'.repeat(25)}</div>
-      <button class="btn" id="go">▶ Começar</button></div>`;
+      <button class="btn" id="go">${icon('play')} Começar</button></div>`;
     const elapsed = () => (performance.now() - t0) / 1000 + miss * 0.5;
     const cells = [...el.querySelectorAll('.cell')];
     const go = el.querySelector('#go');

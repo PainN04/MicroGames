@@ -1,17 +1,22 @@
 GAMES.chuva = {
-  name: 'Chuva de Bugs', emoji: '🐛', hue: 180, desc: 'Desvie dos bugs! Setas/AD ou arraste o dedo. Acelera com o tempo.',
+  name: 'Chuva de Bugs', icon: 'bug', hue: 180, desc: 'Desvie dos bugs! Setas/AD ou arraste o dedo. Acelera com o tempo.',
   better: 'high', unit: 's', decimals: 1, phaser: true,
   start(el, done) {
     const W = 480, H = 520, PY = H - 44, PR = 16, BR = 12;
     el.innerHTML = '<div class="hud"><span class="stat">Tempo<b id="t">0.0s</b></span><span class="stat">Bugs<b id="b">0</b></span></div><div class="phaser-wrap" id="pw"></div>';
     const hud = { t: el.querySelector('#t'), b: el.querySelector('#b') };
-    const EMOJI_FONT = '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
     return mountPhaser(el.querySelector('#pw'), W, H, {
+      // ícones (Lucide) desenhados em dobro pra ficar nítido; o tamanho na tela vem do setDisplaySize
+      preload() {
+        this.load.image('laptop', iconDataUrl('laptop', '#c9d3ff', 72));
+        this.load.image('boom', iconDataUrl('zap', '#ffd34d', 72, { fill: '#ff8a5c' }));
+        this.load.image('bug', iconDataUrl('bug', '#5ff0ac', 52));
+      },
       create() {
-        const emoji = (x, y, ch, size) => this.add.text(x, y, ch, { fontFamily: EMOJI_FONT, fontSize: size + 'px' }).setOrigin(0.5);
+        const sprite = (x, y, key, size) => this.add.image(x, y, key).setDisplaySize(size, size);
         let px = W / 2, target = null, started = false, alive = true, t = 0, spawnIn = 0, dodged = 0;
         const bugs = [];
-        const player = emoji(px, PY, '💻', 36);
+        const player = sprite(px, PY, 'laptop', 36);
         const msg = this.add.text(W / 2, H / 2, 'Setas, A/D ou arraste pra começar', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '20px', color: '#c9cce0' }).setOrigin(0.5);
         const start = () => { if (!started && alive) { started = true; msg.destroy(); } };
         const keys = this.input.keyboard.addKeys('LEFT,RIGHT,A,D');
@@ -22,7 +27,7 @@ GAMES.chuva = {
         this.input.on('pointerup', () => { target = null; });
         const die = () => {
           alive = false;
-          player.setText('💥');
+          player.setTexture('boom').setDisplaySize(40, 40);
           sfx.bad();
           this.cameras.main.shake(260, 0.012);
           this.time.delayedCall(800, () => done(+t.toFixed(1)));
@@ -41,7 +46,7 @@ GAMES.chuva = {
           spawnIn -= delta;
           if (spawnIn <= 0) {
             spawnIn = 650 - 470 * level;
-            bugs.push({ o: emoji(rand(BR, W - BR), -20, '🐛', 26), vy: 170 + 330 * level + rand(0, 60), spin: (Math.random() - 0.5) * 6 });
+            bugs.push({ o: sprite(rand(BR, W - BR), -20, 'bug', 26), vy: 170 + 330 * level + rand(0, 60), spin: (Math.random() - 0.5) * 6 });
           }
           for (const b of bugs) {
             b.o.y += b.vy * dt;

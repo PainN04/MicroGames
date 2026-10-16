@@ -1,5 +1,5 @@
 GAMES.anagrama = {
-  name: 'Anagrama', emoji: '🔤', hue: 60, desc: 'Desembaralhe as palavras em 60s. Digite e Enter (ou clique nas letras). Palavra maior vale mais. Pular não custa ponto.',
+  name: 'Anagrama', icon: 'spell-check', hue: 60, desc: 'Desembaralhe as palavras em 60s. Digite e Enter (ou clique nas letras). Palavra maior vale mais. Pular não custa ponto.',
   better: 'high', unit: 'pontos',
   start(el, done) {
     const WORDS = ('AMIGO BANANA CABELO CADEIRA CAMISA CANETA CARRO CAVALO CHAVE CINEMA COELHO COMIDA CORAGEM CORRIDA DESENHO DINHEIRO DOMINGO ESCOLA ESPELHO ESTRELA '
@@ -15,7 +15,7 @@ GAMES.anagrama = {
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Palavras<b id="w">0</b></span><span class="stat">Tempo<b id="t">60s</b></span></div>
       <div class="tiles" id="tiles"></div>
       <input class="txt" id="in" placeholder="digite a palavra + Enter" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Palavra">
-      <div class="row-btns"><button class="btn ghost" id="clr">⌫ Apagar</button><button class="btn ghost" id="skip">Pular ⏭</button></div>`;
+      <div class="row-btns"><button class="btn ghost" id="clr">${icon('delete')} Apagar</button><button class="btn ghost" id="skip">Pular ${icon('skip-forward')}</button></div>`;
     const inp = el.querySelector('#in'), tilesEl = el.querySelector('#tiles');
     const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
     const syncTiles = () => {

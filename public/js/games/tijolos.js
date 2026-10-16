@@ -1,10 +1,10 @@
 GAMES.tijolos = {
-  name: 'Quebra-Tijolos', emoji: '🧨', hue: 0, desc: 'Rebata a bola e quebre os tijolos. Mouse, dedo ou ←→ movem; clique ou Espaço lança. 3 vidas.',
+  name: 'Quebra-Tijolos', icon: 'brick-wall', hue: 0, desc: 'Rebata a bola e quebre os tijolos. Mouse, dedo ou ←→ movem; clique ou Espaço lança. 3 vidas.',
   better: 'high', unit: 'pontos', phaser: true,
   start(el, done) {
     const W = 480, H = 560, PW = 84, PH = 12, PY = H - 40, R = 7, COLS = 8, ROWS = 6, BW = 52, BH = 18, GAP = 4, TOP = 70;
     const LEFT = (W - (COLS * BW + (COLS - 1) * GAP)) / 2, MAX_SPEED = 560;
-    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Vidas<b id="v">❤️❤️❤️</b></span><span class="stat">Fase<b id="f">1</b></span></div><div class="phaser-wrap" id="pw"></div>';
+    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Vidas<b id="v" class="lives">' + hearts(3) + '</b></span><span class="stat">Fase<b id="f">1</b></span></div><div class="phaser-wrap" id="pw"></div>';
     const hud = { p: el.querySelector('#p'), v: el.querySelector('#v'), f: el.querySelector('#f') };
     const rowColor = ['--red', '--accent', '--yellow', '--green', '--blue', '--primary'].map(hex);
     return mountPhaser(el.querySelector('#pw'), W, H, {
@@ -25,7 +25,7 @@ GAMES.tijolos = {
         };
         const loseLife = () => {
           lives--;
-          hud.v.textContent = '❤️'.repeat(lives) || '—';
+          hud.v.innerHTML = hearts(lives);
           sfx.bad();
           this.cameras.main.shake(200, 0.01);
           if (lives <= 0) { alive = false; msg.setText('Fim de jogo').setVisible(true); this.time.delayedCall(900, () => done(score)); }

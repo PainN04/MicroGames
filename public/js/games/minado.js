@@ -1,5 +1,5 @@
 GAMES.minado = {
-  name: 'Campo Minado', emoji: '🚩', hue: 135, desc: 'Abra todas as casas sem mina. Clique abre; botão direito, toque longo ou o modo 🚩 marca. O 1º clique é sempre seguro.',
+  name: 'Campo Minado', icon: 'bomb', hue: 135, desc: 'Abra todas as casas sem mina. Clique abre; botão direito, toque longo ou o modo marcar marca. O 1º clique é sempre seguro.',
   better: 'low', unit: 's', decimals: 1,
   start(el, done) {
     const N = 9, MINES = 10;
@@ -7,7 +7,7 @@ GAMES.minado = {
     const open = new Set(), flags = new Set();
     el.innerHTML = `<div class="hud"><span class="stat">Minas<b id="m">${MINES}</b></span><span class="stat">Tempo<b id="t">0.0s</b></span></div>
       <div class="mines" id="mf">${Array.from({ length: N * N }, (_, i) => `<button class="mc" data-i="${i}" aria-label="casa ${i + 1}"></button>`).join('')}</div>
-      <button class="btn ghost" id="flag" aria-pressed="false">🚩 Modo marcar: desligado</button>`;
+      <button class="btn ghost" id="flag" aria-pressed="false">${icon('flag')} <span>Modo marcar: desligado</span></button>`;
     const cells = [...el.querySelectorAll('.mc')];
     const around = i => {
       const r = Math.floor(i / N), c = i % N, out = [];
@@ -29,10 +29,10 @@ GAMES.minado = {
     const elapsed = () => (performance.now() - t0) / 1000;
     const lose = i => {
       over = true; clearInterval(iv);
-      for (const m of mines) { cells[m].textContent = '💣'; cells[m].classList.add('open'); }
+      for (const m of mines) { cells[m].innerHTML = icon('bomb', { cls: 'bomb' }); cells[m].classList.add('open'); }
       cells[i].classList.add('boom');
       sfx.bad();
-      setTimeout(() => done(null, 'Explodiu! 💣 Partida perdida não vai pro ranking — tenta de novo.'), 1000);
+      setTimeout(() => done(null, 'Explodiu! Partida perdida não vai pro ranking — tenta de novo.'), 1000);
     };
     const reveal = i => {
       if (over || open.has(i) || flags.has(i)) return;
@@ -57,14 +57,14 @@ GAMES.minado = {
         over = true; clearInterval(iv);
         const score = +elapsed().toFixed(1);
         el.querySelector('#t').textContent = score.toFixed(1) + 's';
-        for (const m of mines) cells[m].textContent = '🚩';
+        for (const m of mines) cells[m].innerHTML = icon('flag', { cls: 'flag' });
         setTimeout(() => done(score), 500);
       }
     };
     const toggleFlag = i => {
       if (over || open.has(i)) return;
       flags.has(i) ? flags.delete(i) : flags.add(i);
-      cells[i].textContent = flags.has(i) ? '🚩' : '';
+      cells[i].innerHTML = flags.has(i) ? icon('flag', { cls: 'flag' }) : '';
       el.querySelector('#m').textContent = MINES - flags.size;
       beep(700, 30, 'sine', 0.02);
     };
@@ -80,8 +80,9 @@ GAMES.minado = {
     });
     el.querySelector('#flag').onclick = e => {
       flagMode = !flagMode;
-      e.target.textContent = `🚩 Modo marcar: ${flagMode ? 'ligado' : 'desligado'}`;
-      e.target.setAttribute('aria-pressed', flagMode);
+      const b = e.currentTarget;
+      b.querySelector('span').textContent = `Modo marcar: ${flagMode ? 'ligado' : 'desligado'}`;
+      b.setAttribute('aria-pressed', flagMode);
     };
     return () => { over = true; clearInterval(iv); clearTimeout(longPress); };
   }

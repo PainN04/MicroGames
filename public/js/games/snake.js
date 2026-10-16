@@ -1,5 +1,5 @@
 GAMES.snake = {
-  name: 'Cobrinha', emoji: '🐍', hue: 150, desc: 'Setas, WASD ou deslize o dedo. Acelera a cada fruta!',
+  name: 'Cobrinha', icon: 'worm', hue: 150, desc: 'Setas, WASD ou deslize o dedo. Acelera a cada fruta!',
   better: 'high', unit: 'pontos', phaser: true,
   // Phaser. Lógica em grade (20×20) igual à de antes; o desenho desliza entre as casas.
   start(el, done) {

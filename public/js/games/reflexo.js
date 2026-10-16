@@ -1,5 +1,5 @@
 GAMES.reflexo = {
-  name: 'Reflexo', emoji: '⚡', hue: 92, desc: 'Clique (ou Espaço) quando ficar verde. Média de 3 rodadas. Clicou antes? Recomeça do zero!',
+  name: 'Reflexo', icon: 'zap', hue: 92, desc: 'Clique (ou Espaço) quando ficar verde. Média de 3 rodadas. Clicou antes? Recomeça do zero!',
   better: 'low', unit: 'ms',
   start(el, done) {
     let times = [], timer, startAt, state;
