@@ -92,6 +92,34 @@ function champions(range = currentRange()) {
   return Object.entries(count).filter(([, [w]]) => w > 0).map(([n, [w, s]]) => [n, w, s])
     .sort((a, b) => b[1] - a[1] || b[2] - a[2]);
 }
+// ---------- desafio do dia ----------
+// Um jogo por dia, igual pra todo mundo (sai da data, sem servidor). A cada 20 dias passa por todos os jogos,
+// numa ordem embaralhada diferente a cada ciclo. Vale a melhor partida feita no próprio dia.
+const DAY_MS = 86_400_000;
+const dayIndex = (t = Date.now()) => Math.floor((t - new Date(t).getTimezoneOffset() * 60_000) / DAY_MS);
+const dayStart = i => { const t = i * DAY_MS; return t + new Date(t).getTimezoneOffset() * 60_000; };
+function seededShuffle(list, seed) {
+  const a = [...list];
+  let s = seed >>> 0;
+  const next = () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(next() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+function dailyGame(i = dayIndex()) {
+  const ids = Object.keys(GAMES).sort();
+  return seededShuffle(ids, Math.floor(i / ids.length) * 7919 + 13)[i % ids.length];
+}
+const dayRange = (i = dayIndex()) => ({ since: dayStart(i), until: dayStart(i + 1) });
+/** Quem ganhou cada desafio dos dias já encerrados deste mês: [[nome, vitórias]] */
+function dailyWinsThisMonth() {
+  const wins = {};
+  for (let i = dayIndex(monthStart()); i < dayIndex(); i++) {
+    const top = bestPerPlayer(dailyGame(i), dayRange(i))[0];
+    if (top) wins[top[0]] = (wins[top[0]] || 0) + 1;
+  }
+  return Object.entries(wins).sort((a, b) => b[1] - a[1]);
+}
+
 /** Meses que já terminaram e tiveram partidas, do mais novo pro mais velho, com campeão e recordistas de cada jogo. */
 function hallOfFame() {
   const months = new Set();

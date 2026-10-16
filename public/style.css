@@ -127,6 +127,22 @@
   .kings ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-xs); }
   .kings li { padding: .5em 1em; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-size: var(--fs-sm); }
   .kings li b { color: var(--yellow); }
+  /* desafio do dia */
+  .daily { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--space-md); align-items: center;
+    padding: var(--space-md); margin: 0 0 var(--space-md); border-color: oklch(0.75 0.15 var(--h) / .45);
+    background: linear-gradient(120deg, oklch(0.55 0.16 var(--h) / .22), transparent 60%), var(--surface); }
+  .daily-main { display: flex; align-items: center; gap: var(--space-md); min-width: 0; }
+  .daily-main > div { flex: 1; min-width: 0; }
+  .daily-main .icon { font-size: 2.6rem; line-height: 1; }
+  .daily-main h2 { margin: .15em 0; font-size: var(--fs-xl, 1.6rem); letter-spacing: -0.02em; }
+  .daily .tag { font-size: var(--fs-xs); color: var(--yellow); font-weight: 700; }
+  .daily ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: var(--fs-sm); }
+  .daily li { display: flex; justify-content: space-between; gap: 1em; padding: .35em .8em; border-radius: 10px; background: var(--surface-2); }
+  .daily li.me { outline: 1px solid var(--primary); }
+  .daily li b { color: var(--yellow); }
+  .card.is-daily::after { content: '⭐ Desafio de hoje'; position: absolute; top: 12px; right: 12px; font-size: var(--fs-xs); font-weight: 700;
+    padding: .25em .7em; border-radius: 999px; background: var(--yellow); color: #1a1a1a; }
+  @media (max-width: 700px) { .daily { grid-template-columns: 1fr; } .daily-main { flex-wrap: wrap; } .daily-main .btn { width: 100%; } }
   /* temporadas: seletor Mês/Geral e Hall da fama */
   .menu-bar { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-sm); margin: 0 0 var(--space-md); }
   .board .season-seg { margin: 0 0 var(--space-sm); }

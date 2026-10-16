@@ -31,6 +31,24 @@ function hallHtml() {
     </details>`;
   }).join('') + '</div>';
 }
+// quadro do desafio do dia (topo do menu)
+function dailyHtml() {
+  const id = dailyGame(), g = GAMES[id], rows = bestPerPlayer(id, dayRange()).slice(0, 3);
+  const wins = dailyWinsThisMonth().slice(0, 5);
+  const hoursLeft = Math.max(1, Math.ceil((dayStart(dayIndex() + 1) - Date.now()) / 3_600_000));
+  return `<div class="daily-main">
+      <span class="icon" aria-hidden="true">${g.emoji}</span>
+      <div><span class="tag">⭐ Desafio de hoje · acaba em ${hoursLeft}h</span><h2>${g.name}</h2>
+        <p class="hint" style="text-align:left;margin:0">Vale a sua melhor partida de hoje. Amanhã é outro jogo.</p></div>
+      <button class="btn" id="dailyPlay">Jogar</button>
+    </div>
+    <div class="daily-side">
+      ${rows.length ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}">${['🥇', '🥈', '🥉'][k]} ${esc(n)} <b>${fmt(g, s)}</b></li>`).join('') + '</ol>'
+        : '<p class="hint" style="text-align:left;margin:0">Ninguém jogou hoje ainda — saia na frente.</p>'}
+      ${wins.length ? `<p class="hint" style="text-align:left;margin:var(--space-xs) 0 0">Vitórias em ${monthName(monthKey(Date.now())).toLowerCase()}: ${wins.map(([n, c]) => `${esc(n)} <b>${c}</b>`).join(' · ')}</p>` : ''}
+    </div>`;
+}
+function bindDaily() { $('#dailyPlay') && ($('#dailyPlay').onclick = () => play(dailyGame())); }
 function seasonSeg() {
   return `<div class="seg season-seg" role="group" aria-label="Ranking">
     ${[['month', `🗓️ ${monthName(monthKey(Date.now()))}`], ['all', '🏛️ Geral']].map(([m, l]) => `<button data-season="${m}" aria-pressed="${seasonMode === m}">${l}</button>`).join('')}
@@ -54,6 +72,7 @@ function renderMenu() {
   main.replaceChildren(heroNode);
   main.insertAdjacentHTML('beforeend', `
     <section class="gate glass" id="gate" hidden aria-live="polite"></section>
+    <section class="daily glass" id="daily" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
     <div class="menu-bar"><span class="hint">Ranking:</span>${seasonSeg()}</div>
     <section class="grid" aria-label="Jogos">` +
     menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}">
@@ -66,6 +85,9 @@ function renderMenu() {
   $('#hall').hidden = !$('#hall').innerHTML;
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
   bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
+  bindDaily();
+  // card do jogo do dia ganha um selo
+  $(`.card[data-id="${dailyGame()}"]`)?.classList.add('is-daily');
   renderGate();
   prefetchPhaser();
 }
@@ -74,6 +96,8 @@ function refreshMenu() {
   if (!$('#kings')) return;
   for (const id in GAMES) { const rec = $(`.card[data-id="${id}"] .rec`); if (rec) rec.innerHTML = recHtml(id); }
   $('#kings').innerHTML = kingsHtml();
+  $('#daily').innerHTML = dailyHtml();
+  bindDaily();
   $('#hall').innerHTML = hallHtml();
   $('#hall').hidden = !$('#hall').innerHTML;
 }
@@ -154,6 +178,7 @@ function play(id) {
       const leads = range => { const top = bestPerPlayer(id, range)[0]; return top && top[0] === player && top[1] === score; };
       const champ = record && leads(ALL);
       const monthChamp = monthBest && leads(MONTH);
+      const dailyLead = ok && id === dailyGame() && leads(dayRange());
       const month = monthName(monthKey(Date.now())).toLowerCase();
       renderBoard(id);
       el.innerHTML = `<div class="result">
@@ -163,6 +188,7 @@ function play(id) {
           : !ok ? `<span class="badge warn">🤖 Não valeu: ${esc(status)}. Resultado não foi salvo.</span>`
           : champ ? '<span class="badge">👑 Recorde geral!</span>'
           : monthChamp ? `<span class="badge">🗓️ Liderando ${month}!</span>`
+          : dailyLead ? '<span class="badge">⭐ Liderando o desafio de hoje!</span>'
           : record ? '<span class="badge">🎉 Novo recorde pessoal!</span>'
           : monthBest ? `<span class="badge">📈 Seu melhor de ${month}!</span>`
           : prev ? `<span class="hint">Seu recorde: ${fmt(g, prev[1])}${prevMonth ? ` · em ${month}: ${fmt(g, prevMonth[1])}` : ''}</span>` : ''}
@@ -170,7 +196,7 @@ function play(id) {
         <button class="btn" id="again">Jogar de novo</button>
       </div>`;
       announce(`Resultado: ${fmt(g, score)}. ${!ok ? 'Não foi salvo.' : record ? 'Novo recorde!' : ''}`);
-      if (record || monthChamp) { confetti(); sfx.record(); }
+      if (record || monthChamp || dailyLead) { confetti(); sfx.record(); }
       $('#again').onclick = () => play(id);
       $('#again').focus();
       $('#loginSave')?.addEventListener('click', () => { setMe(null); loginModal(); });
