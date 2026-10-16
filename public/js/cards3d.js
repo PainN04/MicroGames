@@ -121,7 +121,7 @@ const SCENES_3D = {
       const g = new Z.Group({ addTo: illo, translate: { x } });
       new Z.Ellipse({ addTo: g, width: 34, height: 12, stroke: 2, fill: true, color: '#140f1f', translate: { y: HOLE } }); // fundo do buraco
       const a = new Z.Anchor({ addTo: g });
-      const body = new Z.Shape({ addTo: a, path: [{ y: 4 }, { y: 30 }], stroke: 20, color: '#9c6a45' }); // corpo: vai até a boca do buraco
+      const body = new Z.Shape({ addTo: a, path: [{ y: 4 }, { y: 30 }], stroke: 26, color: '#a3714c' }); // ombros: largos e curtos, até a boca do buraco
       [-1, 1].forEach(s => new Z.Shape({ addTo: a, stroke: 6, color: '#8c5a3a', translate: { x: s * 10, y: -10 } })); // orelhas (atrás da cabeça)
       new Z.Shape({ addTo: a, stroke: 24, color: '#b07a52' }); // cabeça
       new Z.Shape({ addTo: a, stroke: 9, color: '#e8b896', translate: { y: 4, z: 9 } }); // focinho
@@ -143,10 +143,11 @@ const SCENES_3D = {
     return t => {
       for (const m of moles) {
         const k = Math.max(0, Math.sin(t * 1.6 + m.off)); // sobe, espia, desce
-        const y = HOLE + 14 - smooth(k) * 44; // no ponto mais baixo fica inteira atrás do monte
+        const y = HOLE + 14 - smooth(k) * 28; // embaixo: inteira atrás do monte; em cima: cabeça e ombros pra fora
         m.a.translate.y = y;
         m.body.path[1].y = Math.max(4, HOLE + 4 - y); // o corpo termina sempre dentro do buraco
         m.body.updatePath();
+        m.body.visible = y < HOLE + 4; // lá no fundo os ombros apareceriam por baixo do monte
         m.a.rotate.y = Math.sin(t * 3 + m.off) * 0.35 * k;
       }
     };
