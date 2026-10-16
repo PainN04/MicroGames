@@ -109,6 +109,7 @@ function renderMenu() {
   $(`.card[data-id="${dailyGame()}"]`)?.classList.add('is-daily');
   renderGate();
   prefetchPhaser();
+  enhanceCards();
 }
 // Quando o ranking novo chega, só troca os textos (sem redesenhar nem reanimar os cards).
 function refreshMenu() {

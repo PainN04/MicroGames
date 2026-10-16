@@ -165,8 +165,14 @@
   @keyframes sc-march { 0%, 100% { transform: translateX(-14px); } 50% { transform: translateX(14px); } }
   @keyframes sc-slide { 0%, 100% { transform: translateX(-18px); } 50% { transform: translateX(18px); } }
   @keyframes sc-bounce { 0%, 100% { transform: translate(-30px, 0); } 25% { transform: translate(0, -34px); } 50% { transform: translate(30px, 0); } 75% { transform: translate(0, -20px); } }
-  /* "reduzir movimento" ligado: cenário parado; só se mexe com o mouse em cima (movimento que a pessoa pediu) */
-  @media (prefers-reduced-motion: reduce) { .scene i { animation-play-state: paused; } .card:hover .scene i { animation-play-state: running; } }
+  /* cena 3D (Zdog, public/js/cards3d.js): canto de cima à direita, some perto do texto */
+  .card .z3d { position: absolute; top: -8px; right: -8px; width: 150px; height: 150px; z-index: -1; pointer-events: none; opacity: .85;
+    -webkit-mask-image: radial-gradient(circle at 60% 40%, #000 45%, transparent 72%); mask-image: radial-gradient(circle at 60% 40%, #000 45%, transparent 72%); }
+  /* com a inclinação ligada, o "pulinho" do hover sai (a Vanilla-Tilt cuida do movimento) */
+  .tilt-on .card:hover { transform: none; }
+  .tilt-on .card { transform-style: preserve-3d; }
+  .tilt-on .card .icon, .tilt-on .card h3 { transform: translateZ(24px); }
+  .js-tilt-glare { border-radius: inherit; }
 
   .kings { margin-top: var(--space-xl); padding: var(--space-md); }
   .kings h2 { margin: 0; font-size: var(--fs-lg); letter-spacing: -0.02em; }
