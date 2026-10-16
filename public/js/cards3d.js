@@ -29,6 +29,33 @@ function cube(Z, addTo, size, color, opts = {}) {
 
 const PALETTE = ['#8b6cff', '#ff8a5c', '#3ddc97', '#ffd34d', '#4dc3ff', '#ff6b8a'];
 
+// placa com volume (tecla, ladrilho, peça) — a face da frente fica em z = depth/2
+function slab(Z, addTo, w, h, d, color, opts = {}) {
+  return new Z.Box({
+    addTo, width: w, height: h, depth: d, stroke: 2, color,
+    topFace: shade(color, 0.25), leftFace: shade(color, -0.12), rightFace: shade(color, -0.25),
+    bottomFace: shade(color, -0.35), rearFace: shade(color, -0.15), ...opts,
+  });
+}
+// números estilo display digital e algumas letras, desenhados com traços (Zdog não tem texto)
+const SEG = { a: [[-4, -7], [4, -7]], b: [[4, -7], [4, 0]], c: [[4, 0], [4, 7]], d: [[-4, 7], [4, 7]], e: [[-4, 0], [-4, 7]], f: [[-4, -7], [-4, 0]], g: [[-4, 0], [4, 0]] };
+const DIGITS = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc', 'afgcd', 'afgedc', 'abc', 'abcdefg', 'abcdfg'];
+const digitLines = d => [...DIGITS[d]].map(s => SEG[s]);
+const LETTERS = {
+  A: [[[-4, 7], [0, -7], [4, 7]], [[-2.2, 1], [2.2, 1]]],
+  E: [[[4, -7], [-4, -7], [-4, 7], [4, 7]], [[-4, 0], [2, 0]]],
+  L: [[[-4, -7], [-4, 7], [4, 7]]],
+  R: [[[-4, 7], [-4, -7], [2, -7], [4, -5], [4, -2], [2, 0], [-4, 0]], [[0, 0], [4, 7]]],
+  T: [[[-4, -7], [4, -7]], [[0, -7], [0, 7]]],
+};
+// Group: os traços são desenhados juntos, como uma peça só — senão a ordenação 3D esconde alguns atrás da placa
+function glyph(Z, addTo, lines, { color = '#1a1a1a', stroke = 2.4, scale = 0.8, z = 0 } = {}) {
+  const g = new Z.Group({ addTo, translate: { z } });
+  for (const l of lines) new Z.Shape({ addTo: g, path: l.map(([x, y]) => ({ x: x * scale, y: y * scale })), closed: false, stroke, color });
+  return g;
+}
+const smooth = k => k * k * (3 - 2 * k);
+
 // Cada cena recebe (Z, illo) e devolve update(t) — t em segundos.
 const SCENES_3D = {
   // peças de Tetris girando enquanto caem, em profundidades diferentes
@@ -110,15 +137,327 @@ const SCENES_3D = {
       illo.rotate.x = -0.25;
     };
   },
+  // raio girando e um anel que fica verde... e de repente vermelho
+  reflexo(Z, illo) {
+    const bolt = new Z.Anchor({ addTo: illo });
+    const path = [{ x: 4, y: -26 }, { x: -10, y: 2 }, { x: 0, y: 2 }, { x: -4, y: 26 }, { x: 10, y: -4 }, { x: 0, y: -4 }];
+    [-3, 0, 3].forEach((z, i) => new Z.Shape({ addTo: bolt, path: path.map(p => ({ ...p, z })), fill: true, stroke: 2.5, color: ['#c98c12', '#e0a91f', '#ffd34d'][i] }));
+    const ringA = new Z.Anchor({ addTo: illo });
+    const ring = new Z.Ellipse({ addTo: ringA, diameter: 62, stroke: 4, color: '#3ddc97' });
+    return t => {
+      bolt.rotate.y = t * 1.3;
+      const k = (t * 0.45) % 1;
+      ring.color = k < 0.72 ? '#3ddc97' : '#ff6b8a';
+      ringA.scale = 0.92 + Math.sin(t * 3) * 0.05;
+      ringA.rotate.x = Math.sin(t * 0.7) * 0.5;
+    };
+  },
+  // cursor batendo e ondas de clique se espalhando
+  clique(Z, illo) {
+    const ripples = [0, 1, 2].map(() => { const a = new Z.Anchor({ addTo: illo }); return { a, e: new Z.Ellipse({ addTo: a, diameter: 20, stroke: 3, color: '#ffd34d' }) }; });
+    const cur = new Z.Anchor({ addTo: illo, translate: { x: 6, y: 8 } });
+    const arrow = [{ x: 0, y: 0 }, { x: 0, y: 24 }, { x: 6, y: 18 }, { x: 11, y: 28 }, { x: 15, y: 26 }, { x: 10, y: 16 }, { x: 18, y: 16 }].map(p => ({ x: p.x - 6, y: p.y - 12 }));
+    [[-2.5, '#b9bccc'], [0, '#dfe1ea'], [2.5, '#ffffff']].forEach(([z, color]) => new Z.Shape({ addTo: cur, path: arrow.map(p => ({ ...p, z })), fill: true, stroke: 2, color }));
+    return t => {
+      ripples.forEach((r, i) => { const k = (t * 0.8 + i / 3) % 1; r.a.scale = 0.4 + k * 2.4; r.e.stroke = 4 * (1 - k) + 0.3; });
+      const tap = Math.max(0, Math.sin(t * 5));
+      cur.translate.z = 10 - tap * 8;
+      cur.rotate.y = Math.sin(t * 0.9) * 0.5;
+      illo.rotate.x = -0.2;
+    };
+  },
+  // teclado em perspectiva com teclas sendo apertadas
+  digitacao(Z, illo) {
+    const marks = ['T', 'E', 'R', 'A', 'L'];
+    const keys = [];
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) {
+      const a = new Z.Anchor({ addTo: illo, translate: { x: (c - 1.5) * 18 + r * 4, y: (r - 1) * 18 } });
+      slab(Z, a, 15, 15, 7, '#2b2f45');
+      const ch = marks[(r * 4 + c) % marks.length];
+      if ((r * 4 + c) % 2 === 0) glyph(Z, a, LETTERS[ch], { color: '#cfd3ff', z: 4.5, scale: 0.6, stroke: 1.6 });
+      keys.push(a);
+    }
+    return t => {
+      const a = Math.floor(t * 5) % keys.length, b = Math.floor(t * 5 * 0.7 + 5) % keys.length;
+      keys.forEach((k, i) => { k.translate.z = i === a || i === b ? -4 : 0; });
+      illo.rotate.x = -0.75;
+      illo.rotate.z = Math.sin(t * 0.5) * 0.1;
+    };
+  },
+  // quatro botões do Genius acendendo em sequência
+  memoria(Z, illo) {
+    const colors = ['#3ddc97', '#ff6b8a', '#ffd34d', '#4dc3ff'];
+    const pads = colors.map((c, i) => {
+      const a = new Z.Anchor({ addTo: illo, translate: { x: (i % 2 - 0.5) * 30, y: (Math.floor(i / 2) - 0.5) * 30 } });
+      slab(Z, a, 26, 26, 8, shade(c, -0.45));
+      const glow = new Z.Rect({ addTo: a, width: 22, height: 22, stroke: 3, fill: true, color: shade(c, 0.2), translate: { z: 4.6 } });
+      return { a, glow };
+    });
+    const seq = [0, 2, 1, 3, 2, 0, 3, 1];
+    return t => {
+      const lit = seq[Math.floor(t * 1.8) % seq.length];
+      pads.forEach((p, i) => { p.glow.visible = i === lit; p.a.translate.z = i === lit ? 7 : 0; });
+      illo.rotate.x = -0.45 + Math.sin(t * 0.6) * 0.15;
+      illo.rotate.y = Math.sin(t * 0.4) * 0.4;
+    };
+  },
+  // alvo em 3D e um dardo chegando
+  mira(Z, illo) {
+    const target = new Z.Anchor({ addTo: illo });
+    [[56, '#ff5c6c'], [44, '#f5f5f7'], [32, '#ff5c6c'], [20, '#f5f5f7'], [9, '#ff5c6c']].forEach(([d, color], i) =>
+      new Z.Ellipse({ addTo: target, diameter: d, stroke: 2, fill: true, color, translate: { z: i * 0.8 } }));
+    new Z.Cylinder({ addTo: target, diameter: 58, length: 4, stroke: false, color: '#a8323d', translate: { z: -2.5 } });
+    const dart = new Z.Anchor({ addTo: illo });
+    new Z.Cylinder({ addTo: dart, diameter: 3, length: 26, stroke: false, color: '#c9ccd8' });
+    new Z.Cone({ addTo: dart, diameter: 6, length: 9, stroke: false, color: '#7d8196', translate: { z: -13 }, rotate: { y: Z.TAU / 2 } });
+    [0, 1].forEach(i => new Z.Shape({ addTo: dart, path: [{ z: 10 }, { z: 16, y: -7 }, { z: 16 }], fill: true, stroke: 1, color: '#4dc3ff', rotate: { z: i * Z.TAU / 4 } }));
+    return t => {
+      const k = (t * 0.45) % 1, fly = Math.min(1, k / 0.35);
+      dart.translate.set({ x: 4 - (1 - fly) * 30, y: -3 - (1 - fly) * 20, z: 18 + (1 - smooth(fly)) * 90 });
+      target.rotate.y = 0.5 + Math.sin(t * 0.5) * 0.15;
+      dart.rotate.y = target.rotate.y;
+      illo.rotate.x = -0.15;
+    };
+  },
+  // + − × ÷ girando em órbita
+  matematica(Z, illo) {
+    const sym = (lines, dots, color) => {
+      const a = new Z.Anchor({ addTo: illo });
+      lines.forEach(l => new Z.Shape({ addTo: a, path: l, closed: false, stroke: 6, color }));
+      dots.forEach(d => new Z.Shape({ addTo: a, translate: d, stroke: 7, color }));
+      return a;
+    };
+    const s = 9;
+    const items = [
+      sym([[{ x: -s }, { x: s }], [{ y: -s }, { y: s }]], [], '#3ddc97'),
+      sym([[{ x: -s }, { x: s }]], [], '#ff6b8a'),
+      sym([[{ x: -s, y: -s }, { x: s, y: s }], [{ x: s, y: -s }, { x: -s, y: s }]], [], '#ffd34d'),
+      sym([[{ x: -s }, { x: s }]], [{ y: -8 }, { y: 8 }], '#4dc3ff'),
+    ];
+    return t => {
+      items.forEach((a, i) => {
+        const ang = t * 0.7 + i * Z.TAU / 4;
+        a.translate.set({ x: Math.cos(ang) * 32, y: Math.sin(ang * 2) * 6, z: Math.sin(ang) * 32 });
+        a.rotate.y = t * 1.5 + i;
+      });
+      illo.rotate.x = -0.3;
+    };
+  },
+  // passarinho batendo asas entre canos
+  voa(Z, illo) {
+    const pipes = [0, 1].map(i => {
+      const a = new Z.Anchor({ addTo: illo });
+      [-1, 1].forEach(dir => {
+        new Z.Cylinder({ addTo: a, diameter: 14, length: 40, stroke: false, color: '#2fb57a', backface: '#1f8a5a', translate: { y: dir * 42 }, rotate: { x: Z.TAU / 4 } });
+        new Z.Cylinder({ addTo: a, diameter: 18, length: 6, stroke: false, color: '#3ddc97', backface: '#2fb57a', translate: { y: dir * 21 }, rotate: { x: Z.TAU / 4 } });
+      });
+      return { a, off: i * 0.5 };
+    });
+    const bird = new Z.Anchor({ addTo: illo, translate: { z: 6 } });
+    new Z.Shape({ addTo: bird, stroke: 26, color: '#ffd34d' });
+    new Z.Shape({ addTo: bird, stroke: 13, color: '#fff3c4', translate: { y: 5, z: 6 } });
+    new Z.Shape({ addTo: bird, stroke: 9, color: '#ffffff', translate: { x: 6, y: -5, z: 8 } });
+    new Z.Shape({ addTo: bird, stroke: 4, color: '#10131c', translate: { x: 7.5, y: -5, z: 11 } });
+    new Z.Cone({ addTo: bird, diameter: 8, length: 8, stroke: false, color: '#ff8a5c', translate: { x: 11, y: 1 }, rotate: { y: Z.TAU / 4 } });
+    const wing = new Z.Ellipse({ addTo: bird, width: 15, height: 9, stroke: 3, fill: true, color: '#e8b730', translate: { x: -5, y: 2, z: 12 } });
+    return t => {
+      pipes.forEach(p => { const k = (t * 0.22 + p.off) % 1; p.a.translate.x = 75 - k * 150; });
+      bird.translate.y = Math.sin(t * 2.4) * 10;
+      bird.rotate.z = Math.cos(t * 2.4) * 0.25;
+      wing.rotate.x = Math.sin(t * 14) * 0.9;
+      illo.rotate.y = -0.35;
+    };
+  },
+  // insetos caindo e girando
+  chuva(Z, illo) {
+    const bug = (color, spots) => {
+      const a = new Z.Anchor({ addTo: illo });
+      [-1, 0, 1].forEach(r => [-1, 1].forEach(s => new Z.Shape({ addTo: a, path: [{ x: s * 4, y: r * 4 }, { x: s * 11, y: r * 5 + 3 }], stroke: 1.8, color: '#2a2d3d' })));
+      new Z.Shape({ addTo: a, stroke: 16, color, translate: { y: 3 } });
+      new Z.Shape({ addTo: a, stroke: 10, color: '#2a2d3d', translate: { y: -8 } });
+      [-1, 1].forEach(s => {
+        new Z.Shape({ addTo: a, path: [{ x: s * 2, y: -11 }, { x: s * 6, y: -17 }], stroke: 1.5, color: '#2a2d3d' });
+        new Z.Shape({ addTo: a, stroke: 2.5, color: '#fff', translate: { x: s * 2.5, y: -9, z: 4.5 } });
+      });
+      if (spots) [[-3, 0], [3, 2], [-2, 6], [3, 7]].forEach(([x, y]) => new Z.Shape({ addTo: a, stroke: 3.5, color: '#1a1a1a', translate: { x, y, z: 7 } }));
+      return a;
+    };
+    const bugs = [['#3ddc97', false], ['#ff5c6c', true], ['#8b6cff', false], ['#ffd34d', true]].map(([c, sp], i) => ({ a: bug(c, sp), x: [-28, 22, -6, 32][i], z: [10, -12, 24, -26][i], off: i * 0.25 }));
+    return t => {
+      for (const b of bugs) {
+        const k = (t * 0.12 + b.off) % 1;
+        b.a.translate.set({ x: b.x + Math.sin(t + b.off * 9) * 6, y: -75 + k * 150, z: b.z });
+        b.a.rotate.z = Math.sin(t * 1.3 + b.off * 7) * 0.8;
+        b.a.rotate.y = t * 0.8 + b.off * 5;
+      }
+    };
+  },
+  // esferas coloridas girando em volta de uma que troca de cor
+  cores(Z, illo) {
+    const ring = new Z.Anchor({ addTo: illo, rotate: { x: 0.9 } });
+    const balls = PALETTE.map((c, i) => new Z.Shape({ addTo: ring, stroke: 13, color: c, translate: { x: Math.cos(i * Z.TAU / 6) * 36, y: Math.sin(i * Z.TAU / 6) * 36 } }));
+    const center = new Z.Shape({ addTo: illo, stroke: 24, color: PALETTE[0] });
+    const shine = new Z.Shape({ addTo: illo, stroke: 6, color: '#ffffff', translate: { x: -5, y: -5, z: 10 } });
+    return t => {
+      ring.rotate.z = t * 0.6;
+      center.color = PALETTE[Math.floor(t * 0.9) % PALETTE.length];
+      center.translate.y = shine.translate.y = Math.sin(t * 2) * 3;
+      shine.translate.y -= 5;
+      balls.forEach((b, i) => { b.stroke = 12 + Math.sin(t * 3 + i) * 2; });
+    };
+  },
+  // números em placas; a próxima da sequência levanta
+  numeros(Z, illo) {
+    const nums = [3, 7, 1, 9, 4, 6];
+    const tiles = nums.map((n, i) => {
+      const a = new Z.Anchor({ addTo: illo, translate: { x: (i % 3 - 1) * 25, y: (Math.floor(i / 3) - 0.5) * 30 } });
+      slab(Z, a, 21, 26, 6, '#2b2f45');
+      glyph(Z, a, digitLines(n), { color: '#e8e9f3', z: 3.8, scale: 1, stroke: 2.2 });
+      return { a, n };
+    });
+    const order = [...tiles].sort((x, y) => x.n - y.n);
+    return t => {
+      const cur = order[Math.floor(t * 1.2) % order.length];
+      tiles.forEach((p, i) => {
+        p.a.translate.z = p === cur ? 10 : Math.sin(t * 1.5 + i) * 2;
+        p.a.rotate.y = p === cur ? Math.sin(t * 6) * 0.15 : 0;
+      });
+      illo.rotate.x = -0.35;
+      illo.rotate.y = Math.sin(t * 0.5) * 0.35;
+    };
+  },
+  // parede de tijolos, raquete e bolinha quicando
+  tijolos(Z, illo) {
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++)
+      cube(Z, illo, 1, PALETTE[r + 1], { width: 16, height: 7, depth: 7, translate: { x: (c - 1.5) * 18, y: -30 + r * 9 } });
+    const paddle = cube(Z, illo, 1, '#c9ccd8', { width: 26, height: 5, depth: 8, translate: { y: 34 } });
+    const ball = new Z.Shape({ addTo: illo, stroke: 8, color: '#ffffff' });
+    return t => {
+      const k = (t * 0.55) % 1, bx = Math.sin(t * 1.1) * 28;
+      ball.translate.set({ x: bx, y: 28 - Math.abs(Math.sin(k * Math.PI)) * 46, z: 2 });
+      paddle.translate.x = bx * 0.85;
+      illo.rotate.x = -0.3;
+      illo.rotate.y = Math.sin(t * 0.4) * 0.35;
+    };
+  },
+  // pilha de blocos; o de cima vai e volta esperando a hora certa
+  torre(Z, illo) {
+    for (let i = 0; i < 4; i++) cube(Z, illo, 1, PALETTE[i], { width: 40 - i * 3, height: 9, depth: 26 - i * 2, translate: { y: 30 - i * 10, x: (i % 2 ? 2 : -2) } });
+    const top = cube(Z, illo, 1, PALETTE[4], { width: 28, height: 9, depth: 18, translate: { y: -10 } });
+    return t => {
+      top.translate.x = Math.sin(t * 1.8) * 26;
+      illo.rotate.y = -0.5 + Math.sin(t * 0.4) * 0.3;
+      illo.rotate.x = -0.35;
+    };
+  },
+  // invasor de pixels marchando e um tiro subindo
+  invasores(Z, illo) {
+    const art = ['..X.....X..', '...X...X...', '..XXXXXXX..', '.XX.XXX.XX.', 'XXXXXXXXXXX', 'X.XXXXXXX.X', 'X.X.....X.X', '...XX.XX...'];
+    const inv = new Z.Anchor({ addTo: illo });
+    const back = new Z.Group({ addTo: inv, translate: { z: -3 } }), front = new Z.Group({ addTo: inv, translate: { z: 3 } });
+    art.forEach((row, y) => [...row].forEach((ch, x) => {
+      if (ch !== 'X') return;
+      // placa da frente + sombra atrás dão volume com 2 formas por pixel (um cubo inteiro seria 6)
+      new Z.Rect({ addTo: back, width: 4.6, height: 4.6, stroke: 0.6, fill: true, color: '#4b3699', translate: { x: (x - 5) * 5, y: (y - 3.5) * 5 } });
+      new Z.Rect({ addTo: front, width: 4.6, height: 4.6, stroke: 0.6, fill: true, color: '#9b80ff', translate: { x: (x - 5) * 5, y: (y - 3.5) * 5 } });
+    }));
+    const shot = new Z.Shape({ addTo: illo, path: [{ y: 0 }, { y: 8 }], stroke: 3, color: '#ff6b8a' });
+    return t => {
+      inv.translate.set({ x: Math.round(Math.sin(t * 1.2) * 4) * 5, y: -10 + Math.sin(t * 2.4) * 2 });
+      inv.rotate.y = Math.sin(t * 0.8) * 0.45;
+      const k = (t * 0.7) % 1;
+      shot.translate.set({ x: Math.sin(t * 0.35) * 20, y: 60 - k * 70, z: 6 });
+      illo.rotate.x = -0.15;
+    };
+  },
+  // campo de quadradinhos, bomba com pavio aceso e bandeira tremulando
+  minado(Z, illo) {
+    const board = new Z.Anchor({ addTo: illo, translate: { y: 18 }, rotate: { x: -1.05 } });
+    const shown = { 1: [1, '#4dc3ff'], 3: [2, '#3ddc97'], 5: [3, '#ff6b8a'] };
+    for (let i = 0; i < 9; i++) {
+      const a = new Z.Anchor({ addTo: board, translate: { x: (i % 3 - 1) * 21, y: (Math.floor(i / 3) - 1) * 21 } });
+      if (shown[i]) {
+        slab(Z, a, 19, 19, 2, '#33374f');
+        glyph(Z, a, digitLines(shown[i][0]), { color: shown[i][1], z: 1.6, scale: 0.9, stroke: 2.2 });
+      } else slab(Z, a, 19, 19, 6, '#6b7091');
+    }
+    const bomb = new Z.Anchor({ addTo: illo, translate: { x: -14 } });
+    new Z.Shape({ addTo: bomb, stroke: 22, color: '#22242f' });
+    new Z.Shape({ addTo: bomb, stroke: 5, color: '#5a5f7a', translate: { x: -4, y: -5, z: 9 } });
+    new Z.Shape({ addTo: bomb, path: [{ x: 5, y: -9 }, { x: 9, y: -15 }, { x: 13, y: -14 }], closed: false, stroke: 2, color: '#c9a36b' });
+    const spark = new Z.Shape({ addTo: bomb, stroke: 6, color: '#ffd34d', translate: { x: 13, y: -15 } });
+    const flag = new Z.Anchor({ addTo: illo, translate: { x: 22, y: 8 } });
+    new Z.Shape({ addTo: flag, path: [{ y: 0 }, { y: -30 }], stroke: 2.5, color: '#c9ccd8' });
+    const cloth = new Z.Shape({ addTo: flag, path: [{ y: -30 }, { x: 14, y: -24 }, { y: -18 }], fill: true, stroke: 2, color: '#ff5c6c' });
+    return t => {
+      bomb.translate.y = -18 + Math.sin(t * 1.8) * 4;
+      bomb.rotate.z = Math.sin(t * 1.2) * 0.25;
+      spark.stroke = 4 + Math.abs(Math.sin(t * 13)) * 4;
+      spark.color = Math.sin(t * 9) > 0 ? '#ffd34d' : '#ff8a5c';
+      cloth.rotate.y = Math.sin(t * 4) * 0.5;
+      illo.rotate.y = Math.sin(t * 0.4) * 0.3;
+    };
+  },
+  // equalizador pulando e notas subindo
+  ritmo(Z, illo) {
+    const bars = [0, 1, 2, 3, 4].map(i => {
+      const a = new Z.Anchor({ addTo: illo, translate: { x: (i - 2) * 13, y: 36 } });
+      cube(Z, a, 1, PALETTE[i], { width: 9, height: 40, depth: 9, translate: { y: -20 } });
+      return a;
+    });
+    const note = color => {
+      const a = new Z.Anchor({ addTo: illo });
+      new Z.Ellipse({ addTo: a, width: 11, height: 8, stroke: 3, fill: true, color, rotate: { z: -0.4 } });
+      new Z.Shape({ addTo: a, path: [{ x: 5, y: -1 }, { x: 5, y: -20 }], stroke: 2.2, color });
+      new Z.Shape({ addTo: a, path: [{ x: 5, y: -20 }, { bezier: [{ x: 9, y: -18 }, { x: 13, y: -14 }, { x: 10, y: -8 }] }], closed: false, stroke: 2.2, color });
+      return a;
+    };
+    const notes = [note('#ffffff'), note('#ffd34d')];
+    return t => {
+      bars.forEach((a, i) => { a.scale = { x: 1, y: 0.3 + Math.abs(Math.sin(t * 3.2 + i * 1.3)) * 0.7, z: 1 }; });
+      notes.forEach((n, i) => {
+        const k = (t * 0.3 + i * 0.5) % 1;
+        n.translate.set({ x: -18 + i * 30 + Math.sin(t * 2 + i) * 6, y: 10 - k * 70, z: 12 });
+        n.rotate.y = Math.sin(t * 1.5 + i) * 0.6;
+      });
+      illo.rotate.x = -0.2;
+      illo.rotate.y = Math.sin(t * 0.35) * 0.4;
+    };
+  },
+  // peças de letra trocando de lugar
+  anagrama(Z, illo) {
+    const word = ['L', 'E', 'T', 'R', 'A'];
+    const tiles = word.map(ch => {
+      const a = new Z.Anchor({ addTo: illo });
+      slab(Z, a, 18, 20, 5, '#f4e3b5');
+      glyph(Z, a, LETTERS[ch], { color: '#3a2a12', z: 3.2, scale: 0.9, stroke: 2.4 });
+      return a;
+    });
+    const perms = [[0, 1, 2, 3, 4], [3, 0, 4, 1, 2], [2, 4, 0, 1, 3], [4, 3, 1, 0, 2]];
+    const slot = i => (i - 2) * 21;
+    return t => {
+      const step = t * 0.5, n = Math.floor(step), k = smooth(Math.min(1, (step - n) * 1.6));
+      const p0 = perms[n % perms.length], p1 = perms[(n + 1) % perms.length];
+      tiles.forEach((a, i) => {
+        a.translate.set({ x: slot(p0[i]) + (slot(p1[i]) - slot(p0[i])) * k, y: Math.sin(t * 2 + i) * 2, z: Math.sin(k * Math.PI) * 16 * (i % 2 ? 1 : -1) });
+        a.rotate.y = Math.sin(k * Math.PI) * 0.6;
+      });
+      illo.rotate.x = -0.25;
+      illo.rotate.y = Math.sin(t * 0.4) * 0.3;
+    };
+  },
 };
 
 /* ---------- montagem e loop ---------- */
 let scenes3d = [], loopOn = false, visible = new Set();
 const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => (e.isIntersecting ? visible.add(e.target) : visible.delete(e.target)))) : null;
 
+let lastFrame = 0;
 function loop(now) {
   if (!scenes3d.length) { loopOn = false; return; }
-  if (!document.hidden) {
+  // 30 quadros por segundo: movimento lento e decorativo não precisa de 60, e gasta metade
+  if (!document.hidden && now - lastFrame >= 32) {
+    lastFrame = now;
     const t = now / 1000;
     for (const s of scenes3d) {
       if (io && !visible.has(s.canvas)) continue;
