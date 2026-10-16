@@ -127,6 +127,14 @@
   .kings ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-xs); }
   .kings li { padding: .5em 1em; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-size: var(--fs-sm); }
   .kings li b { color: var(--yellow); }
+  /* avisos flutuantes */
+  #toasts { position: fixed; right: 16px; bottom: 16px; z-index: 60; display: grid; gap: 8px; width: min(380px, calc(100vw - 32px)); }
+  .toast { display: flex; gap: .7em; align-items: center; text-align: left; font: inherit; color: var(--text); cursor: pointer; padding: .8em 1em;
+    border-radius: 16px; border: 1px solid oklch(78% 0.12 18 / .5); box-shadow: var(--elev-2, 0 10px 30px #0008); animation: toast-in .3s ease-out; }
+  .toast .i { font-size: 1.6rem; }
+  .toast small { display: block; color: var(--muted); font-size: var(--fs-xs); margin-top: 2px; }
+  @keyframes toast-in { from { transform: translateY(12px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
   /* perfil e conquistas */
   a[data-profile] { color: inherit; text-decoration: none; border-bottom: 1px dotted oklch(100% 0 0 / .35); }
   a[data-profile]:hover, a[data-profile]:focus-visible { color: var(--primary); border-bottom-color: currentColor; }

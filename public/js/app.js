@@ -262,10 +262,29 @@ function kicked(msg) {
   showMenu();
   loginModal(msg || 'Sua conta entrou em outro dispositivo — só dá pra usar em um por vez.');
 }
+// avisos que chegam no ping: "Fulano tomou seu recorde" (somem sozinhos; clicar abre o jogo)
+function showNotes(notes) {
+  let box = $('#toasts');
+  if (!box) { box = document.createElement('div'); box.id = 'toasts'; box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
+  for (const n of notes) {
+    const g = GAMES[n.game];
+    if (!g) continue;
+    const where = n.kind === 'geral' ? 'o recorde geral' : `a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`;
+    const t = document.createElement('button');
+    t.className = 'toast glass';
+    t.innerHTML = `<span class="i" aria-hidden="true">😈</span><span><b>${esc(n.by)}</b> tomou ${where} no ${g.emoji} ${g.name}
+      <small>${fmt(g, n.score)} (o seu era ${fmt(g, n.old)}) · toque pra revidar</small></span>`;
+    t.onclick = () => { t.remove(); play(n.game); };
+    box.appendChild(t);
+    setTimeout(() => t.remove(), 12_000);
+  }
+  sfx.bad?.();
+}
 async function pingSession() {
   if (!me || document.hidden) return;
   try {
-    const { block } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' || currentView === 'report' ? 'admin' : currentView));
+    const { block, notes } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' || currentView === 'report' ? 'admin' : currentView));
+    if (notes?.length) showNotes(notes);
     // admin bloqueou (ou liberou): atualiza; se estava jogando, encerra a partida
     if (!!block !== !!gate?.manual) {
       const playing = GAMES[currentView];

@@ -214,6 +214,23 @@ test('erros do navegador: só de quem está logado, agrupados pro admin', async 
   assert.equal((await adm('/api/admin/errors')).body.errors.length, 0);
 });
 
+test('aviso de recorde tomado chega uma vez só pra quem perdeu o 1º lugar', async () => {
+  const ana = await login('ana', 'senha-ana-123');
+  const bia = await login('bia', 'senha-bia-123');
+  await ana('/api/auth/ping'); // limpa avisos antigos
+  assert.equal((await play(ana, 'memoria', 10)).status, 201);
+  assert.equal((await play(bia, 'memoria', 8)).status, 201, 'pior que a Ana: sem aviso');
+  assert.equal((await ana('/api/auth/ping')).body.notes.length, 0);
+  assert.equal((await play(bia, 'memoria', 15)).status, 201, 'passou a Ana');
+  const { notes } = (await ana('/api/auth/ping')).body;
+  assert.equal(notes.length, 1);
+  assert.deepEqual({ kind: notes[0].kind, game: notes[0].game, by: notes[0].by, score: notes[0].score, old: notes[0].old },
+    { kind: 'geral', game: 'memoria', by: 'Bia', score: 15, old: 10 });
+  assert.equal((await ana('/api/auth/ping')).body.notes.length, 0, 'não repete');
+  assert.equal((await play(bia, 'memoria', 20)).status, 201, 'bater o próprio recorde não avisa ninguém');
+  assert.equal((await bia('/api/auth/ping')).body.notes.length, 0);
+});
+
 /* ---------- regras do bloqueio por tickets (Geiko) ---------- */
 
 test('pesos dos tickets do Geiko', () => {
