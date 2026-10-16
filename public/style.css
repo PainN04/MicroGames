@@ -89,12 +89,15 @@
   .pill { display: inline-flex; align-items: center; gap: .45em; font-size: var(--fs-xs); color: var(--muted); padding: .35em .8em; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); width: 17em; white-space: nowrap; overflow: hidden; }
   .pill #dbtxt { overflow: hidden; text-overflow: ellipsis; }
   .icon-btn { min-width: 44px; padding: 0; font-size: 1.1rem; }
-  .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); }
+  .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--yellow); flex: none; }
+  /* conexão ok: só a bolinha (o texto vai pra dica) */
+  .pill.compact { width: auto; padding: 0; border: 0; background: none; min-width: 20px; height: 36px; justify-content: center; }
+  .pill.compact #dbtxt { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .pill.on .dot { background: var(--green); box-shadow: 0 0 0 4px oklch(76% 0.18 150 / 0.2); }
-  .chip { display: inline-flex; align-items: center; gap: .6em; padding: .25em .25em .25em .9em; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-weight: 500; }
-  .chip .btn { min-height: 36px; padding: 0 .9rem; font-size: var(--fs-xs); }
   /* largura fixa: o nome chega depois do login ("—" → "Fulano") e não pode mudar o tamanho do topo (CLS) */
-  #pname { display: inline-block; width: 8.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+  #pname { display: inline-block; max-width: 9em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; vertical-align: middle; }
+  .acct { position: relative; display: inline-flex; }
+  .acct-btn { min-height: 36px; padding: 0 .9rem; font-size: var(--fs-sm); gap: .35em; }
 
   main { max-width: 1120px; margin: 0 auto; padding: var(--space-lg) var(--space-md) var(--space-xl); }
 
@@ -104,26 +107,29 @@
   .hero h1 em { font-style: normal; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .hero p { margin: var(--space-sm) 0 0; color: var(--muted); font-size: var(--fs-lg); max-width: 34ch; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: var(--space-sm); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: var(--space-sm); }
   .card {
     --h: 290; position: relative; text-align: left; font: inherit; color: inherit; cursor: pointer;
-    padding: var(--space-md); display: flex; flex-direction: column; gap: .4rem; min-height: 200px;
+    padding: var(--space-sm) var(--space-md); display: flex; flex-direction: column; gap: .5rem;
     animation: rise .55s var(--ease-spring) both; animation-delay: calc(var(--i) * 60ms);
     transition: transform var(--duration) var(--ease-spring), border-color var(--duration), box-shadow var(--duration);
   }
   .card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(120% 80% at 0% 0%, oklch(70% 0.15 var(--h) / 0.16), transparent 60%); pointer-events: none; }
   .card:hover { transform: translateY(-6px); border-color: oklch(72% 0.15 var(--h) / 0.55); box-shadow: 0 18px 40px oklch(60% 0.15 var(--h) / 0.25); }
   .card:active { transform: scale(0.97); }
-  .card .icon { width: 56px; height: 56px; display: grid; place-items: center; font-size: 28px; border-radius: 16px; background: oklch(70% 0.15 var(--h) / 0.18); border: 1px solid oklch(72% 0.15 var(--h) / 0.3); transition: transform var(--duration) var(--ease-spring); }
+  .card .head { display: flex; align-items: center; gap: .7rem; min-width: 0; padding-right: 1.6rem; }
+  .card .icon { flex: none; width: 42px; height: 42px; display: grid; place-items: center; font-size: 22px; border-radius: 12px; background: oklch(70% 0.15 var(--h) / 0.18); border: 1px solid oklch(72% 0.15 var(--h) / 0.3); transition: transform var(--duration) var(--ease-spring); }
   .card:hover .icon { transform: rotate(-8deg) scale(1.1); }
-  .card h3 { margin: .5rem 0 0; font-size: var(--fs-lg); letter-spacing: -0.02em; }
+  .card h3 { margin: 0; font-size: var(--fs-base); letter-spacing: -0.02em; line-height: 1.2; }
   .card p { margin: 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.45; }
-  .card .rec { margin-top: auto; padding-top: .6rem; font-size: var(--fs-xs); color: var(--muted); display: flex; gap: .4em; align-items: center; }
+  .card .rec { margin-top: auto; font-size: var(--fs-xs); color: var(--muted); display: flex; gap: .4em; align-items: center; min-width: 0; white-space: nowrap; overflow: hidden; }
+  .card .rec b { overflow: hidden; text-overflow: ellipsis; }
   .card .rec b { color: oklch(85% 0.12 var(--h)); font-weight: 700; }
   @keyframes rise { from { opacity: 0; transform: translateY(18px) scale(.98); } }
 
   .kings { margin-top: var(--space-xl); padding: var(--space-md); }
-  .kings h2 { margin: 0 0 var(--space-sm); font-size: var(--fs-lg); letter-spacing: -0.02em; }
+  .kings h2 { margin: 0; font-size: var(--fs-lg); letter-spacing: -0.02em; }
+  .kings-head { margin: 0 0 var(--space-sm); display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; }
   .kings ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-xs); }
   .kings li { padding: .5em 1em; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-size: var(--fs-sm); }
   .kings li b { color: var(--yellow); }
@@ -164,8 +170,9 @@
   .daily li { display: flex; justify-content: space-between; gap: 1em; padding: .35em .8em; border-radius: 10px; background: var(--surface-2); }
   .daily li.me { outline: 1px solid var(--primary); }
   .daily li b { color: var(--yellow); }
-  .card.is-daily::after { content: '⭐ Desafio de hoje'; position: absolute; top: 12px; right: 12px; font-size: var(--fs-xs); font-weight: 700;
-    padding: .25em .7em; border-radius: 999px; background: var(--yellow); color: #1a1a1a; }
+  .card.is-daily::after { content: '⭐'; position: absolute; top: 10px; right: 10px; font-size: var(--fs-xs); font-weight: 700;
+    width: 1.9em; height: 1.9em; display: grid; place-items: center; border-radius: 999px; background: var(--yellow); color: #1a1a1a; }
+  .card.is-daily { border-color: oklch(86% 0.17 92 / 0.45); }
   @media (max-width: 700px) { .daily { grid-template-columns: 1fr; } .daily-main { flex-wrap: wrap; } .daily-main .btn { width: 100%; } }
   /* temporadas: seletor Mês/Geral e Hall da fama */
   .menu-bar { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-sm); margin: 0 0 var(--space-md); }
@@ -340,7 +347,7 @@
   .gate-pop .meter i { display: block; height: 100%; border-radius: inherit; background: var(--green); }
   .gate-pop.blocked .meter i { background: var(--red); }
   .card.locked { opacity: .45; filter: grayscale(.7); }
-  .card.locked::after { content: '🔒'; position: absolute; top: 12px; right: 14px; font-size: 1.3rem; }
+  .card.locked::after { content: '🔒'; position: absolute; top: 10px; right: 12px; font-size: 1.1rem; background: none; width: auto; height: auto; }
   .tickets { width: 100%; border-collapse: collapse; font-size: var(--fs-sm); }
   .tickets th, .tickets td { text-align: left; padding: .45em .5em; border-bottom: 1px solid var(--border); }
   .tickets th { color: var(--muted); font-weight: 500; }

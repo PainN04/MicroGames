@@ -9,21 +9,19 @@ function announce(msg) { $('#live').textContent = msg; }
 function recHtml(id) {
   const g = GAMES[id], top = bestPerPlayer(id)[0];
   return top ? `🏆 <b>${esc(top[0])}</b> · ${fmt(g, top[1])}`
-    : seasonMode === 'all' ? 'Sem recorde ainda — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()} — seja o primeiro`;
+    : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém em ${seasonLabel().toLowerCase()} ainda`;
 }
 function kingsHtml() {
   const kings = champions();
-  const title = seasonMode === 'all' ? '👑 Quem manda no escritório (geral)' : `👑 Quem manda em ${seasonLabel().toLowerCase()}`;
-  return `<h2>${title}</h2>` + (kings.length
+  return (kings.length
     ? '<ol>' + kings.map(([n, c], k) => `<li>${['🥇', '🥈', '🥉'][k] || '•'} <a href="#" data-profile="${esc(n)}">${esc(n)}</a>${ticketStar(n)} — <b>${c}</b> ${c > 1 ? 'recordes' : 'recorde'}</li>`).join('') + '</ol>'
-    : '<p class="hint" style="text-align:left">Ninguém tem recorde ainda.</p>')
-    + (seasonMode === 'month' ? `<p class="hint" style="text-align:left;margin:var(--space-sm) 0 0">O ranking do mês zera no dia 1º. Quem tiver mais recordes no fim do mês entra no Hall da fama.</p>` : '');
+    : '<p class="hint" style="text-align:left;margin:0">Ninguém tem recorde ainda.</p>');
 }
 // campeões dos meses que já acabaram
 function hallHtml() {
   const hall = hallOfFame();
   if (!hall.length) return '';
-  return '<h2>🏛️ Hall da fama</h2><div class="hall">' + hall.map(({ key, kings, games }) => {
+  return '<div class="hall">' + hall.map(({ key, kings, games }) => {
     const [king] = kings;
     return `<details class="hall-month"><summary><span class="m">${monthName(key, true)}</span>
         ${king ? `<span>👑 <b><a href="#" data-profile="${esc(king[0])}">${esc(king[0])}</a></b> · ${king[1]} ${king[1] > 1 ? 'recordes' : 'recorde'}</span>` : ''}</summary>
@@ -95,14 +93,12 @@ function renderMenu() {
     <section class="week glass" id="week" hidden></section>
     <div class="menu-bar"><span class="hint">Ranking:</span>${seasonSeg()}</div>
     <section class="grid" aria-label="Jogos">` +
-    menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}">
-        <span class="icon" aria-hidden="true">${g.emoji}</span>
-        <h3>${g.name}</h3><p>${g.desc}</p>
+    menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
+        <span class="head"><span class="icon" aria-hidden="true">${g.emoji}</span><h3>${g.name}</h3></span>
         <span class="rec">${recHtml(id)}</span>
       </button>`).join('') + `</section>
-    <section class="kings glass" id="kings">${kingsHtml()}</section>
-    <section class="kings glass" id="hall">${hallHtml()}</section>`);
-  $('#hall').hidden = !$('#hall').innerHTML;
+    <section class="kings glass" id="kings"></section>`);
+  renderKings();
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
   bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
   bindDaily();
@@ -116,11 +112,24 @@ function renderMenu() {
 function refreshMenu() {
   if (!$('#kings')) return;
   for (const id in GAMES) { const rec = $(`.card[data-id="${id}"] .rec`); if (rec) rec.innerHTML = recHtml(id); }
-  $('#kings').innerHTML = kingsHtml();
+  renderKings();
   $('#daily').innerHTML = dailyHtml();
   bindDaily();
-  $('#hall').innerHTML = hallHtml();
-  $('#hall').hidden = !$('#hall').innerHTML;
+}
+// rodapé do menu: "Quem manda" (do período escolhido) e "Hall da fama" (meses encerrados) em abas
+let kingsTab = 'kings';
+function renderKings() {
+  const box = $('#kings');
+  if (!box) return;
+  const hall = hallHtml();
+  if (!hall) kingsTab = 'kings';
+  const who = seasonMode === 'all' ? '👑 Quem manda (geral)' : `👑 Quem manda em ${seasonLabel().toLowerCase()}`;
+  box.innerHTML = `<div class="kings-head">${hall
+      ? `<div class="seg" role="tablist" aria-label="Ranking do escritório">${[['kings', who], ['hall', '🏛️ Hall da fama']].map(([t, l]) =>
+          `<button role="tab" data-tab="${t}" aria-selected="${kingsTab === t}" aria-pressed="${kingsTab === t}">${l}</button>`).join('')}</div>`
+      : `<h2>${who}</h2>`}</div>
+    ${kingsTab === 'hall' ? hall : kingsHtml()}`;
+  box.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { kingsTab = b.dataset.tab; renderKings(); });
 }
 
 async function showMenu() {

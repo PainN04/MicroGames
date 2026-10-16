@@ -53,6 +53,9 @@ async function fetchScores() {
   $('#dbtxt').textContent = localMode ? 'ranking só neste navegador'
     : online ? 'ranking compartilhado'
     : `servidor fora do ar${waiting ? ` · ${waiting} pra enviar` : ''}`;
+  // tudo certo = só a bolinha verde (o texto fica na dica); problema = mostra o texto
+  $('#db').classList.toggle('compact', online && !waiting);
+  $('#db').title = $('#dbtxt').textContent;
 }
 // ---------- temporadas ----------
 // Cada mês é uma temporada: o ranking do mês começa zerado no dia 1º; o "Geral" guarda tudo desde o começo.
