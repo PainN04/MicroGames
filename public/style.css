@@ -127,6 +127,11 @@
   .kings ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-xs); }
   .kings li { padding: .5em 1em; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-size: var(--fs-sm); }
   .kings li b { color: var(--yellow); }
+  /* destaque da semana (Geiko) */
+  .week { display: flex; gap: var(--space-sm); align-items: center; padding: .8em var(--space-md); margin: 0 0 var(--space-md); }
+  .week .i { font-size: 1.8rem; }
+  .week b { font-size: var(--fs-sm); }
+  .week small { display: block; color: var(--muted); font-size: var(--fs-xs); margin-top: 2px; }
   /* avisos flutuantes */
   #toasts { position: fixed; right: 16px; bottom: 16px; z-index: 60; display: grid; gap: 8px; width: min(380px, calc(100vw - 32px)); }
   .toast { display: flex; gap: .7em; align-items: center; text-align: left; font: inherit; color: var(--text); cursor: pointer; padding: .8em 1em;

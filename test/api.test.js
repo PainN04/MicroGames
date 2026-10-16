@@ -231,6 +231,17 @@ test('aviso de recorde tomado chega uma vez só pra quem perdeu o 1º lugar', as
   assert.equal((await bia('/api/auth/ping')).body.notes.length, 0);
 });
 
+test('destaque da semana: exige login; sem Geiko responde vazio; jogo × trabalho só pra admin', async () => {
+  assert.equal((await client()('/api/geiko/week')).status, 401);
+  const ana = await login('ana', 'senha-ana-123');
+  const w = await ana('/api/geiko/week');
+  assert.equal(w.status, 200);
+  assert.equal(w.body.champion, null);
+  assert.equal((await ana('/api/admin/workplay')).status, 403);
+  const adm = await login('outroadm', 'senha-adm-123');
+  assert.equal((await adm('/api/admin/workplay')).status, 200);
+});
+
 /* ---------- regras do bloqueio por tickets (Geiko) ---------- */
 
 test('pesos dos tickets do Geiko', () => {

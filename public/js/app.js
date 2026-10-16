@@ -15,7 +15,7 @@ function kingsHtml() {
   const kings = champions();
   const title = seasonMode === 'all' ? '👑 Quem manda no escritório (geral)' : `👑 Quem manda em ${seasonLabel().toLowerCase()}`;
   return `<h2>${title}</h2>` + (kings.length
-    ? '<ol>' + kings.map(([n, c], k) => `<li>${['🥇', '🥈', '🥉'][k] || '•'} <a href="#" data-profile="${esc(n)}">${esc(n)}</a> — <b>${c}</b> ${c > 1 ? 'recordes' : 'recorde'}</li>`).join('') + '</ol>'
+    ? '<ol>' + kings.map(([n, c], k) => `<li>${['🥇', '🥈', '🥉'][k] || '•'} <a href="#" data-profile="${esc(n)}">${esc(n)}</a>${ticketStar(n)} — <b>${c}</b> ${c > 1 ? 'recordes' : 'recorde'}</li>`).join('') + '</ol>'
     : '<p class="hint" style="text-align:left">Ninguém tem recorde ainda.</p>')
     + (seasonMode === 'month' ? `<p class="hint" style="text-align:left;margin:var(--space-sm) 0 0">O ranking do mês zera no dia 1º. Quem tiver mais recordes no fim do mês entra no Hall da fama.</p>` : '');
 }
@@ -31,6 +31,26 @@ function hallHtml() {
     </details>`;
   }).join('') + '</div>';
 }
+// destaque da semana no Geiko: quem mais resolveu tickets desde segunda (vem de /api/geiko/week)
+let weekData = null;
+const ticketStar = n => (weekData?.champion && n === weekData.champion.name ? ' <span title="Quem mais resolveu tickets na semana">🎫</span>' : '');
+async function loadWeek() {
+  if (!me || localMode) return;
+  try { weekData = await api('api/geiko/week'); } catch { weekData = null; }
+  renderWeek();
+}
+function renderWeek() {
+  const box = $('#week');
+  if (!box) return;
+  const d = weekData;
+  if (!d || (!d.champion && d.me == null)) { box.hidden = true; return; }
+  box.hidden = false;
+  const list = d.people?.filter(p => p.count > 0).slice(0, 5);
+  box.innerHTML = `<span class="i" aria-hidden="true">🎫</span>
+    <div><b>${d.champion ? `Destaque da semana: <a href="#" data-profile="${esc(d.champion.name)}">${esc(d.champion.name)}</a> — ${d.champion.count} ticket${d.champion.count > 1 ? 's' : ''} resolvido${d.champion.count > 1 ? 's' : ''}` : 'Ninguém resolveu ticket esta semana ainda'}</b>
+      <small>${list?.length > 1 ? list.map((p, k) => `${k + 1}º ${esc(p.name)} ${p.count}`).join(' · ') + ' · ' : ''}${d.me != null ? `Você: ${d.me} desde segunda.` : ''} Quem mais resolver até sexta ganha o 🎫 no ranking.</small></div>`;
+}
+
 // quadro do desafio do dia (topo do menu)
 function dailyHtml() {
   const id = dailyGame(), g = GAMES[id], rows = bestPerPlayer(id, dayRange()).slice(0, 3);
@@ -73,6 +93,7 @@ function renderMenu() {
   main.insertAdjacentHTML('beforeend', `
     <section class="gate glass" id="gate" hidden aria-live="polite"></section>
     <section class="daily glass" id="daily" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
+    <section class="week glass" id="week" hidden></section>
     <div class="menu-bar"><span class="hint">Ranking:</span>${seasonSeg()}</div>
     <section class="grid" aria-label="Jogos">` +
     menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}">
@@ -86,6 +107,7 @@ function renderMenu() {
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
   bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
   bindDaily();
+  renderWeek();
   // card do jogo do dia ganha um selo
   $(`.card[data-id="${dailyGame()}"]`)?.classList.add('is-daily');
   renderGate();
@@ -112,12 +134,14 @@ async function showMenu() {
   if (currentView === 'menu') refreshMenu();
   checkVersion();
   if (me && !me.mustChange) refreshGate();
+  await loadWeek();
+  if (currentView === 'menu') refreshMenu();
 }
 
 function boardHtml(id) {
   const g = GAMES[id], rows = bestPerPlayer(id).slice(0, 10);
   return `<h3>🏆 Ranking</h3>${seasonSeg()}` + (rows.length
-    ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${['🥇', '🥈', '🥉'][k] || k + 1}</span><a class="name" href="#" data-profile="${esc(n)}">${esc(n)}</a><span>${fmt(g, s)}</span></li>`).join('') + '</ol>'
+    ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${['🥇', '🥈', '🥉'][k] || k + 1}</span><a class="name" href="#" data-profile="${esc(n)}">${esc(n)}${ticketStar(n)}</a><span>${fmt(g, s)}</span></li>`).join('') + '</ol>'
     : `<p class="empty">${seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`);
 }
 // desenha o ranking da partida e liga o seletor Mês/Geral
@@ -425,11 +449,27 @@ function gateHtml() {
   const pct = Math.min(100, gate.limit ? (gate.total / gate.limit) * 100 : 100);
   return `<div class="msg">
       <b>${gate.blocked ? '🔒 Jogos bloqueados' : '✅ Liberado pra jogar'}</b>
-      <p>${gate.error ? esc(gate.error) : `Sua fila no Geiko soma <b>${fmtW(gate.total)}</b> pontos — o limite é ${fmtW(gate.limit)}. ${gate.blocked ? 'Resolva os tickets pra liberar.' : ''}`}</p>
+      <p>${gate.error ? esc(gate.error) : `Sua fila no Geiko soma <b>${fmtW(gate.total)}</b> pontos — o limite é ${fmtW(gate.limit)}. ${gateHint()}`}</p>
       <div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>
     </div>
     <button class="btn ghost" id="gateSee">Ver tickets</button>
     <button class="btn ghost" id="gateRefresh">↻ Atualizar</button>`;
+}
+// Bloqueado: o menor número de tickets que, resolvidos, liberam (os mais pesados primeiro).
+// Liberado: quanto ainda cabe na fila antes de bloquear.
+function gateHint() {
+  const over = Math.round((gate.total - gate.limit) * 100) / 100;
+  if (!gate.blocked) {
+    const room = Math.round((gate.limit - gate.total) * 100) / 100;
+    return room > 0 ? `Ainda ${room > 1 ? 'cabem' : 'cabe'} <b>${fmtW(room)}</b> ponto${room > 1 ? 's' : ''} na fila antes de bloquear.` : 'No limite: mais um ticket e bloqueia.';
+  }
+  const sorted = [...(gate.tickets || [])].sort((a, b) => b.weight - a.weight);
+  const pick = [];
+  let cut = 0;
+  for (const t of sorted) { if (cut >= over) break; pick.push(t); cut += t.weight; }
+  if (cut < over || !pick.length) return 'Resolva os tickets pra liberar.';
+  const ids = pick.slice(0, 3).map(t => `#${t.id}`).join(', ') + (pick.length > 3 ? '…' : '');
+  return `${pick.length <= 2 ? 'Falta pouco: resolva' : 'Pra liberar, resolva'} <b>${pick.length} ticket${pick.length > 1 ? 's' : ''}</b> (${ids}) pra liberar.`;
 }
 function renderGate() {
   const box = $('#gate');

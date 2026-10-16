@@ -243,10 +243,12 @@ function showReport() {
         <button class="btn ghost" id="csv">⬇️ Exportar CSV</button>
       </div>
       <div id="rep"><p class="hint" style="text-align:left">Carregando...</p></div>
+      <section class="glass" style="margin-top:var(--space-md)" id="workplay"></section>
       <section class="glass" style="margin-top:var(--space-md)" id="errs"></section>
     </div>`;
     $('#back').onclick = showMenu;
     loadErrors();
+    loadWorkplay();
     main.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
       reportState.days = +b.dataset.days;
       main.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
@@ -254,6 +256,27 @@ function showReport() {
     });
     loadReport();
   });
+}
+
+// jogo × trabalho na semana: partidas, tickets resolvidos no Geiko e fila de agora, por pessoa vinculada
+async function loadWorkplay(force = false) {
+  const box = $('#workplay');
+  if (!box) return;
+  box.innerHTML = '<h2>🎫 Jogo × trabalho (semana)</h2><p class="hint" style="text-align:left">Consultando o Geiko...</p>';
+  try {
+    const d = await api('api/admin/workplay' + (force ? '?force=1' : ''));
+    const since = new Date(d.since).toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
+    box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">🎫 Jogo × trabalho (semana)</h2>
+        <button class="btn ghost" id="wpRefresh">↻ Atualizar</button></div>
+      <p class="hint" style="text-align:left;margin:var(--space-xs) 0 var(--space-sm)">Desde ${since}. Tickets resolvidos = finalizados no Geiko. Fila = soma dos pesos de agora (a mesma conta do bloqueio).
+        ${d.at ? `Consultado há ${ago(Date.now() - d.at)}.` : ''}</p>
+      ${d.error ? `<p class="err">${esc(d.error)}</p>` : ''}
+      ${d.people.length ? `<table class="tickets users"><thead><tr><th>Pessoa</th><th>Tickets resolvidos</th><th>Partidas</th><th>Fila agora</th></tr></thead><tbody>
+        ${d.people.map((p, k) => `<tr><td>${k === 0 && p.closed ? '🎫 ' : ''}${esc(p.name)}</td><td><b>${p.closed}</b></td><td>${p.plays}</td>
+          <td>${p.queue == null ? '<span class="hint">—</span>' : `${fmtW(p.queue)}${p.blocked ? ' <span class="tag">🔒 bloqueado</span>' : ''}`}</td></tr>`).join('')}</tbody></table>`
+        : '<p class="hint" style="text-align:left">Ninguém com ID do Geiko vinculado.</p>'}`;
+    $('#wpRefresh').onclick = () => loadWorkplay(true);
+  } catch (err) { box.innerHTML = `<h2>🎫 Jogo × trabalho (semana)</h2><p class="err">${esc(err.message)}</p>`; }
 }
 
 // erros que aconteceram no navegador do pessoal (todo o período; guarda os 300 mais novos)
@@ -519,7 +542,8 @@ async function loadRules() {
     const sitEntries = Object.entries(situations).sort((a, b) => a[1].localeCompare(b[1]));
     form.innerHTML = `
       <div class="row" style="margin-bottom:var(--space-sm)">
-        <label class="checks"><label><input type="checkbox" name="enabled" ${rules.enabled ? 'checked' : ''}> Bloqueio ligado</label></label>
+        <label class="checks"><label><input type="checkbox" name="enabled" ${rules.enabled ? 'checked' : ''}> Bloqueio ligado</label>
+          <label title="Desligado: todo mundo vê só quem mais resolveu; os números de cada um ficam no Relatório"><input type="checkbox" name="weeklyPublic" ${rules.weeklyPublic ? 'checked' : ''}> Mostrar ranking de tickets da semana pra todos</label></label>
         <label>Bloqueia quando a soma passar de<input type="number" name="limit" step="0.25" min="0" value="${rules.limit}"></label>
       </div>
       <p class="note" style="margin-bottom:6px">Peso por prioridade</p>
@@ -541,6 +565,7 @@ async function loadRules() {
       const f = new FormData(form);
       const body = {
         enabled: f.get('enabled') === 'on',
+        weeklyPublic: f.get('weeklyPublic') === 'on',
         limit: f.get('limit'),
         priority: Object.fromEntries(PRIO_FIELDS.map(([k]) => [k, f.get('p_' + k)])),
         noInteractionMult: f.get('noInteractionMult'),
