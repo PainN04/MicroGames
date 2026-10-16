@@ -72,7 +72,7 @@ const CARD_LAYOUTS = [['atual', 'Atual'], ['min', 'Minimal'], ['capa', 'Capa']];
 let cardLayout = (() => {
   const q = new URLSearchParams(location.search).get('cards');
   let v = q; try { v ||= localStorage.getItem('mg_cards'); } catch {}
-  return CARD_LAYOUTS.some(([k]) => k === v) ? v : 'atual';
+  return CARD_LAYOUTS.some(([k]) => k === v) ? v : 'capa';
 })();
 function layoutSeg() {
   return `<div class="seg" role="group" aria-label="Visual dos cards">

@@ -468,6 +468,10 @@ function loop(now) {
   requestAnimationFrame(loop);
 }
 
+// celular (mesmo limite do CSS): cenas menores; ao cruzar o limite, redesenha o menu com o tamanho certo
+const SMALL = matchMedia('(max-width: 560px)');
+SMALL.addEventListener?.('change', () => { if (currentView === 'menu' && document.querySelector('.grid')) renderMenu(); });
+
 /** Chamado depois de desenhar o menu: troca o cenário CSS pela cena 3D nos jogos que têm uma, e liga a inclinação. */
 async function enhanceCards() {
   try { await Promise.all([loadLib(ZDOG_URL), loadLib(TILT_URL)]); } catch { return; } // sem internet: fica o cenário CSS
@@ -475,7 +479,9 @@ async function enhanceCards() {
   io?.disconnect(); visible.clear();
   scenes3d = [];
   // tamanho da cena por visual: no "minimal" e na "capa" ela é a imagem principal do card
-  const size = { atual: 150, min: 210, capa: 190 }[document.querySelector('.grid')?.dataset.layout] || 150;
+  // (a Zdog grava o tamanho no próprio canvas, então o tamanho do celular sai daqui e não do CSS)
+  const small = SMALL.matches, layout = document.querySelector('.grid')?.dataset.layout;
+  const size = (small ? { atual: 150, min: 170, capa: 150 } : { atual: 150, min: 210, capa: 190 })[layout] || 150;
   document.querySelectorAll('.grid .card').forEach(card => {
     const build = SCENES_3D[card.dataset.id];
     if (!build) return;
