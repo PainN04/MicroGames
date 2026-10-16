@@ -126,52 +126,10 @@
   .card .rec b { color: oklch(85% 0.12 var(--h)); font-weight: 700; }
   @keyframes rise { from { opacity: 0; transform: translateY(18px) scale(.98); } }
 
-  /* ---------- cenário animado dos cards (public/js/scenes.js) ---------- */
-  /* fica no fundo, mais forte à direita/em cima e some perto do texto */
-  .card .scene { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .55;
-    -webkit-mask-image: linear-gradient(200deg, #000 30%, transparent 75%); mask-image: linear-gradient(200deg, #000 30%, transparent 75%);
-    transition: opacity var(--duration); }
-  .card:hover .scene, .card:focus-visible .scene { opacity: .9; }
-  .scene i { position: absolute; left: var(--x); top: var(--y); font-size: var(--s); font-style: normal; line-height: 1; color: var(--text);
-    animation: var(--anim) var(--t) linear var(--d) infinite; will-change: transform, opacity; }
-  .card:hover .scene i { animation-duration: calc(var(--t) * .6); }
-  /* formas */
-  .scene .dot, .scene .seg, .scene .ball, .scene .shot { width: var(--s); height: var(--s); border-radius: 50%; background: var(--c, #fff); }
-  .scene .shot { height: calc(var(--s) * 3); border-radius: 4px; background: #ff6b8a; }
-  .scene .ball { background: #fff; }
-  .scene .seg { border-radius: 3px; }
-  .scene .ring { width: var(--s); height: var(--s); border-radius: 50%; border: 3px solid var(--c); }
-  .scene .tile, .scene .brick, .scene .slab { width: var(--s); height: var(--s); border-radius: 5px; background: var(--c); }
-  .scene .brick { height: calc(var(--s) * .55); width: calc(var(--s) * 1.1); border-radius: 3px; }
-  .scene .slab { height: 12px; border-radius: 3px; }
-  .scene .tile2048 { width: var(--s); height: var(--s); display: grid; place-items: center; border-radius: 6px; background: var(--c); color: #1a1a1a; font-weight: 700; font-size: calc(var(--s) * .45); }
-  .scene .key, .scene .num { font-weight: 700; padding: .25em .4em; border-radius: 5px; border: 1px solid oklch(100% 0 0 / .35); background: oklch(100% 0 0 / .08); }
-  .scene .target { width: var(--s); height: var(--s); border-radius: 50%; background: radial-gradient(circle, #ff6b8a 0 18%, #fff 19% 36%, #ff6b8a 37% 54%, #fff 55% 72%, #ff6b8a 73%); }
-  /* peça de Tetris: 4 quadradinhos desenhados com sombras (I, L e T) */
-  .scene .tetro { width: var(--s); height: var(--s); border-radius: 3px; background: var(--c); }
-  .scene .tetro.s0 { box-shadow: 0 var(--s) 0 var(--c), 0 calc(var(--s) * 2) 0 var(--c), 0 calc(var(--s) * 3) 0 var(--c); }
-  .scene .tetro.s1 { box-shadow: 0 var(--s) 0 var(--c), 0 calc(var(--s) * 2) 0 var(--c), var(--s) calc(var(--s) * 2) 0 var(--c); }
-  .scene .tetro.s2 { box-shadow: var(--s) 0 0 var(--c), calc(var(--s) * 2) 0 0 var(--c), var(--s) var(--s) 0 var(--c); }
-  /* movimentos */
-  .scene .fall { --anim: sc-fall; }   .scene .rise { --anim: sc-rise; }   .scene .drift { --anim: sc-drift; }
-  .scene .pop { --anim: sc-pop; }     .scene .blink { --anim: sc-blink; } .scene .bob { --anim: sc-bob; }
-  .scene .march { --anim: sc-march; } .scene .slide { --anim: sc-slide; } .scene .bounce { --anim: sc-bounce; }
-  @keyframes sc-fall { from { transform: translateY(0) rotate(0); } to { transform: translateY(260px) rotate(var(--r, 0deg)); } }
-  @keyframes sc-rise { from { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } to { transform: translateY(-210px); opacity: 0; } }
-  @keyframes sc-drift { from { transform: translateX(0); } to { transform: translateX(340px); } }
-  @keyframes sc-pop { 0%, 55%, 100% { transform: scale(0); } 70%, 85% { transform: scale(1); } }
-  @keyframes sc-blink { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
-  @keyframes sc-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
-  @keyframes sc-march { 0%, 100% { transform: translateX(-14px); } 50% { transform: translateX(14px); } }
-  @keyframes sc-slide { 0%, 100% { transform: translateX(-18px); } 50% { transform: translateX(18px); } }
-  @keyframes sc-bounce { 0%, 100% { transform: translate(-30px, 0); } 25% { transform: translate(0, -34px); } 50% { transform: translate(30px, 0); } 75% { transform: translate(0, -20px); } }
-  /* cena 3D (Zdog, public/js/cards3d.js): canto de cima à direita, some perto do texto */
-  .card .z3d { position: absolute; top: -8px; right: -8px; width: 150px; height: 150px; z-index: -1; pointer-events: none; opacity: .85;
-    -webkit-mask-image: radial-gradient(circle at 60% 40%, #000 45%, transparent 72%); mask-image: radial-gradient(circle at 60% 40%, #000 45%, transparent 72%); }
   /* com a inclinação ligada, o "pulinho" do hover sai (a Vanilla-Tilt cuida do movimento) */
   .tilt-on .card:hover { transform: none; }
   .tilt-on .card { transform-style: preserve-3d; }
-  .tilt-on .card .icon, .tilt-on .card h3 { transform: translateZ(24px); }
+  .tilt-on .card h3 { transform: translateZ(24px); }
   .js-tilt-glare { border-radius: inherit; }
 
   .kings { margin-top: var(--space-xl); padding: var(--space-md); }
@@ -224,46 +182,38 @@
   /* temporadas: seletor Mês/Geral e Hall da fama */
   .menu-bar { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-sm); margin: 0 0 var(--space-md); flex-wrap: wrap; }
 
-  /* ---------- visual "minimal": sem ícone, cena grande no centro, nome embaixo ---------- */
-  .grid[data-layout="min"] { grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
-  .grid[data-layout="min"] .card { min-height: 220px; justify-content: flex-end; gap: .2rem; }
-  .grid[data-layout="min"] .card .icon { display: none; }
-  .grid[data-layout="min"] .card .z3d { top: 50%; left: 50%; right: auto; width: 210px; height: 210px; translate: -50% -62%; opacity: 1;
-    -webkit-mask-image: radial-gradient(circle, #000 50%, transparent 70%); mask-image: radial-gradient(circle, #000 50%, transparent 70%); }
-  .grid[data-layout="min"] .card .scene { -webkit-mask-image: none; mask-image: none; }
-  .grid[data-layout="min"] .card h3 { margin: 0; font-size: var(--fs-base); text-align: center; }
-  .grid[data-layout="min"] .card .rec { margin: 0; padding: 0; justify-content: center; opacity: .8; }
-  .grid[data-layout="min"] .card::before { background: radial-gradient(80% 60% at 50% 38%, oklch(70% 0.15 var(--h) / 0.16), transparent 70%); }
-
-  /* ---------- visual "capa": palco colorido com a cena + faixa com nome e recorde ---------- */
-  .grid[data-layout="capa"] { grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); }
-  .grid[data-layout="capa"] .card { padding: 0; min-height: 0; gap: 0; }
-  .grid[data-layout="capa"] .card .icon { display: none; }
+  /* ---------- cards em "capa": palco na cor do jogo com a cena 3D + faixa com nome e recorde ---------- */
+  .grid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr)); }
+  .grid .card { padding: 0; min-height: 0; gap: 0; }
   /* palco: fundo na cor do jogo, com "chão" e sombra */
-  .grid[data-layout="capa"] .card::before { inset: 0 0 auto 0; height: 170px; border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0;
+  .grid .card::before { inset: 0 0 auto 0; height: 170px; border-radius: inherit; border-bottom-left-radius: 0; border-bottom-right-radius: 0;
     background: radial-gradient(70% 55% at 50% 88%, oklch(10% 0.02 var(--h) / .55), transparent 70%),
       radial-gradient(120% 100% at 50% 0%, oklch(62% 0.16 var(--h) / .55), oklch(30% 0.09 var(--h) / .55) 70%); }
-  /* a cena é mais alta que o palco: some suavemente nas bordas de cima e de baixo, sem invadir a faixa do nome */
-  .grid[data-layout="capa"] .card .z3d { top: -10px; left: 50%; right: auto; width: 190px; height: 190px; translate: -50% 0; opacity: 1;
+  /* cena 3D (public/js/cards3d.js): mais alta que o palco, some suavemente nas bordas sem invadir a faixa do nome */
+  .grid .card .z3d { position: absolute; z-index: -1; pointer-events: none; top: -10px; left: 50%; translate: -50% 0;
     -webkit-mask-image: linear-gradient(to bottom, transparent 6%, #000 16%, #000 80%, transparent 92%), linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
     -webkit-mask-composite: source-in;
     mask-image: linear-gradient(to bottom, transparent 6%, #000 16%, #000 80%, transparent 92%), linear-gradient(to right, transparent, #000 14%, #000 86%, transparent);
     mask-composite: intersect; }
-  .grid[data-layout="capa"] .card .scene { inset: 0 0 auto 0; height: 170px; -webkit-mask-image: none; mask-image: none; opacity: .9; }
-  .grid[data-layout="capa"] .card h3 { margin: 170px 0 0; padding: .7rem var(--space-md) 0; font-size: var(--fs-base);
+  /* sem 3D (desligado no ✨, ou a biblioteca não carregou): o emoji do jogo, grande e parado, no palco */
+  .grid .card .icon { position: absolute; inset: 0 0 auto 0; width: auto; height: 170px; display: grid; place-items: center; font-size: 64px;
+    background: none; border: 0; border-radius: 0; filter: drop-shadow(0 10px 14px oklch(0% 0 0 / .45)); }
+  .grid .card:hover .icon { transform: scale(1.08); }
+  .grid.has3d .card .icon { display: none; }
+  .grid .card h3 { margin: 170px 0 0; padding: .7rem var(--space-md) 0; font-size: var(--fs-base);
     border-top: 1px solid oklch(72% 0.15 var(--h) / .35); }
-  .grid[data-layout="capa"] .card .rec { padding: .25rem var(--space-md) .8rem; margin: 0; }
-  .grid[data-layout="capa"] .card.is-daily::after { top: 10px; right: 10px; }
-  /* celular: Minimal e Capa em 2 colunas, cena um pouco menor */
+  .grid .card .rec { padding: .25rem var(--space-md) .8rem; margin: 0; }
+  .grid .card.is-daily::after { top: 10px; right: 10px; }
+  /* celular: 2 colunas, palco menor */
   @media (max-width: 560px) {
-    .grid[data-layout="min"], .grid[data-layout="capa"] { grid-template-columns: 1fr 1fr; }
-    .grid[data-layout="min"] .card { min-height: 180px; padding: var(--space-sm); }
-    .grid[data-layout="min"] .card .z3d { width: 170px; height: 170px; }
-    .grid[data-layout="capa"] .card::before, .grid[data-layout="capa"] .card .scene { height: 130px; }
-    .grid[data-layout="capa"] .card .z3d { width: 150px; height: 150px; top: -10px; }
-    .grid[data-layout="capa"] .card h3 { margin-top: 130px; padding: .5rem var(--space-sm) 0; }
-    .grid[data-layout="capa"] .card .rec { padding: .2rem var(--space-sm) .6rem; }
+    .grid { grid-template-columns: 1fr 1fr; }
+    .grid .card::before, .grid .card .icon { height: 130px; }
+    .grid .card .icon { font-size: 48px; }
+    .grid .card h3 { margin-top: 130px; padding: .5rem var(--space-sm) 0; }
+    .grid .card .rec { padding: .2rem var(--space-sm) .6rem; }
   }
+  /* botão ✨ do header: apagado quando o 3D está desligado */
+  #fx3d[aria-pressed="false"] { opacity: .45; filter: grayscale(1); }
   .board .season-seg { margin: 0 0 var(--space-sm); }
   .board .season-seg button { padding: .35em .8em; min-height: 32px; }
   .hall { display: grid; gap: var(--space-xs); }

@@ -487,20 +487,38 @@ function loop(now) {
 const SMALL = matchMedia('(max-width: 560px)');
 SMALL.addEventListener?.('change', () => { if (currentView === 'menu' && document.querySelector('.grid')) renderMenu(); });
 
-/** Chamado depois de desenhar o menu: troca o cenário CSS pela cena 3D nos jogos que têm uma, e liga a inclinação. */
+// ✨ no header: liga/desliga o 3D (fica salvo no navegador). Desligado = emoji parado, sem biblioteca nem animação.
+let fx3dOn = (() => { try { return localStorage.getItem('mg_3d') !== 'off'; } catch { return true; } })();
+function renderFx3d() {
+  const b = $('#fx3d');
+  b.setAttribute('aria-pressed', fx3dOn);
+  b.title = fx3dOn ? 'Animações 3D: ligadas (clique pra desligar se ficar pesado)' : 'Animações 3D: desligadas (clique pra ligar)';
+}
+$('#fx3d').onclick = () => {
+  fx3dOn = !fx3dOn;
+  try { localStorage.setItem('mg_3d', fx3dOn ? 'on' : 'off'); } catch {}
+  renderFx3d();
+  if (!fx3dOn) { scenes3d = []; io?.disconnect(); visible.clear(); } // o loop para sozinho sem cenas
+  if (currentView === 'menu') renderMenu();
+};
+renderFx3d();
+
+/** Chamado depois de desenhar o menu: põe a cena 3D em cada card e liga a inclinação (se o 3D estiver ligado). */
+let enhanceRun = 0;
 async function enhanceCards() {
-  try { await Promise.all([loadLib(ZDOG_URL), loadLib(TILT_URL)]); } catch { return; } // sem internet: fica o cenário CSS
-  if (!document.querySelector('.grid .card')) return;
+  const run = ++enhanceRun; // só a chamada mais nova monta as cenas (menu redesenhado duas vezes seguidas)
   io?.disconnect(); visible.clear();
   scenes3d = [];
-  // tamanho da cena por visual: no "minimal" e na "capa" ela é a imagem principal do card
+  if (!fx3dOn) return;
+  try { await Promise.all([loadLib(ZDOG_URL), loadLib(TILT_URL)]); } catch { return; } // sem internet: fica o emoji
+  if (run !== enhanceRun || !fx3dOn || !document.querySelector('.grid .card')) return;
+  document.querySelector('.grid').classList.add('has3d');
+  // tamanho da cena: 190px no computador, 150px no celular
   // (a Zdog grava o tamanho no próprio canvas, então o tamanho do celular sai daqui e não do CSS)
-  const small = SMALL.matches, layout = document.querySelector('.grid')?.dataset.layout;
-  const size = (small ? { atual: 150, min: 170, capa: 150 } : { atual: 150, min: 210, capa: 190 })[layout] || 150;
+  const size = SMALL.matches ? 150 : 190;
   document.querySelectorAll('.grid .card').forEach(card => {
     const build = SCENES_3D[card.dataset.id];
     if (!build) return;
-    card.querySelector('.scene')?.remove();
     const canvas = Object.assign(document.createElement('canvas'), { className: 'z3d', width: size, height: size });
     canvas.setAttribute('aria-hidden', 'true');
     card.prepend(canvas);

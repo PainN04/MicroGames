@@ -67,18 +67,6 @@ function dailyHtml() {
     </div>`;
 }
 function bindDaily() { $('#dailyPlay') && ($('#dailyPlay').onclick = () => play(dailyGame())); }
-// visual dos cards: "atual" (ícone + cena no canto), "min" (sem ícone, cena grande) ou "capa" (palco colorido + faixa)
-const CARD_LAYOUTS = [['atual', 'Atual'], ['min', 'Minimal'], ['capa', 'Capa']];
-let cardLayout = (() => {
-  const q = new URLSearchParams(location.search).get('cards');
-  let v = q; try { v ||= localStorage.getItem('mg_cards'); } catch {}
-  return CARD_LAYOUTS.some(([k]) => k === v) ? v : 'capa';
-})();
-function layoutSeg() {
-  return `<div class="seg" role="group" aria-label="Visual dos cards">
-    ${CARD_LAYOUTS.map(([k, l]) => `<button data-layout="${k}" aria-pressed="${cardLayout === k}">${l}</button>`).join('')}
-  </div>`;
-}
 function seasonSeg() {
   return `<div class="seg season-seg" role="group" aria-label="Ranking">
     ${[['month', `🗓️ ${monthName(monthKey(Date.now()))}`], ['all', '🏛️ Geral']].map(([m, l]) => `<button data-season="${m}" aria-pressed="${seasonMode === m}">${l}</button>`).join('')}
@@ -103,10 +91,9 @@ function renderMenu() {
   main.insertAdjacentHTML('beforeend', `
     <section class="daily glass" id="daily" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
     <section class="week glass" id="week" hidden></section>
-    <div class="menu-bar"><span class="hint">Visual:</span>${layoutSeg()}<span class="hint">Ranking:</span>${seasonSeg()}</div>
-    <section class="grid" aria-label="Jogos" data-layout="${cardLayout}">` +
+    <div class="menu-bar"><span class="hint">Ranking:</span>${seasonSeg()}</div>
+    <section class="grid" aria-label="Jogos">` +
     menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
-        ${sceneHtml(id)}
         <span class="icon" aria-hidden="true">${g.emoji}</span>
         <h3>${g.name}</h3>
         <span class="rec">${recHtml(id)}</span>
@@ -115,11 +102,6 @@ function renderMenu() {
   renderKings();
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
   bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
-  main.querySelectorAll('[data-layout]').forEach(b => b.tagName === 'BUTTON' && (b.onclick = () => {
-    cardLayout = b.dataset.layout;
-    try { localStorage.setItem('mg_cards', cardLayout); } catch {}
-    renderMenu();
-  }));
   bindDaily();
   renderWeek();
   // card do jogo do dia ganha um selo
