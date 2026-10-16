@@ -2,7 +2,7 @@
 // Uso:
 //   npm run admin -- <usuario> "<Nome>" [idGeiko]            → banco de TESTE local (microgame.db)
 //   npm run admin -- <usuario> "<Nome>" [idGeiko] --producao → banco da Vercel (DATABASE_URL do .env.local)
-//   npm run admin -- <usuario> "<Nome>" [idGeiko] --homolog  → banco de TESTE da Vercel (Homolog_DB_URL no ambiente)
+//   npm run admin -- <usuario> "<Nome>" [idGeiko] --homolog  → banco de TESTE da Vercel (Homolog_DB_DATABASE_URL no ambiente)
 // No primeiro login a pessoa é obrigada a trocar a senha. As demais contas se criam pelo painel admin.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -17,9 +17,9 @@ if (!username || !name) {
 }
 
 if (homolog) {
-  // a URL do banco de teste vem do ambiente (set Homolog_DB_URL=...), nunca do arquivo
-  if (!process.env.Homolog_DB_URL) { console.error('Defina Homolog_DB_URL no ambiente antes de rodar com --homolog'); process.exit(1); }
-  process.env.DATABASE_URL = process.env.Homolog_DB_URL;
+  // a URL do banco de teste vem do ambiente (set Homolog_DB_DATABASE_URL=...), nunca do arquivo
+  if (!process.env.Homolog_DB_DATABASE_URL) { console.error('Defina Homolog_DB_DATABASE_URL no ambiente antes de rodar com --homolog'); process.exit(1); }
+  process.env.DATABASE_URL = process.env.Homolog_DB_DATABASE_URL;
 } else if (prod) {
   const env = fs.readFileSync(path.join(__dirname, '..', '.env.local'), 'utf8');
   const m = env.match(/^DATABASE_URL="?([^"\r\n]*)"?/m);
