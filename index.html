@@ -2170,6 +2170,25 @@ async function api(path, { method = 'GET', body } = {}) {
   return j;
 }
 
+// Erro de JavaScript no navegador de alguém vai pro servidor (aparece no Relatório). No máximo 5 por página e sem repetir.
+const sentErrors = new Set();
+function reportError(message, source) {
+  message = String(message || '').slice(0, 500);
+  if (!me || !message || sentErrors.has(message) || sentErrors.size >= 5) return;
+  sentErrors.add(message);
+  const view = currentView === 'records' || currentView === 'report' ? 'admin' : currentView;
+  fetch('api/errors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message, source, view }) }).catch(() => {});
+}
+addEventListener('error', e => {
+  if (!e.message) return; // erro carregando imagem/script: sem mensagem útil
+  reportError(e.message, e.error?.stack || `${e.filename}:${e.lineno}:${e.colno}`);
+});
+addEventListener('unhandledrejection', e => {
+  const r = e.reason;
+  if (r?.status) return; // erro de API já tratado na tela (401, 423...)
+  reportError(r?.message || String(r), r?.stack);
+});
+
 // Uma conta = um aparelho: se alguém logou com esta conta em outro lugar, este aparelho sai na hora.
 function kicked(msg) {
   if (!me) return;
@@ -2471,7 +2490,21 @@ function showRecords() {
         </div>
         <div id="recTable"><p class="hint" style="text-align:left">Carregando...</p></div>
       </section>
+      <section class="glass">
+        <div class="row" style="justify-content:space-between;margin-bottom:var(--space-sm)">
+          <div><h3 style="margin:0">💾 Backups</h3>
+            <p class="hint" style="text-align:left;margin:0">Cópia automática todo dia e antes de editar recordes. Guarda as 30 mais novas.</p></div>
+          <button class="btn ghost" id="bkNow">Fazer backup agora</button>
+        </div>
+        <div id="bkList"><p class="hint" style="text-align:left">Carregando...</p></div>
+      </section>
     </div>`;
+    $('#bkNow').onclick = async e => {
+      e.target.disabled = true;
+      try { await api('api/admin/backups', { method: 'POST', body: {} }); await loadBackups('✅ Backup feito.'); }
+      catch (err) { alert(err.message); } finally { e.target.disabled = false; }
+    };
+    loadBackups();
     $('#back').onclick = () => { history.replaceState(null, '', location.pathname); showMenu(); };
     $('#recMode').value = recState.mode;
     $('#recMode').onchange = e => { recState.mode = e.target.value; renderRecords(); };
@@ -2552,6 +2585,29 @@ async function recordAction(btn) {
   } catch (err) { alert(err.message); }
 }
 
+async function loadBackups(msg = '') {
+  const box = $('#bkList');
+  if (!box) return;
+  try {
+    const { backups } = await api('api/admin/backups');
+    const when = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    box.innerHTML = (msg ? `<p class="note" style="margin:0 0 var(--space-sm)">${esc(msg)}</p>` : '') + (backups.length
+      ? `<table class="tickets users"><thead><tr><th>Quando</th><th>Motivo</th><th>Partidas</th><th>Contas</th><th></th></tr></thead><tbody>
+        ${backups.map(b => `<tr data-id="${b.id}"><td>${when(b.at)}</td><td>${esc(b.reason)}</td><td>${b.scores}</td><td>${b.users}</td>
+          <td><div class="actions"><a class="btn ghost" href="api/admin/backups/download?id=${b.id}" download>Baixar</a>
+          <button class="btn ghost" data-act="restore">Restaurar partidas</button></div></td></tr>`).join('')}</tbody></table>`
+      : '<p class="hint" style="text-align:left">Nenhuma cópia ainda.</p>');
+    box.querySelectorAll('[data-act="restore"]').forEach(b => b.onclick = async () => {
+      const id = +b.closest('tr').dataset.id, bk = backups.find(x => x.id === id);
+      if (!confirm(`Trocar TODAS as partidas de agora pelas ${bk.scores} da cópia de ${when(bk.at)}?\n\nAntes disso é feita uma cópia do estado atual, então dá pra desfazer.`)) return;
+      try {
+        const { scores } = await api('api/admin/backups/restore', { method: 'POST', body: { id } });
+        fetchScores(); await loadRecords(); await loadBackups(`♻️ Restaurado: ${scores} partidas.`);
+      } catch (err) { alert(err.message); }
+    });
+  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+}
+
 // ---------- relatório (admin) ----------
 const reportState = { days: 7 };
 function showReport() {
@@ -2573,8 +2629,10 @@ function showReport() {
         <button class="btn ghost" id="csv">⬇️ Exportar CSV</button>
       </div>
       <div id="rep"><p class="hint" style="text-align:left">Carregando...</p></div>
+      <section class="glass" style="margin-top:var(--space-md)" id="errs"></section>
     </div>`;
     $('#back').onclick = showMenu;
+    loadErrors();
     main.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
       reportState.days = +b.dataset.days;
       main.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
@@ -2582,6 +2640,26 @@ function showReport() {
     });
     loadReport();
   });
+}
+
+// erros que aconteceram no navegador do pessoal (todo o período; guarda os 300 mais novos)
+async function loadErrors() {
+  const box = $('#errs');
+  if (!box) return;
+  try {
+    const { errors } = await api('api/admin/errors');
+    box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">⚠️ Erros no navegador</h2>
+      ${errors.length ? '<button class="btn ghost" id="errClear">Limpar lista</button>' : ''}</div>
+      ${errors.length ? `<table class="tickets users" style="margin-top:var(--space-sm)"><thead><tr><th>Erro</th><th>Vezes</th><th>Onde</th><th>Quem</th><th>Último</th></tr></thead><tbody>
+        ${errors.map(e => `<tr><td><code style="white-space:pre-wrap;word-break:break-word">${esc(e.message)}</code>${e.source ? `<br><span class="hint">${esc(e.source.split('\n')[0])}</span>` : ''}</td>
+          <td>${e.count}</td><td>${e.views.map(v => GAMES[v] ? GAMES[v].emoji + ' ' + GAMES[v].name : v).join(', ') || '—'}</td>
+          <td>${esc(e.people.join(', ')) || '—'}</td><td>há ${ago(Date.now() - e.last)}</td></tr>`).join('')}</tbody></table>`
+        : '<p class="hint" style="text-align:left;margin:var(--space-xs) 0 0">Nenhum erro registrado. 🎉</p>'}`;
+    $('#errClear') && ($('#errClear').onclick = async () => {
+      if (!confirm('Apagar a lista de erros?')) return;
+      try { await api('api/admin/errors/clear', { method: 'POST', body: {} }); loadErrors(); } catch (err) { alert(err.message); }
+    });
+  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
 }
 
 let reportData = null;
