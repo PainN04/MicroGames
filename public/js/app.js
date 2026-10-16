@@ -91,7 +91,6 @@ function renderMenu() {
   main.classList.remove('game-view');
   main.replaceChildren(heroNode);
   main.insertAdjacentHTML('beforeend', `
-    <section class="gate glass" id="gate" hidden aria-live="polite"></section>
     <section class="daily glass" id="daily" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
     <section class="week glass" id="week" hidden></section>
     <div class="menu-bar"><span class="hint">Ranking:</span>${seasonSeg()}</div>
@@ -426,9 +425,9 @@ async function logout() {
 
 // ---------- bloqueio por fila do Geiko ----------
 async function refreshGate(force = false) {
-  if (!me || me.mustChange) return (gate = null);
+  if (!me || me.mustChange) { gate = null; renderGate(); return null; }
   try { gate = await api('api/gate' + (force ? '?force=1' : '')); } catch { /* sem rede: mantém o último */ }
-  if (currentView === 'menu') renderGate();
+  renderGate();
   return gate;
 }
 
@@ -439,22 +438,38 @@ function untilText(ms) {
   const d = new Date(ms), today = new Date().toDateString() === d.toDateString();
   return 'até ' + (today ? '' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' ') + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
-function gateHtml() {
-  if (gate?.manual) {
-    return `<div class="msg"><b>🔒 Jogos bloqueados pelo admin</b>
-      <p>Bloqueado ${untilText(gate.manual.until)}.${gate.manual.reason ? ` Motivo: ${esc(gate.manual.reason)}` : ''}</p></div>
-      <button class="btn ghost" id="gateRefresh">↻ Atualizar</button>`;
-  }
-  if (!gate || !gate.linked || !gate.enabled) return '';
-  const pct = Math.min(100, gate.limit ? (gate.total / gate.limit) * 100 : 100);
-  return `<div class="msg">
-      <b>${gate.blocked ? '🔒 Jogos bloqueados' : '✅ Liberado pra jogar'}</b>
-      <p>${gate.error ? esc(gate.error) : `Sua fila no Geiko soma <b>${fmtW(gate.total)}</b> pontos — o limite é ${fmtW(gate.limit)}. ${gateHint()}`}</p>
-      <div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>
-    </div>
-    <button class="btn ghost" id="gateSee">Ver tickets</button>
-    <button class="btn ghost" id="gateRefresh">↻ Atualizar</button>`;
+// Status da fila do Geiko: selo pequeno no header (só pra quem tem ID do Geiko ou foi bloqueado pelo admin);
+// clicar abre o painel com os detalhes.
+const gateVisible = () => !!gate && (!!gate.manual || (gate.linked && gate.enabled));
+function gatePillHtml() {
+  if (gate.manual) return '🔒 <span>Bloqueado</span>';
+  if (gate.error) return '⚠️ <span>Geiko</span>';
+  return `${gate.blocked ? '🔒' : '✅'} <span>${fmtW(gate.total)}<small>/${fmtW(gate.limit)}</small></span>`;
 }
+function gatePopHtml() {
+  if (gate.manual) {
+    return `<b>🔒 Jogos bloqueados pelo admin</b>
+      <p>Bloqueado ${untilText(gate.manual.until)}.${gate.manual.reason ? ` Motivo: ${esc(gate.manual.reason)}` : ''}</p>
+      <div class="acts"><button class="btn ghost" id="gateRefresh">↻ Atualizar</button></div>`;
+  }
+  const pct = Math.min(100, gate.limit ? (gate.total / gate.limit) * 100 : 100);
+  return `<b>${gate.blocked ? '🔒 Jogos bloqueados' : '✅ Liberado pra jogar'}</b>
+    <p>${gate.error ? esc(gate.error) : `Sua fila no Geiko soma <b>${fmtW(gate.total)}</b> pontos — o limite é ${fmtW(gate.limit)}. ${gateHint()}`}</p>
+    <div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>
+    <div class="acts"><button class="btn ghost" id="gateSee">Ver tickets</button><button class="btn ghost" id="gateRefresh">↻ Atualizar</button></div>`;
+}
+function toggleGatePop(open = $('#gatePop').hidden) {
+  const pop = $('#gatePop');
+  if (open) { // fixo logo abaixo do selo, alinhado à direita dele, sem sair da tela
+    const r = $('#gatePill').getBoundingClientRect();
+    pop.style.top = r.bottom + 8 + 'px';
+    pop.style.right = Math.max(16, innerWidth - r.right) + 'px';
+  }
+  pop.hidden = !open;
+  $('#gatePill').setAttribute('aria-expanded', open);
+}
+document.addEventListener('click', e => { if (!e.target.closest('.gate-wrap') && !$('#gatePop').hidden) toggleGatePop(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#gatePop').hidden) { toggleGatePop(false); $('#gatePill').focus(); } });
 // Bloqueado: o menor número de tickets que, resolvidos, liberam (os mais pesados primeiro).
 // Liberado: quanto ainda cabe na fila antes de bloquear.
 function gateHint() {
@@ -469,18 +484,23 @@ function gateHint() {
   for (const t of sorted) { if (cut >= over) break; pick.push(t); cut += t.weight; }
   if (cut < over || !pick.length) return 'Resolva os tickets pra liberar.';
   const ids = pick.slice(0, 3).map(t => `#${t.id}`).join(', ') + (pick.length > 3 ? '…' : '');
-  return `${pick.length <= 2 ? 'Falta pouco: resolva' : 'Pra liberar, resolva'} <b>${pick.length} ticket${pick.length > 1 ? 's' : ''}</b> (${ids}) pra liberar.`;
+  return `${pick.length <= 2 ? 'Falta pouco: resolva' : 'Resolva'} <b>${pick.length} ticket${pick.length > 1 ? 's' : ''}</b> (${ids}) pra liberar.`;
 }
 function renderGate() {
-  const box = $('#gate');
-  if (box) {
-    const html = gateHtml();
-    box.hidden = !html;
-    box.className = `gate glass ${gate?.blocked ? 'blocked' : 'ok'}`;
-    box.innerHTML = html;
-    $('#gateSee')?.addEventListener('click', () => gateDialog());
-    $('#gateRefresh')?.addEventListener('click', async e => { e.target.disabled = true; await refreshGate(true); });
-  }
+  const show = gateVisible();
+  $('#gateWrap').hidden = !show;
+  if (show) {
+    const pill = $('#gatePill');
+    pill.className = `gate-pill ${gate.blocked ? 'blocked' : gate.error ? 'warn' : 'ok'}`;
+    pill.innerHTML = gatePillHtml();
+    pill.title = gate.blocked ? 'Jogos bloqueados — clique pra ver' : 'Sua fila no Geiko — clique pra ver';
+    pill.onclick = () => toggleGatePop();
+    const pop = $('#gatePop');
+    pop.className = `gate-pop glass ${gate.blocked ? 'blocked' : 'ok'}`;
+    pop.innerHTML = gatePopHtml();
+    $('#gateSee')?.addEventListener('click', () => { toggleGatePop(false); gateDialog(); });
+    $('#gateRefresh')?.addEventListener('click', async e => { e.stopPropagation(); e.target.disabled = true; await refreshGate(true); toggleGatePop(true); });
+  } else toggleGatePop(false);
   document.querySelectorAll('.card').forEach(c => c.classList.toggle('locked', !!gate?.blocked));
 }
 

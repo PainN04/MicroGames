@@ -18,6 +18,10 @@
   <div class="who">
     <span class="pill" id="db"><span class="dot"></span><span id="dbtxt">conectando...</span></span>
     <button class="btn ghost icon-btn" id="mute" aria-label="Desligar som">🔊</button>
+    <span class="gate-wrap" id="gateWrap" hidden>
+      <button class="gate-pill" id="gatePill" aria-haspopup="dialog" aria-expanded="false" aria-controls="gatePop"></button>
+      <span class="gate-pop glass" id="gatePop" role="dialog" aria-label="Sua fila no Geiko" hidden></span>
+    </span>
     <span class="chip acct">👤 <b id="pname">—</b><button class="btn ghost" id="acctBtn" aria-haspopup="menu" aria-expanded="false">Conta ▾</button>
       <span class="acct-menu glass" id="acctMenu" role="menu" hidden>
         <button role="menuitem" id="mProfile">👤 Meu perfil</button>
