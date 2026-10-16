@@ -54,13 +54,55 @@ async function fetchScores() {
     : online ? 'ranking compartilhado'
     : `servidor fora do ar${waiting ? ` · ${waiting} pra enviar` : ''}`;
 }
-function bestPerPlayer(gameId) {
+// ---------- temporadas ----------
+// Cada mês é uma temporada: o ranking do mês começa zerado no dia 1º; o "Geral" guarda tudo desde o começo.
+let seasonMode = localStorage.getItem('mg_season') === 'all' ? 'all' : 'month';
+const monthStart = (d = new Date()) => new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+const monthKey = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; };
+const monthName = (key, withYear = false) => {
+  const [y, m] = key.split('-').map(Number);
+  const s = new Date(y, m - 1, 1).toLocaleDateString('pt-BR', withYear ? { month: 'long', year: 'numeric' } : { month: 'long' });
+  return s[0].toUpperCase() + s.slice(1);
+};
+const seasonLabel = () => (seasonMode === 'all' ? 'Geral' : monthName(monthKey(Date.now())));
+function setSeasonMode(mode) {
+  seasonMode = mode;
+  try { localStorage.setItem('mg_season', mode); } catch {}
+}
+/** Período: { since, until } em ms. Padrão: o modo escolhido (mês atual ou tudo). */
+const currentRange = () => (seasonMode === 'all' ? {} : { since: monthStart() });
+
+function bestPerPlayer(gameId, { since = 0, until = Infinity } = currentRange()) {
   const g = GAMES[gameId];
   const best = {};
   for (const s of scores[gameId] || []) {
+    if (s.date < since || s.date >= until) continue;
     if (!(s.name in best) || better(g, s.score, best[s.name])) best[s.name] = s.score;
   }
   return Object.entries(best).sort((a, b) => better(g, a[1], b[1]) ? -1 : 1);
+}
+/** Quem tem mais recordes no período (desempate: mais 2º lugares). [[nome, recordes, vices]] */
+function champions(range = currentRange()) {
+  const count = {};
+  for (const id in GAMES) {
+    const [first, second] = bestPerPlayer(id, range);
+    if (first) (count[first[0]] ||= [0, 0])[0]++;
+    if (second) (count[second[0]] ||= [0, 0])[1]++;
+  }
+  return Object.entries(count).filter(([, [w]]) => w > 0).map(([n, [w, s]]) => [n, w, s])
+    .sort((a, b) => b[1] - a[1] || b[2] - a[2]);
+}
+/** Meses que já terminaram e tiveram partidas, do mais novo pro mais velho, com campeão e recordistas de cada jogo. */
+function hallOfFame() {
+  const months = new Set();
+  for (const id in GAMES) for (const s of scores[id] || []) months.add(monthKey(s.date));
+  months.delete(monthKey(Date.now()));
+  return [...months].sort().reverse().map(key => {
+    const [y, m] = key.split('-').map(Number);
+    const range = { since: new Date(y, m - 1, 1).getTime(), until: new Date(y, m, 1).getTime() };
+    const games = Object.keys(GAMES).map(id => [id, bestPerPlayer(id, range)[0]]).filter(([, top]) => top);
+    return { key, kings: champions(range), games };
+  });
 }
 function better(g, a, b) { return g.better === 'low' ? a < b : a > b; }
 // Retorna 'ok' (salvou), 'queued' (servidor fora, reenvia depois) ou a mensagem de recusa do servidor.

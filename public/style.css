@@ -127,6 +127,18 @@
   .kings ol { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--space-xs); }
   .kings li { padding: .5em 1em; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-size: var(--fs-sm); }
   .kings li b { color: var(--yellow); }
+  /* temporadas: seletor Mês/Geral e Hall da fama */
+  .menu-bar { display: flex; align-items: center; justify-content: flex-end; gap: var(--space-sm); margin: 0 0 var(--space-md); }
+  .board .season-seg { margin: 0 0 var(--space-sm); }
+  .board .season-seg button { padding: .35em .8em; min-height: 32px; }
+  .hall { display: grid; gap: var(--space-xs); }
+  .hall-month { border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); }
+  .hall-month summary { display: flex; flex-wrap: wrap; gap: .3em 1em; align-items: baseline; padding: .7em 1em; cursor: pointer; font-size: var(--fs-sm); }
+  .hall-month summary .m { font-weight: 700; min-width: 9em; }
+  .hall-month summary b { color: var(--yellow); }
+  .hall-month ul { list-style: none; margin: 0; padding: 0 1em .8em; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); gap: 4px 1.5em; font-size: var(--fs-sm); }
+  .hall-month li { display: flex; justify-content: space-between; gap: 1em; border-bottom: 1px dashed var(--border); padding: 3px 0; }
+  .hall-month li span:last-child { color: var(--muted); text-align: right; }
 
   /* ---------- tela de jogo ---------- */
   .layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--space-md); align-items: start; }

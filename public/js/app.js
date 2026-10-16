@@ -6,21 +6,42 @@ function swap(render) {
 }
 function announce(msg) { $('#live').textContent = msg; }
 
-function champions() {
-  const count = {};
-  for (const id in GAMES) { const top = bestPerPlayer(id)[0]; if (top) count[top[0]] = (count[top[0]] || 0) + 1; }
-  return Object.entries(count).sort((a, b) => b[1] - a[1]);
-}
-
 function recHtml(id) {
   const g = GAMES[id], top = bestPerPlayer(id)[0];
-  return top ? `🏆 <b>${esc(top[0])}</b> · ${fmt(g, top[1])}` : 'Sem recorde ainda — seja o primeiro';
+  return top ? `🏆 <b>${esc(top[0])}</b> · ${fmt(g, top[1])}`
+    : seasonMode === 'all' ? 'Sem recorde ainda — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()} — seja o primeiro`;
 }
 function kingsHtml() {
   const kings = champions();
-  return '<h2>👑 Quem manda no escritório</h2>' + (kings.length
+  const title = seasonMode === 'all' ? '👑 Quem manda no escritório (geral)' : `👑 Quem manda em ${seasonLabel().toLowerCase()}`;
+  return `<h2>${title}</h2>` + (kings.length
     ? '<ol>' + kings.map(([n, c], k) => `<li>${['🥇', '🥈', '🥉'][k] || '•'} ${esc(n)} — <b>${c}</b> ${c > 1 ? 'recordes' : 'recorde'}</li>`).join('') + '</ol>'
-    : '<p class="hint" style="text-align:left">Ninguém tem recorde ainda.</p>');
+    : '<p class="hint" style="text-align:left">Ninguém tem recorde ainda.</p>')
+    + (seasonMode === 'month' ? `<p class="hint" style="text-align:left;margin:var(--space-sm) 0 0">O ranking do mês zera no dia 1º. Quem tiver mais recordes no fim do mês entra no Hall da fama.</p>` : '');
+}
+// campeões dos meses que já acabaram
+function hallHtml() {
+  const hall = hallOfFame();
+  if (!hall.length) return '';
+  return '<h2>🏛️ Hall da fama</h2><div class="hall">' + hall.map(({ key, kings, games }) => {
+    const [king] = kings;
+    return `<details class="hall-month"><summary><span class="m">${monthName(key, true)}</span>
+        ${king ? `<span>👑 <b>${esc(king[0])}</b> · ${king[1]} ${king[1] > 1 ? 'recordes' : 'recorde'}</span>` : ''}</summary>
+      <ul>${games.map(([id, [n, s]]) => `<li><span>${GAMES[id].emoji} ${GAMES[id].name}</span><span>${esc(n)} · ${fmt(GAMES[id], s)}</span></li>`).join('')}</ul>
+    </details>`;
+  }).join('') + '</div>';
+}
+function seasonSeg() {
+  return `<div class="seg season-seg" role="group" aria-label="Ranking">
+    ${[['month', `🗓️ ${monthName(monthKey(Date.now()))}`], ['all', '🏛️ Geral']].map(([m, l]) => `<button data-season="${m}" aria-pressed="${seasonMode === m}">${l}</button>`).join('')}
+  </div>`;
+}
+function bindSeasonSeg(root, onChange) {
+  root.querySelectorAll('[data-season]').forEach(b => b.onclick = () => {
+    setSeasonMode(b.dataset.season);
+    root.querySelectorAll('[data-season]').forEach(x => x.setAttribute('aria-pressed', x.dataset.season === seasonMode));
+    onChange();
+  });
 }
 // Desenha o menu na hora com o ranking que já temos (cache da última visita) — não espera a API (LCP).
 // Reaproveita o .hero que veio no HTML: recriar o maior elemento da tela contaria como um LCP novo (mais tarde).
@@ -33,14 +54,18 @@ function renderMenu() {
   main.replaceChildren(heroNode);
   main.insertAdjacentHTML('beforeend', `
     <section class="gate glass" id="gate" hidden aria-live="polite"></section>
+    <div class="menu-bar"><span class="hint">Ranking:</span>${seasonSeg()}</div>
     <section class="grid" aria-label="Jogos">` +
     menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}">
         <span class="icon" aria-hidden="true">${g.emoji}</span>
         <h3>${g.name}</h3><p>${g.desc}</p>
         <span class="rec">${recHtml(id)}</span>
       </button>`).join('') + `</section>
-    <section class="kings glass" id="kings">${kingsHtml()}</section>`);
+    <section class="kings glass" id="kings">${kingsHtml()}</section>
+    <section class="kings glass" id="hall">${hallHtml()}</section>`);
+  $('#hall').hidden = !$('#hall').innerHTML;
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
+  bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
   renderGate();
   prefetchPhaser();
 }
@@ -49,6 +74,8 @@ function refreshMenu() {
   if (!$('#kings')) return;
   for (const id in GAMES) { const rec = $(`.card[data-id="${id}"] .rec`); if (rec) rec.innerHTML = recHtml(id); }
   $('#kings').innerHTML = kingsHtml();
+  $('#hall').innerHTML = hallHtml();
+  $('#hall').hidden = !$('#hall').innerHTML;
 }
 
 async function showMenu() {
@@ -65,9 +92,16 @@ async function showMenu() {
 
 function boardHtml(id) {
   const g = GAMES[id], rows = bestPerPlayer(id).slice(0, 10);
-  return `<h3>🏆 Ranking</h3>` + (rows.length
+  return `<h3>🏆 Ranking</h3>${seasonSeg()}` + (rows.length
     ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${['🥇', '🥈', '🥉'][k] || k + 1}</span><span class="name">${esc(n)}</span><span>${fmt(g, s)}</span></li>`).join('') + '</ol>'
-    : '<p class="empty">Ninguém jogou ainda.</p>');
+    : `<p class="empty">${seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`);
+}
+// desenha o ranking da partida e liga o seletor Mês/Geral
+function renderBoard(id) {
+  const b = $('#board');
+  if (!b) return;
+  b.innerHTML = boardHtml(id);
+  bindSeasonSeg(b, () => renderBoard(id));
 }
 
 function play(id) {
@@ -92,7 +126,8 @@ function play(id) {
     </div>`;
     $('#back').onclick = showMenu;
     $('#restart').onclick = () => play(id);
-    fetchScores().then(() => $('#board') && ($('#board').innerHTML = boardHtml(id)));
+    renderBoard(id);
+    fetchScores().then(() => renderBoard(id));
     main.classList.add('game-view');
     window.scrollTo(0, 0);
     fitGame();
@@ -107,27 +142,35 @@ function play(id) {
         $('#again').focus();
         return;
       }
-      const prev = bestPerPlayer(id).find(([n]) => n === player);
+      // compara com o geral e com o mês, independente do que o ranking está mostrando
+      const ALL = {}, MONTH = { since: monthStart() };
+      const mine = range => bestPerPlayer(id, range).find(([n]) => n === player);
+      const prev = mine(ALL), prevMonth = mine(MONTH);
       const cheat = g.check?.(score, proof);
       const status = cheat || await saveScore(id, score, proof);
       const ok = status === 'ok' || status === 'queued';
       const record = ok && (!prev || better(g, score, prev[1]));
-      const top = bestPerPlayer(id)[0];
-      const champ = record && top && top[0] === player && top[1] === score;
-      $('#board').innerHTML = boardHtml(id);
+      const monthBest = ok && (!prevMonth || better(g, score, prevMonth[1]));
+      const leads = range => { const top = bestPerPlayer(id, range)[0]; return top && top[0] === player && top[1] === score; };
+      const champ = record && leads(ALL);
+      const monthChamp = monthBest && leads(MONTH);
+      const month = monthName(monthKey(Date.now())).toLowerCase();
+      renderBoard(id);
       el.innerHTML = `<div class="result">
         <span class="label">Resultado</span>
         <span class="score">${fmt(g, score)}</span>
         ${status === 'login' ? '<span class="badge warn">🔑 Você não estava logado — entre pra salvar este resultado.</span><button class="btn" id="loginSave">Entrar e salvar</button>'
           : !ok ? `<span class="badge warn">🤖 Não valeu: ${esc(status)}. Resultado não foi salvo.</span>`
           : champ ? '<span class="badge">👑 Recorde geral!</span>'
+          : monthChamp ? `<span class="badge">🗓️ Liderando ${month}!</span>`
           : record ? '<span class="badge">🎉 Novo recorde pessoal!</span>'
-          : prev ? `<span class="hint">Seu recorde: ${fmt(g, prev[1])}</span>` : ''}
+          : monthBest ? `<span class="badge">📈 Seu melhor de ${month}!</span>`
+          : prev ? `<span class="hint">Seu recorde: ${fmt(g, prev[1])}${prevMonth ? ` · em ${month}: ${fmt(g, prevMonth[1])}` : ''}</span>` : ''}
         ${status === 'queued' ? '<span class="badge warn">⚠️ Servidor fora do ar — resultado guardado, envio automático quando ele voltar</span>' : ''}
         <button class="btn" id="again">Jogar de novo</button>
       </div>`;
       announce(`Resultado: ${fmt(g, score)}. ${!ok ? 'Não foi salvo.' : record ? 'Novo recorde!' : ''}`);
-      if (record) { confetti(); sfx.record(); }
+      if (record || monthChamp) { confetti(); sfx.record(); }
       $('#again').onclick = () => play(id);
       $('#again').focus();
       $('#loginSave')?.addEventListener('click', () => { setMe(null); loginModal(); });
