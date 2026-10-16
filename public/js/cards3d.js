@@ -114,27 +114,41 @@ const SCENES_3D = {
   },
   // toupeiras saindo dos buracos
   toupeira(Z, illo) {
-    const moles = [-26, 26].map((x, i) => {
-      new Z.Ellipse({ addTo: illo, diameter: 30, stroke: 4, fill: true, color: '#1b1428', translate: { x, y: 34 }, rotate: { x: Z.TAU / 4 } });
-      new Z.Ellipse({ addTo: illo, diameter: 34, stroke: 3, color: '#5a3d2b', translate: { x, y: 34 }, rotate: { x: Z.TAU / 4 } });
-      const a = new Z.Anchor({ addTo: illo, translate: { x } });
+    // Zdog não recorta, então o "dentro do buraco" é feito pela ordem de desenho: num Group as peças saem
+    // na ordem em que foram criadas — fundo do buraco, toupeira, monte de terra na frente (que a esconde)
+    const HOLE = 26;
+    const moles = [-28, 28].map((x, i) => {
+      const g = new Z.Group({ addTo: illo, translate: { x } });
+      new Z.Ellipse({ addTo: g, width: 34, height: 12, stroke: 2, fill: true, color: '#140f1f', translate: { y: HOLE } }); // fundo do buraco
+      const a = new Z.Anchor({ addTo: g });
+      const body = new Z.Shape({ addTo: a, path: [{ y: 4 }, { y: 30 }], stroke: 20, color: '#9c6a45' }); // corpo: vai até a boca do buraco
+      [-1, 1].forEach(s => new Z.Shape({ addTo: a, stroke: 6, color: '#8c5a3a', translate: { x: s * 10, y: -10 } })); // orelhas (atrás da cabeça)
       new Z.Shape({ addTo: a, stroke: 24, color: '#b07a52' }); // cabeça
       new Z.Shape({ addTo: a, stroke: 9, color: '#e8b896', translate: { y: 4, z: 9 } }); // focinho
       new Z.Shape({ addTo: a, stroke: 4, color: '#ff8fa3', translate: { y: 1, z: 13 } }); // nariz
-      [-1, 1].forEach(s => {
-        new Z.Shape({ addTo: a, stroke: 4, color: '#10131c', translate: { x: s * 5, y: -4, z: 10 } }); // olhos
-        new Z.Shape({ addTo: a, stroke: 6, color: '#8c5a3a', translate: { x: s * 10, y: -10, z: 2 } }); // orelhas
+      [-1, 1].forEach(s => new Z.Shape({ addTo: a, stroke: 4, color: '#10131c', translate: { x: s * 5, y: -4, z: 10 } })); // olhos
+      // monte de terra na frente: borda de baixo do buraco + barranco até embaixo
+      new Z.Shape({
+        addTo: g, fill: true, stroke: 2, color: '#6b4a32',
+        path: [
+          { x: -17, y: HOLE },
+          { bezier: [{ x: -17, y: HOLE + 7 }, { x: 17, y: HOLE + 7 }, { x: 17, y: HOLE }] },
+          { x: 24, y: HOLE + 6 },
+          { bezier: [{ x: 22, y: HOLE + 34 }, { x: -22, y: HOLE + 34 }, { x: -24, y: HOLE + 6 }] },
+        ],
       });
-      return { a, off: i * Math.PI };
+      new Z.Shape({ addTo: g, path: [{ x: -17, y: HOLE }, { bezier: [{ x: -17, y: HOLE + 7 }, { x: 17, y: HOLE + 7 }, { x: 17, y: HOLE }] }], closed: false, stroke: 2.5, color: '#8a6345' }); // beirada
+      return { a, body, off: i * Math.PI };
     });
     return t => {
       for (const m of moles) {
         const k = Math.max(0, Math.sin(t * 1.6 + m.off)); // sobe, espia, desce
-        m.a.translate.y = 34 - k * 34;
+        const y = HOLE + 14 - smooth(k) * 44; // no ponto mais baixo fica inteira atrás do monte
+        m.a.translate.y = y;
+        m.body.path[1].y = Math.max(4, HOLE + 4 - y); // o corpo termina sempre dentro do buraco
+        m.body.updatePath();
         m.a.rotate.y = Math.sin(t * 3 + m.off) * 0.35 * k;
-        m.a.scale = 0.6 + k * 0.4;
       }
-      illo.rotate.x = -0.25;
     };
   },
   // raio girando e um anel que fica verde... e de repente vermelho
