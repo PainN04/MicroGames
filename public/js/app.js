@@ -9,7 +9,7 @@ function announce(msg) { $('#live').textContent = msg; }
 function recHtml(id) {
   const g = GAMES[id], top = bestPerPlayer(id)[0];
   return top ? `🏆 <b>${esc(top[0])}</b> · ${fmt(g, top[1])}`
-    : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém em ${seasonLabel().toLowerCase()} ainda`;
+    : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()}`;
 }
 function kingsHtml() {
   const kings = champions();
@@ -94,7 +94,9 @@ function renderMenu() {
     <div class="menu-bar"><span class="hint">Ranking:</span>${seasonSeg()}</div>
     <section class="grid" aria-label="Jogos">` +
     menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
-        <span class="head"><span class="icon" aria-hidden="true">${g.emoji}</span><h3>${g.name}</h3></span>
+        ${sceneHtml(id)}
+        <span class="icon" aria-hidden="true">${g.emoji}</span>
+        <h3>${g.name}</h3>
         <span class="rec">${recHtml(id)}</span>
       </button>`).join('') + `</section>
     <section class="kings glass" id="kings"></section>`);

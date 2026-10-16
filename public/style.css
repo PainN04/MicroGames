@@ -107,25 +107,66 @@
   .hero h1 em { font-style: normal; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .hero p { margin: var(--space-sm) 0 0; color: var(--muted); font-size: var(--fs-lg); max-width: 34ch; }
 
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); gap: var(--space-sm); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 220px), 1fr)); gap: var(--space-sm); }
   .card {
     --h: 290; position: relative; text-align: left; font: inherit; color: inherit; cursor: pointer;
-    padding: var(--space-sm) var(--space-md); display: flex; flex-direction: column; gap: .5rem;
+    padding: var(--space-md); display: flex; flex-direction: column; gap: .4rem; min-height: 168px; overflow: hidden; isolation: isolate;
     animation: rise .55s var(--ease-spring) both; animation-delay: calc(var(--i) * 60ms);
     transition: transform var(--duration) var(--ease-spring), border-color var(--duration), box-shadow var(--duration);
   }
   .card::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: radial-gradient(120% 80% at 0% 0%, oklch(70% 0.15 var(--h) / 0.16), transparent 60%); pointer-events: none; }
   .card:hover { transform: translateY(-6px); border-color: oklch(72% 0.15 var(--h) / 0.55); box-shadow: 0 18px 40px oklch(60% 0.15 var(--h) / 0.25); }
   .card:active { transform: scale(0.97); }
-  .card .head { display: flex; align-items: center; gap: .7rem; min-width: 0; padding-right: 1.6rem; }
-  .card .icon { flex: none; width: 42px; height: 42px; display: grid; place-items: center; font-size: 22px; border-radius: 12px; background: oklch(70% 0.15 var(--h) / 0.18); border: 1px solid oklch(72% 0.15 var(--h) / 0.3); transition: transform var(--duration) var(--ease-spring); }
+  .card .icon { position: relative; width: 56px; height: 56px; display: grid; place-items: center; font-size: 28px; border-radius: 16px; background: oklch(70% 0.15 var(--h) / 0.18); border: 1px solid oklch(72% 0.15 var(--h) / 0.3); transition: transform var(--duration) var(--ease-spring); }
   .card:hover .icon { transform: rotate(-8deg) scale(1.1); }
-  .card h3 { margin: 0; font-size: var(--fs-base); letter-spacing: -0.02em; line-height: 1.2; }
+  .card h3 { position: relative; margin: .5rem 0 0; font-size: var(--fs-lg); letter-spacing: -0.02em; }
   .card p { margin: 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.45; }
-  .card .rec { margin-top: auto; font-size: var(--fs-xs); color: var(--muted); display: flex; gap: .4em; align-items: center; min-width: 0; white-space: nowrap; overflow: hidden; }
+  .card .rec { position: relative; margin-top: auto; padding-top: .6rem; font-size: var(--fs-xs); color: var(--muted); display: flex; gap: .4em; align-items: center; min-width: 0; white-space: nowrap; overflow: hidden; }
   .card .rec b { overflow: hidden; text-overflow: ellipsis; }
   .card .rec b { color: oklch(85% 0.12 var(--h)); font-weight: 700; }
   @keyframes rise { from { opacity: 0; transform: translateY(18px) scale(.98); } }
+
+  /* ---------- cenário animado dos cards (public/js/scenes.js) ---------- */
+  /* fica no fundo, mais forte à direita/em cima e some perto do texto */
+  .card .scene { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .55;
+    -webkit-mask-image: linear-gradient(200deg, #000 30%, transparent 75%); mask-image: linear-gradient(200deg, #000 30%, transparent 75%);
+    transition: opacity var(--duration); }
+  .card:hover .scene, .card:focus-visible .scene { opacity: .9; }
+  .scene i { position: absolute; left: var(--x); top: var(--y); font-size: var(--s); font-style: normal; line-height: 1; color: var(--text);
+    animation: var(--anim) var(--t) linear var(--d) infinite; will-change: transform, opacity; }
+  .card:hover .scene i { animation-duration: calc(var(--t) * .6); }
+  /* formas */
+  .scene .dot, .scene .seg, .scene .ball, .scene .shot { width: var(--s); height: var(--s); border-radius: 50%; background: var(--c, #fff); }
+  .scene .shot { height: calc(var(--s) * 3); border-radius: 4px; background: #ff6b8a; }
+  .scene .ball { background: #fff; }
+  .scene .seg { border-radius: 3px; }
+  .scene .ring { width: var(--s); height: var(--s); border-radius: 50%; border: 3px solid var(--c); }
+  .scene .tile, .scene .brick, .scene .slab { width: var(--s); height: var(--s); border-radius: 5px; background: var(--c); }
+  .scene .brick { height: calc(var(--s) * .55); width: calc(var(--s) * 1.1); border-radius: 3px; }
+  .scene .slab { height: 12px; border-radius: 3px; }
+  .scene .tile2048 { width: var(--s); height: var(--s); display: grid; place-items: center; border-radius: 6px; background: var(--c); color: #1a1a1a; font-weight: 700; font-size: calc(var(--s) * .45); }
+  .scene .key, .scene .num { font-weight: 700; padding: .25em .4em; border-radius: 5px; border: 1px solid oklch(100% 0 0 / .35); background: oklch(100% 0 0 / .08); }
+  .scene .target { width: var(--s); height: var(--s); border-radius: 50%; background: radial-gradient(circle, #ff6b8a 0 18%, #fff 19% 36%, #ff6b8a 37% 54%, #fff 55% 72%, #ff6b8a 73%); }
+  /* peça de Tetris: 4 quadradinhos desenhados com sombras (I, L e T) */
+  .scene .tetro { width: var(--s); height: var(--s); border-radius: 3px; background: var(--c); }
+  .scene .tetro.s0 { box-shadow: 0 var(--s) 0 var(--c), 0 calc(var(--s) * 2) 0 var(--c), 0 calc(var(--s) * 3) 0 var(--c); }
+  .scene .tetro.s1 { box-shadow: 0 var(--s) 0 var(--c), 0 calc(var(--s) * 2) 0 var(--c), var(--s) calc(var(--s) * 2) 0 var(--c); }
+  .scene .tetro.s2 { box-shadow: var(--s) 0 0 var(--c), calc(var(--s) * 2) 0 0 var(--c), var(--s) var(--s) 0 var(--c); }
+  /* movimentos */
+  .scene .fall { --anim: sc-fall; }   .scene .rise { --anim: sc-rise; }   .scene .drift { --anim: sc-drift; }
+  .scene .pop { --anim: sc-pop; }     .scene .blink { --anim: sc-blink; } .scene .bob { --anim: sc-bob; }
+  .scene .march { --anim: sc-march; } .scene .slide { --anim: sc-slide; } .scene .bounce { --anim: sc-bounce; }
+  @keyframes sc-fall { from { transform: translateY(0) rotate(0); } to { transform: translateY(260px) rotate(var(--r, 0deg)); } }
+  @keyframes sc-rise { from { transform: translateY(0); opacity: 0; } 15% { opacity: 1; } 85% { opacity: 1; } to { transform: translateY(-210px); opacity: 0; } }
+  @keyframes sc-drift { from { transform: translateX(0); } to { transform: translateX(340px); } }
+  @keyframes sc-pop { 0%, 55%, 100% { transform: scale(0); } 70%, 85% { transform: scale(1); } }
+  @keyframes sc-blink { 0%, 100% { opacity: .25; } 50% { opacity: 1; } }
+  @keyframes sc-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  @keyframes sc-march { 0%, 100% { transform: translateX(-14px); } 50% { transform: translateX(14px); } }
+  @keyframes sc-slide { 0%, 100% { transform: translateX(-18px); } 50% { transform: translateX(18px); } }
+  @keyframes sc-bounce { 0%, 100% { transform: translate(-30px, 0); } 25% { transform: translate(0, -34px); } 50% { transform: translate(30px, 0); } 75% { transform: translate(0, -20px); } }
+  /* "reduzir movimento" ligado: cenário parado; só se mexe com o mouse em cima (movimento que a pessoa pediu) */
+  @media (prefers-reduced-motion: reduce) { .scene i { animation-play-state: paused; } .card:hover .scene i { animation-play-state: running; } }
 
   .kings { margin-top: var(--space-xl); padding: var(--space-md); }
   .kings h2 { margin: 0; font-size: var(--fs-lg); letter-spacing: -0.02em; }
