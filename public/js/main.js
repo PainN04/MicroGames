@@ -34,6 +34,7 @@ setInterval(checkVersion, 30000);
 
 $('#home').onclick = showMenu;
 $('#acctBtn').onclick = () => toggleAcct();
+$('#mProfile').onclick = () => { toggleAcct(false); showProfile(player); };
 $('#mPass').onclick = () => { toggleAcct(false); passwordModal(false); };
 $('#mLogout').onclick = () => { toggleAcct(false); logout(); };
 $('#mAdmin').onclick = () => { toggleAcct(false); showAdmin(); };

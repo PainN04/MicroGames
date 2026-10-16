@@ -15,7 +15,7 @@ function kingsHtml() {
   const kings = champions();
   const title = seasonMode === 'all' ? '👑 Quem manda no escritório (geral)' : `👑 Quem manda em ${seasonLabel().toLowerCase()}`;
   return `<h2>${title}</h2>` + (kings.length
-    ? '<ol>' + kings.map(([n, c], k) => `<li>${['🥇', '🥈', '🥉'][k] || '•'} ${esc(n)} — <b>${c}</b> ${c > 1 ? 'recordes' : 'recorde'}</li>`).join('') + '</ol>'
+    ? '<ol>' + kings.map(([n, c], k) => `<li>${['🥇', '🥈', '🥉'][k] || '•'} <a href="#" data-profile="${esc(n)}">${esc(n)}</a> — <b>${c}</b> ${c > 1 ? 'recordes' : 'recorde'}</li>`).join('') + '</ol>'
     : '<p class="hint" style="text-align:left">Ninguém tem recorde ainda.</p>')
     + (seasonMode === 'month' ? `<p class="hint" style="text-align:left;margin:var(--space-sm) 0 0">O ranking do mês zera no dia 1º. Quem tiver mais recordes no fim do mês entra no Hall da fama.</p>` : '');
 }
@@ -26,7 +26,7 @@ function hallHtml() {
   return '<h2>🏛️ Hall da fama</h2><div class="hall">' + hall.map(({ key, kings, games }) => {
     const [king] = kings;
     return `<details class="hall-month"><summary><span class="m">${monthName(key, true)}</span>
-        ${king ? `<span>👑 <b>${esc(king[0])}</b> · ${king[1]} ${king[1] > 1 ? 'recordes' : 'recorde'}</span>` : ''}</summary>
+        ${king ? `<span>👑 <b><a href="#" data-profile="${esc(king[0])}">${esc(king[0])}</a></b> · ${king[1]} ${king[1] > 1 ? 'recordes' : 'recorde'}</span>` : ''}</summary>
       <ul>${games.map(([id, [n, s]]) => `<li><span>${GAMES[id].emoji} ${GAMES[id].name}</span><span>${esc(n)} · ${fmt(GAMES[id], s)}</span></li>`).join('')}</ul>
     </details>`;
   }).join('') + '</div>';
@@ -43,7 +43,7 @@ function dailyHtml() {
       <button class="btn" id="dailyPlay">Jogar</button>
     </div>
     <div class="daily-side">
-      ${rows.length ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}">${['🥇', '🥈', '🥉'][k]} ${esc(n)} <b>${fmt(g, s)}</b></li>`).join('') + '</ol>'
+      ${rows.length ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}">${['🥇', '🥈', '🥉'][k]} <a href="#" data-profile="${esc(n)}">${esc(n)}</a> <b>${fmt(g, s)}</b></li>`).join('') + '</ol>'
         : '<p class="hint" style="text-align:left;margin:0">Ninguém jogou hoje ainda — saia na frente.</p>'}
       ${wins.length ? `<p class="hint" style="text-align:left;margin:var(--space-xs) 0 0">Vitórias em ${monthName(monthKey(Date.now())).toLowerCase()}: ${wins.map(([n, c]) => `${esc(n)} <b>${c}</b>`).join(' · ')}</p>` : ''}
     </div>`;
@@ -117,7 +117,7 @@ async function showMenu() {
 function boardHtml(id) {
   const g = GAMES[id], rows = bestPerPlayer(id).slice(0, 10);
   return `<h3>🏆 Ranking</h3>${seasonSeg()}` + (rows.length
-    ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${['🥇', '🥈', '🥉'][k] || k + 1}</span><span class="name">${esc(n)}</span><span>${fmt(g, s)}</span></li>`).join('') + '</ol>'
+    ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${['🥇', '🥈', '🥉'][k] || k + 1}</span><a class="name" href="#" data-profile="${esc(n)}">${esc(n)}</a><span>${fmt(g, s)}</span></li>`).join('') + '</ol>'
     : `<p class="empty">${seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`);
 }
 // desenha o ranking da partida e liga o seletor Mês/Geral
@@ -170,6 +170,7 @@ function play(id) {
       const ALL = {}, MONTH = { since: monthStart() };
       const mine = range => bestPerPlayer(id, range).find(([n]) => n === player);
       const prev = mine(ALL), prevMonth = mine(MONTH);
+      const hadAch = unlockedFor(player);
       const cheat = g.check?.(score, proof);
       const status = cheat || await saveScore(id, score, proof);
       const ok = status === 'ok' || status === 'queued';
@@ -180,6 +181,8 @@ function play(id) {
       const monthChamp = monthBest && leads(MONTH);
       const dailyLead = ok && id === dailyGame() && leads(dayRange());
       const month = monthName(monthKey(Date.now())).toLowerCase();
+      const hasAch = ok ? unlockedFor(player) : hadAch;
+      const newAch = ACHIEVEMENTS.filter(x => !hadAch.has(x.id) && hasAch.has(x.id));
       renderBoard(id);
       el.innerHTML = `<div class="result">
         <span class="label">Resultado</span>
@@ -192,6 +195,7 @@ function play(id) {
           : record ? '<span class="badge">🎉 Novo recorde pessoal!</span>'
           : monthBest ? `<span class="badge">📈 Seu melhor de ${month}!</span>`
           : prev ? `<span class="hint">Seu recorde: ${fmt(g, prev[1])}${prevMonth ? ` · em ${month}: ${fmt(g, prevMonth[1])}` : ''}</span>` : ''}
+        ${newAch.map(x => `<span class="badge ach-new">🏅 Conquista nova: ${x.icon} ${x.name}</span>`).join('')}
         ${status === 'queued' ? '<span class="badge warn">⚠️ Servidor fora do ar — resultado guardado, envio automático quando ele voltar</span>' : ''}
         <button class="btn" id="again">Jogar de novo</button>
       </div>`;
