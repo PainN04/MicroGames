@@ -1,0 +1,565 @@
+// ---------- painel admin ----------
+const PRIO_FIELDS = [['URG', 'Urgente'], ['ALT', 'Alta'], ['MED', 'Média'], ['NOR', 'Normal'], ['BAI', 'Baixa'], ['none', 'Sem prioridade']];
+
+function showAdmin() {
+  if (me?.role !== 'admin') return;
+  stop();
+  currentView = 'admin';
+  setTimeout(pingSession, 0);
+  swap(() => {
+    main.classList.remove('game-view');
+    main.innerHTML = `<div class="admin">
+      <div class="stage-head">
+        <button class="btn ghost" id="back" aria-label="Voltar ao menu">←</button>
+        <div class="title"><h2>⚙️ Painel admin</h2><p>Contas de quem joga, vínculo com o Geiko e a regra de bloqueio por fila.</p></div>
+      </div>
+      <section class="glass">
+        <h2>🟢 Online agora <span class="hint" id="onCount" style="font-size:var(--fs-sm)"></span></h2>
+        <p class="note">Quem está com o site aberto e visível (atualiza a cada 15s). Quem minimiza ou troca de aba sai da lista em ~1 min.</p>
+        <div id="onlineList"><p class="hint" style="text-align:left">Carregando...</p></div>
+      </section>
+      <section class="glass">
+        <h2>Contas</h2>
+        <form class="row" id="newUser" autocomplete="off">
+          <label>Nome (aparece no ranking)<input name="name" maxlength="40" required></label>
+          <label>Usuário (login)<input name="username" maxlength="32" pattern="[A-Za-z0-9._\\-]{3,32}" required></label>
+          <label>ID do Geiko<input name="geikoId" inputmode="numeric" pattern="\\d*" placeholder="vazio = sem fila"></label>
+          <label>Papel<select name="role"><option value="player">Jogador</option><option value="admin">Admin</option></select></label>
+          <button class="btn">+ Criar conta</button>
+        </form>
+        <p class="err" id="nuErr" style="color:oklch(80% 0.14 18)"></p>
+        <div class="scroll" style="max-height:none"><table class="tickets users" id="usersTable"><tbody><tr><td>Carregando...</td></tr></tbody></table></div>
+      </section>
+      <section class="glass">
+        <h2>Regra de bloqueio</h2>
+        <p class="note">Cada ticket aberto do atendente vale um peso. Se a soma passar do limite, os jogos ficam bloqueados.
+          Peso = prioridade × multiplicador (sem interação ou status de espera). Quem não tem ID do Geiko nunca é bloqueado.</p>
+        <form id="rulesForm"><p class="hint" style="text-align:left">Carregando...</p></form>
+      </section>
+      <section class="glass">
+        <h2>Testar ID do Geiko</h2>
+        <p class="note">Confere a fila de um atendente com a regra atual (útil pra validar o vínculo antes de criar a conta).</p>
+        <form class="row" id="testForm"><label>ID do Geiko<input name="geikoId" inputmode="numeric" pattern="\\d+" required></label><button class="btn ghost">Testar</button></form>
+        <div id="testOut" style="margin-top:var(--space-sm)"></div>
+      </section>
+    </div>`;
+    $('#back').onclick = showMenu;
+    $('#newUser').onsubmit = createUser;
+    $('#testForm').onsubmit = async e => {
+      e.preventDefault();
+      const id = new FormData(e.target).get('geikoId');
+      $('#testOut').innerHTML = '<p class="hint" style="text-align:left">Consultando o Geiko...</p>';
+      $('#testOut').innerHTML = await previewHtml(id);
+    };
+    loadUsers();
+    loadRules();
+    loadOnline();
+  });
+}
+
+// ---------- quem está online ----------
+const ago = ms => { const s = Math.max(0, Math.round(ms / 1000)); return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)} min` : `${Math.floor(s / 3600)}h${String(Math.floor(s % 3600 / 60)).padStart(2, '0')}`; };
+const viewLabel = v => GAMES[v] ? `🎮 jogando <b>${GAMES[v].emoji} ${GAMES[v].name}</b>` : v === 'admin' ? '⚙️ no painel admin' : '🏠 no menu';
+async function loadOnline() {
+  const box = $('#onlineList');
+  if (!box) return;
+  try {
+    const { now, online, recent } = await api('api/admin/online');
+    $('#onCount').textContent = `· ${online.length} ${online.length === 1 ? 'pessoa' : 'pessoas'}`;
+    box.innerHTML = (online.length
+      ? `<table class="tickets users"><tbody>${online.map(p => `<tr data-id="${p.id}">
+          <td><b>${esc(p.name)}</b>${p.id === me.id ? ' <span class="tag">• você</span>' : ''}${p.block ? ` <span class="tag" style="color:var(--red)">• 🔒 ${untilText(p.block.until)}</span>` : ''}</td>
+          <td>${viewLabel(p.view)} <span class="hint">há ${ago(now - p.since)}</span></td>
+          <td><div class="actions">${p.id === me.id ? '' : p.block ? '<button class="btn ghost" data-act="unblock">🔓 Desbloquear</button>' : '<button class="btn ghost" data-act="block">🔒 Bloquear</button>'}</div></td>
+        </tr>`).join('')}</tbody></table>`
+      : '<p class="hint" style="text-align:left">Ninguém online agora.</p>')
+      + (recent.length ? `<p class="note" style="margin:var(--space-sm) 0 0">Visto nas últimas 24h: ${recent.map(p =>
+          `${esc(p.name)} <span class="hint">(${new Date(p.lastSeen).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}${GAMES[p.view] ? ', ' + GAMES[p.view].name : ''})</span>`).join(' · ')}</p>` : '');
+    box.querySelectorAll('[data-act]').forEach(b => b.onclick = async () => {
+      await userAction(b.dataset.act, online.find(p => p.id === +b.closest('tr').dataset.id));
+    });
+  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+}
+// ---------- editor de recordes (só admin) ----------
+const recState = { mode: 'game', game: FEATURED[0], userId: null };
+function showRecords() {
+  if (!me?.canEditRecords) return; // só a conta dona (o servidor também confere)
+  stop();
+  currentView = 'records';
+  setTimeout(pingSession, 0);
+  if (location.hash !== '#recordes') history.replaceState(null, '', '#recordes');
+  swap(() => {
+    main.classList.remove('game-view');
+    main.innerHTML = `<div class="admin">
+      <div class="stage-head">
+        <button class="btn ghost" id="back" aria-label="Voltar ao menu">←</button>
+        <div class="title"><h2>🛠️ Editor de recordes</h2>
+          <p>Só admins. Mudar aqui altera o ranking na hora. Pra abrir direto numa aba nova: <a href="${location.pathname}#recordes" target="_blank" style="color:var(--primary)">${esc(location.host)}/#recordes</a></p></div>
+      </div>
+      <section class="glass">
+        <div class="row" style="margin-bottom:var(--space-sm)">
+          <label>Ver<select id="recMode"><option value="game">Por jogo</option><option value="user">Por pessoa</option></select></label>
+          <label><span id="recPickName">Jogo</span><select id="recPick"></select></label>
+          <span class="hint" id="recMsg"></span>
+        </div>
+        <div id="recTable"><p class="hint" style="text-align:left">Carregando...</p></div>
+      </section>
+      <section class="glass">
+        <div class="row" style="justify-content:space-between;margin-bottom:var(--space-sm)">
+          <div><h3 style="margin:0">💾 Backups</h3>
+            <p class="hint" style="text-align:left;margin:0">Cópia automática todo dia e antes de editar recordes. Guarda as 30 mais novas.</p></div>
+          <button class="btn ghost" id="bkNow">Fazer backup agora</button>
+        </div>
+        <div id="bkList"><p class="hint" style="text-align:left">Carregando...</p></div>
+      </section>
+    </div>`;
+    $('#bkNow').onclick = async e => {
+      e.target.disabled = true;
+      try { await api('api/admin/backups', { method: 'POST', body: {} }); await loadBackups('✅ Backup feito.'); }
+      catch (err) { alert(err.message); } finally { e.target.disabled = false; }
+    };
+    loadBackups();
+    $('#back').onclick = () => { history.replaceState(null, '', location.pathname); showMenu(); };
+    $('#recMode').value = recState.mode;
+    $('#recMode').onchange = e => { recState.mode = e.target.value; renderRecords(); };
+    $('#recPick').onchange = e => { recState.mode === 'game' ? (recState.game = e.target.value) : (recState.userId = +e.target.value); renderRecords(); };
+    loadRecords();
+  });
+}
+
+let recData = { records: [], users: [] };
+async function loadRecords(msg = '') {
+  try {
+    const [{ records }, { users }] = await Promise.all([api('api/admin/records'), api('api/admin/users')]);
+    recData = { records, users: users.filter(u => u.active) };
+    recState.userId ??= recData.users[0]?.id ?? null;
+    renderRecords();
+    if (msg) $('#recMsg').textContent = msg;
+  } catch (err) { $('#recTable') && ($('#recTable').innerHTML = `<p class="err">${esc(err.message)}</p>`); }
+}
+
+function renderRecords() {
+  const box = $('#recTable');
+  if (!box) return;
+  $('#recMsg').textContent = '';
+  const pick = $('#recPick');
+  const unitOf = id => `<span class="hint">${GAMES[id].unit}</span>`;
+  const valueInput = (v, enabled = true) => `<input type="number" step="any" min="0" class="rec-v" value="${v ?? ''}" ${enabled ? '' : 'disabled'} style="width:8em">`;
+  if (recState.mode === 'game') {
+    $('#recPickName').textContent = 'Jogo';
+    pick.innerHTML = menuOrder().map(([id, g]) => `<option value="${id}" ${id === recState.game ? 'selected' : ''}>${g.emoji} ${g.name}</option>`).join('');
+    const g = GAMES[recState.game];
+    const rows = recData.records.filter(r => r.game === recState.game).sort((a, b) => (better(g, a.best, b.best) ? -1 : 1));
+    const have = new Set(rows.map(r => r.userId));
+    const free = recData.users.filter(u => !have.has(u.id));
+    box.innerHTML = `<table class="tickets users"><thead><tr><th>#</th><th>Pessoa</th><th>Recorde</th><th>Partidas</th><th></th></tr></thead><tbody>
+      ${rows.map((r, i) => `<tr data-game="${recState.game}" data-user="${r.userId ?? ''}" data-name="${esc(r.name)}">
+        <td>${['🥇', '🥈', '🥉'][i] || i + 1}</td><td>${esc(r.name)}${r.userId == null ? ' <span class="tag">• sem conta</span>' : ''}</td>
+        <td>${valueInput(r.best, r.userId != null)} ${unitOf(recState.game)}</td><td>${r.count}</td>
+        <td><div class="actions">${r.userId != null ? '<button class="btn ghost" data-act="save">Salvar</button>' : ''}<button class="btn ghost" data-act="del">Apagar</button></div></td></tr>`).join('')
+        || '<tr><td colspan="5" class="hint">Ninguém tem recorde nesse jogo ainda.</td></tr>'}
+      </tbody></table>
+      ${free.length ? `<div class="row" style="margin-top:var(--space-sm)" data-game="${recState.game}">
+        <label>Adicionar recorde pra<select class="rec-u">${free.map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('')}</select></label>
+        <label>Valor (${g.unit})${valueInput('')}</label><button class="btn" data-act="add">+ Adicionar</button></div>` : ''}`;
+  } else {
+    $('#recPickName').textContent = 'Pessoa';
+    pick.innerHTML = recData.users.map(u => `<option value="${u.id}" ${u.id === recState.userId ? 'selected' : ''}>${esc(u.name)}</option>`).join('');
+    const mine = new Map(recData.records.filter(r => r.userId === recState.userId).map(r => [r.game, r]));
+    box.innerHTML = `<table class="tickets users"><thead><tr><th>Jogo</th><th>Recorde</th><th>Partidas</th><th></th></tr></thead><tbody>
+      ${menuOrder().map(([id, g]) => {
+        const r = mine.get(id);
+        return `<tr data-game="${id}" data-user="${recState.userId}">
+          <td>${g.emoji} ${g.name}</td><td>${valueInput(r?.best)} ${unitOf(id)}</td><td>${r ? r.count : '<span class="hint">—</span>'}</td>
+          <td><div class="actions"><button class="btn ghost" data-act="save">${r ? 'Salvar' : '+ Adicionar'}</button>${r ? '<button class="btn ghost" data-act="del">Apagar</button>' : ''}</div></td></tr>`;
+      }).join('')}</tbody></table>`;
+  }
+  box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => recordAction(b));
+}
+
+async function recordAction(btn) {
+  const row = btn.closest('[data-game]'), game = row.dataset.game, g = GAMES[game];
+  const act = btn.dataset.act;
+  const userId = act === 'add' ? +row.querySelector('.rec-u').value : row.dataset.user ? +row.dataset.user : null;
+  const who = act === 'add' ? row.querySelector('.rec-u').selectedOptions[0].textContent
+    : row.dataset.name || recData.users.find(u => u.id === userId)?.name || '';
+  try {
+    if (act === 'del') {
+      if (!confirm(`Apagar TODAS as partidas de ${who} em ${g.name}? Não dá pra desfazer.`)) return;
+      const { removed } = await api('api/admin/records/delete', { method: 'POST', body: { game, userId, name: row.dataset.name } });
+      await loadRecords(`🗑️ ${who}: ${removed} partida(s) apagada(s) em ${g.name}.`);
+    } else {
+      const raw = row.querySelector('.rec-v').value;
+      if (raw === '') return alert('Digite um valor.');
+      const value = Number(raw);
+      const { removed } = await api('api/admin/records', { method: 'PUT', body: { game, userId, value } });
+      await loadRecords(`✅ ${who} — ${g.name}: recorde agora é ${fmt(g, value)}${removed ? ` (${removed} partida(s) melhor(es) removida(s))` : ''}.`);
+    }
+    fetchScores(); // atualiza o ranking que o resto da página mostra
+  } catch (err) { alert(err.message); }
+}
+
+async function loadBackups(msg = '') {
+  const box = $('#bkList');
+  if (!box) return;
+  try {
+    const { backups } = await api('api/admin/backups');
+    const when = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+    box.innerHTML = (msg ? `<p class="note" style="margin:0 0 var(--space-sm)">${esc(msg)}</p>` : '') + (backups.length
+      ? `<table class="tickets users"><thead><tr><th>Quando</th><th>Motivo</th><th>Partidas</th><th>Contas</th><th></th></tr></thead><tbody>
+        ${backups.map(b => `<tr data-id="${b.id}"><td>${when(b.at)}</td><td>${esc(b.reason)}</td><td>${b.scores}</td><td>${b.users}</td>
+          <td><div class="actions"><a class="btn ghost" href="api/admin/backups/download?id=${b.id}" download>Baixar</a>
+          <button class="btn ghost" data-act="restore">Restaurar partidas</button></div></td></tr>`).join('')}</tbody></table>`
+      : '<p class="hint" style="text-align:left">Nenhuma cópia ainda.</p>');
+    box.querySelectorAll('[data-act="restore"]').forEach(b => b.onclick = async () => {
+      const id = +b.closest('tr').dataset.id, bk = backups.find(x => x.id === id);
+      if (!confirm(`Trocar TODAS as partidas de agora pelas ${bk.scores} da cópia de ${when(bk.at)}?\n\nAntes disso é feita uma cópia do estado atual, então dá pra desfazer.`)) return;
+      try {
+        const { scores } = await api('api/admin/backups/restore', { method: 'POST', body: { id } });
+        fetchScores(); await loadRecords(); await loadBackups(`♻️ Restaurado: ${scores} partidas.`);
+      } catch (err) { alert(err.message); }
+    });
+  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+}
+
+// ---------- relatório (admin) ----------
+const reportState = { days: 7 };
+function showReport() {
+  if (me?.role !== 'admin') return;
+  stop();
+  currentView = 'report';
+  setTimeout(pingSession, 0);
+  swap(() => {
+    main.classList.remove('game-view');
+    main.innerHTML = `<div class="admin report">
+      <div class="stage-head">
+        <button class="btn ghost" id="back" aria-label="Voltar ao menu">←</button>
+        <div class="title"><h2>📊 Relatório</h2><p>Quanto o pessoal está jogando — por pessoa, por jogo, por dia e por hora.</p></div>
+      </div>
+      <div class="row" style="justify-content:space-between">
+        <div class="seg" role="group" aria-label="Período">
+          ${[[1, 'Hoje'], [7, '7 dias'], [30, '30 dias'], [0, 'Tudo']].map(([d, l]) => `<button data-days="${d}" aria-pressed="${reportState.days === d}">${l}</button>`).join('')}
+        </div>
+        <button class="btn ghost" id="csv">⬇️ Exportar CSV</button>
+      </div>
+      <div id="rep"><p class="hint" style="text-align:left">Carregando...</p></div>
+      <section class="glass" style="margin-top:var(--space-md)" id="errs"></section>
+    </div>`;
+    $('#back').onclick = showMenu;
+    loadErrors();
+    main.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+      reportState.days = +b.dataset.days;
+      main.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+      loadReport();
+    });
+    loadReport();
+  });
+}
+
+// erros que aconteceram no navegador do pessoal (todo o período; guarda os 300 mais novos)
+async function loadErrors() {
+  const box = $('#errs');
+  if (!box) return;
+  try {
+    const { errors } = await api('api/admin/errors');
+    box.innerHTML = `<div class="row" style="justify-content:space-between"><h2 style="margin:0">⚠️ Erros no navegador</h2>
+      ${errors.length ? '<button class="btn ghost" id="errClear">Limpar lista</button>' : ''}</div>
+      ${errors.length ? `<table class="tickets users" style="margin-top:var(--space-sm)"><thead><tr><th>Erro</th><th>Vezes</th><th>Onde</th><th>Quem</th><th>Último</th></tr></thead><tbody>
+        ${errors.map(e => `<tr><td><code style="white-space:pre-wrap;word-break:break-word">${esc(e.message)}</code>${e.source ? `<br><span class="hint">${esc(e.source.split('\n')[0])}</span>` : ''}</td>
+          <td>${e.count}</td><td>${e.views.map(v => GAMES[v] ? GAMES[v].emoji + ' ' + GAMES[v].name : v).join(', ') || '—'}</td>
+          <td>${esc(e.people.join(', ')) || '—'}</td><td>há ${ago(Date.now() - e.last)}</td></tr>`).join('')}</tbody></table>`
+        : '<p class="hint" style="text-align:left;margin:var(--space-xs) 0 0">Nenhum erro registrado. 🎉</p>'}`;
+    $('#errClear') && ($('#errClear').onclick = async () => {
+      if (!confirm('Apagar a lista de erros?')) return;
+      try { await api('api/admin/errors/clear', { method: 'POST', body: {} }); loadErrors(); } catch (err) { alert(err.message); }
+    });
+  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+}
+
+let reportData = null;
+async function loadReport() {
+  const box = $('#rep');
+  if (!box) return;
+  box.style.opacity = reportData ? 0.5 : 1; // mantém o anterior meio apagado enquanto carrega (sem pulo)
+  try {
+    reportData = await api(`api/admin/report?days=${reportState.days}&tz=${-new Date().getTimezoneOffset()}`);
+    renderReport();
+  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+  box.style.opacity = 1;
+}
+
+function renderReport() {
+  const d = reportData, box = $('#rep');
+  const games = menuOrder();
+  const periodo = { 1: 'hoje', 7: 'nos últimos 7 dias', 30: 'nos últimos 30 dias', 0: 'desde o começo' }[d.days];
+  const prevLabel = { 1: 'ontem', 7: '7 dias anteriores', 30: '30 dias anteriores' }[d.days];
+  const topGame = Object.entries(d.byGame).sort((a, b) => b[1] - a[1])[0];
+  const top = d.people[0];
+  let delta = '';
+  if (d.prevTotal !== null) {
+    const diff = d.total - d.prevTotal;
+    delta = d.prevTotal === 0 ? (d.total ? `<span class="d up">▲ novo — ${prevLabel}: 0</span>` : `<span class="d">igual a ${prevLabel}</span>`)
+      : `<span class="d ${diff > 0 ? 'up' : diff < 0 ? 'down' : ''}">${diff > 0 ? '▲' : diff < 0 ? '▼' : '='} ${Math.abs(Math.round(diff / d.prevTotal * 100))}% vs ${prevLabel} (${d.prevTotal})</span>`;
+  }
+  const kpis = `<div class="kpis">
+    <div class="kpi glass"><div class="l">Partidas ${periodo}</div><div class="v">${d.total.toLocaleString('pt-BR')}</div>${delta}</div>
+    <div class="kpi glass"><div class="l">Pessoas que jogaram</div><div class="v">${d.people.length}</div></div>
+    <div class="kpi glass"><div class="l">Jogo mais jogado</div><div class="v">${topGame ? `${GAMES[topGame[0]].emoji} ${GAMES[topGame[0]].name}` : '—'}</div>${topGame ? `<span class="d">${topGame[1]} partidas</span>` : ''}</div>
+    <div class="kpi glass"><div class="l">Quem mais jogou</div><div class="v">${top ? esc(top.name) : '—'}</div>${top ? `<span class="d">${top.total} partidas</span>` : ''}</div>
+  </div>`;
+  if (!d.total) { box.innerHTML = kpis + '<section class="glass" style="margin-top:var(--space-md)"><p class="hint" style="text-align:left">Ninguém jogou nesse período.</p></section>'; return; }
+
+  // heatmap pessoa × jogo: mais partidas = tom mais claro da mesma rampa azul
+  const max = Math.max(...d.people.flatMap(p => Object.values(p.games)));
+  const step = n => Math.min(5, 1 + Math.floor((n / max) * 4.999));
+  const cell = (n, who, g) => n
+    ? `<td style="background:var(--heat-${step(n)});color:${step(n) >= 4 ? '#0b0b0b' : '#fff'}" data-tip="${esc(who)} · ${GAMES[g].name}: ${n} partida${n > 1 ? 's' : ''}">${n}</td>`
+    : `<td class="z" data-tip="${esc(who)} · ${GAMES[g].name}: nenhuma">·</td>`;
+  const colTot = games.map(([g]) => d.byGame[g] || 0);
+  const heat = `<section class="glass" style="margin-top:var(--space-md)">
+    <h2>Partidas por pessoa e jogo</h2>
+    <div class="heat-wrap"><table class="heat">
+      <thead><tr><th></th>${games.map(([id, g]) => `<th title="${g.name}" data-tip="${g.name}">${g.emoji}</th>`).join('')}<th style="font-size:var(--fs-xs)">Total</th><th style="font-size:var(--fs-xs);text-align:left">Jogou por último</th></tr></thead>
+      <tbody>${d.people.map(p => `<tr><th>${esc(p.name)}</th>${games.map(([g]) => cell(p.games[g] || 0, p.name, g)).join('')}
+        <td class="tot">${p.total}</td><td class="last">há ${ago(Date.now() - p.last)} · ${GAMES[p.lastGame] ? GAMES[p.lastGame].emoji + ' ' + GAMES[p.lastGame].name : ''}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><th style="text-align:left;color:var(--text)">Total</th>${colTot.map(n => `<td>${n || '·'}</td>`).join('')}<td>${d.total}</td><td></td></tr></tfoot>
+    </table></div>
+    <div class="heat-legend">menos ${[1, 2, 3, 4, 5].map(i => `<i style="background:var(--heat-${i})"></i>`).join('')} mais <span style="margin-left:8px">(máximo numa célula: ${max})</span></div>
+  </section>`;
+
+  // colunas (1 série, 1 cor): rótulo só no maior valor; o resto fica no eixo, na dica e na tabela
+  const columns = (items, labelEvery, tipOf, title) => {
+    const m = Math.max(1, ...items.map(i => i.v)), maxIdx = items.findIndex(i => i.v === m);
+    const nice = m <= 4 ? m : Math.ceil(m / 4) * 4;
+    return `<div class="cols" role="img" aria-label="${title}">
+      ${[nice, nice / 2].map(v => `<div class="grid" style="bottom:${(v / nice) * 100}%"><span>${Number.isInteger(v) ? v : v.toFixed(1)}</span></div>`).join('')}
+      ${items.map((it, i) => `<div class="c" tabindex="0" data-tip="${tipOf(it)}" aria-label="${tipOf(it)}">
+        <i style="height:${(it.v / nice) * 100}%"></i>${i === maxIdx && it.v ? `<b style="bottom:${(it.v / nice) * 100}%">${it.v}</b>` : ''}</div>`).join('')}
+    </div>
+    <div class="xlabels">${items.map((it, i) => `<span>${i % labelEvery === 0 || i === items.length - 1 ? it.l : ''}</span>`).join('')}</div>
+    <details><summary>Ver como tabela</summary><table class="tickets" style="margin-top:6px">${items.map(it => `<tr><td>${it.full || it.l}</td><td class="w">${it.v}</td></tr>`).join('')}</table></details>`;
+  };
+  const fmtDay = s => { const [y, mo, dd] = s.split('-'); return `${dd}/${mo}`; };
+  const weekday = s => new Date(s + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '');
+  const days = d.byDay.map(x => ({ l: fmtDay(x.day), full: `${weekday(x.day)} ${fmtDay(x.day)}`, v: x.count }));
+  const hours = d.byHour.map((v, h) => ({ l: `${h}h`, full: `${h}h–${h + 1}h`, v }));
+  const charts = `<div class="kpis" style="margin-top:var(--space-md);grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))">
+    ${days.length > 1 ? `<section class="glass" style="padding:var(--space-md)"><h2>Partidas por dia</h2>
+      ${columns(days, Math.ceil(days.length / 8), it => `${it.full}: ${it.v} partida${it.v === 1 ? '' : 's'}`, 'Partidas por dia')}</section>` : ''}
+    <section class="glass" style="padding:var(--space-md)"><h2>Horário de pico</h2>
+      ${columns(hours, 3, it => `${it.full}: ${it.v} partida${it.v === 1 ? '' : 's'}`, 'Partidas por hora do dia')}</section>
+  </div>`;
+  const ranked = games.map(([g, gg]) => ({ g, gg, n: d.byGame[g] || 0 })).sort((a, b) => b.n - a.n);
+  const hmax = Math.max(1, ranked[0].n);
+  const hbars = `<section class="glass" style="margin-top:var(--space-md)"><h2>Jogos mais jogados</h2>
+    <div class="hbars">${ranked.map(r => `<span>${r.gg.emoji} ${r.gg.name}</span><span class="t" data-tip="${r.gg.name}: ${r.n} partidas"><i style="width:${(r.n / hmax) * 100}%"></i></span><span class="n">${r.n}</span>`).join('')}</div>
+  </section>`;
+  box.innerHTML = kpis + heat + charts + hbars;
+  bindVizTips(box);
+}
+
+// dica que segue o mouse (e o foco do teclado) em qualquer [data-tip]
+function bindVizTips(root) {
+  let tip = $('.viz-tip');
+  if (!tip) { tip = document.createElement('div'); tip.className = 'viz-tip'; tip.hidden = true; document.body.appendChild(tip); }
+  const show = (el, x, y) => { tip.textContent = el.dataset.tip; tip.hidden = false; tip.style.left = Math.min(innerWidth - tip.offsetWidth - 8, x + 12) + 'px'; tip.style.top = Math.max(8, y - tip.offsetHeight - 10) + 'px'; };
+  root.querySelectorAll('[data-tip]').forEach(el => {
+    el.addEventListener('mousemove', e => show(el, e.clientX, e.clientY));
+    el.addEventListener('mouseleave', () => (tip.hidden = true));
+    el.addEventListener('focus', () => { const r = el.getBoundingClientRect(); show(el, r.left + r.width / 2, r.top); });
+    el.addEventListener('blur', () => (tip.hidden = true));
+  });
+}
+
+document.addEventListener('click', e => {
+  if (e.target.id !== 'csv' || !reportData) return;
+  // CSV da tabela pessoa × jogo (abre no Excel: separador ; e BOM pra acentuar certo)
+  const games = menuOrder();
+  const lines = [['Pessoa', ...games.map(([, g]) => g.name), 'Total'].join(';'),
+    ...reportData.people.map(p => [p.name, ...games.map(([g]) => p.games[g] || 0), p.total].join(';'))];
+  const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: `microgame-relatorio-${reportState.days || 'tudo'}d.csv` });
+  a.click(); URL.revokeObjectURL(a.href);
+});
+
+// enquanto o painel estiver aberto e visível, atualiza a lista
+setInterval(() => { if (currentView === 'admin' && !document.hidden && !$('.modal')) { loadOnline(); } }, 15_000);
+
+async function previewHtml(geikoId) {
+  try {
+    const g = await api('api/admin/preview?geikoId=' + encodeURIComponent(geikoId));
+    if (g.error) return `<p class="err">${esc(g.error)}</p>`;
+    return `<p style="margin:0 0 8px"><b>${g.blocked ? '🔒 Bloqueado' : '✅ Liberado'}</b> — ${g.tickets.length} tickets, soma <b>${fmtW(g.total)}</b> (limite ${fmtW(g.limit)})</p>${ticketsTable(g.tickets)}`;
+  } catch (err) { return `<p class="err">${esc(err.message)}</p>`; }
+}
+
+function tempPasswordDialog(name, pass) {
+  const { el, close } = modal(`
+    <h2>Senha temporária</h2>
+    <p>Passe pra <b>${esc(name)}</b>. No primeiro login a pessoa cria a própria senha. <b>Ela não aparece de novo.</b></p>
+    <div class="secret">${esc(pass)}</div>
+    <button class="btn ghost" id="copyPass">Copiar</button>
+    <button class="btn" id="okPass">Pronto</button>`, { locked: true });
+  el.querySelector('#copyPass').onclick = async e => { await navigator.clipboard?.writeText(pass).catch(() => {}); e.target.textContent = 'Copiado ✓'; };
+  el.querySelector('#okPass').onclick = close;
+}
+
+async function createUser(e) {
+  e.preventDefault();
+  const f = new FormData(e.target);
+  $('#nuErr').textContent = '';
+  try {
+    const { user, tempPassword } = await api('api/admin/users', { method: 'POST', body: Object.fromEntries(f) });
+    e.target.reset();
+    loadUsers();
+    tempPasswordDialog(user.name, tempPassword);
+  } catch (err) { $('#nuErr').textContent = err.message; }
+}
+
+async function loadUsers() {
+  const table = $('#usersTable');
+  if (!table) return;
+  try {
+    const { users } = await api('api/admin/users');
+    table.innerHTML = `<thead><tr><th>Nome</th><th>Usuário</th><th>ID Geiko</th><th>Papel</th><th></th></tr></thead><tbody>` +
+      users.map(u => `<tr class="${u.active ? '' : 'off'}" data-id="${u.id}">
+        <td>${esc(u.name)}${u.mustChange ? ' <span class="tag" title="Ainda não trocou a senha temporária">• senha temporária</span>' : ''}${u.active ? '' : ' <span class="tag">• desativada</span>'}${u.block ? ` <span class="tag" style="color:var(--red)" title="${esc(u.block.reason || '')}">• 🔒 bloqueado ${untilText(u.block.until)}</span>` : ''}</td>
+        <td>${esc(u.username)}</td>
+        <td>${u.geikoId ? esc(u.geikoId) : '<span class="hint">—</span>'}</td>
+        <td><span class="pill-role ${u.role}">${u.role === 'admin' ? 'Admin' : 'Jogador'}</span></td>
+        <td><div class="actions">${u.canEditRecords && u.id !== me.id ? '<span class="hint">conta do dono</span>' : `
+          ${u.id === me.id ? '' : u.block ? '<button class="btn ghost" data-act="unblock">🔓 Desbloquear</button>' : '<button class="btn ghost" data-act="block">🔒 Bloquear</button>'}
+          ${u.geikoId ? '<button class="btn ghost" data-act="test">Fila</button>' : ''}
+          <button class="btn ghost" data-act="edit">Editar</button>
+          <button class="btn ghost" data-act="reset">Nova senha</button>
+          ${u.id === me.id ? '' : `<button class="btn ghost" data-act="toggle">${u.active ? 'Desativar' : 'Reativar'}</button>`}`}
+        </div></td></tr>`).join('') + '</tbody>';
+    table.querySelectorAll('[data-act]').forEach(b => b.onclick = () => userAction(b.dataset.act, users.find(u => u.id === +b.closest('tr').dataset.id)));
+    loadOnline(); // bloquear/desbloquear também muda a lista de online
+  } catch (err) { table.innerHTML = `<tbody><tr><td class="err">${esc(err.message)}</td></tr></tbody>`; }
+}
+
+async function userAction(act, u) {
+  if (act === 'unblock') {
+    try { await api(`api/admin/users/${u.id}/unblock`, { method: 'POST', body: {} }); loadUsers(); }
+    catch (err) { alert(err.message); }
+  }
+  if (act === 'block') {
+    const endOfDay = () => { const d = new Date(); d.setHours(23, 59, 0, 0); return Math.max(1, Math.round((d - Date.now()) / 60000)); };
+    const { el, close } = modal(`
+      <h2>🔒 Bloquear ${esc(u.name)}</h2>
+      <p>A pessoa continua entrando e vendo o ranking, mas não joga. Se estiver jogando, a partida é encerrada em até ~20s.</p>
+      <form id="bf" class="admin">
+        <label>Por quanto tempo
+          <select name="minutes">
+            <option value="15">15 minutos</option><option value="30">30 minutos</option><option value="60" selected>1 hora</option>
+            <option value="120">2 horas</option><option value="eod">Até o fim do dia</option><option value="0">Até eu desbloquear</option>
+          </select></label>
+        <label>Motivo (opcional — a pessoa vê)<input name="reason" maxlength="120" placeholder="ex.: fila de tickets cheia"></label>
+        <p class="err" id="berr"></p>
+        <button class="btn">Bloquear</button>
+        <button type="button" class="btn ghost" id="bcancel">Cancelar</button>
+      </form>`, { wide: true });
+    el.querySelector('#bcancel').onclick = close;
+    el.querySelector('#bf').onsubmit = async e => {
+      e.preventDefault();
+      const f = new FormData(e.target), v = f.get('minutes');
+      try {
+        await api(`api/admin/users/${u.id}/block`, { method: 'POST', body: { minutes: v === 'eod' ? endOfDay() : Number(v), reason: f.get('reason') } });
+        close(); loadUsers();
+      } catch (err) { el.querySelector('#berr').textContent = err.message; }
+    };
+  }
+  if (act === 'test') {
+    const { el, close } = modal(`<h2>Fila de ${esc(u.name)}</h2><div id="pv"><p>Consultando o Geiko...</p></div><button class="btn" id="pvc">Fechar</button>`, { wide: true });
+    el.querySelector('#pvc').onclick = close;
+    el.querySelector('#pv').innerHTML = await previewHtml(u.geikoId);
+  }
+  if (act === 'reset') {
+    if (!confirm(`Gerar uma nova senha temporária pra ${u.name}? A senha atual deixa de funcionar e a pessoa é deslogada.`)) return;
+    try { const { tempPassword } = await api(`api/admin/users/${u.id}/reset-password`, { method: 'POST', body: {} }); loadUsers(); tempPasswordDialog(u.name, tempPassword); }
+    catch (err) { alert(err.message); }
+  }
+  if (act === 'toggle') {
+    if (u.active && !confirm(`Desativar ${u.name}? A pessoa é deslogada e não consegue mais entrar.`)) return;
+    try { await api(`api/admin/users/${u.id}`, { method: 'PATCH', body: { active: !u.active } }); loadUsers(); }
+    catch (err) { alert(err.message); }
+  }
+  if (act === 'edit') {
+    const { el, close } = modal(`
+      <h2>Editar conta</h2>
+      <form id="ef" class="admin">
+        <label>Nome (aparece no ranking)<input name="name" maxlength="40" value="${esc(u.name)}" required></label>
+        <label>Usuário (login)<input name="username" maxlength="32" value="${esc(u.username)}" required></label>
+        <label>ID do Geiko (vazio = sem fila, nunca bloqueia)<input name="geikoId" inputmode="numeric" value="${esc(u.geikoId || '')}"></label>
+        <label>Papel<select name="role" ${u.id === me.id ? 'disabled' : ''}><option value="player">Jogador</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option></select></label>
+        <p class="err" id="eerr"></p>
+        <button class="btn">Salvar</button>
+        <button type="button" class="btn ghost" id="ecancel">Cancelar</button>
+      </form>`, { wide: true });
+    el.querySelector('#ecancel').onclick = close;
+    el.querySelector('#ef').onsubmit = async e => {
+      e.preventDefault();
+      const body = Object.fromEntries(new FormData(e.target));
+      if (u.id === me.id) delete body.role;
+      try {
+        const { user } = await api(`api/admin/users/${u.id}`, { method: 'PATCH', body });
+        if (user.id === me.id) setMe({ ...me, ...user });
+        close(); loadUsers();
+      } catch (err) { el.querySelector('#eerr').textContent = err.message; }
+    };
+  }
+}
+
+async function loadRules() {
+  const form = $('#rulesForm');
+  if (!form) return;
+  try {
+    const { rules, situations } = await api('api/admin/rules');
+    const sitEntries = Object.entries(situations).sort((a, b) => a[1].localeCompare(b[1]));
+    form.innerHTML = `
+      <div class="row" style="margin-bottom:var(--space-sm)">
+        <label class="checks"><label><input type="checkbox" name="enabled" ${rules.enabled ? 'checked' : ''}> Bloqueio ligado</label></label>
+        <label>Bloqueia quando a soma passar de<input type="number" name="limit" step="0.25" min="0" value="${rules.limit}"></label>
+      </div>
+      <p class="note" style="margin-bottom:6px">Peso por prioridade</p>
+      <div class="row" style="margin-bottom:var(--space-sm)">
+        ${PRIO_FIELDS.map(([k, label]) => `<label>${label}<input type="number" name="p_${k}" step="0.25" min="0" value="${rules.priority[k]}"></label>`).join('')}
+      </div>
+      <div class="row" style="margin-bottom:var(--space-sm)">
+        <label>× sem interação do atendente<input type="number" name="noInteractionMult" step="0.05" min="0" value="${rules.noInteractionMult}"></label>
+        <label>× status de espera (abaixo)<input type="number" name="waitingClientMult" step="0.05" min="0" value="${rules.waitingClientMult}"></label>
+      </div>
+      <p class="note" style="margin-bottom:6px">Status de espera — ticket com interação nesses status pesa menos (o atendente depende de outra pessoa):</p>
+      <div class="checks" style="margin-bottom:var(--space-sm)">
+        ${sitEntries.length ? sitEntries.map(([id, name]) => `<label><input type="checkbox" name="sit" value="${id}" ${rules.waitingClientSituationIds.includes(+id) ? 'checked' : ''}> ${esc(name)}</label>`).join('')
+          : '<span class="hint">Não consegui buscar os status no Geiko agora.</span>'}
+      </div>
+      <div class="row"><button class="btn">Salvar regra</button><span id="rulesMsg" class="hint"></span></div>`;
+    form.onsubmit = async e => {
+      e.preventDefault();
+      const f = new FormData(form);
+      const body = {
+        enabled: f.get('enabled') === 'on',
+        limit: f.get('limit'),
+        priority: Object.fromEntries(PRIO_FIELDS.map(([k]) => [k, f.get('p_' + k)])),
+        noInteractionMult: f.get('noInteractionMult'),
+        waitingClientMult: f.get('waitingClientMult'),
+        // sem a lista do Geiko na tela, mantém a que já estava salva
+        waitingClientSituationIds: sitEntries.length ? f.getAll('sit').map(Number) : rules.waitingClientSituationIds,
+      };
+      try { await api('api/admin/rules', { method: 'PUT', body }); $('#rulesMsg').textContent = '✅ Regra salva — vale a partir da próxima consulta de cada um.'; refreshGate(true); }
+      catch (err) { $('#rulesMsg').textContent = '⚠️ ' + err.message; }
+    };
+  } catch (err) { form.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+}
+
+// menu da conta (topo)
+function toggleAcct(open = $('#acctMenu').hidden) {
+  $('#acctMenu').hidden = !open;
+  $('#acctBtn').setAttribute('aria-expanded', open);
+}
+document.addEventListener('click', e => { if (!e.target.closest('.acct')) toggleAcct(false); });
+
+function esc(s) { return s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+

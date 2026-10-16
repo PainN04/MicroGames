@@ -1,4 +1,5 @@
 {
+  "outputDirectory": "public",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" }
   ],
@@ -6,6 +7,8 @@
     { "path": "/api/cron/backup", "schedule": "0 9 * * *" }
   ],
   "functions": {
-    "api/index.js": { "maxDuration": 30 }
+    "api/index.js": {
+      "maxDuration": 30
+    }
   }
 }

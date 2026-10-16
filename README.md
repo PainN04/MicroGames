@@ -6,7 +6,7 @@ Reflexo · Clique Maluco · Digitação · Memória · Mira · Cobrinha · Conta
 
 ## Como roda
 
-- **Vercel (produção):** `index.html` estático + uma função `api/index.js` (rotas em `lib/router.js`) + banco Neon Postgres (`DATABASE_URL`). Cada push na `main` publica sozinho.
+- **Vercel (produção):** `public/` estático (página, CSS e um arquivo JS por jogo em `public/js/games/`) + uma função `api/index.js` (rotas em `lib/router.js`) + banco Neon Postgres (`DATABASE_URL`). Cada push na `main` publica sozinho.
 - **Teste local:** `npm run local` sobe `server.js` na porta 8080 com as mesmas rotas, mas banco SQLite (`microgame.db`) — nunca o de produção.
 
 ## Login e bloqueio por fila do Geiko

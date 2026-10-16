@@ -1,4 +1,4 @@
-// Servidor de TESTE local do MicroGame: serve o index.html e as mesmas rotas /api/* da Vercel (lib/router.js),
+// Servidor de TESTE local do MicroGame: serve a pasta public/ e as mesmas rotas /api/* da Vercel (lib/router.js),
 // mas com o banco SQLite local (microgame.db) — nunca encosta no banco de produção.
 // Uso: npm run local   (porta padrão 8080, mude com $env:PORT=xxxx)
 const http = require('node:http');
@@ -21,16 +21,29 @@ const { handle } = require('./lib/router');
 const { ensureSchema } = require('./lib/schema');
 
 const PORT = Number(process.env.PORT) || 8080;
-const INDEX = path.join(__dirname, 'index.html');
-// A página compara essa versão pra se recarregar sozinha quando o index.html muda.
-const version = () => String(fs.statSync(INDEX).mtimeMs);
+// Só a pasta public/ é servida (igual à Vercel): o código do servidor (lib/, scripts/) nunca sai.
+const PUBLIC = path.join(__dirname, 'public');
+const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json; charset=utf-8' };
+
+// A página compara essa versão pra se recarregar sozinha quando algum arquivo de public/ muda.
+function newestMtime(dir) {
+  let t = 0;
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    const p = path.join(dir, e.name);
+    t = Math.max(t, e.isDirectory() ? newestMtime(p) : fs.statSync(p).mtimeMs);
+  }
+  return t;
+}
+const version = () => String(newestMtime(PUBLIC));
 
 const server = http.createServer((req, res) => {
   const { pathname } = new URL(req.url, 'http://x');
   if (pathname.startsWith('/api/')) return handle(req, res, { version });
-  if (pathname === '/' || pathname === '/index.html') {
-    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
-    return res.end(fs.readFileSync(INDEX));
+  const file = path.join(PUBLIC, decodeURIComponent(pathname === '/' ? '/index.html' : pathname));
+  if (file.startsWith(PUBLIC + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()) {
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
+    return res.end(fs.readFileSync(file));
   }
   res.writeHead(404, { 'Content-Type': 'application/json' });
   res.end('{"error":"não encontrado"}');
