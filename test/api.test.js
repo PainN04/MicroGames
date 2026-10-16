@@ -254,3 +254,11 @@ test('pesos dos tickets do Geiko', () => {
   assert.equal(w({ priority: 'NOR', lastInteractionDate: at }), 1.5, 'sem interação: x1.5');
   assert.equal(w({ priority: 'NOR', attendanceSituationId: 2 }), 0.25, 'aguardando cliente: x0.25');
 });
+
+test('bootstrap do banco de teste: não existe na produção nem quando já há contas', async () => {
+  const call = client();
+  assert.equal((await call('/api/homolog/bootstrap')).status, 404); // fora de preview
+  process.env.VERCEL_ENV = 'preview';
+  try { assert.equal((await call('/api/homolog/bootstrap')).status, 404); } // em preview, mas já há contas
+  finally { delete process.env.VERCEL_ENV; }
+});
