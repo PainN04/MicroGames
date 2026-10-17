@@ -1,5 +1,5 @@
 GAMES.g2048 = {
-  name: '2048', emoji: '🧮', hue: 45, desc: 'Deslize (setas, WASD ou o dedo) e junte números iguais. 3 minutos ou até travar.',
+  name: '2048', icon: 'grid-2x2', hue: 45, desc: 'Deslize (setas, WASD ou o dedo) e junte números iguais. 3 minutos ou até travar.',
   better: 'high', unit: 'pontos',
   start(el, done) {
     const N = 4, DUR = 180;

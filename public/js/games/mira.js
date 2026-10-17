@@ -1,5 +1,5 @@
 GAMES.mira = {
-  name: 'Mira', emoji: '🎯', hue: 50, desc: 'Acerte 20 alvos o mais rápido possível. Erro = +0,5s. Funciona no toque.',
+  name: 'Mira', icon: 'crosshair', hue: 50, desc: 'Acerte 20 alvos o mais rápido possível. Erro = +0,5s. Funciona no toque.',
   better: 'low', unit: 's', decimals: 2, phaser: true,
   // Phaser. Mesma regra de antes (20 alvos de 48px, erro = +0,5s, tempo conta do 1º acerto) pra manter o ranking justo.
   start(el, done) {

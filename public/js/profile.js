@@ -31,19 +31,19 @@ function statsFor(name) {
 }
 
 const ACHIEVEMENTS = [
-  { id: 'estreia', icon: '🎮', name: 'Estreia', desc: 'Jogou a primeira partida', test: s => s.plays.length >= 1 },
-  { id: 'maratona', icon: '💯', name: 'Maratonista', desc: '100 partidas', test: s => s.plays.length >= 100, progress: s => [s.plays.length, 100] },
-  { id: 'explorador', icon: '🧭', name: 'Explorador', desc: 'Jogou 10 jogos diferentes', test: s => s.games.size >= 10, progress: s => [s.games.size, 10] },
-  { id: 'completo', icon: '🌍', name: 'Zerou o menu', desc: `Jogou todos os ${Object.keys(GAMES).length} jogos`, test: s => s.games.size >= Object.keys(GAMES).length, progress: s => [s.games.size, Object.keys(GAMES).length] },
-  { id: 'rei', icon: '👑', name: 'Rei de um jogo', desc: 'Recorde geral em algum jogo', test: s => s.firsts >= 1 },
-  { id: 'imperio', icon: '🏰', name: 'Império', desc: 'Recorde geral em 5 jogos', test: s => s.firsts >= 5, progress: s => [s.firsts, 5] },
-  { id: 'podio', icon: '🥉', name: 'Sempre no pódio', desc: 'Top 3 geral em 10 jogos', test: s => s.podiums >= 10, progress: s => [s.podiums, 10] },
-  { id: 'desafiante', icon: '⭐', name: 'Desafiante', desc: 'Ganhou um desafio do dia', test: s => s.dailyWins >= 1 },
-  { id: 'imbativel', icon: '🌟', name: 'Imbatível', desc: 'Ganhou 5 desafios do dia', test: s => s.dailyWins >= 5, progress: s => [s.dailyWins, 5] },
-  { id: 'mes', icon: '🗓️', name: 'Campeão do mês', desc: 'Terminou um mês com mais recordes', test: s => s.monthsWon.length >= 1 },
-  { id: 'constancia', icon: '🔥', name: 'Constância', desc: 'Jogou 5 dias úteis seguidos', test: s => s.streak >= 5, progress: s => [s.streak, 5] },
-  { id: 'cedo', icon: '☕', name: 'Madrugador', desc: 'Jogou antes das 8h', test: s => s.early },
-  { id: 'tarde', icon: '🦉', name: 'Hora extra', desc: 'Jogou depois das 18h', test: s => s.late },
+  { id: 'estreia', icon: 'gamepad-2', name: 'Estreia', desc: 'Jogou a primeira partida', test: s => s.plays.length >= 1 },
+  { id: 'maratona', icon: 'target', name: 'Maratonista', desc: '100 partidas', test: s => s.plays.length >= 100, progress: s => [s.plays.length, 100] },
+  { id: 'explorador', icon: 'compass', name: 'Explorador', desc: 'Jogou 10 jogos diferentes', test: s => s.games.size >= 10, progress: s => [s.games.size, 10] },
+  { id: 'completo', icon: 'globe', name: 'Zerou o menu', desc: `Jogou todos os ${Object.keys(GAMES).length} jogos`, test: s => s.games.size >= Object.keys(GAMES).length, progress: s => [s.games.size, Object.keys(GAMES).length] },
+  { id: 'rei', icon: 'crown', name: 'Rei de um jogo', desc: 'Recorde geral em algum jogo', test: s => s.firsts >= 1 },
+  { id: 'imperio', icon: 'castle', name: 'Império', desc: 'Recorde geral em 5 jogos', test: s => s.firsts >= 5, progress: s => [s.firsts, 5] },
+  { id: 'podio', icon: 'medal', name: 'Sempre no pódio', desc: 'Top 3 geral em 10 jogos', test: s => s.podiums >= 10, progress: s => [s.podiums, 10] },
+  { id: 'desafiante', icon: 'star', name: 'Desafiante', desc: 'Ganhou um desafio do dia', test: s => s.dailyWins >= 1 },
+  { id: 'imbativel', icon: 'sparkles', name: 'Imbatível', desc: 'Ganhou 5 desafios do dia', test: s => s.dailyWins >= 5, progress: s => [s.dailyWins, 5] },
+  { id: 'mes', icon: 'calendar', name: 'Campeão do mês', desc: 'Terminou um mês com mais recordes', test: s => s.monthsWon.length >= 1 },
+  { id: 'constancia', icon: 'flame', name: 'Constância', desc: 'Jogou 5 dias úteis seguidos', test: s => s.streak >= 5, progress: s => [s.streak, 5] },
+  { id: 'cedo', icon: 'coffee', name: 'Madrugador', desc: 'Jogou antes das 8h', test: s => s.early },
+  { id: 'tarde', icon: 'moon', name: 'Hora extra', desc: 'Jogou depois das 18h', test: s => s.late },
 ];
 const unlockedFor = name => { const s = statsFor(name); return new Set(ACHIEVEMENTS.filter(a => a.test(s)).map(a => a.id)); };
 
@@ -51,7 +51,7 @@ function achievementsHtml(s) {
   return '<div class="ach-grid">' + ACHIEVEMENTS.map(a => {
     const on = a.test(s), [v, max] = a.progress?.(s) || [];
     return `<div class="ach ${on ? 'on' : ''}" title="${a.desc}">
-      <span class="i" aria-hidden="true">${on ? a.icon : '🔒'}</span>
+      <span class="ic">${icon(on ? a.icon : 'lock')}</span>
       <span><b>${a.name}</b><small>${a.desc}${!on && max ? ` · ${Math.min(v, max)}/${max}` : ''}</small></span>
     </div>`;
   }).join('') + '</div>';
@@ -66,8 +66,8 @@ function showProfile(name = player) {
     main.classList.remove('game-view');
     main.innerHTML = `<div class="admin profile">
       <div class="stage-head">
-        <button class="btn ghost" id="back" aria-label="Voltar ao menu">←</button>
-        <div class="title"><h2>👤 ${esc(name)}</h2><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p></div>
+        <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
+        <div class="title"><h2>${icon('user')} ${esc(name)}</h2><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p></div>
       </div>
       <div id="prof"><p class="hint" style="text-align:left">Carregando...</p></div>
     </div>`;
@@ -87,7 +87,7 @@ function renderProfile(name) {
   const kpis = `<div class="kpis">
     <div class="kpi glass"><div class="l">Partidas</div><div class="v">${s.plays.length}</div><span class="d">desde ${new Date(s.plays[0].date).toLocaleDateString('pt-BR')}</span></div>
     <div class="kpi glass"><div class="l">Recordes gerais</div><div class="v">${s.firsts}</div><span class="d">${s.podiums} no pódio</span></div>
-    <div class="kpi glass"><div class="l">Desafios do dia ganhos</div><div class="v">${s.dailyWins}</div>${s.monthsWon.length ? `<span class="d">🗓️ campeão de ${s.monthsWon.map(k => monthName(k)).join(', ')}</span>` : ''}</div>
+    <div class="kpi glass"><div class="l">Desafios do dia ganhos</div><div class="v">${s.dailyWins}</div>${s.monthsWon.length ? `<span class="d">${icon('calendar')} campeão de ${s.monthsWon.map(k => monthName(k)).join(', ')}</span>` : ''}</div>
     <div class="kpi glass"><div class="l">Conquistas</div><div class="v">${unlocked}/${ACHIEVEMENTS.length}</div></div>
   </div>`;
   // partidas por semana (últimas 12): 1 série, 1 cor, rótulo só no maior
@@ -108,13 +108,13 @@ function renderProfile(name) {
   </section>`;
   const rows = menuOrder().map(([id, g]) => {
     const mine = s.plays.filter(p => p.id === id);
-    if (!mine.length) return `<tr class="dim"><td>${g.emoji} ${g.name}</td><td colspan="4" class="hint">não jogou ainda</td></tr>`;
+    if (!mine.length) return `<tr class="dim"><td>${icon(g.icon)} ${g.name}</td><td colspan="4" class="hint">não jogou ainda</td></tr>`;
     const best = mine.reduce((b, p) => (better(g, p.score, b) ? p.score : b), mine[0].score);
-    const pos = s.rankIn(id), posM = s.rankIn(id, MONTH), medal = p => (p ? ['🥇', '🥈', '🥉'][p - 1] || `${p}º` : '—');
-    return `<tr><td>${g.emoji} ${g.name}</td><td><b>${fmt(g, best)}</b></td><td>${medal(pos)}</td><td>${medal(posM)}</td><td>${mine.length}</td></tr>`;
+    const pos = s.rankIn(id), posM = s.rankIn(id, MONTH), medal = p => (p ? rankBadge(p) : '—');
+    return `<tr><td>${icon(g.icon)} ${g.name}</td><td><b>${fmt(g, best)}</b></td><td>${medal(pos)}</td><td>${medal(posM)}</td><td>${mine.length}</td></tr>`;
   }).join('');
   box.innerHTML = kpis
-    + `<section class="glass" style="margin-top:var(--space-md)"><h2>🏅 Conquistas</h2>${achievementsHtml(s)}</section>`
+    + `<section class="glass" style="margin-top:var(--space-md)"><h2>${icon('award')} Conquistas</h2>${achievementsHtml(s)}</section>`
     + chart
     + `<section class="glass" style="margin-top:var(--space-md)"><h2>Recordes</h2>
       <table class="tickets users prof-table"><thead><tr><th>Jogo</th><th>Melhor</th><th>Geral</th><th>${monthName(monthKey(now))}</th><th>Partidas</th></tr></thead><tbody>${rows}</tbody></table></section>`;

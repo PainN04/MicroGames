@@ -487,7 +487,7 @@ function loop(now) {
 const SMALL = matchMedia('(max-width: 560px)');
 SMALL.addEventListener?.('change', () => { if (currentView === 'menu' && document.querySelector('.grid')) renderMenu(); });
 
-// ✨ no header: liga/desliga o 3D (fica salvo no navegador). Desligado = emoji parado, sem biblioteca nem animação.
+// botão de brilho no header: liga/desliga o 3D (fica salvo no navegador). Desligado = emoji parado, sem biblioteca nem animação.
 let fx3dOn = (() => { try { return localStorage.getItem('mg_3d') !== 'off'; } catch { return true; } })();
 function renderFx3d() {
   const b = $('#fx3d');
@@ -527,6 +527,19 @@ async function enhanceCards() {
     scenes3d.push({ canvas, illo, update: build(Zdog, illo) });
     io?.observe(canvas);
   });
+  // palco do desafio do dia
+  const stage = document.querySelector('.daily-stage');
+  const build = stage && SCENES_3D[stage.dataset.id];
+  if (build) {
+    const ds = SMALL.matches ? 150 : 170;
+    const canvas = Object.assign(document.createElement('canvas'), { className: 'z3d', width: ds, height: ds });
+    canvas.setAttribute('aria-hidden', 'true');
+    stage.prepend(canvas);
+    stage.classList.add('has3d');
+    const illo = new Zdog.Illustration({ element: canvas, zoom: ds / 150 });
+    scenes3d.push({ canvas, illo, update: build(Zdog, illo) });
+    io?.observe(canvas);
+  }
   if (!loopOn && scenes3d.length) { loopOn = true; requestAnimationFrame(loop); }
   // inclinação 3D com brilho (só com mouse; no celular fica parado)
   if (matchMedia('(hover: hover)').matches) {

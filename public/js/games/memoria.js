@@ -1,5 +1,5 @@
 GAMES.memoria = {
-  name: 'Memória', emoji: '🧠', hue: 330, desc: 'Repita a sequência de cores. Quanto mais longe, melhor.',
+  name: 'Memória', icon: 'brain', hue: 330, desc: 'Repita a sequência de cores. Quanto mais longe, melhor.',
   better: 'high', unit: 'rodadas',
   start(el, done) {
     const colors = ['--green', '--red', '--yellow', '--blue'];

@@ -1,5 +1,5 @@
 GAMES.ritmo = {
-  name: 'Ritmo', emoji: '🎵', hue: 320, desc: 'Aperte D F J K (ou toque na faixa) quando a nota chegar na linha. Combo multiplica os pontos. 45s.',
+  name: 'Ritmo', icon: 'music', hue: 320, desc: 'Aperte D F J K (ou toque na faixa) quando a nota chegar na linha. Combo multiplica os pontos. 45s.',
   better: 'high', unit: 'pontos', phaser: true,
   start(el, done) {
     const W = 400, H = 560, LANES = 4, LW = W / LANES, HIT_Y = H - 80, TRAVEL = 1500, DUR = 45000;

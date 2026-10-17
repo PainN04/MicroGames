@@ -1,5 +1,5 @@
 GAMES.torre = {
-  name: 'Torre', emoji: '🏗️', hue: 195, desc: 'Clique, toque ou Espaço pra soltar o bloco na torre. O que passar da borda é cortado. Acertos perfeitos aumentam o bloco.',
+  name: 'Torre', icon: 'tower-control', hue: 195, desc: 'Clique, toque ou Espaço pra soltar o bloco na torre. O que passar da borda é cortado. Acertos perfeitos aumentam o bloco.',
   better: 'high', unit: 'andares', phaser: true,
   start(el, done) {
     const W = 400, H = 600, BH = 26, BASE_W = 220, BASE_Y = H - 70, TOP_SCREEN = 250;

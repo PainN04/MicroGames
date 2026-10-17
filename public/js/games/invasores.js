@@ -1,12 +1,16 @@
 GAMES.invasores = {
-  name: 'Invasores', emoji: '👾', hue: 285, desc: 'Desvie dos tiros e destrua as naves. ←→ / A D ou arraste — o tiro é automático. 3 vidas.',
+  name: 'Invasores', icon: 'ghost', hue: 285, desc: 'Desvie dos tiros e destrua as naves. ←→ / A D ou arraste — o tiro é automático. 3 vidas.',
   better: 'high', unit: 'pontos', phaser: true,
   start(el, done) {
     const W = 480, H = 560, PY = H - 40, COLS = 8, ROWS = 4, SX = 46, SY = 40;
-    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Vidas<b id="v">❤️❤️❤️</b></span><span class="stat">Onda<b id="o">1</b></span></div><div class="phaser-wrap" id="pw"></div>';
+    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Vidas<b id="v" class="lives">' + hearts(3) + '</b></span><span class="stat">Onda<b id="o">1</b></span></div><div class="phaser-wrap" id="pw"></div>';
     const hud = { p: el.querySelector('#p'), v: el.querySelector('#v'), o: el.querySelector('#o') };
-    const EMOJI_FONT = '"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
     return mountPhaser(el.querySelector('#pw'), W, H, {
+      preload() {
+        // duas cores de invasor: fantasma preenchido com o contorno (e os olhos) mais escuro
+        this.load.image('invA', iconDataUrl('ghost', '#3b2a7a', 64, { fill: '#a993ff' }));
+        this.load.image('invB', iconDataUrl('ghost', '#0f4a39', 64, { fill: '#5ff0ac' }));
+      },
       create() {
         dotTexture(this);
         let px = W / 2, target = null, lives = 3, score = 0, wave = 1, alive = true, fireIn = 0, enemyFireIn = 1200, invuln = 0;
@@ -18,7 +22,7 @@ GAMES.invasores = {
           for (const e of enemies) e.o.destroy();
           enemies = []; offX = 0; offY = 0; dir = 1;
           for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
-            const o = this.add.text(0, 0, r < 2 ? '👾' : '👽', { fontFamily: EMOJI_FONT, fontSize: '28px' }).setOrigin(0.5);
+            const o = this.add.image(0, 0, r < 2 ? 'invA' : 'invB').setDisplaySize(30, 30);
             enemies.push({ bx: 60 + c * SX, by: 70 + r * SY, row: r, alive: true, o });
           }
         };
@@ -72,7 +76,7 @@ GAMES.invasores = {
               b.y += (230 + wave * 15) * dt;
               if (!invuln && Math.abs(b.x - px) < 16 && Math.abs(b.y - PY) < 14) {
                 b.y = H + 99;
-                lives--; hud.v.textContent = '❤️'.repeat(lives) || '—';
+                lives--; hud.v.innerHTML = hearts(lives);
                 invuln = 1500; sfx.bad(); this.cameras.main.shake(180, 0.01);
                 if (lives <= 0) return gameOver();
               }

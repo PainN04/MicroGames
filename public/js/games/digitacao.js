@@ -1,5 +1,5 @@
 GAMES.digitacao = {
-  name: 'Digitação', emoji: '⌨️', hue: 245, desc: 'Digite o máximo de palavras certas em 30s.',
+  name: 'Digitação', icon: 'keyboard', hue: 245, desc: 'Digite o máximo de palavras certas em 30s.',
   better: 'high', unit: 'palavras',
   start(el, done) {
     const pool = 'casa café reunião planilha email chefe projeto prazo cliente sistema relatório banana janela teclado monitor cadeira trabalho sexta feira almoço tarefa pessoa código servidor rede mouse papel caneta agenda equipe meta ideia gato cachorro sol chuva verde azul rápido lento grande pequeno feliz carro mesa porta livro música filme jogo'.split(' ');

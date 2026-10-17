@@ -1,5 +1,5 @@
 GAMES.voa = {
-  name: 'Voa Voa', emoji: '🐦', hue: 275, desc: 'Toque, clique ou Espaço pra bater as asas. Passe entre os canos!',
+  name: 'Voa Voa', icon: 'bird', hue: 275, desc: 'Toque, clique ou Espaço pra bater as asas. Passe entre os canos!',
   better: 'high', unit: 'canos', phaser: true,
   start(el, done) {
     const W = 420, H = 560, R = 14, BX = 120, PIPE_W = 64;

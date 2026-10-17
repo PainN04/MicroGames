@@ -1,5 +1,5 @@
 GAMES.matematica = {
-  name: 'Conta Rápida', emoji: '➗', hue: 200, desc: 'Resolva o máximo de contas em 30s. Enter pra enviar.',
+  name: 'Conta Rápida', icon: 'divide', hue: 200, desc: 'Resolva o máximo de contas em 30s. Enter pra enviar.',
   better: 'high', unit: 'acertos',
   start(el, done) {
     let ok = 0, ans, t0 = 0, iv;

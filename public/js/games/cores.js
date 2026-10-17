@@ -1,5 +1,5 @@
 GAMES.cores = {
-  name: 'Cor Certa', emoji: '🎨', hue: 310, desc: 'Clique na COR da tinta, não no que está escrito. 30s. Erro tira 1 ponto.',
+  name: 'Cor Certa', icon: 'palette', hue: 310, desc: 'Clique na COR da tinta, não no que está escrito. 30s. Erro tira 1 ponto.',
   better: 'high', unit: 'acertos',
   start(el, done) {
     const C = [['VERMELHO', '--red'], ['AZUL', '--blue'], ['VERDE', '--green'], ['AMARELO', '--yellow']];

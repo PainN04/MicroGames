@@ -164,7 +164,7 @@ async function saveScore(gameId, score, proof) {
 function fmt(g, v) { return (g.decimals ? v.toFixed(g.decimals) : v) + ' ' + g.unit; }
 
 // ---------- som ----------
-// Bipes sintetizados (Web Audio), sem arquivos. Botão 🔊 no topo liga/desliga.
+// Bipes sintetizados (Web Audio), sem arquivos. Botão de som no topo liga/desliga.
 let muted = localStorage.getItem('mg_mute') === '1';
 let audioCtx = null;
 function beep(freq, ms = 90, type = 'sine', vol = 0.07) {
@@ -185,7 +185,7 @@ const sfx = {
   record: () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 140, 'triangle'), i * 90)),
 };
 function renderMute() {
-  $('#mute').textContent = muted ? '🔇' : '🔊';
+  $('#mute').innerHTML = icon(muted ? 'volume-x' : 'volume-2');
   $('#mute').setAttribute('aria-label', muted ? 'Ligar som' : 'Desligar som');
 }
 
@@ -238,7 +238,7 @@ function mountPhaser(wrap, width, height, scene) {
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, expandParent: false },
       scene,
     });
-  }).catch(e => { if (!dead) wrap.innerHTML = `<p class="hint">⚠️ ${esc(e.message)}</p>`; });
+  }).catch(e => { if (!dead) wrap.innerHTML = `<p class="hint">${icon('triangle-alert')} ${esc(e.message)}</p>`; });
   return () => { dead = true; removeEventListener('mg:fit', size); game?.destroy(true); };
 }
 // Altura que sobra pro #game até o fim da tela (com a página no topo) → variável CSS --avail.

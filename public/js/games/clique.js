@@ -1,5 +1,5 @@
 GAMES.clique = {
-  name: 'Clique Maluco', emoji: '👆', hue: 20, desc: 'Quantos cliques você dá em 10 segundos?',
+  name: 'Clique Maluco', icon: 'mouse-pointer-click', hue: 20, desc: 'Quantos cliques você dá em 10 segundos?',
   better: 'high', unit: 'cliques',
   // Mesma regra do server.js (cheatReason). Retorna o motivo se parecer autoclicker.
   check(score, proof) {
