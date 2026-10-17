@@ -612,3 +612,16 @@
   .note-row .ic .i { width: 18px; height: 18px; }
   .note-row small { display: block; color: var(--muted); font-size: var(--fs-xs); margin-top: 2px; }
   .note-row small.when { opacity: .8; }
+
+  /* celular: logo e botões na mesma linha (o nome da conta encolhe com reticências em vez de quebrar a linha) */
+  @media (max-width: 560px) {
+    header { flex-wrap: nowrap; gap: var(--space-xs); }
+    .logo { flex: none; }
+    .who { flex-wrap: nowrap; min-width: 0; gap: 4px; }
+    .who > * { flex: none; }
+    .who > .acct { flex: 0 1 auto; min-width: 0; }
+    .icon-btn { min-width: 38px; min-height: 38px; }
+    .acct-btn { min-width: 0; max-width: 100%; padding-right: .6rem; gap: .4em; }
+    .acct-btn #pname { flex: 0 1 auto; min-width: 0; max-width: 6.5em; }
+    .acct-btn .chev { flex: none; }
+  }
