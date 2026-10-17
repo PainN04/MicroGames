@@ -1,17 +1,17 @@
 // Desenhos próprios (ilustração em cores, não ícone de traço): toupeira, bomba e estrela
 const MOLE_SPRITES = {
-  mole: `<svg viewBox="0 0 64 64" aria-hidden="true">
+  mole: `<svg class="s-mole" viewBox="0 0 64 64" aria-hidden="true">
     <defs><radialGradient id="mlFur" cx="40%" cy="30%" r="80%"><stop offset="0" stop-color="#b98458"/><stop offset="1" stop-color="#7a4d2c"/></radialGradient></defs>
     <circle cx="14" cy="22" r="6" fill="#7a4d2c"/><circle cx="50" cy="22" r="6" fill="#7a4d2c"/>
     <circle cx="14" cy="22" r="3" fill="#e9a79a"/><circle cx="50" cy="22" r="3" fill="#e9a79a"/>
-    <path d="M10 62c0-22 9-40 22-40s22 18 22 40z" fill="url(#mlFur)"/>
+    <path d="M10 78c0-34 9-56 22-56s22 22 22 56z" fill="url(#mlFur)"/>
     <ellipse cx="32" cy="43" rx="13" ry="10" fill="#f0b9a8"/>
     <ellipse cx="32" cy="37" rx="6.5" ry="4.6" fill="#d96a82"/><ellipse cx="30" cy="35.6" rx="2" ry="1.2" fill="#fff" opacity=".55"/>
     <path d="M32 41.5v3.5M27.5 46c2 1.8 7 1.8 9 0" stroke="#7a3b3b" stroke-width="1.6" fill="none" stroke-linecap="round"/>
     <circle cx="23" cy="29" r="4" fill="#1b1410"/><circle cx="41" cy="29" r="4" fill="#1b1410"/>
     <circle cx="24.3" cy="27.6" r="1.4" fill="#fff"/><circle cx="42.3" cy="27.6" r="1.4" fill="#fff"/>
-    <g fill="#f4cbb8" stroke="#7a4d2c" stroke-width="1.2"><ellipse cx="13" cy="56" rx="7" ry="5"/><ellipse cx="51" cy="56" rx="7" ry="5"/></g>
-    <g stroke="#7a4d2c" stroke-width="1.2" stroke-linecap="round"><path d="M9 57.5l-1.5 2.5M13 58.5v3M17 57.5l1.5 2.5M47 57.5l-1.5 2.5M51 58.5v3M55 57.5l1.5 2.5"/></g>
+    <g fill="#f4cbb8" stroke="#7a4d2c" stroke-width="1.2"><ellipse cx="14" cy="50" rx="7" ry="5"/><ellipse cx="50" cy="50" rx="7" ry="5"/></g>
+    <g stroke="#7a4d2c" stroke-width="1.2" stroke-linecap="round"><path d="M10 51.5l-1.5 2.5M14 52.5v3M18 51.5l1.5 2.5M46 51.5l-1.5 2.5M50 52.5v3M54 51.5l1.5 2.5"/></g>
   </svg>`,
   bomb: `<svg viewBox="0 0 64 64" aria-hidden="true">
     <defs><radialGradient id="mbBody" cx="35%" cy="30%" r="85%"><stop offset="0" stop-color="#5b617d"/><stop offset=".55" stop-color="#2a2d3d"/><stop offset="1" stop-color="#0f1018"/></radialGradient></defs>

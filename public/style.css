@@ -335,7 +335,8 @@
   .hole span { position: absolute; inset: 0; display: grid; place-items: center; font-size: clamp(2rem, 9vw, 3rem); transform: translateY(105%); transition: transform 110ms var(--ease); pointer-events: none; }
   .hole.up span { transform: translateY(0); }
   .hole span { place-items: end center; }
-  .hole svg { width: 84%; height: 84%; margin-bottom: 4%; filter: drop-shadow(0 3px 5px oklch(0% 0 0 / .4)); }
+  .hole svg { width: 84%; height: 84%; margin-bottom: 4%; overflow: visible; filter: drop-shadow(0 3px 5px oklch(0% 0 0 / .4)); }
+  .hole .s-mole { width: 92%; height: 92%; margin-bottom: -5%; } /* o corpo desce até a borda do buraco, cortado pelo círculo */
   .hole .spark { transform-origin: 46px 9px; animation: spark .5s ease-in-out infinite alternate; }
   @keyframes spark { from { transform: scale(.7) rotate(0); } to { transform: scale(1.15) rotate(25deg); } }
   .mc .i { width: 70%; height: 70%; }
