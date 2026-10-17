@@ -139,7 +139,11 @@
   .card p { margin: 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.45; }
   .card .rec { position: relative; margin-top: auto; padding-top: .6rem; font-size: var(--fs-xs); color: var(--muted); display: flex; gap: .4em; align-items: center; min-width: 0; white-space: nowrap; overflow: hidden; }
   .card .rec b { overflow: hidden; text-overflow: ellipsis; }
-  .card .rec b { color: oklch(85% 0.12 var(--h)); font-weight: 700; }
+  .card .rec b { color: var(--text); font-weight: 700; }
+  .card .rec b.fr-bronze { color: #e0aa7c; }
+  .card .rec b.fr-silver { color: #dfe3ee; text-shadow: 0 0 10px oklch(90% 0.02 260 / .35); }
+  .card .rec b.fr-gold { color: #ffd34d; text-shadow: 0 0 10px oklch(86% 0.17 92 / .45); }
+  .card .rec b.fr-diamond { background: linear-gradient(90deg, #7fe7ff, #b79bff, #7fe7ff); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 3.5s linear infinite; }
   @keyframes rise { from { opacity: 0; transform: translateY(18px) scale(.98); } }
 
   /* com a inclinação ligada, o "pulinho" do hover sai (a Vanilla-Tilt cuida do movimento) */
