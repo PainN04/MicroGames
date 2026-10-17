@@ -54,6 +54,7 @@ const ACHIEVEMENTS = [
   { id: 'mes', icon: 'calendar', name: 'Campeão do mês', desc: 'Terminou um mês com mais recordes', test: s => s.monthsWon.length >= 1 },
   { id: 'constancia', icon: 'flame', name: 'Constância', desc: 'Jogou 5 dias úteis seguidos', test: s => s.streak >= 5, progress: s => [s.streak, 5] },
   { id: 'cedo', icon: 'coffee', name: 'Madrugador', desc: 'Jogou antes das 8h', test: s => s.early },
+  { id: 'tresseguidas', icon: 'flame', name: 'Três seguidas', desc: 'Ganhou o desafio do dia 3 dias seguidos', test: s => s.dailyStreak >= 3, progress: s => [s.dailyStreak, 3] },
   { id: 'tarde', icon: 'moon', name: 'Hora extra', desc: 'Jogou depois das 18h', test: s => s.late },
   // ---- mais conquistas ----
   { id: 'veterano', icon: 'award', name: 'Veterano', desc: '500 partidas', test: s => s.plays.length >= 500, progress: s => [s.plays.length, 500] },
@@ -117,7 +118,7 @@ function renderProfile(name) {
   const kpis = `<div class="kpis">
     <div class="kpi glass"><div class="l">Partidas</div><div class="v">${s.plays.length}</div><span class="d">desde ${new Date(s.plays[0].date).toLocaleDateString('pt-BR')}</span></div>
     <div class="kpi glass"><div class="l">Recordes gerais</div><div class="v">${s.firsts}</div><span class="d">${s.podiums} no pódio</span></div>
-    <div class="kpi glass"><div class="l">Desafios do dia ganhos</div><div class="v">${s.dailyWins}</div>${s.monthsWon.length ? `<span class="d">${icon('calendar')} campeão de ${s.monthsWon.map(k => monthName(k)).join(', ')}</span>` : ''}</div>
+    <div class="kpi glass"><div class="l">Desafios do dia ganhos</div><div class="v">${s.dailyWins}</div>${dailyStreakOf(name) > 1 ? `<span class="d">${icon('flame')} ${dailyStreakOf(name)} seguidas agora</span>` : ''}${s.monthsWon.length ? `<span class="d">${icon('calendar')} campeão de ${s.monthsWon.map(k => monthName(k)).join(', ')}</span>` : ''}</div>
     <div class="kpi glass"><div class="l">Conquistas</div><div class="v">${unlocked}/${ACHIEVEMENTS.length}</div></div>
   </div>`;
   // partidas por semana (últimas 12): 1 série, 1 cor, rótulo só no maior
@@ -145,10 +146,12 @@ function renderProfile(name) {
   }).join('');
   box.innerHTML = kpis
     + `<section class="glass" style="margin-top:var(--space-md)"><h2>${icon('award')} Conquistas</h2>${achievementsHtml(s)}</section>`
+    + (name === player && me ? framesHtml(s) : '')
     + chart
     + `<section class="glass" style="margin-top:var(--space-md)"><h2>Recordes</h2>
       <table class="tickets users prof-table"><thead><tr><th>Jogo</th><th>Melhor</th><th>Geral</th><th>${monthName(monthKey(now))}</th><th>Partidas</th></tr></thead><tbody>${rows}</tbody></table></section>`;
   bindVizTips(box);
+  if (name === player && me) bindFrames(name);
 }
 
 // nomes nos rankings abrem o perfil

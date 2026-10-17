@@ -45,6 +45,8 @@ async function fetchScores() {
       const r = await fetch('api/scores');
       if (!r.ok) throw new Error(r.status);
       scores = await r.json(); online = true;
+      try { const f = await fetch('api/flair'); if (f.ok) { flair = await f.json(); localStorage.setItem('mg_flair', JSON.stringify(flair)); } } catch {} // jogo escolhido e molduras: falhar aqui não derruba o ranking
+      crownMemo = undefined;
       try { localStorage.setItem('mg_cache', JSON.stringify(scores)); } catch {}
     } catch { online = false; }
   }
@@ -101,19 +103,10 @@ function champions(range = currentRange()) {
 const DAY_MS = 86_400_000;
 const dayIndex = (t = Date.now()) => Math.floor((t - new Date(t).getTimezoneOffset() * 60_000) / DAY_MS);
 const dayStart = i => { const t = i * DAY_MS; return t + new Date(t).getTimezoneOffset() * 60_000; };
-function seededShuffle(list, seed) {
-  const a = [...list];
-  let s = seed >>> 0;
-  const next = () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(next() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
-  return a;
-}
-// jogo novo só entra no sorteio a partir do dia em que foi lançado (assim os dias que já passaram não mudam de jogo)
-const DAILY_SINCE = { sudoku: 20745 }; // 19/10/2026
-function dailyGame(i = dayIndex()) {
-  const ids = Object.keys(GAMES).filter(id => !(id in DAILY_SINCE) || i >= DAILY_SINCE[id]).sort();
-  return seededShuffle(ids, Math.floor(i / ids.length) * 7919 + 13)[i % ids.length];
-}
+// o sorteio (daily.js) + o jogo que o vencedor de ontem escolheu pra hoje (flair.picks, vem do servidor)
+let flair = (() => { try { return JSON.parse(localStorage.getItem('mg_flair')) || { picks: {}, frames: {} }; } catch { return { picks: {}, frames: {} }; } })();
+let crownMemo; // quem ganhou o desafio de ontem (recalculado quando o placar muda)
+function dailyGame(i = dayIndex()) { return scheduledGame(Object.keys(GAMES), i, flair.picks); }
 const dayRange = (i = dayIndex()) => ({ since: dayStart(i), until: dayStart(i + 1) });
 /** Quem ganhou cada desafio dos dias já encerrados deste mês: [[nome, vitórias]] */
 function dailyWinsThisMonth() {
