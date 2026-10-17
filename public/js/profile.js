@@ -73,6 +73,13 @@ const ACHIEVEMENTS = [
   { id: 'maratonadia', icon: 'hourglass', name: 'Dia de maratona', desc: '30 partidas num só dia', test: s => s.maxInDay >= 30, progress: s => [s.maxInDay, 30] },
   { id: 'sudoku1', icon: 'grid-3x3', name: 'Mente afiada', desc: 'Resolveu um Sudoku', test: s => s.games.has('sudoku') },
   { id: 'sudoku10', icon: 'brain', name: 'Mestre do Sudoku', desc: 'Resolveu um Sudoku em até 10 minutos', test: s => { const b = s.best('sudoku'); return b !== null && b <= 600; } },
+  { id: 'termo1', icon: 'pencil', name: 'Palavreiro', desc: 'Acertou a palavra do Termo', test: s => s.games.has('termo') },
+  { id: 'termo600', icon: 'lightbulb', name: 'Termo de primeira', desc: 'Acertou o Termo na 1ª tentativa', test: s => { const b = s.best('termo'); return b !== null && b >= 600; } },
+  { id: 'pong20', icon: 'target', name: 'Parede de Pong', desc: 'Fez 20 pontos no Pong', test: s => (s.best('pong') ?? 0) >= 20, progress: s => [Math.min(20, s.best('pong') ?? 0), 20] },
+  { id: 'forca100', icon: 'brain', name: 'Mestre da Forca', desc: 'Fez 100 pontos na Forca', test: s => (s.best('forca') ?? 0) >= 100, progress: s => [Math.min(100, s.best('forca') ?? 0), 100] },
+  { id: 'ligue100', icon: 'swords', name: 'Estrategista', desc: 'Fez 100 pontos no Ligue 4', test: s => (s.best('ligue4') ?? 0) >= 100, progress: s => [Math.min(100, s.best('ligue4') ?? 0), 100] },
+  { id: 'corre1000', icon: 'zap', name: 'Sem freio', desc: 'Fez 1000 pontos no Corredor', test: s => (s.best('corredor') ?? 0) >= 1000, progress: s => [Math.min(1000, s.best('corredor') ?? 0), 1000] },
+  { id: 'come5000', icon: 'ghost', name: 'Comilão', desc: 'Fez 5000 pontos no Come-Come', test: s => (s.best('comecome') ?? 0) >= 5000, progress: s => [Math.min(5000, s.best('comecome') ?? 0), 5000] },
   { id: 'cobra', icon: 'worm', name: 'Cobra criada', desc: '30 pontos na Cobrinha', test: s => (s.best('snake') || 0) >= 30, progress: s => [s.best('snake') || 0, 30] },
   { id: 'gatilho', icon: 'target', name: 'Gatilho rápido', desc: 'Reflexo em até 220 ms', test: s => { const b = s.best('reflexo'); return b !== null && b <= 220; } },
 ];

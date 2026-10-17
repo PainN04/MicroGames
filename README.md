@@ -21,7 +21,7 @@ Reflexo · Clique Maluco · Digitação · Memória · Mira · Cobrinha · Conta
 
 ## Bibliotecas (via CDN, sem build)
 
-- **Phaser 3.90** — Cobrinha, Mira, Voa Voa, Chuva de Bugs, Blocos, Quebra-Tijolos, Torre, Invasores e Ritmo. Só baixa quando alguém abre um desses jogos (no menu fica pré-buscado em segundo plano).
+- **Phaser 3.90** — Cobrinha, Mira, Voa Voa, Chuva de Bugs, Blocos, Quebra-Tijolos, Torre, Invasores, Ritmo, Pong, Corredor e Come-Come. Só baixa quando alguém abre um desses jogos (no menu fica pré-buscado em segundo plano).
 - **web-vitals 6** — mede LCP, INP, CLS, FCP e TTFB de quem joga e manda pra `/api/vitals`. Local: aparece no terminal do `server.js`. Vercel: em Logs do projeto (linhas `[web-vitals]`).
 
 ## Migrar pontuações do SQLite local pro Neon

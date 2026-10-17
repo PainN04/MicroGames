@@ -483,6 +483,111 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.4) * 0.3;
     };
   },
+  // raquetes e bolinha trocando de lado
+  pong(Z, illo) {
+    const top = cube(Z, illo, 1, '#ff6b8a', { width: 30, height: 6, depth: 8, translate: { y: -38 } });
+    const bot = cube(Z, illo, 1, '#e8eaf6', { width: 30, height: 6, depth: 8, translate: { y: 38 } });
+    for (let i = -3; i <= 3; i++) new Z.Shape({ addTo: illo, stroke: 3, color: '#3b4062', translate: { y: i * 10 } });
+    const ball = new Z.Shape({ addTo: illo, stroke: 9, color: '#ffd34d' });
+    return t => {
+      const k = (t * 0.7) % 2, u = k < 1 ? k : 2 - k, bx = Math.sin(t * 1.3) * 22;
+      ball.translate.set({ x: bx, y: -32 + u * 64, z: 2 });
+      top.translate.x = Math.sin(t * 1.3 - 0.6) * 20;
+      bot.translate.x = bx * 0.9;
+      illo.rotate.x = -0.45;
+      illo.rotate.y = Math.sin(t * 0.4) * 0.35;
+    };
+  },
+  // forca com o boneco balançando
+  forca(Z, illo) {
+    const wood = '#c98a4b', skin = '#f4e3b5';
+    new Z.Shape({ addTo: illo, path: [{ x: -24, y: 40 }, { x: -24, y: -40 }, { x: 14, y: -40 }, { x: 14, y: -28 }], closed: false, stroke: 5, color: wood });
+    new Z.Shape({ addTo: illo, path: [{ x: -38, y: 40 }, { x: -10, y: 40 }], closed: false, stroke: 5, color: wood });
+    new Z.Shape({ addTo: illo, path: [{ x: -24, y: -26 }, { x: -10, y: -40 }], closed: false, stroke: 4, color: wood });
+    const man = new Z.Anchor({ addTo: illo, translate: { x: 14, y: -28 } });
+    new Z.Shape({ addTo: man, translate: { y: 8 }, stroke: 13, color: skin });
+    for (const p of [[{ y: 15 }, { y: 36 }], [{ y: 20 }, { x: -9, y: 30 }], [{ y: 20 }, { x: 9, y: 30 }], [{ y: 36 }, { x: -8, y: 52 }], [{ y: 36 }, { x: 8, y: 52 }]])
+      new Z.Shape({ addTo: man, path: p, closed: false, stroke: 3.5, color: skin });
+    return t => {
+      man.rotate.z = Math.sin(t * 2) * 0.2;
+      illo.rotate.x = -0.15;
+      illo.rotate.y = Math.sin(t * 0.5) * 0.45;
+    };
+  },
+  // tabuleiro azul (casa por casa, pra Zdog não esconder as peças) e uma peça caindo
+  ligue4(Z, illo) {
+    const xs = [-22, 0, 22], ys = [-22, 0, 22], cols = ['#ff6b8a', '#ffd34d'];
+    const grid = [[-1, -1, -1], [0, 1, 1], [1, 0, 0]]; // -1 = casa vazia
+    ys.forEach((y, r) => xs.forEach((x, c) => {
+      const a = new Z.Anchor({ addTo: illo, translate: { x, y } });
+      slab(Z, a, 22, 22, 5, '#3454d1');
+      const v = grid[r][c];
+      new Z.Shape({ addTo: a, stroke: 13, color: v < 0 ? '#12162a' : cols[v], translate: { z: 3.5 } });
+    }));
+    const drop = new Z.Shape({ addTo: illo, stroke: 13, color: cols[0], translate: { z: 7 } });
+    return t => {
+      const k = (t * 0.7) % 1, n = Math.floor(t * 0.7), c = n % 3;
+      drop.translate.set({ x: xs[c], y: -62 + 40 * k * k, z: 7 });
+      drop.color = cols[n % 2];
+      drop.visible = k < 0.97;
+      illo.rotate.x = -0.3;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.4;
+    };
+  },
+  // corredor pulando um cacto
+  corredor(Z, illo) {
+    slab(Z, illo, 96, 4, 22, '#4a4f6e', { translate: { y: 28 } });
+    const run = new Z.Anchor({ addTo: illo, translate: { x: -22, y: 26 } });
+    cube(Z, run, 1, '#ffd34d', { width: 12, height: 20, depth: 10, translate: { y: -18 } });
+    cube(Z, run, 1, '#ffd34d', { width: 12, height: 10, depth: 10, translate: { x: 4, y: -34 } });
+    const legs = [-3, 3].map(x => cube(Z, run, 1, '#e0aa2f', { width: 4, height: 8, depth: 4, translate: { x, y: -4 } }));
+    const cactus = cube(Z, illo, 1, '#3ddc97', { width: 9, height: 22, depth: 9, translate: { y: 15 } });
+    cube(Z, cactus, 1, '#3ddc97', { width: 14, height: 4, depth: 4, translate: { y: -2 } });
+    return t => {
+      const j = (t * 0.8) % 1;
+      run.translate.y = 26 - Math.sin(j * Math.PI) * 30;
+      cactus.translate.x = 52 - j * 144;
+      legs.forEach((l, i) => { l.translate.x = (i ? 3 : -3) + Math.sin(t * 14 + i * Math.PI) * 3; });
+      illo.rotate.x = -0.25;
+      illo.rotate.y = -0.5 + Math.sin(t * 0.4) * 0.2;
+    };
+  },
+  // bolinha comendo pontinhos, fantasma atrás
+  comecome(Z, illo) {
+    const dots = Array.from({ length: 6 }, (_, i) => new Z.Shape({ addTo: illo, stroke: 5, color: '#ffd9a8', translate: { x: -40 + i * 16, y: 8 } }));
+    const pac = new Z.Shape({ addTo: illo, stroke: 28, color: '#ffe14d', translate: { y: 8 } });
+    const mouth = new Z.Shape({ addTo: pac, path: [{ x: 0, y: 0, z: 15 }, { x: 18, y: -9, z: 15 }, { x: 18, y: 9, z: 15 }], stroke: 1, fill: true, color: '#151827' });
+    const ghost = cube(Z, illo, 1, '#ff4d5e', { width: 20, height: 22, depth: 14, translate: { y: -26 } });
+    return t => {
+      const k = (t * 0.45) % 1, x = -46 + k * 92;
+      pac.translate.x = x;
+      const o = 0.25 + 0.75 * Math.abs(Math.sin(t * 9));
+      mouth.path[1].y = -10 * o; mouth.path[2].y = 10 * o; mouth.updatePath();
+      dots.forEach(d => { d.visible = d.translate.x > x + 6; });
+      ghost.translate.x = 44 - k * 88 + Math.sin(t * 3) * 3;
+      ghost.translate.y = -26 + Math.sin(t * 5) * 2;
+      illo.rotate.x = -0.3;
+      illo.rotate.y = Math.sin(t * 0.5) * 0.3;
+    };
+  },
+  // fileiras de letras virando verde, amarelo e cinza
+  termo(Z, illo) {
+    const cols = ['#3ddc97', '#ffd34d', '#4a4f6e'], tiles = [];
+    for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) {
+      const a = new Z.Anchor({ addTo: illo, translate: { x: (c - 1.5) * 24, y: (r - 0.5) * 26 } });
+      slab(Z, a, 21, 21, 5, cols[(r * 2 + c * 3) % 3]);
+      tiles.push({ a, r, c });
+    }
+    return t => {
+      tiles.forEach(({ a, r, c }) => {
+        const ph = (t * 0.6 - c * 0.12 - r * 0.7) % 2;
+        a.rotate.x = ph >= 0 && ph < 0.5 ? smooth(ph / 0.5) * Math.PI : ph >= 0.5 ? Math.PI : 0;
+        a.translate.z = ph >= 0 && ph < 0.5 ? Math.sin(ph / 0.5 * Math.PI) * 8 : 0;
+      });
+      illo.rotate.x = -0.3;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.35;
+    };
+  },
 };
 
 /* ---------- montagem e loop ---------- */

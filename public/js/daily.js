@@ -3,7 +3,7 @@
 // Um jogo por dia, igual pra todo mundo. A cada ciclo passa por todos os jogos, numa ordem embaralhada diferente.
 // Jogo novo só entra no sorteio a partir do dia em que foi lançado (assim os dias que já passaram não mudam de jogo).
 // `picks[dia] = { game }`: o vencedor do desafio de ontem escolhe o jogo de amanhã (vale por cima do sorteio).
-const DAILY_SINCE = { sudoku: 20745 }; // 19/10/2026 (número do dia desde 1970)
+const DAILY_SINCE = { sudoku: 20745, pong: 20746, forca: 20746, ligue4: 20746, corredor: 20746, comecome: 20746, termo: 20746 }; // 19/10/2026 e 20/10/2026 (número do dia desde 1970)
 
 function seededShuffle(list, seed) {
   const a = [...list];
