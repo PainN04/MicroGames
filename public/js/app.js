@@ -8,7 +8,8 @@ function announce(msg) { $('#live').textContent = msg; }
 
 function recHtml(id) {
   const g = GAMES[id], top = bestPerPlayer(id)[0];
-  return top ? `${icon('trophy')} <b>${esc(top[0])}</b> · ${fmt(g, top[1])}`
+  const fr = top && flair.frames[top[0]]; // nome do recordista: branco, ou na cor da moldura de avatar dele
+  return top ? `${icon('trophy')} <b${fr ? ` class="fr-${fr}"` : ''}>${esc(top[0])}</b> · ${fmt(g, top[1])}`
     : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()}`;
 }
 function kingsHtml() {

@@ -344,3 +344,45 @@ test('prêmios do desafio do dia: só o vencedor de ontem escolhe o jogo de aman
   assert.equal((await ana('/api/auth/me')).body.user.frame, 'bronze');
   assert.equal((await ana('/api/profile/frame', { method: 'POST', body: { frame: null } })).status, 200, 'dá pra tirar a moldura');
 });
+
+test('jogos novos: pontuação impossível é recusada, e o Termo só vale uma vez por dia', async () => {
+  const bia = await login('bia', 'senha-bia-123');
+  assert.equal((await play(bia, 'pong', 5000)).status, 422);
+  assert.equal((await play(bia, 'pong', 12)).status, 201);
+  assert.equal((await play(bia, 'forca', 45)).status, 201);
+  assert.equal((await play(bia, 'forca', 99999)).status, 422);
+  assert.equal((await play(bia, 'ligue4', 37)).status, 201);
+  assert.equal((await play(bia, 'corredor', 1800)).status, 201);
+  assert.equal((await play(bia, 'comecome', 2400)).status, 201);
+  assert.equal((await play(bia, 'termo', 50)).status, 422, 'abaixo de 100 não existe');
+  assert.equal((await play(bia, 'termo', 450)).status, 201);
+  assert.equal((await play(bia, 'termo', 600)).status, 409, 'segunda tentativa do dia não vale');
+  const ana = await login('ana', 'senha-ana-123');
+  assert.equal((await play(ana, 'termo', 300)).status, 201, 'cada pessoa tem a sua');
+  const { GAMES, isBetter } = require('../lib/rules');
+  assert.ok(['pong', 'forca', 'ligue4', 'corredor', 'comecome', 'termo'].every(g => GAMES.includes(g)));
+  assert.equal(isBetter('termo', 600, 450), true);
+});
+
+test('jogos novos entram no sorteio do dia só a partir do lançamento (dias antigos não mudam)', () => {
+  const { scheduledGame, DAILY_SINCE } = require('../public/js/daily.js');
+  const { GAMES } = require('../lib/rules');
+  const NEW = ['pong', 'forca', 'ligue4', 'corredor', 'comecome', 'termo'];
+  for (const id of NEW) assert.ok(DAILY_SINCE[id] >= 20746, id);
+  for (let d = 20000; d < 20746; d++) assert.ok(!NEW.includes(scheduledGame(GAMES, d, {})), 'dia ' + d);
+  const seen = new Set();
+  for (let d = 20746; d < 20746 + 27 * 2; d++) seen.add(scheduledGame(GAMES, d, {}));
+  assert.ok(NEW.every(g => seen.has(g)), 'todos entram no rodízio depois');
+});
+
+test('combos e itens raros: pontuações maiores agora cabem nos limites, mas continua havendo teto', async () => {
+  const bia = await login('bia', 'senha-bia-123');
+  assert.equal((await play(bia, 'voa', 400)).status, 201, 'estrelas somam ao placar do Voa Voa');
+  assert.equal((await play(bia, 'voa', 5000)).status, 422);
+  assert.equal((await play(bia, 'toupeira', 220)).status, 201, 'combo x4 na toupeira passa de 200');
+  assert.equal((await play(bia, 'toupeira', 9000)).status, 422);
+  assert.equal((await play(bia, 'cores', 180)).status, 201);
+  assert.equal((await play(bia, 'cores', 2000)).status, 422);
+  assert.equal((await play(bia, 'matematica', 150)).status, 201);
+  assert.equal((await play(bia, 'matematica', 9000)).status, 422);
+});

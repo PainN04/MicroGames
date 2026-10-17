@@ -139,7 +139,11 @@
   .card p { margin: 0; color: var(--muted); font-size: var(--fs-sm); line-height: 1.45; }
   .card .rec { position: relative; margin-top: auto; padding-top: .6rem; font-size: var(--fs-xs); color: var(--muted); display: flex; gap: .4em; align-items: center; min-width: 0; white-space: nowrap; overflow: hidden; }
   .card .rec b { overflow: hidden; text-overflow: ellipsis; }
-  .card .rec b { color: oklch(85% 0.12 var(--h)); font-weight: 700; }
+  .card .rec b { color: var(--text); font-weight: 700; }
+  .card .rec b.fr-bronze { color: #e0aa7c; }
+  .card .rec b.fr-silver { color: #dfe3ee; text-shadow: 0 0 10px oklch(90% 0.02 260 / .35); }
+  .card .rec b.fr-gold { color: #ffd34d; text-shadow: 0 0 10px oklch(86% 0.17 92 / .45); }
+  .card .rec b.fr-diamond { background: linear-gradient(90deg, #7fe7ff, #b79bff, #7fe7ff); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 3.5s linear infinite; }
   @keyframes rise { from { opacity: 0; transform: translateY(18px) scale(.98); } }
 
   /* com a inclinação ligada, o "pulinho" do hover sai (a Vanilla-Tilt cuida do movimento) */
@@ -755,3 +759,60 @@
 
   /* bolinha verde de "ranking compartilhado" some: tudo certo não precisa de aviso. Se o servidor cair, o texto de aviso continua aparecendo. */
   .pill.compact { display: none; }
+  /* ---------- jogos novos: Forca, Ligue 4, Termo ---------- */
+  /* Forca */
+  .gallows { height: clamp(96px, calc(var(--avail, 520px) - 360px), 170px); width: auto; aspect-ratio: 220 / 190; }
+  .gallows path, .gallows circle { fill: none; stroke: currentColor; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
+  .gallows .base { color: var(--muted); } .gallows .body { color: var(--text); } .gallows .body path, .gallows .body circle { stroke-width: 5; animation: fade .25s; }
+  .wordline { --lw: min(2.2rem, calc((100vw - 96px) / 12 - 4px)); display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; min-height: 2.6rem; position: relative; }
+  .wordline .wd { display: flex; gap: 4px; flex-wrap: nowrap; }
+  .wordline .lt { width: var(--lw); height: 2.2rem; display: grid; place-items: end center; font-size: min(var(--fs-lg), calc(var(--lw) * .85)); font-weight: 700; border-bottom: 3px solid var(--border-strong); padding-bottom: 2px; }
+  .wordline .gap { width: .6em; text-align: center; font-weight: 700; align-self: end; }
+  .wordline.lost .lt { color: var(--red); }
+  .fl-pts { position: absolute; left: 50%; top: -6px; transform: translateX(-50%); font-weight: 700; color: var(--green); animation: floatup .9s ease-out forwards; pointer-events: none; }
+  @keyframes floatup { to { transform: translate(-50%, -34px); opacity: 0; } }
+  .keys { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 5px; width: min(100%, 440px); }
+  .key { min-height: 42px; padding: 0; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+  .key:active:not(:disabled) { transform: scale(.94); }
+  .key.ok { background: oklch(60% .15 150 / .55); border-color: var(--green); }
+  .key.no { background: oklch(40% .1 20 / .5); border-color: var(--red); opacity: .55; }
+  .key:disabled { cursor: default; }
+  /* Ligue 4 */
+  .c4 { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; padding: 8px; background: oklch(42% .17 262); border-radius: 16px; border: 2px solid oklch(55% .16 262); width: min(100%, 420px, calc((var(--avail, 520px) - 150px) * 7 / 6)); user-select: none; -webkit-user-select: none; }
+  .c4c { aspect-ratio: 1; border-radius: 50%; border: 0; padding: 0; background: oklch(18% .03 270); box-shadow: inset 0 3px 6px oklch(0% 0 0 / .5); cursor: pointer; touch-action: manipulation; position: relative; }
+  .c4c.you { background: var(--red); box-shadow: inset 0 -4px 6px oklch(0% 0 0 / .25), inset 0 3px 5px oklch(100% 0 0 / .25); }
+  .c4c.cpu { background: var(--yellow); box-shadow: inset 0 -4px 6px oklch(0% 0 0 / .25), inset 0 3px 5px oklch(100% 0 0 / .3); }
+  .c4c.drop { z-index: 2; animation: c4drop calc(.14s + var(--fall, 1) * .055s) cubic-bezier(.55, 0, 1, .6); }
+  @keyframes c4drop { from { transform: translateY(calc(var(--fall, 1) * -112%)); } }
+  .c4c.win { animation: c4win .6s ease-in-out infinite alternate; }
+  @keyframes c4win { to { transform: scale(1.12); box-shadow: 0 0 14px 3px #fff8; } }
+  /* Termo */
+  .tm { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: min(100%, 330px, calc((var(--avail, 520px) - 250px) * 5 / 6)); }
+  .tm-t { aspect-ratio: 1; display: grid; place-items: center; border: 2px solid var(--border-strong); border-radius: 10px; background: var(--surface); font-size: clamp(1.2rem, 5.5vw, 1.8rem); font-weight: 700; text-transform: uppercase; }
+  .tm-t.on { border-color: var(--text); animation: pop .12s var(--ease-spring); }
+  .tm-t.flip { animation: tmflip .5s var(--d, 0s) both; }
+  @keyframes tmflip { 50% { transform: scaleY(0); } }
+  .tm-t.g, .tm-t.y, .tm-t.x { color: #10131c; border-color: transparent; }
+  .tm-t.g { background: var(--green); } .tm-t.y { background: var(--yellow); } .tm-t.x { background: oklch(48% .02 270); color: var(--text); }
+  .tm-t.nope { animation: shake .25s; }
+  .tm-kb { display: flex; flex-direction: column; gap: 6px; width: min(100%, 440px); }
+  .tm-kb > div { display: flex; gap: 4px; justify-content: center; }
+  .tm-k { flex: 1 1 0; max-width: 44px; min-height: 46px; padding: 0; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+  .tm-k.wide { flex: 1.6 1 0; max-width: 66px; }
+  .tm-k:active { transform: scale(.94); }
+  .tm-k.g { background: var(--green); color: #10131c; border-color: transparent; } .tm-k.y { background: var(--yellow); color: #10131c; border-color: transparent; } .tm-k.x { opacity: .35; }
+  @media (prefers-reduced-motion: reduce) { .tm-t.flip, .c4c.drop, .c4c.win { animation: none; } }
+  .row-btns[hidden], .tm-kb[hidden] { display: none; }
+  /* Come-Come: botões de direção numa fileira só (a cruz comia espaço do labirinto, que é alto) */
+  @media (pointer: coarse) {
+    .dpad.flat { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-areas: none; width: min(100%, 340px); gap: 8px; }
+    .dpad.flat .dbtn { grid-area: auto; width: 100%; height: 50px; }
+  }
+  /* Combo (Toupeira, Cor Certa, Conta Rápida) e bônus do Voa Voa */
+  .stat.combo { transition: border-color var(--duration), background var(--duration); }
+  .stat.combo.hot { border-color: var(--yellow); background: oklch(86% 0.17 92 / .12); }
+  .stat.combo.hot b { color: var(--yellow); }
+  .stat b.up { animation: bump .35s var(--ease-spring); }
+  .hole.gold { background: radial-gradient(ellipse at 50% 70%, oklch(70% 0.15 92) 0 45%, var(--surface-2) 46%); }
+  .hole .s-gold { filter: drop-shadow(0 0 8px #ffd34d); }
+  .bonus-hud { font-size: var(--fs-sm); }

@@ -1,5 +1,5 @@
 GAMES.snake = {
-  name: 'Cobrinha', icon: 'worm', hue: 150, desc: 'Setas, WASD, deslize ou os botões. Acelera a cada fruta; a dourada vale 5!',
+  name: 'Cobrinha', icon: 'worm', hue: 150, desc: 'Setas, WASD, deslize ou os botões. Acelera a cada fruta; a dourada vale 5 e a azul encolhe o rabo (−3)!',
   better: 'high', unit: 'pontos', phaser: true,
   // Phaser. Lógica em grade (20×20); o desenho desliza entre as casas. Feita pra responder na hora:
   //  - a curva não espera o próximo passo: se já passou de ~45% da casa, o passo é antecipado (some o "delay");
@@ -15,7 +15,7 @@ GAMES.snake = {
       <div class="dpad" aria-hidden="true">${arrow('up', 90)}${arrow('left', 0)}${arrow('right', 180)}${arrow('down', -90)}</div>
       <p class="hint">Setas, WASD ou deslize pra começar</p>`;
     const hud = { p: el.querySelector('#p'), v: el.querySelector('#v') };
-    const col = { tile: 0x24273a, food: hex('--red'), body: hex('--green'), head: hex('--yellow'), gold: 0xffd34d };
+    const col = { tile: 0x24273a, food: hex('--red'), body: hex('--green'), head: hex('--yellow'), gold: 0xffd34d, cut: 0x4dd9ff };
     const KEYS = { ArrowUp: [0, -1], w: [0, -1], ArrowDown: [0, 1], s: [0, 1], ArrowLeft: [-1, 0], a: [-1, 0], ArrowRight: [1, 0], d: [1, 0] };
     const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
     let turnNow = () => {}; // ligado dentro da cena; o D-pad (fora do Phaser) usa
@@ -35,6 +35,7 @@ GAMES.snake = {
         const body = this.add.graphics();
         const burst = this.add.particles(0, 0, 'dot', { speed: { min: 60, max: 200 }, lifespan: 450, scale: { start: 1, end: 0 }, tint: col.food, emitting: false });
         const goldBurst = this.add.particles(0, 0, 'dot', { speed: { min: 80, max: 260 }, lifespan: 600, scale: { start: 1.3, end: 0 }, tint: col.gold, emitting: false });
+        const cutBurst = this.add.particles(0, 0, 'dot', { speed: { min: 80, max: 240 }, lifespan: 550, scale: { start: 1.2, end: 0 }, tint: col.cut, emitting: false });
         const msg = this.add.text(W / 2, W / 2 + 56, 'Aperte uma seta', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '22px', color: '#c9cce0' }).setOrigin(0.5);
 
         const free = () => { let c; do c = { x: rand(0, N - 1), y: rand(0, N - 1) }; while (snake.some(s => s.x === c.x && s.y === c.y) || (food && c.x === food.x && c.y === food.y) || (bonus && c.x === bonus.x && c.y === bonus.y)); return c; };
@@ -63,7 +64,8 @@ GAMES.snake = {
         const tick = () => {
           if (queue.length) dir = queue.shift();
           const h = { x: snake[0].x + dir[0], y: snake[0].y + dir[1] };
-          const eatsFood = h.x === food.x && h.y === food.y, eatsGold = bonus && h.x === bonus.x && h.y === bonus.y;
+          const eatsFood = h.x === food.x && h.y === food.y, onBonus = bonus && h.x === bonus.x && h.y === bonus.y;
+          const eatsGold = onBonus && bonus.kind === 'gold', eatsCut = onBonus && bonus.kind === 'cut';
           const grows = eatsFood || eatsGold;
           // o rabo sai da casa neste mesmo passo, então bater nele só vale se a cobra está crescendo
           const solid = grows ? snake : snake.slice(0, -1);
@@ -77,6 +79,16 @@ GAMES.snake = {
             floatText(this, bonus.x * S + S / 2, bonus.y * S, '+5', '#ffd34d');
             beep(990, 90, 'triangle'); beep(1320, 120, 'triangle');
             bonus = null;
+          } else if (eatsCut) {
+            // fruta azul: anda normal e ainda perde até 3 do rabo (nunca fica com menos de 3 casas)
+            snake.pop();
+            const n = Math.min(3, snake.length - 3);
+            for (let k = 0; k < n; k++) snake.pop();
+            pts += 2; hud.p.textContent = pts;
+            cutBurst.explode(20, bonus.x * S + S / 2, bonus.y * S + S / 2);
+            floatText(this, bonus.x * S + S / 2, bonus.y * S, n > 0 ? `rabo −${n}` : '+2', '#7ad7ff');
+            beep(520, 80, 'sine'); beep(780, 90, 'sine'); beep(330, 140, 'triangle');
+            bonus = null;
           } else if (eatsFood) {
             hud.p.textContent = ++pts;
             eaten++;
@@ -86,7 +98,8 @@ GAMES.snake = {
             floatText(this, foodDot.x, foodDot.y - 10, '+1', '#7cffb0');
             beep(660 + pts * 12, 70, 'triangle');
             placeFood();
-            if (!bonus && eaten % 5 === 0) bonus = { ...free(), ttl: 6500 }; // a cada 5 frutas aparece uma dourada por 6,5s
+            if (!bonus && eaten % 5 === 0) bonus = { ...free(), kind: 'gold', ttl: 6500, max: 6500 }; // a cada 5 frutas aparece uma dourada por 6,5s
+            else if (!bonus && snake.length > 7 && Math.random() < 0.14) bonus = { ...free(), kind: 'cut', ttl: 7000, max: 7000 }; // às vezes uma azul que encurta o rabo
           } else snake.pop();
         };
         const draw = (t, delta) => {
@@ -107,8 +120,12 @@ GAMES.snake = {
             bonus.ttl -= delta;
             if (bonus.ttl <= 0) bonus = null;
             else {
-              const cx = bonus.x * S + S / 2, cy = bonus.y * S + S / 2, k = bonus.ttl / 6500;
-              gold.fillStyle(col.gold).fillCircle(cx, cy, S / 2 - 3 + Math.sin(this.time.now / 110) * 1.4);
+              const cx = bonus.x * S + S / 2, cy = bonus.y * S + S / 2, k = bonus.ttl / bonus.max, pulse = Math.sin(this.time.now / 110) * 1.4;
+              if (bonus.kind === 'cut') {
+                const r = S / 2 - 2 + pulse; // losango azul: dá pra distinguir da dourada até no celular
+                gold.fillStyle(col.cut).fillPoints([{ x: cx, y: cy - r }, { x: cx + r, y: cy }, { x: cx, y: cy + r }, { x: cx - r, y: cy }], true);
+                gold.fillStyle(0xffffff, 0.75).fillRect(cx - 5, cy - 1, 10, 2);
+              } else gold.fillStyle(col.gold).fillCircle(cx, cy, S / 2 - 3 + pulse);
               gold.lineStyle(2.5, 0xffffff, 0.9).beginPath().arc(cx, cy, S / 2 + 2, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2).strokePath();
             }
           }
