@@ -752,3 +752,6 @@
   .frame .demo[data-frame="silver"] { box-shadow: 0 0 0 3px #dfe3ee, 0 0 12px oklch(90% 0.02 260 / .4); color: #dfe3ee; }
   .frame .demo[data-frame="gold"] { box-shadow: 0 0 0 3px #ffd34d, 0 0 14px oklch(86% 0.17 92 / .55); color: #ffd34d; }
   .frame .demo[data-frame="diamond"] { box-shadow: 0 0 0 3px #7fe7ff, 0 0 16px #b79bff; color: #b9f0ff; }
+
+  /* bolinha verde de "ranking compartilhado" some: tudo certo não precisa de aviso. Se o servidor cair, o texto de aviso continua aparecendo. */
+  .pill.compact { display: none; }
