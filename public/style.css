@@ -654,3 +654,40 @@
     header:has(#gateWrap:not([hidden])) .acct-btn { padding-right: .5rem; gap: .3em; }
   }
   .acct-menu button[hidden] { display: none; } /* o display:flex acima não pode mostrar os itens que são só de admin */
+
+  /* Cobrinha: botões de direção só em tela de toque */
+  .dpad { display: none; }
+  @media (pointer: coarse) {
+    .dpad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-areas: ". up ." "left . right" ". down ."; gap: 6px; justify-content: center; margin: 2px auto 0; }
+    .dbtn[data-d="up"] { grid-area: up; } .dbtn[data-d="left"] { grid-area: left; } .dbtn[data-d="right"] { grid-area: right; } .dbtn[data-d="down"] { grid-area: down; }
+  }
+  .dbtn { width: 52px; height: 52px; border-radius: 16px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); display: grid; place-items: center; padding: 0; cursor: pointer; touch-action: manipulation; }
+  .dbtn:active { background: var(--surface); transform: scale(.94); }
+  .dbtn .i { width: 22px; height: 22px; transform: rotate(var(--r)); }
+  /* Sudoku */
+  .sd-board, .sd-pad, .sd-tools { width: min(100%, max(260px, min(440px, calc(var(--avail, 640px) - 270px)))); margin-left: auto; margin-right: auto; }
+  .sd-board { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); aspect-ratio: 1; border: 2px solid var(--border-strong); border-radius: 12px; overflow: hidden; background: var(--surface); user-select: none; -webkit-user-select: none; }
+  .sd-cell { display: grid; place-items: center; min-width: 0; padding: 0; border: 0; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); background: transparent;
+    color: oklch(86% 0.11 262); font: inherit; font-size: clamp(1rem, 5vw, 1.55rem); font-weight: 600; cursor: pointer; touch-action: manipulation; }
+  .sd-cell.br { border-right: 2px solid var(--border-strong); } .sd-cell.bb { border-bottom: 2px solid var(--border-strong); }
+  .sd-cell.given { color: var(--text); font-weight: 700; background: oklch(100% 0 0 / .045); }
+  .sd-cell.tip { color: var(--yellow); }
+  .sd-cell.peer { background: oklch(70% .08 262 / .14); }
+  .sd-cell.same { background: oklch(70% .13 262 / .3); }
+  .sd-cell.sel { background: oklch(70% .15 262 / .5); box-shadow: inset 0 0 0 2px var(--primary); }
+  .sd-cell.bad { color: var(--red); background: oklch(66% .22 18 / .2); }
+  .sd-cell .nt { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; height: 100%; padding: 2px; font-size: clamp(.45rem, 1.9vw, .62rem); font-weight: 500; color: var(--muted); line-height: 1; }
+  .sd-cell .nt i { font-style: normal; display: grid; place-items: center; }
+  .sd-pad { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 5px; margin-top: 10px; }
+  .sd-num { min-height: 46px; padding: 0; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; font-size: 1.2rem; font-weight: 700; cursor: pointer; touch-action: manipulation; }
+  .sd-num:active { background: var(--surface); transform: scale(.95); }
+  .sd-num:disabled { opacity: .25; cursor: default; }
+  .sd-tools { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+  .sd-tools .btn { min-height: 40px; padding: 0 .85rem; font-size: var(--fs-xs); }
+  .sd-tools .btn[aria-pressed="true"] { border-color: var(--primary); color: var(--primary); }
+
+  /* celular: "Reiniciar" vira só o ícone (senão cobre o título do jogo) */
+  @media (max-width: 560px) {
+    .stage-head #restart { width: 44px; min-width: 44px; padding: 0; flex: none; }
+    .stage-head #restart span { display: none; }
+  }

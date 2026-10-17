@@ -182,7 +182,7 @@ function play(id) {
         <div class="stage-head">
           <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
           <div class="title"><h2>${icon(g.icon)}${g.name}</h2><p>${g.desc}</p></div>
-          <button class="btn ghost" id="restart">${icon('rotate-ccw')}<span>Reiniciar</span></button>
+          <button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>
         </div>
         <div class="game" id="game"></div>
       </section>

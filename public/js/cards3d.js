@@ -341,6 +341,28 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.5) * 0.35;
     };
   },
+  // bloco 3×3 de Sudoku: uma casa sobe por vez e os números aparecem nas vazias
+  sudoku(Z, illo) {
+    const board = [5, 0, 3, 0, 7, 0, 8, 0, 2], fill = [4, 1, 6, 9];
+    let k = 0;
+    const tiles = board.map((n, i) => {
+      const a = new Z.Anchor({ addTo: illo, translate: { x: (i % 3 - 1) * 24, y: (Math.floor(i / 3) - 1) * 24 } });
+      slab(Z, a, 21, 21, 5, n ? '#2b2f45' : '#3a4066');
+      const g = glyph(Z, a, digitLines(n || fill[k++ % fill.length]), { color: n ? '#e8e9f3' : '#ffd34d', z: 3.2, scale: 0.95, stroke: 2.2 });
+      return { a, g, empty: !n };
+    });
+    const empties = tiles.filter(p => p.empty);
+    return t => {
+      const cur = Math.floor(t * 1.4) % 9, shown = Math.floor((t * 0.9) % (empties.length + 2));
+      tiles.forEach((p, i) => {
+        p.a.translate.z = i === cur ? 9 : Math.sin(t * 1.5 + i) * 1.5;
+        p.a.rotate.y = i === cur ? Math.sin(t * 6) * 0.12 : 0;
+        if (p.empty) p.g.visible = empties.indexOf(p) < shown;
+      });
+      illo.rotate.x = -0.38;
+      illo.rotate.y = Math.sin(t * 0.5) * 0.35;
+    };
+  },
   // parede de tijolos, raquete e bolinha quicando
   tijolos(Z, illo) {
     for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++)

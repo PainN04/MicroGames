@@ -108,8 +108,10 @@ function seededShuffle(list, seed) {
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(next() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 }
+// jogo novo só entra no sorteio a partir do dia em que foi lançado (assim os dias que já passaram não mudam de jogo)
+const DAILY_SINCE = { sudoku: 20745 }; // 19/10/2026
 function dailyGame(i = dayIndex()) {
-  const ids = Object.keys(GAMES).sort();
+  const ids = Object.keys(GAMES).filter(id => !(id in DAILY_SINCE) || i >= DAILY_SINCE[id]).sort();
   return seededShuffle(ids, Math.floor(i / ids.length) * 7919 + 13)[i % ids.length];
 }
 const dayRange = (i = dayIndex()) => ({ since: dayStart(i), until: dayStart(i + 1) });

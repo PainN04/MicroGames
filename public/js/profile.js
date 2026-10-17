@@ -12,9 +12,12 @@ function statsFor(name) {
   const podiums = Object.keys(GAMES).filter(id => (rankIn(id) || 99) <= 3).length;
   const monthsWon = hallOfFame().filter(m => m.kings[0]?.[0] === name).map(m => m.key);
   // desafios do dia ganhos (dias já encerrados, desde a primeira partida de todo mundo)
-  let dailyWins = 0;
+  let dailyWins = 0, dailyRun = 0, dailyStreak = 0;
   const first = Math.min(...Object.values(scores).flat().map(s => s.date), Date.now());
-  for (let i = dayIndex(first); i < dayIndex(); i++) if (bestPerPlayer(dailyGame(i), dayRange(i))[0]?.[0] === name) dailyWins++;
+  for (let i = dayIndex(first); i < dayIndex(); i++) {
+    if (bestPerPlayer(dailyGame(i), dayRange(i))[0]?.[0] === name) { dailyWins++; dailyRun++; dailyStreak = Math.max(dailyStreak, dailyRun); }
+    else dailyRun = 0;
+  }
   // maior sequência de dias úteis seguidos com partida (fim de semana não quebra a sequência)
   const days = [...new Set(plays.map(p => dayIndex(p.date)))].sort((a, b) => a - b);
   let streak = 0, cur = 0, prev = null;
@@ -25,9 +28,17 @@ function statsFor(name) {
     streak = Math.max(streak, cur);
     prev = d;
   }
-  const late = plays.some(p => new Date(p.date).getHours() >= 18);
-  const early = plays.some(p => new Date(p.date).getHours() < 8);
-  return { plays, games, rankIn, firsts, podiums, monthsWon, dailyWins, streak, late, early };
+  const hour = p => new Date(p.date).getHours();
+  const late = plays.some(p => hour(p) >= 18);
+  const early = plays.some(p => hour(p) < 8);
+  const lunch = plays.some(p => hour(p) >= 12 && hour(p) < 14);
+  const night = plays.some(p => hour(p) >= 22);
+  const weekend = plays.some(p => [0, 6].includes(new Date(p.date).getDay()));
+  const perDay = {};
+  for (const p of plays) perDay[dayIndex(p.date)] = (perDay[dayIndex(p.date)] || 0) + 1;
+  const maxInDay = Math.max(0, ...Object.values(perDay));
+  const best = id => plays.filter(p => p.id === id).reduce((b, p) => (b === null || better(GAMES[id], p.score, b) ? p.score : b), null);
+  return { plays, games, rankIn, firsts, podiums, monthsWon, dailyWins, dailyStreak, streak, late, early, lunch, night, weekend, maxInDay, daysPlayed: days.length, best };
 }
 
 const ACHIEVEMENTS = [
@@ -44,6 +55,25 @@ const ACHIEVEMENTS = [
   { id: 'constancia', icon: 'flame', name: 'Constância', desc: 'Jogou 5 dias úteis seguidos', test: s => s.streak >= 5, progress: s => [s.streak, 5] },
   { id: 'cedo', icon: 'coffee', name: 'Madrugador', desc: 'Jogou antes das 8h', test: s => s.early },
   { id: 'tarde', icon: 'moon', name: 'Hora extra', desc: 'Jogou depois das 18h', test: s => s.late },
+  // ---- mais conquistas ----
+  { id: 'veterano', icon: 'award', name: 'Veterano', desc: '500 partidas', test: s => s.plays.length >= 500, progress: s => [s.plays.length, 500] },
+  { id: 'lenda', icon: 'trophy', name: 'Lenda da firma', desc: '1000 partidas', test: s => s.plays.length >= 1000, progress: s => [s.plays.length, 1000] },
+  { id: 'colecionador', icon: 'blocks', name: 'Colecionador', desc: 'Jogou 15 jogos diferentes', test: s => s.games.size >= 15, progress: s => [s.games.size, 15] },
+  { id: 'imperador', icon: 'landmark', name: 'Imperador', desc: 'Recorde geral em 10 jogos', test: s => s.firsts >= 10, progress: s => [s.firsts, 10] },
+  { id: 'podio15', icon: 'medal', name: 'Pódio master', desc: 'Top 3 geral em 15 jogos', test: s => s.podiums >= 15, progress: s => [s.podiums, 15] },
+  { id: 'dez', icon: 'party-popper', name: 'Dez desafios', desc: 'Ganhou 10 desafios do dia', test: s => s.dailyWins >= 10, progress: s => [s.dailyWins, 10] },
+  { id: 'dobradinha', icon: 'zap', name: 'Dobradinha', desc: 'Ganhou o desafio do dia 2 dias seguidos', test: s => s.dailyStreak >= 2, progress: s => [s.dailyStreak, 2] },
+  { id: 'bimes', icon: 'calendar', name: 'Bicampeão', desc: 'Foi campeão do mês 2 vezes', test: s => s.monthsWon.length >= 2, progress: s => [s.monthsWon.length, 2] },
+  { id: 'const10', icon: 'flame', name: 'Imparável', desc: 'Jogou 10 dias úteis seguidos', test: s => s.streak >= 10, progress: s => [s.streak, 10] },
+  { id: 'frequentador', icon: 'house', name: 'Frequentador', desc: 'Jogou em 20 dias diferentes', test: s => s.daysPlayed >= 20, progress: s => [s.daysPlayed, 20] },
+  { id: 'fds', icon: 'sparkles', name: 'Sem folga', desc: 'Jogou num fim de semana', test: s => s.weekend },
+  { id: 'almoco', icon: 'clock', name: 'Hora do almoço', desc: 'Jogou entre 12h e 14h', test: s => s.lunch },
+  { id: 'coruja', icon: 'eye', name: 'Coruja', desc: 'Jogou depois das 22h', test: s => s.night },
+  { id: 'maratonadia', icon: 'hourglass', name: 'Dia de maratona', desc: '30 partidas num só dia', test: s => s.maxInDay >= 30, progress: s => [s.maxInDay, 30] },
+  { id: 'sudoku1', icon: 'grid-3x3', name: 'Mente afiada', desc: 'Resolveu um Sudoku', test: s => s.games.has('sudoku') },
+  { id: 'sudoku10', icon: 'brain', name: 'Mestre do Sudoku', desc: 'Resolveu um Sudoku em até 10 minutos', test: s => { const b = s.best('sudoku'); return b !== null && b <= 600; } },
+  { id: 'cobra', icon: 'worm', name: 'Cobra criada', desc: '30 pontos na Cobrinha', test: s => (s.best('snake') || 0) >= 30, progress: s => [s.best('snake') || 0, 30] },
+  { id: 'gatilho', icon: 'target', name: 'Gatilho rápido', desc: 'Reflexo em até 220 ms', test: s => { const b = s.best('reflexo'); return b !== null && b <= 220; } },
 ];
 const unlockedFor = name => { const s = statsFor(name); return new Set(ACHIEVEMENTS.filter(a => a.test(s)).map(a => a.id)); };
 

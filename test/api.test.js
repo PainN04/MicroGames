@@ -304,3 +304,11 @@ test('backup: "baixar agora" dá o id; importar troca partidas e contas e recusa
   const backups = (await again('/api/admin/backups')).body.backups;
   assert.ok(backups.some(b => b.reason === 'antes de importar'), 'guarda o estado de antes');
 });
+
+test('sudoku: tempo normal salva, tempo impossível é recusado, e o menor tempo é o melhor', async () => {
+  const bia = await login('bia', 'senha-bia-123');
+  assert.equal((await play(bia, 'sudoku', 5)).status, 422, 'resolver em 5s é impossível');
+  assert.equal((await play(bia, 'sudoku', 900)).status, 201);
+  const { isBetter } = require('../lib/rules');
+  assert.equal(isBetter('sudoku', 300, 900), true, 'menos segundos ganha');
+});
