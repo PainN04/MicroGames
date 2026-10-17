@@ -386,6 +386,7 @@ function setMe(user) {
   if (!user) setUnread(0);
   player = user?.name || '';
   $('#pname').textContent = player || '—';
+  $('#acctWho').innerHTML = user ? `<b>${esc(user.name)}</b>${user.role === 'admin' ? 'Administrador' : 'Jogador'}` : '';
   $('#mAdmin').hidden = user?.role !== 'admin';
   $('#mRecords').hidden = !user?.canEditRecords;
   $('#mReport').hidden = user?.role !== 'admin';

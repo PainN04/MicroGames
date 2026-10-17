@@ -644,3 +644,13 @@
   .import-box > div { flex: 1 1 16em; min-width: 0; }
   .import-box b { display: flex; align-items: center; gap: .4em; }
   .import-box label.btn { cursor: pointer; }
+
+  /* quem está logado, no topo do menu da conta (no celular o nome some do botão quando o selo do Geiko ocupa o espaço) */
+  .acct-who { display: block; padding: .5em .8em .6em; margin-bottom: 2px; border-bottom: 1px solid var(--border); font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .acct-who b { display: block; color: var(--text); font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; }
+  .acct-who:empty { display: none; }
+  @media (max-width: 560px) {
+    header:has(#gateWrap:not([hidden])) #pname { display: none; }
+    header:has(#gateWrap:not([hidden])) .acct-btn { padding-right: .5rem; gap: .3em; }
+  }
+  .acct-menu button[hidden] { display: none; } /* o display:flex acima não pode mostrar os itens que são só de admin */
