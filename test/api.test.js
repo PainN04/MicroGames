@@ -304,3 +304,43 @@ test('backup: "baixar agora" dá o id; importar troca partidas e contas e recusa
   const backups = (await again('/api/admin/backups')).body.backups;
   assert.ok(backups.some(b => b.reason === 'antes de importar'), 'guarda o estado de antes');
 });
+
+test('sudoku: tempo normal salva, tempo impossível é recusado, e o menor tempo é o melhor', async () => {
+  const bia = await login('bia', 'senha-bia-123');
+  assert.equal((await play(bia, 'sudoku', 5)).status, 422, 'resolver em 5s é impossível');
+  assert.equal((await play(bia, 'sudoku', 900)).status, 201);
+  const { isBetter } = require('../lib/rules');
+  assert.equal(isBetter('sudoku', 300, 900), true, 'menos segundos ganha');
+});
+
+test('prêmios do desafio do dia: só o vencedor de ontem escolhe o jogo de amanhã; moldura libera por vitórias', async () => {
+  const flair = require('../lib/flair');
+  const { GAMES, isBetter } = require('../lib/rules');
+  const { scheduledGame } = require('../public/js/daily.js');
+  const y = flair.today() - 1, game = scheduledGame(GAMES, y, {});
+  const noon = y * 86_400_000 + 3 * 3_600_000 + 12 * 3_600_000; // meio-dia em Brasília de ontem
+  const [better, worse] = isBetter(game, 1, 2) ? [1, 2] : [2, 1];
+  const id = async u => (await sql`SELECT id FROM users WHERE username = ${u}`)[0].id;
+  await sql`INSERT INTO scores (game, player, score, created_at, user_id) VALUES (${game}, ${'Ana'}, ${better}, ${noon}, ${await id('ana')})`;
+  await sql`INSERT INTO scores (game, player, score, created_at, user_id) VALUES (${game}, ${'Bia'}, ${worse}, ${noon}, ${await id('bia')})`;
+  const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123');
+
+  assert.equal((await client()('/api/daily/pick', { method: 'POST', body: { game: 'memoria' } })).status, 401, 'sem login não escolhe');
+  assert.equal((await bia('/api/daily/pick', { method: 'POST', body: { game: 'memoria' } })).status, 403, 'quem perdeu não escolhe');
+  assert.equal((await ana('/api/daily/pick', { method: 'POST', body: { game: 'nao-existe' } })).status, 400);
+  const ok = await ana('/api/daily/pick', { method: 'POST', body: { game: 'memoria' } });
+  assert.equal(ok.status, 200);
+  assert.equal(ok.body.day, flair.today() + 1);
+  const shown = (await client()('/api/flair')).body;
+  assert.equal(shown.picks[flair.today() + 1].game, 'memoria');
+  assert.equal(shown.picks[flair.today() + 1].by, 'Ana');
+  assert.equal(scheduledGame(GAMES, flair.today() + 1, shown.picks), 'memoria', 'a escolha vale por cima do sorteio');
+
+  assert.equal((await ana('/api/profile/frame', { method: 'POST', body: { frame: 'bronze' } })).status, 200, '1 vitória libera o bronze');
+  assert.equal((await ana('/api/profile/frame', { method: 'POST', body: { frame: 'silver' } })).status, 403, 'prata pede 3');
+  assert.equal((await ana('/api/profile/frame', { method: 'POST', body: { frame: 'laranja' } })).status, 400);
+  assert.equal((await bia('/api/profile/frame', { method: 'POST', body: { frame: 'bronze' } })).status, 403, 'sem vitória, sem moldura');
+  assert.equal((await client()('/api/flair')).body.frames.Ana, 'bronze');
+  assert.equal((await ana('/api/auth/me')).body.user.frame, 'bronze');
+  assert.equal((await ana('/api/profile/frame', { method: 'POST', body: { frame: null } })).status, 200, 'dá pra tirar a moldura');
+});

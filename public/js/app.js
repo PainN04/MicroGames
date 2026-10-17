@@ -14,7 +14,7 @@ function recHtml(id) {
 function kingsHtml() {
   const kings = champions();
   return (kings.length
-    ? '<ol>' + kings.map(([n, c], k) => `<li>${rankBadge(k + 1)} <a href="#" data-profile="${esc(n)}">${esc(n)}</a>${ticketStar(n)} <b>${c}</b> ${c > 1 ? 'recordes' : 'recorde'}</li>`).join('') + '</ol>'
+    ? '<ol>' + kings.map(([n, c], k) => `<li>${rankBadge(k + 1)} ${nameHtml(n)}${ticketStar(n)} <b>${c}</b> ${c > 1 ? 'recordes' : 'recorde'}</li>`).join('') + '</ol>'
     : '<p class="hint" style="text-align:left;margin:0">Ninguém tem recorde ainda.</p>');
 }
 // campeões dos meses que já acabaram
@@ -59,6 +59,7 @@ function dailyHtml() {
       <h2>${g.name}</h2>
       <p class="hint">Vale a sua melhor partida de hoje. Amanhã é outro jogo.</p>
       <button class="btn" id="dailyPlay">${icon('play')} Jogar</button>
+      <div class="pick-row" id="pickRow">${pickRowHtml()}</div>
     </div>
     <div class="daily-side">${dailySideHtml()}</div>`;
 }
@@ -67,11 +68,11 @@ function dailySideHtml() {
   const id = dailyGame(), g = GAMES[id], rows = bestPerPlayer(id, dayRange()).slice(0, 3);
   const wins = dailyWinsThisMonth().slice(0, 5);
   return `<h3>Ranking de hoje</h3>
-      ${rows.length ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}">${rankBadge(k + 1)} <a href="#" data-profile="${esc(n)}">${esc(n)}</a> <b>${fmt(g, s)}</b></li>`).join('') + '</ol>'
+      ${rows.length ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}">${rankBadge(k + 1)} ${nameHtml(n)} <b>${fmt(g, s)}</b></li>`).join('') + '</ol>'
         : '<p class="hint" style="text-align:left;margin:0">Ninguém jogou hoje ainda — saia na frente.</p>'}
       ${wins.length ? `<p class="hint wins">Vitórias em ${monthName(monthKey(Date.now())).toLowerCase()}: ${wins.map(([n, c]) => `${esc(n)} <b>${c}</b>`).join(' · ')}</p>` : ''}`;
 }
-function bindDaily() { $('#dailyPlay') && ($('#dailyPlay').onclick = () => play(dailyGame())); }
+function bindDaily() { $('#dailyPlay') && ($('#dailyPlay').onclick = () => play(dailyGame())); bindPick(); }
 function seasonSeg() {
   return `<div class="seg season-seg" role="group" aria-label="Ranking">
     ${[['month', `${icon('calendar')} ${monthName(monthKey(Date.now()))}`], ['all', `${icon('landmark')} Geral`]].map(([m, l]) => `<button data-season="${m}" aria-pressed="${seasonMode === m}">${l}</button>`).join('')}
@@ -94,7 +95,8 @@ function renderMenu() {
   main.classList.remove('game-view');
   main.replaceChildren(heroNode);
   main.insertAdjacentHTML('beforeend', `
-    <section class="daily glass" id="daily" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
+    <section class="daily glass" id="daily" data-game="${dailyGame()}" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
+    <section class="champs glass" id="champs"${champsHtml() ? '' : ' hidden'}>${champsHtml()}</section>
     <section class="week glass" id="week" hidden></section>
     <div class="menu-bar"><h2>Jogos</h2><span class="hint">Ranking:</span>${seasonSeg()}</div>
     <section class="grid" aria-label="Jogos">` +
@@ -123,6 +125,10 @@ function refreshMenu() {
   renderKings();
   const side = $('#daily .daily-side');
   if (side) side.innerHTML = dailySideHtml();
+  const champs = $('#champs');
+  if (champs) { const h = champsHtml(); champs.innerHTML = h; champs.hidden = !h; }
+  refreshPickRow();
+  applyMeFlair();
 }
 // rodapé do menu: "Quem manda" (do período escolhido) e "Hall da fama" (meses encerrados) em abas
 let kingsTab = 'kings';
@@ -147,7 +153,9 @@ async function showMenu() {
   if (changed) setTimeout(pingSession, 0);
   swap(renderMenu);
   await fetchScores();
-  if (currentView === 'menu') refreshMenu();
+  // o jogo do dia mudou depois que o servidor respondeu (ex.: o vencedor de ontem escolheu o de hoje): redesenha o menu
+  if (currentView === 'menu' && $('#daily') && $('#daily').dataset.game !== dailyGame()) renderMenu();
+  if (currentView === 'menu') { refreshMenu(); maybeCongrats(); }
   checkVersion();
   if (me && !me.mustChange) refreshGate();
   await loadWeek();
@@ -157,7 +165,7 @@ async function showMenu() {
 function boardHtml(id) {
   const g = GAMES[id], rows = bestPerPlayer(id).slice(0, 10);
   return `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}` + (rows.length
-    ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${rankBadge(k + 1)}</span><a class="name" href="#" data-profile="${esc(n)}">${esc(n)}${ticketStar(n)}</a><span>${fmt(g, s)}</span></li>`).join('') + '</ol>'
+    ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${rankBadge(k + 1)}</span>${nameHtml(n, { cls: 'name', extra: ticketStar(n) })}<span>${fmt(g, s)}</span></li>`).join('') + '</ol>'
     : `<p class="empty">${seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`);
 }
 // desenha o ranking da partida e liga o seletor Mês/Geral
@@ -182,7 +190,7 @@ function play(id) {
         <div class="stage-head">
           <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
           <div class="title"><h2>${icon(g.icon)}${g.name}</h2><p>${g.desc}</p></div>
-          <button class="btn ghost" id="restart">${icon('rotate-ccw')}<span>Reiniciar</span></button>
+          <button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>
         </div>
         <div class="game" id="game"></div>
       </section>
@@ -390,6 +398,7 @@ function setMe(user) {
   $('#mAdmin').hidden = user?.role !== 'admin';
   $('#mRecords').hidden = !user?.canEditRecords;
   $('#mReport').hidden = user?.role !== 'admin';
+  applyMeFlair();
 }
 
 function loginModal(msg = '') {
