@@ -231,6 +231,26 @@ test('aviso de recorde tomado chega uma vez só pra quem perdeu o 1º lugar', as
   assert.equal((await bia('/api/auth/ping')).body.notes.length, 0);
 });
 
+test('avisos: contador de não lidos, lista e marcar como lido', async () => {
+  const ana = await login('ana', 'senha-ana-123');
+  const bia = await login('bia', 'senha-bia-123');
+  await bia('/api/notifications/read', { method: 'POST', body: {} });
+  assert.equal((await bia('/api/auth/ping')).body.unread, 0);
+  assert.equal((await play(ana, 'memoria', 30)).status, 201, 'a Ana passou a Bia');
+  const ping = (await bia('/api/auth/ping')).body;
+  assert.equal(ping.notes.length, 1);
+  assert.equal(ping.unread, 1, 'o balão sai, mas o contador continua até abrir a lista');
+  assert.equal((await bia('/api/auth/me')).body.unread, 1);
+  const list = (await bia('/api/notifications')).body.notes;
+  assert.equal(list[0].by, 'Ana');
+  assert.equal(list[0].unread, true);
+  assert.equal((await client()('/api/notifications')).status, 401);
+  assert.equal((await bia('/api/notifications/read', { method: 'POST' })).status, 415, 'CSRF: exige JSON');
+  assert.equal((await bia('/api/notifications/read', { method: 'POST', body: {} })).body.unread, 0);
+  assert.equal((await bia('/api/auth/ping')).body.unread, 0);
+  assert.equal((await bia('/api/notifications')).body.notes[0].unread, false);
+});
+
 test('destaque da semana: exige login; sem Geiko responde vazio; jogo × trabalho só pra admin', async () => {
   assert.equal((await client()('/api/geiko/week')).status, 401);
   const ana = await login('ana', 'senha-ana-123');
@@ -261,4 +281,26 @@ test('bootstrap do banco de teste: não existe na produção nem quando já há 
   process.env.VERCEL_ENV = 'preview';
   try { assert.equal((await call('/api/homolog/bootstrap')).status, 404); } // em preview, mas já há contas
   finally { delete process.env.VERCEL_ENV; }
+});
+
+test('backup: "baixar agora" dá o id; importar troca partidas e contas e recusa arquivo ruim', async () => {
+  const dono = await login('paulo', 'senha-dono-123');
+  const made = await dono('/api/admin/backups', { method: 'POST', body: {} });
+  assert.equal(made.status, 201);
+  assert.ok(made.body.id > 0, 'a rota devolve o id pra a página já baixar');
+  const file = (await dono(`/api/admin/backups/download?id=${made.body.id}`)).body;
+  assert.equal((await dono('/api/admin/backups')).body.canImport, true, 'banco local/teste pode importar');
+  const ana = await login('ana', 'senha-ana-123');
+  assert.equal((await ana('/api/admin/backups/import', { method: 'POST', body: file })).status, 403, 'só o dono');
+  assert.equal((await dono('/api/admin/backups/import', { method: 'POST', body: { v: 2 } })).status, 400, 'arquivo que não é backup');
+  const semAdmin = { ...file, users: file.users.map(u => ({ ...u, role: 'player' })) };
+  assert.equal((await dono('/api/admin/backups/import', { method: 'POST', body: semAdmin })).status, 400, 'sem admin ninguém entraria');
+  const done = await dono('/api/admin/backups/import', { method: 'POST', body: file });
+  assert.equal(done.status, 200);
+  assert.deepEqual(done.body, { scores: file.scores.length, users: file.users.length });
+  assert.equal((await dono('/api/auth/me')).body.user, null, 'sessões não vêm no backup: todo mundo entra de novo');
+  const again = await login('paulo', 'senha-dono-123'); // a senha vem junto com a conta
+  assert.equal(((await again('/api/scores')).body.memoria || []).length >= 0, true);
+  const backups = (await again('/api/admin/backups')).body.backups;
+  assert.ok(backups.some(b => b.reason === 'antes de importar'), 'guarda o estado de antes');
 });

@@ -250,7 +250,7 @@
      --avail (px) = altura que sobra pro #game até o fim da tela; calculada no JS (fitGame). */
   main.game-view { padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
   .stage { padding: var(--space-sm) var(--space-md) var(--space-md); display: flex; flex-direction: column; gap: var(--space-sm); }
-  .stage-head { display: flex; align-items: center; gap: var(--space-sm); }
+  .stage-head { display: flex; align-items: flex-start; gap: var(--space-sm); } /* botões alinhados com a linha do título, mesmo com a descrição quebrando */
   .stage-head .title { flex: 1; min-width: 0; }
   .stage-head h2 { margin: 0; font-size: var(--fs-lg); letter-spacing: -0.03em; display: flex; align-items: center; gap: .4em; }
   .stage-head p { margin: .1rem 0 0; color: var(--muted); font-size: var(--fs-xs); line-height: 1.35;
@@ -595,3 +595,62 @@
   .live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 0 oklch(76% 0.18 150 / .6); animation: live 1.8s infinite; flex: none; }
   @keyframes live { 70% { box-shadow: 0 0 0 8px oklch(76% 0.18 150 / 0); } 100% { box-shadow: 0 0 0 0 oklch(76% 0.18 150 / 0); } }
   @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+
+  /* avisos: balão com o número no botão da conta, item no menu e a lista */
+  .acct-btn { position: relative; }
+  .nbadge { position: absolute; left: 22px; top: -5px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--red, #ff5c6c); color: #fff;
+    font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; box-shadow: 0 0 0 2px var(--bg, #0b0d14); }
+  .nbadge[hidden], .cnt[hidden] { display: none; }
+  .acct-menu .cnt { margin-left: auto; min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--red, #ff5c6c); color: #fff; font-size: 11px; font-weight: 700; line-height: 20px; text-align: center; }
+  .acct-menu button { display: flex; align-items: center; gap: .6em; }
+  .note-list { display: flex; flex-direction: column; gap: 8px; margin: .75rem 0; max-height: min(52vh, 420px); overflow-y: auto; }
+  .note-row { display: flex; gap: .7em; align-items: center; text-align: left; font: inherit; color: var(--text); cursor: pointer; padding: .7em .85em;
+    border-radius: 14px; border: 1px solid var(--border); background: var(--surface-2); }
+  .note-row:hover { border-color: oklch(66% 0.22 18 / .5); }
+  .note-row.new { border-color: oklch(66% 0.22 18 / .55); background: oklch(66% 0.22 18 / .1); }
+  .note-row .ic { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 12px; background: oklch(66% 0.22 18 / .2); color: oklch(82% 0.13 18); }
+  .note-row .ic .i { width: 18px; height: 18px; }
+  .note-row small { display: block; color: var(--muted); font-size: var(--fs-xs); margin-top: 2px; }
+  .note-row small.when { opacity: .8; }
+
+  /* celular: logo e botões na mesma linha (o nome da conta encolhe com reticências em vez de quebrar a linha) */
+  @media (max-width: 560px) {
+    header { flex-wrap: nowrap; gap: var(--space-xs); }
+    .logo { flex: none; }
+    .who { flex-wrap: nowrap; min-width: 0; gap: 4px; }
+    .who > * { flex: none; }
+    .who > .acct { flex: 0 1 auto; min-width: 0; }
+    .icon-btn { min-width: 38px; min-height: 38px; }
+    .acct-btn { min-width: 0; max-width: 100%; padding-right: .6rem; gap: .4em; }
+    .acct-btn #pname { flex: 0 1 auto; min-width: 0; max-width: 6.5em; }
+    .acct-btn .chev { flex: none; }
+  }
+
+  /* painel admin / editor de recordes: tabela larga rola dentro do cartão em vez de empurrar a página (e o header) pro lado */
+  .admin section { min-width: 0; overflow-x: auto; }
+  @media (max-width: 560px) {
+    .admin section { padding: var(--space-sm); }
+    .admin .users th, .admin .users td { padding-left: .3em; padding-right: .3em; }
+    .admin .users td .hint { white-space: nowrap; }
+    .admin .users .rec-v { width: 5.5em !important; }
+    .admin .row > label { flex: 1 1 8em; min-width: 0; }
+    .admin .row select, .admin .row input { max-width: 100%; }
+  }
+
+  /* backups: ações lado a lado e a caixa de importação (só no ambiente de teste) */
+  .bk-actions { display: flex; gap: var(--space-xs); flex-wrap: wrap; }
+  .import-box { display: flex; gap: var(--space-sm); align-items: center; justify-content: space-between; flex-wrap: wrap; padding: .8rem 1rem; margin-bottom: var(--space-sm);
+    border-radius: 14px; border: 1px dashed var(--border-strong); background: oklch(66% 0.22 18 / .06); }
+  .import-box > div { flex: 1 1 16em; min-width: 0; }
+  .import-box b { display: flex; align-items: center; gap: .4em; }
+  .import-box label.btn { cursor: pointer; }
+
+  /* quem está logado, no topo do menu da conta (no celular o nome some do botão quando o selo do Geiko ocupa o espaço) */
+  .acct-who { display: block; padding: .5em .8em .6em; margin-bottom: 2px; border-bottom: 1px solid var(--border); font-size: var(--fs-xs); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .acct-who b { display: block; color: var(--text); font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; }
+  .acct-who:empty { display: none; }
+  @media (max-width: 560px) {
+    header:has(#gateWrap:not([hidden])) #pname { display: none; }
+    header:has(#gateWrap:not([hidden])) .acct-btn { padding-right: .5rem; gap: .3em; }
+  }
+  .acct-menu button[hidden] { display: none; } /* o display:flex acima não pode mostrar os itens que são só de admin */

@@ -34,6 +34,7 @@ setInterval(checkVersion, 30000);
 
 $('#home').onclick = showMenu;
 $('#acctBtn').onclick = () => toggleAcct();
+$('#mNotes').onclick = () => { toggleAcct(false); openNotes(); };
 $('#mProfile').onclick = () => { toggleAcct(false); showProfile(player); };
 $('#mPass').onclick = () => { toggleAcct(false); passwordModal(false); };
 $('#mLogout').onclick = () => { toggleAcct(false); logout(); };
@@ -53,7 +54,7 @@ setInterval(() => { if (currentView === 'menu' && !document.hidden) refreshGate(
   let me0 = null;
   try { me0 = await api('api/auth/me'); } catch {}
   const { user = null, gate: g = null, reason } = me0 || {};
-  if (user) { setMe(user); if (!user.mustChange) gate = g; }
+  if (user) { setMe(user); setUnread(me0.unread); if (!user.mustChange) gate = g; }
   if (user && !user.mustChange && location.hash === '#recordes' && user.canEditRecords) return showRecords();
   showMenu();
   if (!me0) return loginModal('Não consegui falar com o servidor. Tente de novo.');

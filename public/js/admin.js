@@ -108,7 +108,8 @@ function showRecords() {
         <div class="row" style="justify-content:space-between;margin-bottom:var(--space-sm)">
           <div><h3 style="margin:0">${icon('database')} Backups</h3>
             <p class="hint" style="text-align:left;margin:0">Cópia automática todo dia e antes de editar recordes. Guarda as 30 mais novas.</p></div>
-          <button class="btn ghost" id="bkNow">Fazer backup agora</button>
+          <span class="bk-actions"><button class="btn ghost" id="bkNow">Fazer backup agora</button>
+            <button class="btn ghost" id="bkDown">${icon('download')} Baixar backup agora</button></span>
         </div>
         <div id="bkList"><p class="hint" style="text-align:left">Carregando...</p></div>
       </section>
@@ -117,6 +118,14 @@ function showRecords() {
       e.target.disabled = true;
       try { await api('api/admin/backups', { method: 'POST', body: {} }); await loadBackups('Backup feito.'); }
       catch (err) { alert(err.message); } finally { e.target.disabled = false; }
+    };
+    $('#bkDown').onclick = async e => {
+      const btn = e.currentTarget; btn.disabled = true;
+      try {
+        const { id } = await api('api/admin/backups', { method: 'POST', body: {} });
+        const a = document.createElement('a'); a.href = `api/admin/backups/download?id=${id}`; a.download = ''; document.body.appendChild(a); a.click(); a.remove();
+        await loadBackups('Backup feito e baixado.');
+      } catch (err) { alert(err.message); } finally { btn.disabled = false; }
     };
     loadBackups();
     $('#back').onclick = () => { history.replaceState(null, '', location.pathname); showMenu(); };
@@ -203,14 +212,31 @@ async function loadBackups(msg = '') {
   const box = $('#bkList');
   if (!box) return;
   try {
-    const { backups } = await api('api/admin/backups');
+    const { backups, canImport } = await api('api/admin/backups');
     const when = t => new Date(t).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
-    box.innerHTML = (msg ? `<p class="note" style="margin:0 0 var(--space-sm)">${esc(msg)}</p>` : '') + (backups.length
+    const importBox = canImport ? `<div class="import-box"><div><b>${icon('upload')} Importar backup da produção</b>
+        <p class="hint" style="text-align:left;margin:2px 0 0">Neste ambiente de teste: baixe o backup na produção e escolha o arquivo aqui. Troca as partidas e as contas daqui (nada muda na produção).</p></div>
+        <label class="btn ghost" for="bkFile">Escolher arquivo...</label><input type="file" id="bkFile" accept=".json,application/json" hidden></div>` : '';
+    box.innerHTML = importBox + (msg ? `<p class="note" style="margin:0 0 var(--space-sm)">${esc(msg)}</p>` : '') + (backups.length
       ? `<table class="tickets users"><thead><tr><th>Quando</th><th>Motivo</th><th>Partidas</th><th>Contas</th><th></th></tr></thead><tbody>
         ${backups.map(b => `<tr data-id="${b.id}"><td>${when(b.at)}</td><td>${esc(b.reason)}</td><td>${b.scores}</td><td>${b.users}</td>
           <td><div class="actions"><a class="btn ghost" href="api/admin/backups/download?id=${b.id}" download>Baixar</a>
           <button class="btn ghost" data-act="restore">Restaurar partidas</button></div></td></tr>`).join('')}</tbody></table>`
       : '<p class="hint" style="text-align:left">Nenhuma cópia ainda.</p>');
+    const fileInput = box.querySelector('#bkFile');
+    if (fileInput) fileInput.onchange = async () => {
+      const f = fileInput.files[0];
+      if (!f) return;
+      let data;
+      try { data = JSON.parse(await f.text()); } catch { fileInput.value = ''; return alert('Esse arquivo não é um backup válido (JSON).'); }
+      if (!Array.isArray(data?.scores) || !Array.isArray(data?.users)) { fileInput.value = ''; return alert('Esse arquivo não é um backup do MicroGame.'); }
+      if (!confirm(`Importar "${f.name}"?\n\nIsso TROCA as partidas (${data.scores.length}) e as contas (${data.users.length}) deste ambiente de teste pelas do arquivo. Nada muda na produção. Antes é feita uma cópia do estado atual.\n\nDepois você entra de novo com o usuário e a senha da produção.`)) { fileInput.value = ''; return; }
+      try {
+        const r = await api('api/admin/backups/import', { method: 'POST', body: data });
+        alert(`Importado: ${r.scores} partidas e ${r.users} contas. Entre de novo com a conta da produção.`);
+        location.reload();
+      } catch (err) { alert(err.message); fileInput.value = ''; }
+    };
     box.querySelectorAll('[data-act="restore"]').forEach(b => b.onclick = async () => {
       const id = +b.closest('tr').dataset.id, bk = backups.find(x => x.id === id);
       if (!confirm(`Trocar TODAS as partidas de agora pelas ${bk.scores} da cópia de ${when(bk.at)}?\n\nAntes disso é feita uma cópia do estado atual, então dá pra desfazer.`)) return;
