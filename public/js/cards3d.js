@@ -552,29 +552,73 @@ const SCENES_3D = {
       illo.rotate.y = -0.5 + Math.sin(t * 0.4) * 0.2;
     };
   },
-  // bolinha comendo pontinhos, fantasma atrás
+  // come os pontinhos com os fantasmas atrás; pega a bola grande, eles ficam azuis e fogem, e ele come um por um
   comecome(Z, illo) {
-    const dots = Array.from({ length: 6 }, (_, i) => new Z.Shape({ addTo: illo, stroke: 5, color: '#ffd9a8', translate: { x: -40 + i * 16, y: 8 } }));
+    const T = 10;
+    const dots = Array.from({ length: 6 }, (_, i) => new Z.Shape({ addTo: illo, stroke: 5, color: '#ffd9a8', translate: { x: -30 + i * 14, y: 8 } }));
+    const pellet = new Z.Shape({ addTo: illo, stroke: 11, color: '#ffd9a8', translate: { x: 46, y: 8 } });
     // corpo achatado com a boca recortada de verdade (o contorno do caminho muda a cada quadro); uma cópia atrás dá volume
-    const pacPath = o => {
-      const m = 0.12 + o * 0.6, pts = [{ x: 0, y: 0 }];
-      for (let a = m; a <= Math.PI * 2 - m + 0.001; a += 0.2) pts.push({ x: Math.cos(a) * 14, y: Math.sin(a) * 14 });
-      pts.push({ x: Math.cos(Math.PI * 2 - m) * 14, y: Math.sin(Math.PI * 2 - m) * 14 });
+    const pacPath = (o, dir) => {
+      const m = 0.12 + o * 0.6, pts = [{ x: 0, y: 0 }], put = a => pts.push({ x: Math.cos(a) * 14 * dir, y: Math.sin(a) * 14 });
+      for (let a = m; a <= Math.PI * 2 - m; a += 0.2) put(a);
+      put(Math.PI * 2 - m);
       return pts;
     };
-    const pacBack = new Z.Shape({ addTo: illo, path: pacPath(0.5), fill: true, stroke: 3, color: '#d9a92b', translate: { y: 8, z: -4 } });
-    const pac = new Z.Shape({ addTo: illo, path: pacPath(0.5), fill: true, stroke: 3, color: '#ffe14d', translate: { y: 8 } });
-    const ghost = cube(Z, illo, 1, '#ff4d5e', { width: 20, height: 22, depth: 14, translate: { y: -26 } });
+    const pacBack = new Z.Shape({ addTo: illo, path: pacPath(0.5, 1), fill: true, stroke: 3, color: '#d9a92b', translate: { y: 8, z: -4 } });
+    const pac = new Z.Shape({ addTo: illo, path: pacPath(0.5, 1), fill: true, stroke: 3, color: '#ffe14d', translate: { y: 8 } });
+    // fantasma: cúpula + barra ondulada embaixo, olhos que olham pra frente (ou carinha assustada quando azul)
+    const ghostPath = [{ x: -12, y: 12 }, { x: -12, y: -2 }];
+    for (let a = Math.PI + 0.2; a <= Math.PI * 2 - 0.2; a += 0.2) ghostPath.push({ x: Math.cos(a) * 12, y: -2 + Math.sin(a) * 12 });
+    ghostPath.push({ x: 12, y: -2 }, { x: 12, y: 12 }, { x: 8, y: 8 }, { x: 4, y: 12 }, { x: 0, y: 8 }, { x: -4, y: 12 }, { x: -8, y: 8 });
+    const COLORS = ['#ff4d5e', '#ff9ee5', '#4dd9ff', '#ffa94d'], SCARED = '#2d4bff', FLASH = '#e8e8ff';
+    const ghosts = COLORS.map(color => {
+      const a = new Z.Group({ addTo: illo, translate: { y: 6 } });
+      const back = new Z.Shape({ addTo: a, path: ghostPath, fill: true, stroke: 3, color: shade(color, -0.3), translate: { z: -4 } });
+      const body = new Z.Shape({ addTo: a, path: ghostPath, fill: true, stroke: 3, color });
+      const eyes = [-4.5, 4.5].map(x => new Z.Shape({ addTo: a, stroke: 6, color: '#ffffff', translate: { x, y: -3, z: 3 } }));
+      const pupils = [-4.5, 4.5].map(x => new Z.Shape({ addTo: a, stroke: 3, color: '#161625', translate: { x, y: -3, z: 5 } }));
+      const mouth = new Z.Shape({ addTo: a, path: [{ x: -7, y: 5 }, { x: -4, y: 3 }, { x: -1, y: 5 }, { x: 2, y: 3 }, { x: 5, y: 5 }, { x: 8, y: 3 }], closed: false, stroke: 1.6, color: '#ffffff', translate: { z: 4 } });
+      return { a, back, body, eyes, pupils, mouth, color };
+    });
     return t => {
-      const k = (t * 0.45) % 1, x = -46 + k * 92;
-      pac.translate.x = pacBack.translate.x = x;
-      const o = 0.25 + 0.75 * Math.abs(Math.sin(t * 9));
-      pac.path = pacBack.path = pacPath(o); pac.updatePath(); pacBack.updatePath();
-      dots.forEach(d => { d.visible = d.translate.x > x + 6; });
-      ghost.translate.x = 44 - k * 88 + Math.sin(t * 3) * 3;
-      ghost.translate.y = -26 + Math.sin(t * 5) * 2;
+      const u = (t % T) / T;
+      let px, dir, o;
+      if (u < 0.5) {
+        // fase 1: come os pontinhos e os fantasmas vêm atrás
+        const k = u / 0.5;
+        px = -44 + k * 90; dir = 1;
+        dots.forEach(d => { d.visible = d.translate.x > px + 6; });
+        pellet.visible = true; pellet.stroke = 10 + Math.sin(t * 8) * 1.5;
+        ghosts.forEach((g, i) => {
+          g.a.translate.x = px - 28 - i * 26; g.a.translate.y = 6 + Math.sin(t * 6 + i) * 1.5; g.a.visible = true;
+          g.body.color = g.color; g.back.color = shade(g.color, -0.3);
+          g.eyes.forEach(e => { e.stroke = 6; });
+          g.pupils.forEach(e => { e.visible = true; e.translate.x = (e === g.pupils[0] ? -4.5 : 4.5) + 1.6; });
+          g.mouth.visible = false;
+        });
+        o = 0.25 + 0.75 * Math.abs(Math.sin(t * 9));
+      } else {
+        // fase 2: bola grande comida, fantasmas azuis fogem pra esquerda e ele vai comendo um por um
+        const k = (u - 0.5) / 0.5;
+        px = 46 - k * 150; dir = -1;
+        dots.forEach(d => { d.visible = false; });
+        pellet.visible = false;
+        const flash = k > 0.55 && Math.floor(t * 6) % 2;
+        ghosts.forEach((g, i) => {
+          const gx = 46 - 28 - i * 26 - k * 40;
+          g.a.translate.x = gx; g.a.translate.y = 6 + Math.sin(t * 9 + i) * 1.5;
+          g.a.visible = px > gx + 6; // já comido some
+          g.body.color = flash ? FLASH : SCARED; g.back.color = shade(flash ? '#9aa0c8' : SCARED, -0.3);
+          g.eyes.forEach(e => { e.stroke = 3.5; });
+          g.pupils.forEach(e => { e.visible = false; });
+          g.mouth.visible = true; g.mouth.color = flash ? '#ff4d5e' : '#ffffff';
+        });
+        o = 0.25 + 0.75 * Math.abs(Math.sin(t * 9));
+      }
+      pac.translate.x = pacBack.translate.x = px;
+      pac.path = pacBack.path = pacPath(o, dir); pac.updatePath(); pacBack.updatePath();
       illo.rotate.x = -0.3;
-      illo.rotate.y = Math.sin(t * 0.5) * 0.3;
+      illo.rotate.y = Math.sin(t * 0.5) * 0.25;
     };
   },
   // fileiras de letras virando verde, amarelo e cinza
