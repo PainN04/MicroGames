@@ -555,14 +555,21 @@ const SCENES_3D = {
   // bolinha comendo pontinhos, fantasma atrás
   comecome(Z, illo) {
     const dots = Array.from({ length: 6 }, (_, i) => new Z.Shape({ addTo: illo, stroke: 5, color: '#ffd9a8', translate: { x: -40 + i * 16, y: 8 } }));
-    const pac = new Z.Shape({ addTo: illo, stroke: 28, color: '#ffe14d', translate: { y: 8 } });
-    const mouth = new Z.Shape({ addTo: pac, path: [{ x: 0, y: 0, z: 15 }, { x: 18, y: -9, z: 15 }, { x: 18, y: 9, z: 15 }], stroke: 1, fill: true, color: '#151827' });
+    // corpo achatado com a boca recortada de verdade (o contorno do caminho muda a cada quadro); uma cópia atrás dá volume
+    const pacPath = o => {
+      const m = 0.12 + o * 0.6, pts = [{ x: 0, y: 0 }];
+      for (let a = m; a <= Math.PI * 2 - m + 0.001; a += 0.2) pts.push({ x: Math.cos(a) * 14, y: Math.sin(a) * 14 });
+      pts.push({ x: Math.cos(Math.PI * 2 - m) * 14, y: Math.sin(Math.PI * 2 - m) * 14 });
+      return pts;
+    };
+    const pacBack = new Z.Shape({ addTo: illo, path: pacPath(0.5), fill: true, stroke: 3, color: '#d9a92b', translate: { y: 8, z: -4 } });
+    const pac = new Z.Shape({ addTo: illo, path: pacPath(0.5), fill: true, stroke: 3, color: '#ffe14d', translate: { y: 8 } });
     const ghost = cube(Z, illo, 1, '#ff4d5e', { width: 20, height: 22, depth: 14, translate: { y: -26 } });
     return t => {
       const k = (t * 0.45) % 1, x = -46 + k * 92;
-      pac.translate.x = x;
+      pac.translate.x = pacBack.translate.x = x;
       const o = 0.25 + 0.75 * Math.abs(Math.sin(t * 9));
-      mouth.path[1].y = -10 * o; mouth.path[2].y = 10 * o; mouth.updatePath();
+      pac.path = pacBack.path = pacPath(o); pac.updatePath(); pacBack.updatePath();
       dots.forEach(d => { d.visible = d.translate.x > x + 6; });
       ghost.translate.x = 44 - k * 88 + Math.sin(t * 3) * 3;
       ghost.translate.y = -26 + Math.sin(t * 5) * 2;
