@@ -636,3 +636,11 @@
     .admin .row > label { flex: 1 1 8em; min-width: 0; }
     .admin .row select, .admin .row input { max-width: 100%; }
   }
+
+  /* backups: ações lado a lado e a caixa de importação (só no ambiente de teste) */
+  .bk-actions { display: flex; gap: var(--space-xs); flex-wrap: wrap; }
+  .import-box { display: flex; gap: var(--space-sm); align-items: center; justify-content: space-between; flex-wrap: wrap; padding: .8rem 1rem; margin-bottom: var(--space-sm);
+    border-radius: 14px; border: 1px dashed var(--border-strong); background: oklch(66% 0.22 18 / .06); }
+  .import-box > div { flex: 1 1 16em; min-width: 0; }
+  .import-box b { display: flex; align-items: center; gap: .4em; }
+  .import-box label.btn { cursor: pointer; }

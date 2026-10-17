@@ -282,3 +282,25 @@ test('bootstrap do banco de teste: não existe na produção nem quando já há 
   try { assert.equal((await call('/api/homolog/bootstrap')).status, 404); } // em preview, mas já há contas
   finally { delete process.env.VERCEL_ENV; }
 });
+
+test('backup: "baixar agora" dá o id; importar troca partidas e contas e recusa arquivo ruim', async () => {
+  const dono = await login('paulo', 'senha-dono-123');
+  const made = await dono('/api/admin/backups', { method: 'POST', body: {} });
+  assert.equal(made.status, 201);
+  assert.ok(made.body.id > 0, 'a rota devolve o id pra a página já baixar');
+  const file = (await dono(`/api/admin/backups/download?id=${made.body.id}`)).body;
+  assert.equal((await dono('/api/admin/backups')).body.canImport, true, 'banco local/teste pode importar');
+  const ana = await login('ana', 'senha-ana-123');
+  assert.equal((await ana('/api/admin/backups/import', { method: 'POST', body: file })).status, 403, 'só o dono');
+  assert.equal((await dono('/api/admin/backups/import', { method: 'POST', body: { v: 2 } })).status, 400, 'arquivo que não é backup');
+  const semAdmin = { ...file, users: file.users.map(u => ({ ...u, role: 'player' })) };
+  assert.equal((await dono('/api/admin/backups/import', { method: 'POST', body: semAdmin })).status, 400, 'sem admin ninguém entraria');
+  const done = await dono('/api/admin/backups/import', { method: 'POST', body: file });
+  assert.equal(done.status, 200);
+  assert.deepEqual(done.body, { scores: file.scores.length, users: file.users.length });
+  assert.equal((await dono('/api/auth/me')).body.user, null, 'sessões não vêm no backup: todo mundo entra de novo');
+  const again = await login('paulo', 'senha-dono-123'); // a senha vem junto com a conta
+  assert.equal(((await again('/api/scores')).body.memoria || []).length >= 0, true);
+  const backups = (await again('/api/admin/backups')).body.backups;
+  assert.ok(backups.some(b => b.reason === 'antes de importar'), 'guarda o estado de antes');
+});
