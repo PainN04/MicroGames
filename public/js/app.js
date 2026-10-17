@@ -302,6 +302,35 @@ function kicked(msg) {
   showMenu();
   loginModal(msg || 'Sua conta entrou em outro dispositivo — só dá pra usar em um por vez.');
 }
+// texto de um aviso de recorde tomado (balão e lista usam o mesmo)
+function noteHtml(n) {
+  const g = GAMES[n.game];
+  const where = n.kind === 'geral' ? 'o recorde geral' : `a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`;
+  return `<b>${esc(n.by)}</b> tomou ${where} no ${g.name}<small>${fmt(g, n.score)} (o seu era ${fmt(g, n.old)}) · toque pra revidar</small>`;
+}
+const noteAgo = ms => { const m = Math.round(ms / 60000); return m < 1 ? 'agora' : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.floor(m / 60)} h` : `há ${Math.floor(m / 1440)} d`; };
+
+// número de avisos ainda não abertos: balão no botão da conta + contagem no item "Avisos" do menu
+function setUnread(n) {
+  n = Number(n) || 0;
+  const txt = n > 9 ? '9+' : String(n);
+  for (const id of ['nbadge', 'notesCnt']) { const b = $('#' + id); if (b) { b.textContent = txt; b.hidden = !n; } }
+  $('#acctBtn')?.setAttribute('aria-label', n ? `Conta, ${n} aviso${n > 1 ? 's' : ''} novo${n > 1 ? 's' : ''}` : 'Conta');
+}
+async function openNotes() {
+  let notes = [];
+  try { ({ notes } = await api('api/notifications')); } catch (err) { return modal(`<h2>Avisos</h2><p class="err">${esc(err.message)}</p><button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`); }
+  const rows = notes.filter(n => GAMES[n.game]);
+  const { el, close } = modal(`<h2>${icon('bell')} Avisos</h2>
+    ${rows.length ? `<div class="note-list">${rows.map((n, i) => `<button class="note-row${n.unread ? ' new' : ''}" data-i="${i}">
+      <span class="ic">${icon('swords')}</span><span>${noteHtml(n)}<small class="when">${noteAgo(Date.now() - n.at)}</small></span></button>`).join('')}</div>`
+      : '<p>Nenhum aviso por enquanto. Quando alguém passar um recorde seu, aparece aqui.</p>'}
+    <button class="btn ghost" id="notesClose">Fechar</button>`);
+  el.querySelector('#notesClose').onclick = close;
+  el.querySelectorAll('.note-row').forEach(b => { b.onclick = () => { close(); play(rows[b.dataset.i].game); }; });
+  if (notes.some(n => n.unread)) { setUnread(0); api('api/notifications/read', { method: 'POST', body: {} }).catch(() => {}); }
+}
+
 // avisos que chegam no ping: "Fulano tomou seu recorde" (somem sozinhos; clicar abre o jogo)
 function showNotes(notes) {
   let box = $('#toasts');
@@ -309,11 +338,9 @@ function showNotes(notes) {
   for (const n of notes) {
     const g = GAMES[n.game];
     if (!g) continue;
-    const where = n.kind === 'geral' ? 'o recorde geral' : `a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`;
     const t = document.createElement('button');
     t.className = 'toast glass';
-    t.innerHTML = `<span class="ic">${icon('swords')}</span><span><b>${esc(n.by)}</b> tomou ${where} no ${g.name}
-      <small>${fmt(g, n.score)} (o seu era ${fmt(g, n.old)}) · toque pra revidar</small></span>`;
+    t.innerHTML = `<span class="ic">${icon('swords')}</span><span>${noteHtml(n)}</span>`;
     t.onclick = () => { t.remove(); play(n.game); };
     box.appendChild(t);
     setTimeout(() => t.remove(), 12_000);
@@ -323,8 +350,9 @@ function showNotes(notes) {
 async function pingSession() {
   if (!me || document.hidden) return;
   try {
-    const { block, notes } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' || currentView === 'report' ? 'admin' : currentView));
+    const { block, notes, unread } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' || currentView === 'report' ? 'admin' : currentView));
     if (notes?.length) showNotes(notes);
+    setUnread(unread);
     // admin bloqueou (ou liberou): atualiza; se estava jogando, encerra a partida
     if (!!block !== !!gate?.manual) {
       const playing = GAMES[currentView];
@@ -355,6 +383,7 @@ function modal(html, { locked = false, wide = false } = {}) {
 
 function setMe(user) {
   me = user;
+  if (!user) setUnread(0);
   player = user?.name || '';
   $('#pname').textContent = player || '—';
   $('#mAdmin').hidden = user?.role !== 'admin';
@@ -427,6 +456,7 @@ async function saveUnsaved() {
 
 async function afterLogin(user) {
   setMe(user);
+  pingSession(); // já traz o número de avisos novos
   if (user.mustChange) return passwordModal(true);
   await saveUnsaved();
   await refreshGate();

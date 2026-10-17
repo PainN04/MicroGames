@@ -231,6 +231,26 @@ test('aviso de recorde tomado chega uma vez só pra quem perdeu o 1º lugar', as
   assert.equal((await bia('/api/auth/ping')).body.notes.length, 0);
 });
 
+test('avisos: contador de não lidos, lista e marcar como lido', async () => {
+  const ana = await login('ana', 'senha-ana-123');
+  const bia = await login('bia', 'senha-bia-123');
+  await bia('/api/notifications/read', { method: 'POST', body: {} });
+  assert.equal((await bia('/api/auth/ping')).body.unread, 0);
+  assert.equal((await play(ana, 'memoria', 30)).status, 201, 'a Ana passou a Bia');
+  const ping = (await bia('/api/auth/ping')).body;
+  assert.equal(ping.notes.length, 1);
+  assert.equal(ping.unread, 1, 'o balão sai, mas o contador continua até abrir a lista');
+  assert.equal((await bia('/api/auth/me')).body.unread, 1);
+  const list = (await bia('/api/notifications')).body.notes;
+  assert.equal(list[0].by, 'Ana');
+  assert.equal(list[0].unread, true);
+  assert.equal((await client()('/api/notifications')).status, 401);
+  assert.equal((await bia('/api/notifications/read', { method: 'POST' })).status, 415, 'CSRF: exige JSON');
+  assert.equal((await bia('/api/notifications/read', { method: 'POST', body: {} })).body.unread, 0);
+  assert.equal((await bia('/api/auth/ping')).body.unread, 0);
+  assert.equal((await bia('/api/notifications')).body.notes[0].unread, false);
+});
+
 test('destaque da semana: exige login; sem Geiko responde vazio; jogo × trabalho só pra admin', async () => {
   assert.equal((await client()('/api/geiko/week')).status, 401);
   const ana = await login('ana', 'senha-ana-123');
