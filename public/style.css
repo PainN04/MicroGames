@@ -509,7 +509,7 @@
   .stage-head .back .i { width: 20px; height: 20px; }
   .stage-head h2 > .i { width: 1.8em; height: 1.8em; padding: .4em; border-radius: 12px; margin-right: .25em; stroke-width: 2;
     color: oklch(90% 0.1 var(--h, 290)); background: oklch(62% 0.16 var(--h, 290) / .28); border: 1px solid oklch(72% 0.15 var(--h, 290) / .35); }
-  .stage-head #restart .i, .stage-head #practice .i { width: 16px; height: 16px; }
+  .stage-head #restart .i { width: 16px; height: 16px; }
   /* subtítulo alinhado com o texto do título (depois do ladrilho do ícone) */
   .stage-head h2:has(> .i) + p { padding-left: calc(var(--fs-lg) * 2.5); }
   /* título da lista de jogos ao lado do seletor de ranking */
@@ -692,8 +692,8 @@
 
   /* celular: "Reiniciar" vira só o ícone (senão cobre o título do jogo) */
   @media (max-width: 560px) {
-    .stage-head #restart, .stage-head #practice { width: 44px; min-width: 44px; padding: 0; flex: none; }
-    .stage-head #restart span, .stage-head #practice span { display: none; }
+    .stage-head #restart { width: 44px; min-width: 44px; padding: 0; flex: none; }
+    .stage-head #restart span { display: none; }
   }
 
   /* ---- prêmios do desafio do dia ---- */
@@ -808,10 +808,6 @@
     .dpad.flat { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-areas: none; width: min(100%, 340px); gap: 8px; }
     .dpad.flat .dbtn { grid-area: auto; width: 100%; height: 50px; }
   }
-  /* Modo treino */
-  .stage-head #practice[aria-pressed="true"] { border-color: var(--yellow); color: var(--yellow); background: oklch(86% 0.17 92 / .12); }
-  .practice-note { display: flex; align-items: center; gap: .5em; margin: 0; padding: .5em .9em; border-radius: 12px; background: oklch(86% 0.17 92 / .1); border: 1px solid oklch(86% 0.17 92 / .3); color: var(--yellow); font-size: var(--fs-xs); line-height: 1.35; }
-  .practice-note .i { flex: none; }
   /* Combo (Toupeira, Cor Certa, Conta Rápida) e bônus do Voa Voa */
   .stat.combo { transition: border-color var(--duration), background var(--duration); }
   .stat.combo.hot { border-color: var(--yellow); background: oklch(86% 0.17 92 / .12); }

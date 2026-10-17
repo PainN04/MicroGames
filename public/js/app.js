@@ -177,9 +177,7 @@ function renderBoard(id) {
   bindSeasonSeg(b, () => renderBoard(id));
 }
 
-// opts.practice: modo treino — joga normal, mas nada é salvo (nem ranking, nem conquistas). Bom pra aprender o jogo.
-function play(id, opts = {}) {
-  const practice = !!opts.practice;
+function play(id) {
   if (!localMode && !me) return loginModal();
   if (me?.mustChange) return passwordModal(true);
   if (gate?.blocked) return gateDialog();
@@ -193,17 +191,14 @@ function play(id, opts = {}) {
         <div class="stage-head">
           <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
           <div class="title"><h2>${icon(g.icon)}${g.name}</h2><p>${g.desc}</p></div>
-          <button class="btn ghost" id="practice" aria-pressed="${practice}" aria-label="Modo treino (não vale recorde)" title="Treino: joga sem salvar no ranking">${icon('lightbulb')}<span>Treino</span></button>
           <button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>
         </div>
-        ${practice ? `<p class="practice-note">${icon('lightbulb')} <b>Modo treino:</b> nada desta partida é salvo. Toque em Treino de novo pra voltar a valer.</p>` : ''}
         <div class="game" id="game"></div>
       </section>
       <aside class="board glass" id="board">${boardHtml(id)}</aside>
     </div>`;
     $('#back').onclick = showMenu;
-    $('#restart').onclick = () => play(id, { practice });
-    $('#practice').onclick = () => play(id, { practice: !practice });
+    $('#restart').onclick = () => play(id);
     renderBoard(id);
     fetchScores().then(() => renderBoard(id));
     main.classList.add('game-view');
@@ -216,17 +211,7 @@ function play(id, opts = {}) {
       if (score === null) {
         el.innerHTML = `<div class="result"><span class="label">Fim de jogo</span><span class="score">${icon('bomb', { cls: 'big' })}</span>
           <span class="hint">${esc(proof || 'Não completou — nada foi salvo.')}</span><button class="btn" id="again">Jogar de novo</button></div>`;
-        $('#again').onclick = () => play(id, { practice });
-        $('#again').focus();
-        return;
-      }
-      if (practice) {
-        el.innerHTML = `<div class="result"><span class="label">Treino</span><span class="score">${fmt(g, score)}</span>
-          <span class="badge">${icon('lightbulb')} Treino: esta partida não foi salva</span>
-          <button class="btn" id="again">Treinar de novo</button><button class="btn ghost" id="real">Jogar valendo</button></div>`;
-        announce(`Treino: ${fmt(g, score)}. Não foi salvo.`);
-        $('#again').onclick = () => play(id, { practice: true });
-        $('#real').onclick = () => play(id);
+        $('#again').onclick = () => play(id);
         $('#again').focus();
         return;
       }
@@ -268,7 +253,7 @@ function play(id, opts = {}) {
       $('#again').onclick = () => play(id);
       $('#again').focus();
       $('#loginSave')?.addEventListener('click', () => { setMe(null); loginModal(); });
-    }, { practice });
+    });
   });
 }
 
