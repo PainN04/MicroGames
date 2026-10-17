@@ -564,8 +564,8 @@ const SCENES_3D = {
       put(Math.PI * 2 - m);
       return pts;
     };
-    const pacBack = new Z.Shape({ addTo: illo, path: pacPath(0.5, 1), fill: true, stroke: 3, color: '#d9a92b', translate: { y: 8, z: -4 } });
-    const pac = new Z.Shape({ addTo: illo, path: pacPath(0.5, 1), fill: true, stroke: 3, color: '#ffe14d', translate: { y: 8 } });
+    const pacBack = new Z.Shape({ addTo: illo, path: pacPath(0.5, 1), fill: true, stroke: 3, color: '#d9a92b', translate: { y: 8, z: 6 } });
+    const pac = new Z.Shape({ addTo: illo, path: pacPath(0.5, 1), fill: true, stroke: 3, color: '#ffe14d', translate: { y: 8, z: 10 } }); // à frente dos fantasmas: ele "engole" cada um em vez de ficar por baixo
     // fantasma: cúpula + barra ondulada embaixo, olhos que olham pra frente (ou carinha assustada quando azul)
     const ghostPath = [{ x: -12, y: 12 }, { x: -12, y: -2 }];
     for (let a = Math.PI + 0.2; a <= Math.PI * 2 - 0.2; a += 0.2) ghostPath.push({ x: Math.cos(a) * 12, y: -2 + Math.sin(a) * 12 });
