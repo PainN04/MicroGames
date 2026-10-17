@@ -799,3 +799,8 @@
   .tm-k.g { background: var(--green); color: #10131c; border-color: transparent; } .tm-k.y { background: var(--yellow); color: #10131c; border-color: transparent; } .tm-k.x { opacity: .35; }
   @media (prefers-reduced-motion: reduce) { .tm-t.flip, .c4c.drop, .c4c.win { animation: none; } }
   .row-btns[hidden], .tm-kb[hidden] { display: none; }
+  /* Come-Come: botões de direção numa fileira só (a cruz comia espaço do labirinto, que é alto) */
+  @media (pointer: coarse) {
+    .dpad.flat { grid-template-columns: repeat(4, minmax(0, 1fr)); grid-template-areas: none; width: min(100%, 340px); gap: 8px; }
+    .dpad.flat .dbtn { grid-area: auto; width: 100%; height: 50px; }
+  }

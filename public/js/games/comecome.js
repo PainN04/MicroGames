@@ -31,7 +31,7 @@ GAMES.comecome = {
     const arrow = (d, rot) => `<button class="dbtn" data-d="${d}" aria-label="${d}" style="--r:${rot}deg">${icon('arrow-left')}</button>`;
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Vidas<b id="v" class="lives">${hearts(3)}</b></span><span class="stat">Fase<b id="f">1</b></span></div>
       <div class="phaser-wrap" id="pw"></div>
-      <div class="dpad" aria-hidden="true">${arrow('up', 90)}${arrow('left', 0)}${arrow('right', 180)}${arrow('down', -90)}</div>
+      <div class="dpad flat" aria-hidden="true">${arrow('left', 0)}${arrow('up', 90)}${arrow('down', -90)}${arrow('right', 180)}</div>
       <p class="hint">Setas, WASD ou deslize pra começar</p>`;
     const hud = { p: el.querySelector('#p'), v: el.querySelector('#v'), f: el.querySelector('#f') };
     let turnTo = () => {};
@@ -67,21 +67,29 @@ GAMES.comecome = {
     return mountPhaser(el.querySelector('#pw'), W, H, {
       create() {
         dotTexture(this);
-        const g = this.add.graphics(), walls = this.add.graphics();
-        const burst = this.add.particles(0, 0, 'dot', { speed: { min: 40, max: 140 }, lifespan: 350, scale: { start: 0.9, end: 0 }, emitting: false });
-        const msg = this.add.text(W / 2, 11 * T + T / 2, 'Aperte uma seta', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '22px', color: '#ffe27a', backgroundColor: '#1d1f2e' }).setOrigin(0.5).setPadding(8, 2);
-        // paredes: desenhadas uma vez
+        // paredes: desenhadas uma vez numa textura (desenhar ~190 retângulos a cada quadro deixava o celular lento)
+        const walls = this.make.graphics({ x: 0, y: 0, add: false });
         walls.fillStyle(0x2b3a8f);
         for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (MAZE[y][x] === '#') walls.fillRoundedRect(x * T + 2, y * T + 2, T - 4, T - 4, 6);
         walls.fillStyle(0x3d52c4);
         for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (MAZE[y][x] === '#' && (y === 0 || y === ROWS - 1 || x === 0 || x === COLS - 1)) walls.fillRoundedRect(x * T + 2, y * T + 2, T - 4, T - 4, 6);
+        walls.generateTexture('maze', W, H);
+        walls.destroy();
+        this.add.image(0, 0, 'maze').setOrigin(0).setDepth(0);
+        const g = this.add.graphics().setDepth(10);
+        const burst = this.add.particles(0, 0, 'dot', { speed: { min: 40, max: 140 }, lifespan: 350, scale: { start: 0.9, end: 0 }, emitting: false }).setDepth(15);
+        const msg = this.add.text(W / 2, 11 * T + T / 2, 'Aperte uma seta', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '22px', color: '#ffe27a', backgroundColor: '#1d1f2e' }).setOrigin(0.5).setPadding(8, 2).setDepth(20);
 
         let pellets, left, score = 0, lives = 3, level = 1, alive = true, running = false, freeze = 0, fright = 0, chain = 0, clock = 0, want = null, dead = 0;
         const fillPellets = () => {
+          if (pellets) for (const it of pellets.values()) { this.tweens.killTweensOf(it.img); it.img.destroy(); }
           pellets = new Map(); left = 0;
           for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
             const c = MAZE[y][x];
-            if ((c === '.' || c === 'o') && floor[y][x]) { pellets.set(x + ',' + y, c === 'o'); left++; }
+            if (!((c === '.' || c === 'o') && floor[y][x])) continue;
+            const big = c === 'o', img = this.add.image(x * T + T / 2, y * T + T / 2, 'dot').setTint(0xffd9a8).setScale(big ? 1.9 : 0.6).setDepth(1);
+            if (big) this.tweens.add({ targets: img, alpha: 0.25, yoyo: true, repeat: -1, duration: 260 });
+            pellets.set(x + ',' + y, { big, img }); left++;
           }
         };
         const mk = (x, y, dx = 0, dy = 0) => ({ x, y, dx, dy, t: 0 });
@@ -141,7 +149,8 @@ GAMES.comecome = {
         const eat = () => {
           const k = pac.x + ',' + pac.y;
           if (!pellets.has(k)) return;
-          const big = pellets.get(k);
+          const { big, img } = pellets.get(k);
+          this.tweens.killTweensOf(img); img.destroy();
           pellets.delete(k); left--;
           score += big ? 50 : 10; hud.p.textContent = score;
           if (big) { fright = frightTime(); chain = 0; sfx.good(); } else beep(pac.x % 2 ? 420 : 380, 30, 'square', 0.02);
@@ -229,11 +238,6 @@ GAMES.comecome = {
 
           // desenho
           g.clear();
-          g.fillStyle(0xffd9a8);
-          for (const [k, big] of pellets) {
-            const [x, y] = k.split(',').map(Number);
-            if (big) { if (Math.floor(time / 220) % 2) g.fillCircle(x * T + T / 2, y * T + T / 2, 7); } else g.fillCircle(x * T + T / 2, y * T + T / 2, 2.4);
-          }
           const flashing = fright > 0 && fright < 2 && Math.floor(time / 180) % 2;
           for (const gh of ghosts) {
             const [gx, gy] = pos(gh), r = T / 2 - 2;
