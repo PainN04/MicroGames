@@ -250,7 +250,7 @@
      --avail (px) = altura que sobra pro #game até o fim da tela; calculada no JS (fitGame). */
   main.game-view { padding-top: var(--space-sm); padding-bottom: var(--space-sm); }
   .stage { padding: var(--space-sm) var(--space-md) var(--space-md); display: flex; flex-direction: column; gap: var(--space-sm); }
-  .stage-head { display: flex; align-items: center; gap: var(--space-sm); }
+  .stage-head { display: flex; align-items: flex-start; gap: var(--space-sm); } /* botões alinhados com a linha do título, mesmo com a descrição quebrando */
   .stage-head .title { flex: 1; min-width: 0; }
   .stage-head h2 { margin: 0; font-size: var(--fs-lg); letter-spacing: -0.03em; display: flex; align-items: center; gap: .4em; }
   .stage-head p { margin: .1rem 0 0; color: var(--muted); font-size: var(--fs-xs); line-height: 1.35;
@@ -624,4 +624,15 @@
     .acct-btn { min-width: 0; max-width: 100%; padding-right: .6rem; gap: .4em; }
     .acct-btn #pname { flex: 0 1 auto; min-width: 0; max-width: 6.5em; }
     .acct-btn .chev { flex: none; }
+  }
+
+  /* painel admin / editor de recordes: tabela larga rola dentro do cartão em vez de empurrar a página (e o header) pro lado */
+  .admin section { min-width: 0; overflow-x: auto; }
+  @media (max-width: 560px) {
+    .admin section { padding: var(--space-sm); }
+    .admin .users th, .admin .users td { padding-left: .3em; padding-right: .3em; }
+    .admin .users td .hint { white-space: nowrap; }
+    .admin .users .rec-v { width: 5.5em !important; }
+    .admin .row > label { flex: 1 1 8em; min-width: 0; }
+    .admin .row select, .admin .row input { max-width: 100%; }
   }
