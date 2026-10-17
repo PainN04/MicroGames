@@ -1,10 +1,10 @@
 GAMES.matematica = {
-  name: 'Conta Rápida', icon: 'divide', hue: 200, desc: 'Resolva o máximo de contas em 30s. Enter pra enviar.',
-  better: 'high', unit: 'acertos',
+  name: 'Conta Rápida', icon: 'divide', hue: 200, desc: 'Resolva o máximo de contas em 30s. Enter pra enviar. Acertos seguidos fazem combo: a cada 5 sobe o multiplicador (até x4); errar zera.',
+  better: 'high', unit: 'pontos',
   start(el, done) {
     let ok = 0, ans, t0 = 0, iv;
-    el.innerHTML = '<div class="hud"><span class="stat">Acertos<b id="ok">0</b></span><span class="stat">Tempo<b id="t">30s</b></span></div><div class="math" id="q" aria-live="polite"></div><input class="txt" id="in" inputmode="numeric" placeholder="resposta + Enter" autocomplete="off" aria-label="Resposta">';
-    const q = el.querySelector('#q'), inp = el.querySelector('#in');
+    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="ok">0</b></span><span class="stat combo">Combo<b id="cb">x1</b></span><span class="stat">Tempo<b id="t">30s</b></span></div><div class="math" id="q" aria-live="polite"></div><input class="txt" id="in" inputmode="numeric" placeholder="resposta + Enter" autocomplete="off" aria-label="Resposta">';
+    const q = el.querySelector('#q'), inp = el.querySelector('#in'), combo = makeCombo(el.querySelector('#cb'));
     function gen() {
       const op = ['+', '-', '×'][rand(0, 2)];
       let a = rand(2, 50), b = rand(2, 50);
@@ -24,7 +24,7 @@ GAMES.matematica = {
         }, 100);
       }
       const right = +inp.value === ans;
-      if (right) { el.querySelector('#ok').textContent = ++ok; sfx.good(); } else beep(160, 120, 'square', 0.03);
+      if (right) { ok += combo.hit(); el.querySelector('#ok').textContent = ok; sfx.good(); } else { combo.miss(); beep(160, 120, 'square', 0.03); }
       inp.classList.remove('wrong', 'right'); void inp.offsetWidth; inp.classList.add(right ? 'right' : 'wrong');
       inp.value = ''; gen();
     };

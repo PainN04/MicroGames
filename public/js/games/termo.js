@@ -1,7 +1,8 @@
 GAMES.termo = {
   name: 'Termo', icon: 'termo', hue: 150, desc: 'A palavra do dia: 5 letras, 6 tentativas, igual pra todo mundo. Verde = letra certa no lugar certo, amarelo = existe em outro lugar, cinza = não tem. Só vale a primeira partida de cada dia. Acertar rápido e em poucas tentativas rende mais pontos.',
   better: 'high', unit: 'pontos',
-  start(el, done) {
+  // practice (modo treino): palavra sorteada na hora, nada guardado, sem limite de uma por dia
+  start(el, done, { practice = false } = {}) {
     // palavras do dia (com acento quando tem); o sorteio sai da data, igual pra todo mundo
     const ANSWERS = ('ABRIR AGORA AINDA ALGUM AMIGO ANDAR ANTES ASSIM AVISO BAIXO BANCO BARCO BEBER BEIJO BICHO BOLSA BRAVO BRISA BUSCA CAIXA CALOR CAMPO CANTO CARRO CARTA '
       + 'CASAL CAUSA CERTO CHAVE CHEFE CHEIO CHUVA CINCO CLARO COISA COMER CONTA CORPO CORTE COSTA CRIAR CULPA CURSO DADOS DANÇA DENTE DESDE DISCO DUPLA EMAIL '
@@ -23,11 +24,11 @@ GAMES.termo = {
     const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
     const ROWS = 6, LEN = 5;
     const day = dayIndex();
-    const secret = seededShuffle(POOL, Math.floor(day / POOL.length) * 7919 + 101)[day % POOL.length];
+    const secret = practice ? POOL[rand(0, POOL.length - 1)] : seededShuffle(POOL, Math.floor(day / POOL.length) * 7919 + 101)[day % POOL.length];
     const answer = norm(secret);
     const KEY = `mg_termo_${player}_${day}`;
-    const load = () => { try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
-    const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} };
+    const load = () => { if (practice) return {}; try { return JSON.parse(localStorage.getItem(KEY)) || {}; } catch { return {}; } };
+    const save = () => { if (practice) return; try { localStorage.setItem(KEY, JSON.stringify(st)); } catch {} };
     const st = Object.assign({ guesses: [], t0: 0, over: false, won: false, score: 0 }, load());
 
     const evaluate = guess => {
@@ -41,7 +42,7 @@ GAMES.termo = {
 
     let cur = '', busy = false, timers = [];
     const tryNo = () => (st.over ? st.guesses.length : Math.min(st.guesses.length + 1, ROWS));
-    el.innerHTML = `<div class="hud"><span class="stat">Tentativa<b id="n">1/${ROWS}</b></span><span class="stat">Palavra nº<b>${day % 1000}</b></span></div>
+    el.innerHTML = `<div class="hud"><span class="stat">Tentativa<b id="n">1/${ROWS}</b></span><span class="stat">Palavra<b>${practice ? 'treino' : 'nº ' + day % 1000}</b></span></div>
       <div class="tm" id="tm" aria-live="polite">${Array.from({ length: ROWS * LEN }, () => '<div class="tm-t"></div>').join('')}</div>
       <p class="hint" id="tmsg"></p>
       <div class="tm-kb" id="kb">${['QWERTYUIOP', 'ASDFGHJKL', '↵ZXCVBNM⌫'].map(r => `<div>${[...r].map(k => `<button class="tm-k${k === '↵' || k === '⌫' ? ' wide' : ''}" data-k="${k}" ${k === '↵' ? 'aria-label="Enviar"' : k === '⌫' ? 'aria-label="Apagar"' : ''}>${k}</button>`).join('')}</div>`).join('')}</div>
@@ -70,7 +71,8 @@ GAMES.termo = {
       el.querySelector('#kb').hidden = true;
       box.hidden = false;
       box.innerHTML = `<button class="btn ghost" id="shr">${icon('upload')} Copiar resultado</button>`;
-      say(st.won ? `Você acertou em ${st.guesses.length}/${ROWS}: ${st.score} pontos. Volte amanhã pra uma palavra nova!` : `A palavra era ${secret}. Volte amanhã pra uma palavra nova!`);
+      const next = practice ? 'Toque em Reiniciar pra treinar outra palavra.' : 'Volte amanhã pra uma palavra nova!';
+      say(st.won ? `Você acertou em ${st.guesses.length}/${ROWS}: ${st.score} pontos. ${next}` : `A palavra era ${secret}. ${next}`);
       box.querySelector('#shr').onclick = async () => {
         try { await navigator.clipboard.writeText(shareText()); say('Resultado copiado!'); } catch { say(shareText().replace(/\n/g, ' · ')); }
       };

@@ -1,14 +1,14 @@
 GAMES.cores = {
-  name: 'Cor Certa', icon: 'palette', hue: 310, desc: 'Clique na COR da tinta, não no que está escrito. 30s. Erro tira 1 ponto.',
-  better: 'high', unit: 'acertos',
+  name: 'Cor Certa', icon: 'palette', hue: 310, desc: 'Clique na COR da tinta, não no que está escrito. 30s. Acertos seguidos fazem combo: a cada 5 sobe o multiplicador (até x4). Erro tira 1 ponto e zera o combo.',
+  better: 'high', unit: 'pontos',
   start(el, done) {
     const C = [['VERMELHO', '--red'], ['AZUL', '--blue'], ['VERDE', '--green'], ['AMARELO', '--yellow']];
     let ok = 0, ink = -1, t0 = 0, iv, over = false;
-    el.innerHTML = `<div class="hud"><span class="stat">Acertos<b id="ok">0</b></span><span class="stat">Tempo<b id="t">30s</b></span></div>
+    el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="ok">0</b></span><span class="stat combo">Combo<b id="cb">x1</b></span><span class="stat">Tempo<b id="t">30s</b></span></div>
       <p class="hint">Qual é a <b>cor da tinta</b>? (teclas 1–4 também valem)</p>
       <div class="stroop-word" id="w" aria-live="polite"></div>
       <div class="choices">${C.map(([n], k) => `<button class="btn ghost" data-k="${k}">${n} <kbd>${k + 1}</kbd></button>`).join('')}</div>`;
-    const w = el.querySelector('#w');
+    const w = el.querySelector('#w'), combo = makeCombo(el.querySelector('#cb'));
     function next() {
       // 75% das vezes a palavra e a tinta não batem (é aí que o cérebro tropeça); nunca repete a mesma tinta
       let word, inkK;
@@ -30,8 +30,9 @@ GAMES.cores = {
           if (left <= 0) { over = true; clearInterval(iv); done(ok); }
         }, 100);
       }
-      if (k === ink) { ok++; sfx.good(); }
+      if (k === ink) { ok += combo.hit(); sfx.good(); }
       else {
+        combo.miss();
         ok = Math.max(0, ok - 1);
         beep(160, 120, 'square', 0.03);
         w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake');

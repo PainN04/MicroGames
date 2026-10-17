@@ -30,21 +30,26 @@ const MOLE_SPRITES = {
   </svg>`,
 };
 
+// toupeira dourada: o mesmo desenho com pelagem de ouro (gradiente com outro id pra não colidir)
+MOLE_SPRITES.gold = MOLE_SPRITES.mole.replace(/mlFur/g, 'mlGold').replace('#b98458', '#fff0a0').replace(/#7a4d2c/g, '#d9962b').replace('class="s-mole"', 'class="s-mole s-gold"');
+
 GAMES.toupeira = {
-  name: 'Toupeira', icon: 'hammer', hue: 35, desc: 'Acerte as toupeiras em 30s. Estrela vale 3, bomba tira 3. Teclado numérico também vale.',
+  name: 'Toupeira', icon: 'hammer', hue: 35, desc: 'Acerte as toupeiras em 30s. Estrela vale 3, a toupeira dourada (rara e rápida) vale 5, bomba tira 3. Acertos seguidos fazem combo: a cada 5 sobe o multiplicador (até x4); bomba ou toupeira que escapa zera. Teclado numérico também vale.',
   better: 'high', unit: 'pontos',
   start(el, done) {
     const DUR = 30;
     let pts = 0, t0 = 0, iv, over = false;
     const timers = [], state = Array(9).fill(null); // state[i] = { kind, timer } enquanto algo está pra fora
-    el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Tempo<b id="t">${DUR}s</b></span></div>
+    el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat combo">Combo<b id="cb">x1</b></span><span class="stat">Tempo<b id="t">${DUR}s</b></span></div>
       <p class="hint" id="h">Prepare-se...</p>
       <div class="moles">${Array.from({ length: 9 }, (_, i) => `<button class="hole" data-i="${i}" aria-label="buraco ${i + 1}"><span></span></button>`).join('')}</div>`;
     const holes = [...el.querySelectorAll('.hole')];
+    const combo = makeCombo(el.querySelector('#cb'));
     const elapsed = () => (performance.now() - t0) / 1000;
     const later = (fn, ms) => timers.push(setTimeout(fn, ms));
-    function hide(i) {
+    function hide(i, escaped = false) {
       if (!state[i]) return;
+      if (escaped && state[i].kind !== 'bomb') combo.miss(); // toupeira que fugiu sem ser acertada quebra o combo
       clearTimeout(state[i].timer);
       state[i] = null;
       holes[i].classList.remove('up');
@@ -53,10 +58,11 @@ GAMES.toupeira = {
       const free = state.map((s, i) => s ? -1 : i).filter(i => i >= 0);
       if (!free.length) return;
       const i = free[rand(0, free.length - 1)], tt = elapsed(), r = Math.random();
-      const kind = tt > 8 && r < 0.15 ? 'bomb' : r > 0.9 ? 'star' : 'mole';
+      const kind = tt > 8 && r < 0.15 ? 'bomb' : r > 0.96 ? 'gold' : r > 0.9 ? 'star' : 'mole';
       holes[i].querySelector('span').innerHTML = MOLE_SPRITES[kind];
       holes[i].classList.add('up');
-      state[i] = { kind, timer: setTimeout(() => hide(i), Math.max(550, 1000 - tt * 15)) };
+      const stay = Math.max(550, 1000 - tt * 15) * (kind === 'gold' ? 0.7 : 1); // a dourada some mais rápido
+      state[i] = { kind, timer: setTimeout(() => hide(i, true), stay) };
     }
     function spawnLoop() {
       if (over) return;
@@ -66,13 +72,15 @@ GAMES.toupeira = {
     }
     function whack(i) {
       if (over || !t0 || !state[i]) return; // buraco vazio não faz nada
-      const gain = { bomb: -3, star: 3, mole: 1 }[state[i].kind];
+      const kind = state[i].kind, base = { bomb: -3, star: 3, gold: 5, mole: 1 }[kind];
+      const gain = base > 0 ? base * combo.hit() : (combo.miss(), base);
       pts = Math.max(0, pts + gain);
       el.querySelector('#p').textContent = pts;
       const cls = gain > 0 ? 'hit' : 'boom';
       holes[i].classList.add(cls);
       later(() => holes[i].classList.remove(cls), 180);
-      if (gain > 0) beep(gain > 1 ? 1046 : 784, 70, 'triangle'); else sfx.bad();
+      if (kind === 'gold') { [1046, 1318, 1568].forEach((f, k) => setTimeout(() => beep(f, 90, 'triangle', 0.05), k * 60)); holes[i].classList.add('gold'); later(() => holes[i].classList.remove('gold'), 260); }
+      else if (gain > 0) beep(gain > 1 ? 1046 : 784, 70, 'triangle'); else sfx.bad();
       hide(i);
     }
     holes.forEach((h, i) => h.onpointerdown = e => { e.preventDefault(); whack(i); });

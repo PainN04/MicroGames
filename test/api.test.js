@@ -374,3 +374,15 @@ test('jogos novos entram no sorteio do dia só a partir do lançamento (dias ant
   for (let d = 20746; d < 20746 + 27 * 2; d++) seen.add(scheduledGame(GAMES, d, {}));
   assert.ok(NEW.every(g => seen.has(g)), 'todos entram no rodízio depois');
 });
+
+test('combos e itens raros: pontuações maiores agora cabem nos limites, mas continua havendo teto', async () => {
+  const bia = await login('bia', 'senha-bia-123');
+  assert.equal((await play(bia, 'voa', 400)).status, 201, 'estrelas somam ao placar do Voa Voa');
+  assert.equal((await play(bia, 'voa', 5000)).status, 422);
+  assert.equal((await play(bia, 'toupeira', 220)).status, 201, 'combo x4 na toupeira passa de 200');
+  assert.equal((await play(bia, 'toupeira', 9000)).status, 422);
+  assert.equal((await play(bia, 'cores', 180)).status, 201);
+  assert.equal((await play(bia, 'cores', 2000)).status, 422);
+  assert.equal((await play(bia, 'matematica', 150)).status, 201);
+  assert.equal((await play(bia, 'matematica', 9000)).status, 422);
+});

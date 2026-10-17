@@ -184,6 +184,32 @@ function renderMute() {
   $('#mute').setAttribute('aria-label', muted ? 'Ligar som' : 'Desligar som');
 }
 
+// ---------- combo ----------
+// Jogos de reflexo: a cada 5 acertos seguidos o multiplicador sobe (x1 → x4). Errar zera. `stat` é o <b> do placar.
+const COMBO_STEP = 5, COMBO_MAX = 4;
+const comboMult = streak => Math.min(COMBO_MAX, 1 + Math.floor(streak / COMBO_STEP));
+function makeCombo(stat) {
+  let streak = 0;
+  const show = () => { stat.textContent = 'x' + comboMult(streak) + (streak ? ' · ' + streak : ''); stat.parentElement.classList.toggle('hot', comboMult(streak) > 1); };
+  show();
+  return {
+    get mult() { return comboMult(streak); },
+    get streak() { return streak; },
+    /** Acertou: devolve o multiplicador que vale pra ESTE acerto (o de antes de subir). */
+    hit() {
+      const m = comboMult(streak);
+      streak++;
+      show();
+      if (comboMult(streak) > m) {
+        stat.classList.remove('up'); void stat.offsetWidth; stat.classList.add('up');
+        [660, 880, 1175].forEach((f, k) => setTimeout(() => beep(f, 90, 'triangle', 0.04), k * 60)); // sobe de nível: som próprio
+      }
+      return m;
+    },
+    miss() { if (streak) { streak = 0; show(); } },
+  };
+}
+
 // ---------- Phaser ----------
 // ~1 MB: só baixa quando alguém abre a Cobrinha ou a Mira (no menu, fica pré-buscado em segundo plano).
 const PHASER_URL = 'https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js';
