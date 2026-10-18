@@ -536,3 +536,17 @@ test('equipes de exemplo: só aparecem na versão de teste da Vercel, uma vez, e
     void bia;
   } finally { delete process.env.VERCEL_ENV; }
 });
+
+test('torneio: na produção só começa em 19/10/2026; na versão de teste já vale na semana atual', async () => {
+  const social = require('../lib/social');
+  const ana = { id: await idOf('ana'), name: 'Ana' };
+  const before = social.weekStart(social.TOURNEY_FIRST_WEEK - 1) + 2 * 86_400_000; // meio da semana anterior ao lançamento
+  assert.equal((await social.socialState(ana, before)).tourney.on, false);
+  process.env.VERCEL_ENV = 'preview';
+  try {
+    const t = (await social.socialState(ana, before)).tourney;
+    assert.equal(t.on, true);
+    assert.equal(t.games.length, 3);
+  } finally { delete process.env.VERCEL_ENV; }
+  assert.equal((await social.socialState(ana, social.weekStart(social.TOURNEY_FIRST_WEEK) + 1000)).tourney.on, true);
+});
