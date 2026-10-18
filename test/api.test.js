@@ -624,3 +624,34 @@ test('duplas: o admin forma uma dupla direto (já ativa), com as mesmas regras d
   assert.equal((await dono(`/api/admin/duos/${feita.body.id}/end`, { method: 'POST', body: {} })).status, 200);
   await sql`UPDATE duos SET status = ${'ended'} WHERE status = ${'active'}`;
 });
+
+test('duplas: o admin escolhe desde quando as partidas contam (agora, início do mês ou o começo) e pode mudar depois', async () => {
+  const dono = await login('paulo', 'senha-dono-123'), ana = await login('ana', 'senha-ana-123');
+  const anaId = await idOf('ana'), biaId = await idOf('bia');
+  await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
+  const criar = since => dono('/api/admin/duos', { method: 'POST', body: { aId: anaId, bId: biaId, name: 'Retroativa', since } });
+  assert.equal((await criar('semana-que-vem')).status, 400, 'início inválido');
+  const feita = await criar('all');
+  assert.equal(feita.status, 201);
+  let d = (await ana('/api/social')).body.myDuo;
+  assert.equal(d.since, 0, 'o começo = conta todas as partidas');
+  assert.ok(d.formedAt > 0);
+  assert.equal((await dono(`/api/admin/duos/${feita.body.id}/since`, { method: 'POST', body: { since: 'month' } })).status, 200);
+  d = (await ana('/api/social')).body.myDuo;
+  const monthStart = new Date(d.since);
+  assert.equal(monthStart.toISOString().slice(8, 10), '01', 'início do mês (dia 1º, 03h UTC = meia-noite em Brasília)');
+  assert.equal(monthStart.toISOString().slice(11, 13), '03');
+  assert.equal((await dono(`/api/admin/duos/${feita.body.id}/since`, { method: 'POST', body: { since: 'now' } })).status, 200);
+  d = (await ana('/api/social')).body.myDuo;
+  assert.ok(Math.abs(d.since - Date.now()) < 5000);
+  assert.equal((await ana(`/api/admin/duos/${feita.body.id}/since`, { method: 'POST', body: { since: 'all' } })).status, 403, 'jogador não muda');
+  assert.equal((await dono(`/api/admin/duos/${feita.body.id}/since`, { method: 'POST', body: { since: 'xx' } })).status, 400);
+  // dupla formada por convite conta desde que foi aceita
+  await dono(`/api/admin/duos/${feita.body.id}/end`, { method: 'POST', body: {} });
+  const conv = (await ana('/api/duos', { method: 'POST', body: { partnerId: biaId, name: 'Por Convite' } })).body.id;
+  const bia = await login('bia', 'senha-bia-123');
+  await bia(`/api/duos/${conv}/accept`, { method: 'POST', body: {} });
+  d = (await ana('/api/social')).body.myDuo;
+  assert.equal(d.since, d.formedAt, 'sem ajuste do admin: desde a formação');
+  await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
+});

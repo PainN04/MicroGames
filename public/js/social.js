@@ -101,7 +101,7 @@ function duoStandings(range = currentRange()) {
   for (const id in GAMES) {
     const g = GAMES[id], entries = [];
     for (const d of duos) {
-      const since = Math.max(range.since || 0, d.formedAt || 0);
+      const since = Math.max(range.since || 0, d.since ?? d.formedAt ?? 0);
       const x = bestIn(id, d.aName, since, range.until), y = bestIn(id, d.bName, since, range.until);
       if (x != null && y != null) entries.push({ d, v: (x + y) / 2 });
     }
@@ -155,7 +155,7 @@ async function duoModal(pre = {}) {
       : '<p>Todo mundo já está em dupla ou com convite aberto. Quando alguém ficar livre, aparece aqui.</p>';
   }
   const { el, close } = modal(`<h2>${icon('users')} Minha dupla</h2>${body}
-    <details class="duo-how"><summary>Como a pontuação funciona</summary><p>Em cada jogo, a dupla só entra no ranking se <b>os dois</b> jogaram depois de formada. A nota é a <b>média</b> das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos, e a soma nos jogos define a classificação (mês ou geral). Partidas de antes da dupla não contam.</p></details>
+    <details class="duo-how"><summary>Como a pontuação funciona</summary><p>Em cada jogo, a dupla só entra no ranking se <b>os dois</b> jogaram depois de formada. A nota é a <b>média</b> das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos, e a soma nos jogos define a classificação (mês ou geral). Partidas de antes da dupla não contam, a não ser que o admin tenha criado a dupla valendo desde antes.</p></details>
     <button class="btn ghost" id="duoClose">Fechar</button>`);
   el.querySelector('#duoClose').onclick = close;
   const call = async (path, bodyObj, after) => {

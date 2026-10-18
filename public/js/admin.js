@@ -37,10 +37,11 @@ function showAdmin() {
           <label>Pessoa 1<select name="aId" required></select></label>
           <label>Pessoa 2<select name="bId" required></select></label>
           <label>Nome da dupla<input name="name" maxlength="24" placeholder="ex.: Os Imbatíveis" required></label>
+          <label>As partidas contam desde<select name="since"><option value="all">o começo (todas)</option><option value="month">o início do mês</option><option value="now">agora</option></select></label>
           <button class="btn">+ Criar dupla</button>
         </form>
         <p class="err" id="duoNewErr" style="color:oklch(80% 0.14 18)"></p>
-        <p class="note">A dupla criada aqui já nasce ativa (sem convite) e vale a partir de agora, como qualquer outra. Só aparecem pessoas que não estão em dupla nem com convite aberto.</p>
+        <p class="note">A dupla criada aqui já nasce ativa (sem convite). Em "As partidas contam desde" você escolhe se vale tudo que os dois já jogaram, só o mês, ou só daqui pra frente. Só aparecem pessoas que não estão em dupla nem com convite aberto.</p>
         <div id="duosAdmin"><p class="hint" style="text-align:left">Carregando...</p></div>
       </section>
       <section class="glass">
@@ -88,19 +89,26 @@ async function loadAdminDuos() {
       const f = new FormData(e.target), err = $('#duoNewErr');
       err.textContent = '';
       try {
-        await api('api/admin/duos', { method: 'POST', body: { aId: Number(f.get('aId')), bId: Number(f.get('bId')), name: f.get('name') } });
+        await api('api/admin/duos', { method: 'POST', body: { aId: Number(f.get('aId')), bId: Number(f.get('bId')), name: f.get('name'), since: f.get('since') } });
         e.target.reset();
         loadAdminDuos();
       } catch (e2) { err.textContent = e2.message; }
     };
-    box.innerHTML = duos.length ? `<div class="scroll" style="max-height:none"><table class="tickets users"><thead><tr><th>Dupla</th><th>Pessoas</th><th>Situação</th><th></th></tr></thead><tbody>${duos.map(d => `<tr data-id="${d.id}">
+    box.innerHTML = duos.length ? `<div class="scroll" style="max-height:none"><table class="tickets users"><thead><tr><th>Dupla</th><th>Pessoas</th><th>Situação</th><th>Conta desde</th><th></th></tr></thead><tbody>${duos.map(d => `<tr data-id="${d.id}">
         <td>${esc(d.name)}</td><td>${esc(d.a)} & ${esc(d.b)}</td><td>${d.status === 'active' ? 'ativa' : 'convite aberto'}</td>
-        <td><div class="actions"><button class="btn ghost" data-duo="rename">Renomear</button><button class="btn ghost" data-duo="end">Desfazer</button></div></td></tr>`).join('')}</tbody></table></div>`
+        <td>${d.status === 'active' ? (d.since === 0 ? 'o começo' : new Date(d.since).toLocaleDateString('pt-BR')) : '—'}</td>
+        <td><div class="actions"><button class="btn ghost" data-duo="rename">Renomear</button><button class="btn ghost" data-duo="since">Início</button><button class="btn ghost" data-duo="end">Desfazer</button></div></td></tr>`).join('')}</tbody></table></div>`
       : '<p class="hint" style="text-align:left">Nenhuma dupla ainda.</p>';
     box.querySelectorAll('[data-duo]').forEach(b => b.onclick = async () => {
       const row = b.closest('tr'), id = row.dataset.id, d = duos.find(x => String(x.id) === id);
       try {
-        if (b.dataset.duo === 'rename') {
+        if (b.dataset.duo === 'since') {
+          const pick = prompt('Desde quando as partidas dos dois contam pra essa dupla?\n\n1 = o começo (todas as partidas)\n2 = o início do mês\n3 = agora (só daqui pra frente)', '1');
+          if (pick == null) return;
+          const mode = { 1: 'all', 2: 'month', 3: 'now' }[String(pick).trim()];
+          if (!mode) return alert('Digite 1, 2 ou 3.');
+          await api(`api/admin/duos/${id}/since`, { method: 'POST', body: { since: mode } });
+        } else if (b.dataset.duo === 'rename') {
           const name = prompt('Novo nome da dupla:', d.name);
           if (name == null) return;
           await api(`api/admin/duos/${id}/rename`, { method: 'POST', body: { name } });

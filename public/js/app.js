@@ -100,6 +100,7 @@ function renderMenu() {
     <section class="champs glass" id="champs"${champsHtml() ? '' : ' hidden'}>${champsHtml()}</section>
     <section class="week glass" id="week" hidden></section>
     <section class="tourney glass" id="tourney" hidden></section>
+    <section class="teams kings glass" id="duos" hidden></section>
     <div class="menu-bar"><h2>Jogos</h2><span class="hint">Ranking:</span>${seasonSeg()}</div>
     <section class="grid" aria-label="Jogos">` +
     menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
@@ -107,8 +108,7 @@ function renderMenu() {
         <h3>${g.name}</h3>
         <span class="rec">${recHtml(id)}</span>
       </button>`).join('') + `</section>
-    <section class="kings glass" id="kings"></section>
-    <section class="teams kings glass" id="duos" hidden></section>`);
+    <section class="kings glass" id="kings"></section>`);
   renderKings();
   renderTourney(); renderDuos();
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
