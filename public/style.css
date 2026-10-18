@@ -961,3 +961,23 @@
   .rk-body .season-seg { margin: 0 0 var(--space-sm); }
   .rk-body .week { margin: 0; }
   .modal .seg { margin: var(--space-xs) 0; }
+
+  /* faixa da coroa no topo: o 1º do ranking de recordes, fininha */
+  .crown-bar { display: flex; align-items: center; gap: .7em; width: 100%; text-align: left; font: inherit; color: var(--text); cursor: pointer; padding: .55em .85em; margin: 0 0 var(--space-sm); border-radius: 16px;
+    border: 1px solid oklch(86% 0.17 92 / .38); background: linear-gradient(90deg, oklch(86% 0.17 92 / .16), var(--surface-2) 70%); transition: transform var(--duration) var(--ease-spring); }
+  .crown-bar[hidden] { display: none; }
+  .crown-bar:hover, .crown-bar:focus-visible { transform: translateY(-1px); outline: none; border-color: var(--yellow); }
+  .crown-bar .ic { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 12px; background: oklch(86% 0.17 92 / .22); color: var(--yellow); }
+  .crown-bar .ic .i { width: 20px; height: 20px; }
+  .crown-bar .tx { flex: 1; min-width: 0; font-size: var(--fs-sm); line-height: 1.3; }
+  .crown-bar .tx b { font-size: var(--fs-base); }
+  .crown-bar .tx em { font-style: normal; color: var(--muted); font-size: var(--fs-xs); margin-left: .25em; }
+  .crown-bar .tx small { display: block; color: var(--muted); font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .crown-bar .go { color: var(--muted); font-size: 1.4rem; line-height: 1; }
+  .crown-bar b.fr-bronze { color: #e0aa7c; } .crown-bar b.fr-silver { color: #dfe3ee; } .crown-bar b.fr-gold { color: #ffd34d; }
+  .crown-bar b.fr-diamond { background: linear-gradient(90deg, #7fe7ff, #b79bff, #7fe7ff); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 3.5s linear infinite; }
+  /* sem o atalho "Quem manda", os duelos ocupam o espaço dos atalhos pequenos inteiro */
+  .strip .smalls { grid-template-rows: 1fr; }
+  .strip .smalls .act { height: 100%; }
+  @media (max-width: 720px) { .strip .smalls { grid-template-columns: 1fr; } }
+  .strip.no-tourney .big { min-height: 118px; }

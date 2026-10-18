@@ -109,19 +109,36 @@ function renderStrip() {
   if (!box) return;
   if (!me) { box.hidden = true; return; }
   box.hidden = false;
-  const t = social?.tourney, my = social?.myDuo, open = social?.duels?.open?.length || 0, king = champions()[0];
+  const t = social?.tourney, my = social?.myDuo, open = social?.duels?.open?.length || 0;
   const pill = (id, ic, label, sub, hot = false) => `<button class="act${hot ? ' hot' : ''}" data-act="${id}"><span class="ic">${icon(ic)}</span><span class="tx"><b>${label}</b><small>${sub}</small></span></button>`;
   const showTourney = !social || t?.on;
   box.className = 'strip' + (showTourney ? '' : ' no-tourney');
   box.innerHTML = (showTourney ? `<div class="big tourney-card" role="button" tabindex="0" data-act="tourney" aria-label="Torneio da semana">${tourneyCardHtml()}</div>` : '')
     + `<div class="big duos-card${my?.state === 'in' ? ' hot' : ''}" role="button" tabindex="0" data-act="duos" aria-label="Duplas">${duosCardHtml()}</div>`
     + `<div class="smalls">${pill('duels', 'swords', 'Duelos', !social ? '…' : open ? open + ' em andamento' : 'desafiar alguém', open > 0)}`
-    + `${pill('rank', 'crown', 'Quem manda', king ? `${esc(king[0])} · ${plural(king[1], 'recorde')}` : 'ver rankings')}</div>`;
-  const go = { tourney: tourneyModal, duos: duosModal, duels: () => duelsModal(), rank: () => rankingsModal() };
+    + `</div>`;
+  const go = { tourney: tourneyModal, duos: duosModal, duels: () => duelsModal() };
   box.querySelectorAll('[data-act]').forEach(b => {
     b.onclick = go[b.dataset.act];
     if (b.getAttribute('role') === 'button') b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go[b.dataset.act](); } };
   });
+}
+
+/* ---------- faixa da coroa (topo do menu): quem tem mais recordes de 1º lugar ---------- */
+function renderCrown() {
+  const box = $('#crownBar');
+  if (!box) return;
+  // se ninguém tem recorde no período (começo do mês), mostra o geral
+  let list = champions(), label = seasonMode === 'all' ? 'geral' : seasonLabel().toLowerCase();
+  if (!list.length) { list = champions({}); label = 'geral'; }
+  if (!list.length) { box.hidden = true; return; }
+  const [name, wins] = list[0], fr = flair.frames[name];
+  const rest = list.slice(1, 3).map(([n, c], i) => `${i + 2}º ${esc(n)} ${c}`).join(' · ');
+  box.hidden = false;
+  box.setAttribute('aria-label', `Quem manda: ${name}, com ${wins} recordes. Abrir rankings`);
+  box.innerHTML = `<span class="ic">${icon('crown')}</span><span class="tx"><b${fr ? ` class="fr-${fr}"` : ''}>${esc(name)}</b> manda · ${plural(wins, 'recorde')} <em>${label}</em>
+    ${rest ? `<small>${rest}</small>` : ''}</span><span class="go" aria-hidden="true">›</span>`;
+  box.onclick = () => rankingsModal();
 }
 
 /* ---------- rankings (janela): Quem manda, Hall da fama e destaque dos tickets ---------- */

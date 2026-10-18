@@ -95,6 +95,7 @@ function renderMenu() {
   main.classList.remove('game-view');
   main.replaceChildren(heroNode);
   main.insertAdjacentHTML('beforeend', `
+    <button class="crown-bar" id="crownBar" hidden></button>
     <section class="daily glass" id="daily" data-game="${dailyGame()}" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
     <div class="strip" id="strip"${me ? '' : ' hidden'}></div>
     <div class="menu-bar"><h2>Jogos</h2><span class="hint">Ranking:</span>${seasonSeg()}</div>
@@ -105,7 +106,7 @@ function renderMenu() {
         <span class="rec">${recHtml(id)}</span>
       </button>`).join('') + `</section>
 `);
-  renderChamps(); renderStrip();
+  renderCrown(); renderChamps(); renderStrip();
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
   bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
   bindDaily();
@@ -121,6 +122,7 @@ function renderMenu() {
 function refreshMenu() {
   if (!$('#daily')) return;
   for (const id in GAMES) { const rec = $(`.card[data-id="${id}"] .rec`); if (rec) rec.innerHTML = recHtml(id); }
+  renderCrown();
   renderStrip();
   const side = $('#daily .daily-side');
   if (side) side.innerHTML = dailySideHtml();
