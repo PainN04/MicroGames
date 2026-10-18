@@ -38,10 +38,15 @@ function statsFor(name) {
   for (const p of plays) perDay[dayIndex(p.date)] = (perDay[dayIndex(p.date)] || 0) + 1;
   const maxInDay = Math.max(0, ...Object.values(perDay));
   const best = id => plays.filter(p => p.id === id).reduce((b, p) => (b === null || better(GAMES[id], p.score, b) ? p.score : b), null);
-  return { plays, games, rankIn, firsts, podiums, monthsWon, dailyWins, dailyStreak, streak, late, early, lunch, night, weekend, maxInDay, daysPlayed: days.length, best };
+  const trophies = social?.trophies?.[name] || 0, duelWins = social?.duelWins?.[name] || 0;
+  return { trophies, duelWins, plays, games, rankIn, firsts, podiums, monthsWon, dailyWins, dailyStreak, streak, late, early, lunch, night, weekend, maxInDay, daysPlayed: days.length, best };
 }
 
 const ACHIEVEMENTS = [
+  { id: 'torneio1', icon: 'trophy', name: 'Campeão da semana', desc: 'Ganhou um torneio semanal', test: s => s.trophies >= 1 },
+  { id: 'torneio3', icon: 'crown', name: 'Tricampeão', desc: 'Ganhou 3 torneios semanais', test: s => s.trophies >= 3, progress: s => [s.trophies, 3] },
+  { id: 'duelo1', icon: 'swords', name: 'Duelista', desc: 'Ganhou um duelo', test: s => s.duelWins >= 1 },
+  { id: 'duelo5', icon: 'swords', name: 'Mestre do duelo', desc: 'Ganhou 5 duelos', test: s => s.duelWins >= 5, progress: s => [s.duelWins, 5] },
   { id: 'estreia', icon: 'gamepad-2', name: 'Estreia', desc: 'Jogou a primeira partida', test: s => s.plays.length >= 1 },
   { id: 'maratona', icon: 'target', name: 'Maratonista', desc: '100 partidas', test: s => s.plays.length >= 100, progress: s => [s.plays.length, 100] },
   { id: 'explorador', icon: 'compass', name: 'Explorador', desc: 'Jogou 10 jogos diferentes', test: s => s.games.size >= 10, progress: s => [s.games.size, 10] },
@@ -105,13 +110,17 @@ function showProfile(name = player) {
     main.innerHTML = `<div class="admin profile">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('user')} ${esc(name)}</h2><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p></div>
+        <div class="title"><h2>${icon('user')} ${esc(name)}${duoOfName(name) ? ` <span class="tag team-tag" title="Dupla de ${esc(duoOfName(name).aName)} e ${esc(duoOfName(name).bName)}">${icon('users')} ${esc(duoOfName(name).name)}</span>` : ''}</h2><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p></div>
+        ${name !== player && me ? `${social?.myDuo?.state === 'none' && social.people.find(p => p.name === name)?.free ? `<button class="btn ghost" id="profDuo">${icon('users')} <span>Chamar pra dupla</span></button>` : ''}<button class="btn ghost" id="profDuel">${icon('swords')} <span>Desafiar</span></button>` : name === player ? `<button class="btn ghost" id="profRecap">${icon('calendar')} <span>Minha semana</span></button>` : ''}
       </div>
       <div id="prof"><p class="hint" style="text-align:left">Carregando...</p></div>
     </div>`;
     $('#back').onclick = showMenu;
+    $('#profDuel')?.addEventListener('click', () => duelsModal({ opponent: name }));
+    $('#profDuo')?.addEventListener('click', () => duoModal({ partner: name }));
+    $('#profRecap')?.addEventListener('click', async () => { await loadSocial(); recapModal(); });
     renderProfile(name);
-    fetchScores().then(() => currentView === 'profile' && renderProfile(name));
+    Promise.all([fetchScores(), loadSocial()]).then(() => currentView === 'profile' && renderProfile(name));
   });
 }
 
@@ -127,6 +136,7 @@ function renderProfile(name) {
     <div class="kpi glass"><div class="l">Recordes gerais</div><div class="v">${s.firsts}</div><span class="d">${s.podiums} no pódio</span></div>
     <div class="kpi glass"><div class="l">Desafios do dia ganhos</div><div class="v">${s.dailyWins}</div>${dailyStreakOf(name) > 1 ? `<span class="d">${icon('flame')} ${dailyStreakOf(name)} seguidas agora</span>` : ''}${s.monthsWon.length ? `<span class="d">${icon('calendar')} campeão de ${s.monthsWon.map(k => monthName(k)).join(', ')}</span>` : ''}</div>
     <div class="kpi glass"><div class="l">Conquistas</div><div class="v">${unlocked}/${ACHIEVEMENTS.length}</div></div>
+    ${s.trophies || s.duelWins ? `<div class="kpi glass"><div class="l">Torneios e duelos</div><div class="v">${s.trophies}<small> 🏆</small> · ${s.duelWins}<small> ⚔</small></div><span class="d">torneios ganhos · duelos ganhos</span></div>` : ''}
   </div>`;
   // partidas por semana (últimas 12): 1 série, 1 cor, rótulo só no maior
   const weekMs = 7 * DAY_MS, now = Date.now();

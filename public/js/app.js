@@ -38,17 +38,15 @@ async function loadWeek() {
   try { weekData = await api('api/geiko/week'); } catch { weekData = null; }
   renderWeek();
 }
-function renderWeek() {
-  const box = $('#week');
-  if (!box) return;
-  const d = weekData;
-  if (!d || (!d.champion && d.me == null)) { box.hidden = true; return; }
-  box.hidden = false;
+// texto do destaque de tickets ('' se não há dados do Geiko); aparece na janela "Rankings"
+function weekInnerHtml(d = weekData) {
+  if (!d || (!d.champion && d.me == null)) return '';
   const list = d.people?.filter(p => p.count > 0).slice(0, 5);
-  box.innerHTML = `<span class="ic">${icon('ticket')}</span>
+  return `<span class="ic">${icon('ticket')}</span>
     <div><b>${d.champion ? `Destaque da semana: <a href="#" data-profile="${esc(d.champion.name)}">${esc(d.champion.name)}</a> — ${d.champion.count} ticket${d.champion.count > 1 ? 's' : ''} resolvido${d.champion.count > 1 ? 's' : ''}` : 'Ninguém resolveu ticket esta semana ainda'}</b>
       <small>${list?.length > 1 ? list.map((p, k) => `${k + 1}º ${esc(p.name)} ${p.count}`).join(' · ') + ' · ' : ''}${d.me != null ? `Você: ${d.me} desde segunda.` : ''} Quem mais resolver até sexta ganha o selo de ticket no ranking.</small></div>`;
 }
+function renderWeek() { /* o destaque dos tickets agora fica na janela "Rankings" (atalho do menu) */ }
 
 // quadro do desafio do dia (topo do menu)
 function dailyHtml() {
@@ -62,7 +60,8 @@ function dailyHtml() {
       <button class="btn" id="dailyPlay">${icon('play')} Jogar</button>
       <div class="pick-row" id="pickRow">${pickRowHtml()}</div>
     </div>
-    <div class="daily-side">${dailySideHtml()}</div>`;
+    <div class="daily-side">${dailySideHtml()}</div>
+    <div class="daily-champs champs" id="champs" hidden></div>`;
 }
 // ranking do dia (atualiza sozinho quando o placar chega, sem redesenhar o palco 3D)
 function dailySideHtml() {
@@ -96,9 +95,9 @@ function renderMenu() {
   main.classList.remove('game-view');
   main.replaceChildren(heroNode);
   main.insertAdjacentHTML('beforeend', `
+    <button class="crown-bar" id="crownBar" hidden></button>
     <section class="daily glass" id="daily" data-game="${dailyGame()}" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
-    <section class="champs glass" id="champs"${champsHtml() ? '' : ' hidden'}>${champsHtml()}</section>
-    <section class="week glass" id="week" hidden></section>
+    <div class="strip" id="strip"${me ? '' : ' hidden'}></div>
     <div class="menu-bar"><h2>Jogos</h2><span class="hint">Ranking:</span>${seasonSeg()}</div>
     <section class="grid" aria-label="Jogos">` +
     menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
@@ -106,8 +105,8 @@ function renderMenu() {
         <h3>${g.name}</h3>
         <span class="rec">${recHtml(id)}</span>
       </button>`).join('') + `</section>
-    <section class="kings glass" id="kings"></section>`);
-  renderKings();
+`);
+  renderCrown(); renderChamps(); renderStrip();
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
   bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
   bindDaily();
@@ -121,39 +120,23 @@ function renderMenu() {
 }
 // Quando o ranking novo chega, só troca os textos (sem redesenhar nem reanimar os cards).
 function refreshMenu() {
-  if (!$('#kings')) return;
+  if (!$('#daily')) return;
   for (const id in GAMES) { const rec = $(`.card[data-id="${id}"] .rec`); if (rec) rec.innerHTML = recHtml(id); }
-  renderKings();
+  renderCrown();
+  renderStrip();
   const side = $('#daily .daily-side');
   if (side) side.innerHTML = dailySideHtml();
-  const champs = $('#champs');
-  if (champs) { const h = champsHtml(); champs.innerHTML = h; champs.hidden = !h; }
+  renderChamps();
   refreshPickRow();
   applyMeFlair();
 }
-// rodapé do menu: "Quem manda" (do período escolhido) e "Hall da fama" (meses encerrados) em abas
-let kingsTab = 'kings';
-function renderKings() {
-  const box = $('#kings');
-  if (!box) return;
-  const hall = hallHtml();
-  if (!hall) kingsTab = 'kings';
-  const who = seasonMode === 'all' ? `${icon('crown')} Quem manda (geral)` : `${icon('crown')} Quem manda em ${seasonLabel().toLowerCase()}`;
-  box.innerHTML = `<div class="kings-head">${hall
-      ? `<div class="seg" role="tablist" aria-label="Ranking do escritório">${[['kings', who], ['hall', `${icon('landmark')} Hall da fama`]].map(([t, l]) =>
-          `<button role="tab" data-tab="${t}" aria-selected="${kingsTab === t}" aria-pressed="${kingsTab === t}">${l}</button>`).join('')}</div>`
-      : `<h2>${who}</h2>`}</div>
-    ${kingsTab === 'hall' ? hall : kingsHtml()}`;
-  box.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { kingsTab = b.dataset.tab; renderKings(); });
-}
-
 async function showMenu() {
   stop();
   const changed = currentView !== 'menu';
   currentView = 'menu';
   if (changed) setTimeout(pingSession, 0);
   swap(renderMenu);
-  await fetchScores();
+  await Promise.all([fetchScores(), loadSocial()]);
   // o jogo do dia mudou depois que o servidor respondeu (ex.: o vencedor de ontem escolheu o de hoje): redesenha o menu
   if (currentView === 'menu' && $('#daily') && $('#daily').dataset.game !== dailyGame()) renderMenu();
   if (currentView === 'menu') { refreshMenu(); maybeCongrats(); }
@@ -166,8 +149,9 @@ async function showMenu() {
 function boardHtml(id) {
   const g = GAMES[id], rows = bestPerPlayer(id).slice(0, 10);
   return `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}` + (rows.length
-    ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${rankBadge(k + 1)}</span>${nameHtml(n, { cls: 'name', extra: ticketStar(n) })}<span>${fmt(g, s)}</span></li>`).join('') + '</ol>'
-    : `<p class="empty">${seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`);
+    ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${rankBadge(k + 1)}</span>${nameHtml(n, { cls: 'name', extra: ticketStar(n) })}<span class="sc">${fmt(g, s)}</span>${rxButton(id, n)}${rxChips(id, n)}</li>`).join('') + '</ol>'
+    : `<p class="empty">${seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`)
+    + (me ? `<button class="btn ghost board-duel" data-duel="${id}">${icon('swords')} Desafiar alguém</button>` : '');
 }
 // desenha o ranking da partida e liga o seletor Mês/Geral
 function renderBoard(id) {
@@ -175,6 +159,8 @@ function renderBoard(id) {
   if (!b) return;
   b.innerHTML = boardHtml(id);
   bindSeasonSeg(b, () => renderBoard(id));
+  bindReactions(b, id);
+  b.querySelector('[data-duel]')?.addEventListener('click', () => duelsModal({ game: id }));
 }
 
 function play(id) {
@@ -201,6 +187,7 @@ function play(id) {
     $('#restart').onclick = () => play(id);
     renderBoard(id);
     fetchScores().then(() => renderBoard(id));
+    loadSocial().then(() => currentView === id && renderBoard(id));
     main.classList.add('game-view');
     window.scrollTo(0, 0);
     fitGame();
@@ -311,11 +298,36 @@ function kicked(msg) {
   showMenu();
   loginModal(msg || 'Sua conta entrou em outro dispositivo — só dá pra usar em um por vez.');
 }
-// texto de um aviso de recorde tomado (balão e lista usam o mesmo)
+// texto de um aviso (balão e lista usam o mesmo): recorde tomado, reação, duelo, torneio
 function noteHtml(n) {
   const g = GAMES[n.game];
-  const where = n.kind === 'geral' ? 'o recorde geral' : `a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`;
-  return `<b>${esc(n.by)}</b> tomou ${where} no ${g.name}<small>${fmt(g, n.score)} (o seu era ${fmt(g, n.old)}) · toque pra revidar</small>`;
+  switch (n.kind) {
+    case 'reaction': return `<b>${esc(n.by)}</b> reagiu ${n.emoji} ao seu recorde no ${g.name}<small>${fmt(g, n.score)}</small>`;
+    case 'duel_new': return `<b>${esc(n.by)}</b> te desafiou pra um duelo de ${g.name}<small>vale a melhor partida até ${untilText(n.until).replace('até ', '')} · toque pra ver</small>`;
+    case 'duel_end': return `Duelo de ${g.name} contra <b>${esc(n.vs)}</b>: ${{ win: 'você ganhou! 🏆', lose: 'você perdeu', draw: 'empate' }[n.result]}<small>${n.mine != null ? fmt(g, n.mine) : 'sem partida'} × ${n.theirs != null ? fmt(g, n.theirs) : 'sem partida'}</small>`;
+    case 'duel_cancel': return `<b>${esc(n.by)}</b> cancelou o duelo de ${g.name}`;
+    case 'duo_invite': return `<b>${esc(n.by)}</b> te chamou pra formar a dupla <b>${esc(n.name)}</b><small>toque pra responder · vale até ${untilText(n.until).replace('até ', '')}</small>`;
+    case 'duo_admin_new': return `O admin formou a dupla <b>${esc(n.name)}</b> entre você e <b>${esc(n.with)}</b> 🎉`;
+    case 'duo_accept': return `<b>${esc(n.by)}</b> aceitou formar a dupla <b>${esc(n.name)}</b> com você 🎉`;
+    case 'duo_decline': return `<b>${esc(n.by)}</b> recusou o convite pra dupla ${esc(n.name)}`;
+    case 'duo_cancel': return `<b>${esc(n.by)}</b> cancelou o convite pra dupla ${esc(n.name)}`;
+    case 'duo_left': return n.by === 'o admin' ? `A dupla <b>${esc(n.name)}</b> foi desfeita pelo admin` : `<b>${esc(n.by)}</b> saiu da dupla ${esc(n.name)}`;
+    case 'tourney': return `Torneio da semana (${dayLabelBR(n.start)} – ${dayLabelBR(n.end - 1)}): você ficou em <b>${n.rank}º</b> com ${n.points} pontos${n.rank === 1 ? ' 🏆' : ''}`;
+    default: {
+      const where = n.kind === 'geral' ? 'o recorde geral' : `a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`;
+      return `<b>${esc(n.by)}</b> tomou ${where} no ${g.name}<small>${fmt(g, n.score)} (o seu era ${fmt(g, n.old)}) · toque pra revidar</small>`;
+    }
+  }
+}
+const isDuoNote = n => String(n.kind || '').startsWith('duo_');
+const noteIcon = n => (isDuoNote(n) ? 'users' : { reaction: 'smile', tourney: 'trophy' }[n.kind] || 'swords');
+const noteKnown = n => n.kind === 'tourney' || isDuoNote(n) || !!GAMES[n.game];
+/** O que acontece ao tocar no aviso. */
+function noteAct(n) {
+  if (n.kind === 'duel_new' || n.kind === 'duel_end' || n.kind === 'duel_cancel') return duelsModal({ game: n.game });
+  if (n.kind === 'tourney') return showMenu();
+  if (isDuoNote(n)) return duoModal();
+  play(n.game);
 }
 const noteAgo = ms => { const m = Math.round(ms / 60000); return m < 1 ? 'agora' : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.floor(m / 60)} h` : `há ${Math.floor(m / 1440)} d`; };
 
@@ -329,14 +341,14 @@ function setUnread(n) {
 async function openNotes() {
   let notes = [];
   try { ({ notes } = await api('api/notifications')); } catch (err) { return modal(`<h2>Avisos</h2><p class="err">${esc(err.message)}</p><button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`); }
-  const rows = notes.filter(n => GAMES[n.game]);
+  const rows = notes.filter(noteKnown);
   const { el, close } = modal(`<h2>${icon('bell')} Avisos</h2>
     ${rows.length ? `<div class="note-list">${rows.map((n, i) => `<button class="note-row${n.unread ? ' new' : ''}" data-i="${i}">
-      <span class="ic">${icon('swords')}</span><span>${noteHtml(n)}<small class="when">${noteAgo(Date.now() - n.at)}</small></span></button>`).join('')}</div>`
-      : '<p>Nenhum aviso por enquanto. Quando alguém passar um recorde seu, aparece aqui.</p>'}
+      <span class="ic">${icon(noteIcon(n))}</span><span>${noteHtml(n)}<small class="when">${noteAgo(Date.now() - n.at)}</small></span></button>`).join('')}</div>`
+      : '<p>Nenhum aviso por enquanto. Quando alguém passar um recorde seu, reagir a ele ou te desafiar, aparece aqui.</p>'}
     <button class="btn ghost" id="notesClose">Fechar</button>`);
   el.querySelector('#notesClose').onclick = close;
-  el.querySelectorAll('.note-row').forEach(b => { b.onclick = () => { close(); play(rows[b.dataset.i].game); }; });
+  el.querySelectorAll('.note-row').forEach(b => { b.onclick = () => { close(); noteAct(rows[b.dataset.i]); }; });
   if (notes.some(n => n.unread)) { setUnread(0); api('api/notifications/read', { method: 'POST', body: {} }).catch(() => {}); }
 }
 
@@ -345,22 +357,21 @@ function showNotes(notes) {
   let box = $('#toasts');
   if (!box) { box = document.createElement('div'); box.id = 'toasts'; box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
   for (const n of notes) {
-    const g = GAMES[n.game];
-    if (!g) continue;
+    if (!noteKnown(n)) continue;
     const t = document.createElement('button');
-    t.className = 'toast glass';
-    t.innerHTML = `<span class="ic">${icon('swords')}</span><span>${noteHtml(n)}</span>`;
-    t.onclick = () => { t.remove(); play(n.game); };
+    t.className = 'toast glass' + (['reaction', 'tourney', 'duo_accept', 'duo_admin_new'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win') ? ' good' : '');
+    t.innerHTML = `<span class="ic">${icon(noteIcon(n))}</span><span>${noteHtml(n)}</span>`;
+    t.onclick = () => { t.remove(); noteAct(n); };
     box.appendChild(t);
     setTimeout(() => t.remove(), 12_000);
   }
-  sfx.bad?.();
+  notes.some(n => ['reaction', 'tourney', 'duo_invite', 'duo_accept', 'duo_admin_new'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win')) ? sfx.good?.() : sfx.bad?.();
 }
 async function pingSession() {
   if (!me || document.hidden) return;
   try {
     const { block, notes, unread } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' || currentView === 'report' ? 'admin' : currentView));
-    if (notes?.length) showNotes(notes);
+    if (notes?.length) { showNotes(notes); loadSocial().then(() => currentView === 'menu' && refreshMenu()); }
     setUnread(unread);
     // admin bloqueou (ou liberou): atualiza; se estava jogando, encerra a partida
     if (!!block !== !!gate?.manual) {

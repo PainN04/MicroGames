@@ -386,3 +386,272 @@ test('combos e itens raros: pontuações maiores agora cabem nos limites, mas co
   assert.equal((await play(bia, 'matematica', 150)).status, 201);
   assert.equal((await play(bia, 'matematica', 9000)).status, 422);
 });
+
+/* ---------- social e competição ---------- */
+
+const notesOf = async c => (await c('/api/notifications')).body.notes;
+const idOf = async u => (await sql`SELECT id FROM users WHERE username = ${u}`)[0].id;
+
+test('reações: ao recorde de outra pessoa, uma por pessoa, avisa uma vez e zera quando o recorde cai', async () => {
+  const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123');
+  assert.equal((await play(bia, 'tijolos', 100)).status, 201);
+  const react = (c, body) => c('/api/reactions', { method: 'POST', body: { game: 'tijolos', ...body } });
+  assert.equal((await react(bia, { target: 'Bia', emoji: '🔥' })).status, 400, 'não reage a si mesma');
+  assert.equal((await react(ana, { target: 'Bia', emoji: '💩' })).status, 400, 'emoji fora da lista');
+  assert.equal((await react(ana, { target: 'Ana', emoji: '🔥' })).status, 400);
+  assert.equal((await react(ana, { target: 'Fantasma', emoji: '🔥' })).status, 404);
+  assert.equal((await react(ana, { target: 'Bia', emoji: '🔥' })).status, 200);
+  assert.equal((await react(ana, { target: 'Bia', emoji: '👏' })).status, 200, 'trocar de emoji vale');
+  const mine = (await ana('/api/social')).body.reactions.tijolos.Bia;
+  assert.deepEqual(mine.counts, { '👏': 1 });
+  assert.equal(mine.mine, '👏');
+  assert.equal((await bia('/api/social')).body.reactions.tijolos.Bia.mine, null);
+  const avisos = (await notesOf(bia)).filter(n => n.kind === 'reaction');
+  assert.equal(avisos.length, 1, 'trocar o emoji não manda aviso de novo');
+  assert.equal(avisos[0].by, 'Ana');
+  assert.equal((await play(bia, 'tijolos', 150)).status, 201); // recorde novo: as reações eram do antigo
+  assert.equal((await ana('/api/social')).body.reactions.tijolos?.Bia, undefined);
+  assert.equal((await react(ana, { target: 'Bia', emoji: '🔥' })).status, 200);
+  assert.equal((await notesOf(bia)).filter(n => n.kind === 'reaction').length, 2, 'recorde novo, reação nova, aviso novo');
+  assert.equal((await react(ana, { target: 'Bia', emoji: null })).status, 200, 'dá pra tirar a reação');
+  assert.equal((await ana('/api/social')).body.reactions.tijolos?.Bia, undefined);
+});
+
+test('duelo: desafio, só vale partida depois do desafio, vence a melhor, avisa os dois e dá pra cancelar', async () => {
+  const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123');
+  const biaId = await idOf('bia'), anaId = await idOf('ana');
+  assert.equal((await play(bia, 'memoria', 30)).status, 201); // antes do duelo: não conta
+  assert.equal((await ana('/api/duels', { method: 'POST', body: { opponentId: anaId, game: 'memoria' } })).status, 400, 'contra si mesma');
+  assert.equal((await ana('/api/duels', { method: 'POST', body: { opponentId: biaId, game: 'termo' } })).status, 400, 'Termo não vale duelo');
+  assert.equal((await ana('/api/duels', { method: 'POST', body: { opponentId: 99999, game: 'memoria' } })).status, 404);
+  const created = await ana('/api/duels', { method: 'POST', body: { opponentId: biaId, game: 'memoria' } });
+  assert.equal(created.status, 201);
+  assert.equal((await bia('/api/duels', { method: 'POST', body: { opponentId: anaId, game: 'memoria' } })).status, 409, 'já existe duelo entre os dois nesse jogo');
+  assert.ok((await notesOf(bia)).some(n => n.kind === 'duel_new' && n.by === 'Ana'));
+
+  assert.equal((await play(ana, 'memoria', 5)).status, 201);
+  assert.equal((await play(bia, 'memoria', 9)).status, 201);
+  const live = (await ana('/api/social')).body.duels.open[0];
+  assert.equal(live.vs, 'Bia'); assert.equal(live.mine, 5); assert.equal(live.theirs, 9, 'a partida de 30 feita antes não entra');
+
+  await sql`UPDATE duels SET ends_at = ${Date.now()} WHERE id = ${created.body.id}`; // o prazo acabou agora (as partidas feitas ficam dentro da janela)
+  await new Promise(r => setTimeout(r, 5));
+  assert.equal((await ana('/api/auth/ping')).status, 200); // o ping fecha os duelos vencidos
+  const aviso = n => n.kind === 'duel_end';
+  const dela = (await notesOf(ana)).find(aviso), dele = (await notesOf(bia)).find(aviso);
+  assert.equal(dela.result, 'lose'); assert.equal(dele.result, 'win');
+  assert.equal((await notesOf(ana)).filter(aviso).length, 1, 'avisa uma vez só');
+  const after = (await bia('/api/social')).body;
+  assert.equal(after.duels.open.length, 0);
+  assert.equal(after.duels.recent[0].result, 'win');
+  assert.equal(after.duelWins.Bia >= 1, true);
+
+  const c2 = await ana('/api/duels', { method: 'POST', body: { opponentId: biaId, game: 'mira' } });
+  assert.equal((await bia(`/api/duels/${c2.body.id}/cancel`, { method: 'POST', body: {} })).status, 200);
+  assert.ok((await notesOf(ana)).some(n => n.kind === 'duel_cancel' && n.by === 'Bia'));
+  assert.equal((await bia(`/api/duels/${c2.body.id}/cancel`, { method: 'POST', body: {} })).status, 409, 'já cancelado');
+  const dono = await login('paulo', 'senha-dono-123');
+  assert.equal((await dono(`/api/duels/${c2.body.id}/cancel`, { method: 'POST', body: {} })).status, 403, 'não é duelo dele');
+});
+
+test('torneio semanal: 3 jogos por semana, pontos por posição, pódio fechado uma vez só com aviso e troféu', async () => {
+  const social = require('../lib/social');
+  const week = social.TOURNEY_FIRST_WEEK + 3;
+  const games = await social.tournamentGames(week);
+  assert.equal(games.length, 3);
+  assert.ok(!games.includes('termo'));
+  assert.deepEqual(await social.tournamentGames(week), games, 'a escolha da semana fica guardada');
+  const ana = await idOf('ana'), bia = await idOf('bia'), dono = await idOf('paulo');
+  const t = social.weekStart(week) + 2 * 86_400_000;
+  const add = (userId, name, game, score, at) => sql`INSERT INTO scores (game, player, score, created_at, user_id) VALUES (${game}, ${name}, ${score}, ${at}, ${userId})`;
+  const { LOW_IS_BETTER } = require('../lib/rules');
+  const good = (g, k) => (LOW_IS_BETTER.has(g) ? 100 - k : 100 + k); // k maior = melhor
+  // Ana ganha os 2 primeiros jogos, Bia o terceiro; Paulo só joga 1 (aparece, mas fica atrás)
+  await add(ana, 'Ana', games[0], good(games[0], 9), t); await add(bia, 'Bia', games[0], good(games[0], 5), t);
+  await add(ana, 'Ana', games[1], good(games[1], 9), t); await add(bia, 'Bia', games[1], good(games[1], 5), t);
+  await add(bia, 'Bia', games[2], good(games[2], 9), t); await add(ana, 'Ana', games[2], good(games[2], 5), t);
+  await add(dono, 'Paulo', games[0], good(games[0], 1), t);
+  await add(ana, 'Ana', games[2], good(games[2], 9) + 0, social.weekStart(week) - 1000); // semana anterior: não conta
+  const during = await social.socialState({ id: ana, name: 'Ana' }, t + 3600_000);
+  assert.equal(during.tourney.on, true);
+  assert.deepEqual(during.tourney.standings.map(r => [r.name, r.points]), [['Ana', 10 + 10 + 7], ['Bia', 7 + 7 + 10], ['Paulo', 5]].sort((a, b) => b[1] - a[1]));
+  assert.equal(during.tourney.mineRank, 1);
+
+  // a semana acabou: fecha, avisa o pódio e conta o troféu do campeão
+  const after = await social.socialState({ id: bia, name: 'Bia' }, social.weekEnd(week) + 3600_000);
+  const campea = after.tourney.last;
+  assert.equal(campea.week, week);
+  assert.equal(campea.top[0].name, 'Ana');
+  assert.equal(after.trophies.Ana, 1);
+  const ana1 = (await sql`SELECT text FROM notifications WHERE user_id = ${ana}`).map(r => JSON.parse(r.text)).filter(n => n.kind === 'tourney' && n.week === week);
+  assert.equal(ana1.length, 1); assert.equal(ana1[0].rank, 1);
+  await social.socialState({ id: bia, name: 'Bia' }, social.weekEnd(week) + 7200_000);
+  const again = (await sql`SELECT text FROM notifications WHERE user_id = ${ana}`).map(r => JSON.parse(r.text)).filter(n => n.kind === 'tourney' && n.week === week);
+  assert.equal(again.length, 1, 'não avisa duas vezes');
+});
+
+test('semana de torneio: segunda a domingo no horário de Brasília', () => {
+  const social = require('../lib/social');
+  const w = social.TOURNEY_FIRST_WEEK;
+  assert.equal(new Date(social.weekStart(w)).toISOString(), '2026-10-19T03:00:00.000Z', 'segunda 19/10/2026 00h em Brasília');
+  assert.equal(social.weekOf(social.weekStart(w)), w);
+  assert.equal(social.weekOf(social.weekStart(w) - 1), w - 1);
+  assert.equal(social.weekOf(social.weekEnd(w) - 1), w);
+  assert.deepEqual([0, 1, 2, 3, 6, 9].map(social.pointsFor), [10, 7, 5, 4, 1, 1]);
+});
+
+test('torneio: na produção só começa em 19/10/2026; na versão de teste já vale na semana atual', async () => {
+  const social = require('../lib/social');
+  const ana = { id: await idOf('ana'), name: 'Ana' };
+  const before = social.weekStart(social.TOURNEY_FIRST_WEEK - 1) + 2 * 86_400_000; // meio da semana anterior ao lançamento
+  assert.equal((await social.socialState(ana, before)).tourney.on, false);
+  process.env.VERCEL_ENV = 'preview';
+  try {
+    const t = (await social.socialState(ana, before)).tourney;
+    assert.equal(t.on, true);
+    assert.equal(t.games.length, 3);
+  } finally { delete process.env.VERCEL_ENV; }
+  assert.equal((await social.socialState(ana, social.weekStart(social.TOURNEY_FIRST_WEEK) + 1000)).tourney.on, true);
+});
+
+test('duplas: convite, aceite, nome único, renomear, sair — e cada pessoa em uma dupla só', async () => {
+  assert.equal((await client()('/api/social')).status, 401);
+  const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123'), dono = await login('paulo', 'senha-dono-123');
+  const anaId = await idOf('ana'), biaId = await idOf('bia'), donoId = await idOf('paulo');
+  const convite = (c, partnerId, name) => c('/api/duos', { method: 'POST', body: { partnerId, name } });
+  assert.equal((await convite(ana, anaId, 'Sozinha')).status, 400, 'não dá pra formar dupla consigo mesma');
+  assert.equal((await convite(ana, biaId, 'x')).status, 400, 'nome curto demais');
+  assert.equal((await convite(ana, biaId, 'n'.repeat(30))).status, 400, 'nome longo demais');
+  assert.equal((await convite(ana, 99999, 'Fantasmas')).status, 404);
+  const feito = await convite(ana, biaId, '  Os   Imbatíveis ');
+  assert.equal(feito.status, 201);
+  assert.ok((await notesOf(bia)).some(n => n.kind === 'duo_invite' && n.by === 'Ana' && n.name === 'Os Imbatíveis'), 'espaços sobrando saem do nome');
+
+  const daBia = (await bia('/api/social')).body, daAna = (await ana('/api/social')).body;
+  assert.equal(daBia.myDuo.state, 'in'); assert.equal(daAna.myDuo.state, 'out');
+  assert.equal(daAna.people.find(x => x.name === 'Bia').free, false, 'quem tem convite aberto não está livre');
+  assert.equal(daAna.duos.length, 0, 'só dupla ativa entra no ranking');
+  assert.equal((await convite(ana, donoId, 'Outra')).status, 409, 'quem convidou não convida outra pessoa');
+  assert.equal((await convite(dono, biaId, 'Outra')).status, 409, 'a convidada já está ocupada');
+  assert.equal((await ana(`/api/duos/${feito.body.id}/accept`, { method: 'POST', body: {} })).status, 403, 'só a convidada aceita');
+  assert.equal((await ana(`/api/duos/${feito.body.id}/leave`, { method: 'POST', body: {} })).status, 409, 'convite ainda não é dupla pra sair');
+
+  assert.equal((await bia(`/api/duos/${feito.body.id}/accept`, { method: 'POST', body: {} })).status, 200);
+  assert.ok((await notesOf(ana)).some(n => n.kind === 'duo_accept' && n.by === 'Bia'));
+  const ativa = (await ana('/api/social')).body;
+  assert.equal(ativa.myDuo.state, 'active');
+  assert.equal(ativa.duos.length, 1);
+  assert.deepEqual([ativa.duos[0].name, ativa.duos[0].aName, ativa.duos[0].bName], ['Os Imbatíveis', 'Ana', 'Bia']);
+  assert.ok(ativa.duos[0].formedAt > 0);
+
+  // outra dupla não pode usar o mesmo nome (maiúsculas não contam)
+  const outro = await login('outroadm', 'senha-adm-123'), outroId = await idOf('outroadm');
+  assert.equal((await convite(dono, outroId, 'OS IMBATÍVEIS')).status, 409);
+  assert.equal((await convite(dono, outroId, 'Dupla Dois')).status, 201);
+  assert.equal((await bia(`/api/duos/${feito.body.id}/rename`, { method: 'POST', body: { name: 'dupla dois' } })).status, 409, 'nome já usado por outra');
+  assert.equal((await bia(`/api/duos/${feito.body.id}/rename`, { method: 'POST', body: { name: 'Ana e Bia' } })).status, 200);
+  assert.equal((await outro('/api/social')).body.duos.length, 1);
+  assert.equal((await dono(`/api/duos/${feito.body.id}/rename`, { method: 'POST', body: { name: 'Roubado' } })).status, 403, 'não é a dupla dele');
+
+  assert.equal((await bia(`/api/duos/${feito.body.id}/leave`, { method: 'POST', body: {} })).status, 200);
+  assert.ok((await notesOf(ana)).some(n => n.kind === 'duo_left' && n.by === 'Bia'));
+  const livre = (await ana('/api/social')).body;
+  assert.equal(livre.myDuo.state, 'none'); assert.equal(livre.duos.length, 0);
+  assert.equal(livre.people.find(x => x.name === 'Bia').free, true);
+  assert.equal((await bia(`/api/duos/${feito.body.id}/leave`, { method: 'POST', body: {} })).status, 409, 'já acabou');
+});
+
+test('duplas: recusar, cancelar, convite que expira e moderação do admin', async () => {
+  const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123'), dono = await login('paulo', 'senha-dono-123');
+  const biaId = await idOf('bia'), donoId = await idOf('paulo');
+  const convite = (c, partnerId, name) => c('/api/duos', { method: 'POST', body: { partnerId, name } });
+  const acao = (c, id, a, body = {}) => c(`/api/duos/${id}/${a}`, { method: 'POST', body });
+
+  const d1 = (await convite(ana, biaId, 'Recusada')).body.id;
+  assert.equal((await acao(bia, d1, 'decline')).status, 200);
+  assert.ok((await notesOf(ana)).some(n => n.kind === 'duo_decline' && n.by === 'Bia'));
+  assert.equal((await acao(bia, d1, 'accept')).status, 409, 'já respondido');
+
+  const d2 = (await convite(ana, biaId, 'Cancelada')).body.id;
+  assert.equal((await acao(bia, d2, 'cancel')).status, 409, 'só quem convidou cancela');
+  assert.equal((await acao(ana, d2, 'cancel')).status, 200);
+  assert.ok((await notesOf(bia)).some(n => n.kind === 'duo_cancel' && n.by === 'Ana'));
+
+  const d3 = (await convite(ana, biaId, 'Vencida')).body.id;
+  await sql`UPDATE duos SET expires_at = ${Date.now() - 1000} WHERE id = ${d3}`;
+  assert.equal((await acao(bia, d3, 'accept')).status, 409, 'convite expirado não vira dupla');
+  assert.equal((await ana('/api/social')).body.myDuo.state, 'none');
+
+  // admin: lista, renomeia e desfaz (e avisa os dois)
+  const d4 = (await convite(ana, biaId, 'Nome Ruim')).body.id;
+  assert.equal((await acao(bia, d4, 'accept')).status, 200);
+  assert.equal((await ana('/api/admin/duos')).status, 403, 'jogador não modera');
+  assert.equal((await dono('/api/admin/duos')).body.duos.find(d => d.id === d4).a, 'Ana');
+  assert.equal((await dono(`/api/admin/duos/${d4}/rename`, { method: 'POST', body: { name: 'Nome Bom' } })).status, 200);
+  assert.equal((await ana('/api/social')).body.myDuo.name, 'Nome Bom');
+  assert.equal((await ana(`/api/admin/duos/${d4}/end`, { method: 'POST', body: {} })).status, 403);
+  assert.equal((await dono(`/api/admin/duos/${d4}/end`, { method: 'POST', body: {} })).status, 200);
+  assert.ok((await notesOf(bia)).some(n => n.kind === 'duo_left' && n.by === 'o admin'));
+  assert.equal((await ana('/api/social')).body.myDuo.state, 'none');
+  void donoId;
+});
+
+test('duplas: o admin forma uma dupla direto (já ativa), com as mesmas regras de nome e de pessoa livre', async () => {
+  const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123'), dono = await login('paulo', 'senha-dono-123');
+  const anaId = await idOf('ana'), biaId = await idOf('bia'), donoId = await idOf('paulo');
+  const criar = (c, aId, bId, name) => c('/api/admin/duos', { method: 'POST', body: { aId, bId, name } });
+  // limpa o que testes anteriores deixaram abertos
+  await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
+  assert.equal((await criar(ana, anaId, biaId, 'Intrusa')).status, 403, 'jogador não cria dupla pelo admin');
+  assert.equal((await criar(dono, anaId, anaId, 'Mesma')).status, 400, 'duas pessoas diferentes');
+  assert.equal((await criar(dono, anaId, 99999, 'Fantasma')).status, 404);
+  assert.equal((await criar(dono, anaId, biaId, 'x')).status, 400, 'nome curto');
+  const feita = await criar(dono, anaId, biaId, 'Criada pelo Admin');
+  assert.equal(feita.status, 201);
+  const vista = (await ana('/api/social')).body;
+  assert.equal(vista.myDuo.state, 'active', 'nasce ativa, sem convite');
+  assert.equal(vista.myDuo.name, 'Criada pelo Admin');
+  assert.ok(vista.myDuo.formedAt > 0);
+  assert.ok((await notesOf(bia)).some(n => n.kind === 'duo_admin_new' && n.with === 'Ana'));
+  assert.ok((await notesOf(ana)).some(n => n.kind === 'duo_admin_new' && n.with === 'Bia'));
+  const lista = (await dono('/api/admin/duos')).body.duos.find(d => d.id === feita.body.id);
+  assert.deepEqual([lista.aId, lista.bId], [anaId, biaId]);
+  assert.equal((await criar(dono, anaId, donoId, 'Outra')).status, 409, 'Ana já está em dupla');
+  assert.equal((await criar(dono, donoId, biaId, 'Outra')).status, 409, 'Bia já está em dupla');
+  const outroId = await idOf('outroadm');
+  assert.equal((await criar(dono, donoId, outroId, 'criada PELO admin')).status, 409, 'nome já usado (maiúsculas não contam)');
+  assert.equal((await criar(dono, donoId, outroId, 'Dupla dos Admins')).status, 201);
+  assert.equal((await dono(`/api/admin/duos/${feita.body.id}/end`, { method: 'POST', body: {} })).status, 200);
+  await sql`UPDATE duos SET status = ${'ended'} WHERE status = ${'active'}`;
+});
+
+test('duplas: o admin escolhe desde quando as partidas contam (agora, início do mês ou o começo) e pode mudar depois', async () => {
+  const dono = await login('paulo', 'senha-dono-123'), ana = await login('ana', 'senha-ana-123');
+  const anaId = await idOf('ana'), biaId = await idOf('bia');
+  await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
+  const criar = since => dono('/api/admin/duos', { method: 'POST', body: { aId: anaId, bId: biaId, name: 'Retroativa', since } });
+  assert.equal((await criar('semana-que-vem')).status, 400, 'início inválido');
+  const feita = await criar('all');
+  assert.equal(feita.status, 201);
+  let d = (await ana('/api/social')).body.myDuo;
+  assert.equal(d.since, 0, 'o começo = conta todas as partidas');
+  assert.ok(d.formedAt > 0);
+  assert.equal((await dono(`/api/admin/duos/${feita.body.id}/since`, { method: 'POST', body: { since: 'month' } })).status, 200);
+  d = (await ana('/api/social')).body.myDuo;
+  const monthStart = new Date(d.since);
+  assert.equal(monthStart.toISOString().slice(8, 10), '01', 'início do mês (dia 1º, 03h UTC = meia-noite em Brasília)');
+  assert.equal(monthStart.toISOString().slice(11, 13), '03');
+  assert.equal((await dono(`/api/admin/duos/${feita.body.id}/since`, { method: 'POST', body: { since: 'now' } })).status, 200);
+  d = (await ana('/api/social')).body.myDuo;
+  assert.ok(Math.abs(d.since - Date.now()) < 5000);
+  assert.equal((await ana(`/api/admin/duos/${feita.body.id}/since`, { method: 'POST', body: { since: 'all' } })).status, 403, 'jogador não muda');
+  assert.equal((await dono(`/api/admin/duos/${feita.body.id}/since`, { method: 'POST', body: { since: 'xx' } })).status, 400);
+  // dupla formada por convite conta desde que foi aceita
+  await dono(`/api/admin/duos/${feita.body.id}/end`, { method: 'POST', body: {} });
+  const conv = (await ana('/api/duos', { method: 'POST', body: { partnerId: biaId, name: 'Por Convite' } })).body.id;
+  const bia = await login('bia', 'senha-bia-123');
+  await bia(`/api/duos/${conv}/accept`, { method: 'POST', body: {} });
+  d = (await ana('/api/social')).body.myDuo;
+  assert.equal(d.since, d.formedAt, 'sem ajuste do admin: desde a formação');
+  await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
+});

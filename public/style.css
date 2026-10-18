@@ -816,3 +816,168 @@
   .hole.gold { background: radial-gradient(ellipse at 50% 70%, oklch(70% 0.15 92) 0 45%, var(--surface-2) 46%); }
   .hole .s-gold { filter: drop-shadow(0 0 8px #ffd34d); }
   .bonus-hud { font-size: var(--fs-sm); }
+
+  /* ---------- social e competição ---------- */
+  /* ranking do jogo: score em negrito (agora não é mais o último filho) e coluna das reações */
+  .board li > .sc { font-variant-numeric: tabular-nums; font-weight: 700; }
+  .board li { grid-template-columns: auto minmax(0, 1fr) auto auto; }
+  .rx-add, .rx-gap { width: 28px; height: 28px; }
+  .rx-add { display: grid; place-items: center; padding: 0; border-radius: 50%; border: 1px solid transparent; background: none; color: var(--muted); cursor: pointer; opacity: .55; transition: opacity var(--duration), background var(--duration); }
+  .rx-add:hover, .rx-add:focus-visible { opacity: 1; background: var(--surface-2); color: var(--text); }
+  .rx-add .i { width: 16px; height: 16px; }
+  .rx-row, .rx-pick { grid-column: 2 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+  .rxc { display: inline-flex; align-items: center; gap: 3px; padding: .1em .55em; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); font-size: var(--fs-xs); }
+  .rxc i { font-style: normal; color: var(--muted); font-weight: 700; }
+  .rxc.mine { border-color: var(--yellow); background: oklch(86% 0.17 92 / .12); }
+  .rx-pick { padding: 2px 0 4px; }
+  .rx-pick button { font-size: 1.25rem; line-height: 1; min-width: 40px; min-height: 40px; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--surface-2); cursor: pointer; padding: 0; transition: transform var(--duration) var(--ease-spring); }
+  .rx-pick button:hover { transform: scale(1.12); }
+  .rx-pick button.on { border-color: var(--yellow); background: oklch(86% 0.17 92 / .18); }
+  .board-duel { width: 100%; margin-top: var(--space-sm); justify-content: center; }
+  .toast.good .ic, .note-row .ic { transition: none; }
+  .toast.good .ic { background: oklch(76% 0.18 150 / .2); color: oklch(85% 0.14 150); }
+
+  /* torneio da semana */
+  .tourney { padding: var(--space-md); margin: 0 0 var(--space-sm); }
+  .t-head { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; margin-bottom: var(--space-sm); }
+  .t-head h2 { margin: 0; font-size: var(--fs-lg); letter-spacing: -0.02em; display: flex; align-items: center; gap: .45em; }
+  .t-head h2 .i { color: var(--yellow); }
+  .t-body { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--space-md); }
+  .tgames { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-xs); }
+  .tgame { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; font: inherit; color: var(--text); cursor: pointer; padding: .7em .8em; border-radius: 16px; border: 1px solid var(--border); min-width: 0;
+    background: linear-gradient(160deg, oklch(30% 0.08 var(--h) / .55), var(--surface-2)); transition: transform var(--duration) var(--ease-spring), border-color var(--duration); }
+  .tgame:hover { transform: translateY(-2px); border-color: oklch(75% 0.12 var(--h)); }
+  .tgame .ic .i { width: 26px; height: 26px; color: oklch(85% 0.12 var(--h)); }
+  .tgame small { color: var(--muted); font-size: var(--fs-xs); line-height: 1.3; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+  .tgame small .i { width: .95em; height: .95em; color: var(--yellow); vertical-align: -1px; }
+  .tgame small.you { color: var(--text); }
+  .tstand h3 { margin: 0 0 var(--space-xs); font-size: var(--fs-base); }
+  .tstand ol, .teams ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .tstand li { display: flex; align-items: center; gap: .5em; padding: .35em .7em; border-radius: 12px; background: var(--surface-2); font-size: var(--fs-sm); }
+  .tstand li b { margin-left: auto; color: var(--yellow); }
+  .tstand li.me, .teams li.me { outline: 1px solid oklch(70% 0.19 290 / .5); background: oklch(70% 0.19 290 / .16); }
+  .t-rules { text-align: left; margin: var(--space-sm) 0 0; font-size: var(--fs-xs); line-height: 1.45; }
+  .t-rules .i { width: 1em; height: 1em; color: var(--yellow); vertical-align: -2px; }
+  .t-btns { display: flex; gap: var(--space-xs); flex-wrap: wrap; margin-top: var(--space-sm); }
+  @media (max-width: 720px) { .t-body { grid-template-columns: 1fr; } .tgames { grid-template-columns: 1fr; } .tgame { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: .6em; } .tgame small { flex-basis: 100%; } }
+
+  /* equipes */
+  .teams { margin-top: var(--space-md); }
+  .teams .kings-head h2 small { font-weight: 400; font-size: var(--fs-xs); }
+  .teams ol { flex-direction: column; flex-wrap: nowrap; gap: 4px; }
+  .teams li { display: flex; align-items: center; flex-wrap: wrap; gap: .5em; border-radius: 14px; }
+  .teams li .tn { color: var(--text); }
+  .teams li .tp { margin-left: auto; font-weight: 700; color: var(--yellow); }
+  .teams li small { flex-basis: 100%; color: var(--muted); padding-left: 2.4rem; font-size: var(--fs-xs); }
+  .team-tag { font-size: var(--fs-xs); vertical-align: middle; display: inline-flex; align-items: center; gap: .35em; }
+  .team-tag .i { width: 1em; height: 1em; }
+
+  /* duelos */
+  .duel { display: flex; align-items: center; gap: .7em; padding: .7em .85em; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); margin: .5rem 0; text-align: left; flex-wrap: wrap; }
+  .duel > div:nth-child(2) { flex: 1; min-width: 12em; }
+  .duel small { display: block; color: var(--muted); font-size: var(--fs-xs); margin-top: 2px; }
+  .duel .ic { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 12px; background: oklch(66% 0.22 18 / .2); color: oklch(82% 0.13 18); }
+  .duel .ic .i { width: 18px; height: 18px; }
+  .duel .acts { display: flex; gap: 6px; margin-left: auto; }
+  .duel .acts .btn { min-height: 38px; padding: 0 .9em; }
+  .duel.done.win .ic { background: oklch(76% 0.18 150 / .2); color: oklch(85% 0.14 150); }
+  .duel.done.draw .ic { background: var(--surface); color: var(--muted); }
+  .duel-form { margin-top: var(--space-sm); }
+  .d-sub { margin: var(--space-sm) 0 0; font-size: var(--fs-base); text-align: left; }
+
+  /* resumo da semana */
+  .recap-img { display: block; margin: var(--space-sm) auto; max-width: min(300px, 100%); height: auto; border-radius: 16px; border: 1px solid var(--border-strong); box-shadow: 0 12px 30px oklch(0% 0 0 / .4); background: var(--surface-2); aspect-ratio: 4 / 5; }
+  .recap-btns { display: flex; gap: var(--space-xs); justify-content: center; flex-wrap: wrap; }
+  .tgame small.you { white-space: normal; }
+  .teams .kings-head { justify-content: space-between; }
+  .teams .kings-head .btn { min-height: 38px; padding: 0 1em; }
+  .duo-how { margin: var(--space-sm) 0; text-align: left; font-size: var(--fs-sm); color: var(--muted); }
+  .duo-how summary { cursor: pointer; color: var(--text); }
+  .duo-how p { margin: .5rem 0 0; line-height: 1.45; }
+
+  /* ---------- menu mais enxuto: campeões dentro do desafio, atalhos em faixa ---------- */
+  .daily-champs { grid-column: 1 / -1; padding: var(--space-sm) var(--space-md) var(--space-md); border-top: 1px solid var(--border); background: oklch(100% 0 0 / .02); }
+  .daily-champs.champs { padding: var(--space-sm) var(--space-md) var(--space-md); }
+  .champs-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); margin-bottom: var(--space-xs); }
+  .champs-head h3 { margin: 0; }
+  .link-btn { background: none; border: 0; color: var(--primary); font: inherit; font-size: var(--fs-xs); font-weight: 600; cursor: pointer; padding: .3em .5em; border-radius: 8px; }
+  .link-btn:hover { background: var(--surface-2); }
+  .daily-champs:not(.open) li.more { display: none; }
+  .strip { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.3fr) minmax(0, 1fr); gap: var(--space-xs); margin: 0 0 var(--space-md); }
+  .strip.no-tourney { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+  .strip[hidden] { display: none; }
+  .strip .act { display: flex; align-items: center; gap: .65em; text-align: left; font: inherit; color: var(--text); cursor: pointer; padding: .65em .8em; border-radius: 16px; min-width: 0;
+    border: 1px solid var(--border); background: var(--surface-2); transition: transform var(--duration) var(--ease-spring), border-color var(--duration); }
+  .strip .act:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+  .strip .act .ic { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 12px; background: oklch(70% 0.19 290 / .18); color: oklch(85% 0.12 290); }
+  .strip .act .ic .i { width: 18px; height: 18px; }
+  .strip .act .tx { min-width: 0; }
+  .strip .act b { display: block; font-size: var(--fs-sm); }
+  .strip .act small { display: block; color: var(--muted); font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .strip .act.hot { border-color: var(--yellow); background: oklch(86% 0.17 92 / .1); }
+  .strip .act.hot .ic { background: oklch(86% 0.17 92 / .2); color: var(--yellow); }
+  @media (max-width: 720px) { .strip, .strip.no-tourney { grid-template-columns: repeat(2, minmax(0, 1fr)); } .strip .smalls { grid-column: 1 / -1; grid-template-columns: 1fr 1fr; } .strip.no-tourney .big { grid-column: 1 / -1; } }
+  .week { margin: var(--space-lg) 0 0; }
+  .tourney-body .t-head, .teams .kings-head { margin-top: 0; }
+  .hero { padding-bottom: var(--space-md); }
+  @media (max-width: 700px) { .daily-stage { min-height: 104px; } .daily-stage .z3d { scale: .72; } .daily-info { padding-top: var(--space-sm); } }
+  /* celular: o desafio sem o palco 3D, só o último campeão (o resto em "ver mais") e os atalhos numa linha que rola */
+  @media (min-width: 561px) { .champs-head.few .link-btn { display: none; } }
+  @media (max-width: 560px) {
+    .hero p { display: none; }
+    .daily-stage { display: none; }
+    .daily-info { padding-top: var(--space-md); }
+    .daily-champs:not(.open) li:nth-child(n+2) { display: none; }
+  }
+
+  /* painel do menu: cartões grandes (torneio, duplas) + atalhos pequenos (duelos, resumo) */
+  .strip .big { display: flex; flex-direction: column; gap: .35rem; min-width: 0; min-height: 168px; padding: .75em .85em; border-radius: 18px; cursor: pointer; text-align: left; color: var(--text);
+    border: 1px solid var(--border); background: linear-gradient(160deg, oklch(30% 0.07 290 / .5), var(--surface-2)); transition: transform var(--duration) var(--ease-spring), border-color var(--duration); }
+  .strip .big:hover, .strip .big:focus-visible { transform: translateY(-2px); border-color: var(--border-strong); outline: none; }
+  .strip .big.hot { border-color: var(--yellow); background: linear-gradient(160deg, oklch(40% 0.1 92 / .3), var(--surface-2)); }
+  .strip .big .bh { display: flex; align-items: center; gap: .5em; min-width: 0; flex-wrap: wrap; }
+  .strip .big .bh .ic { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 10px; background: oklch(70% 0.19 290 / .2); color: oklch(85% 0.12 290); }
+  .strip .big .bh .ic .i { width: 16px; height: 16px; }
+  .strip .tourney-card .bh .ic { background: oklch(86% 0.17 92 / .18); color: var(--yellow); }
+  .strip .big .bh b { font-size: var(--fs-base); }
+  .strip .big .bh small { margin-left: auto; color: var(--muted); font-size: var(--fs-xs); white-space: nowrap; }
+  .strip .big .bs { margin: 0; font-size: var(--fs-xs); color: var(--text); line-height: 1.3; }
+  .strip .big .bs.hotline { color: var(--yellow); font-weight: 700; }
+  .strip .big ol.mini { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+  .strip .big .mini li { display: flex; align-items: center; gap: .45em; padding: .22em .45em; border-radius: 9px; background: oklch(0% 0 0 / .22); font-size: var(--fs-xs); min-width: 0; }
+  .strip .big .mini li.me { outline: 1px solid oklch(70% 0.19 290 / .6); background: oklch(70% 0.19 290 / .18); }
+  .strip .big .mini .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .strip .big .mini b { color: var(--yellow); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .strip .big .mini b small { color: var(--muted); font-weight: 400; }
+  .strip .big .mini-empty { margin: 0; text-align: left; font-size: var(--fs-xs); }
+  .strip .big .tg { display: flex; align-items: center; gap: 4px; margin-top: auto; min-width: 0; }
+  .strip .big .tg .chip { width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: 8px; background: oklch(0% 0 0 / .25); color: var(--muted); }
+  .strip .big .tg .chip .i { width: 14px; height: 14px; }
+  .strip .big .tg small { margin-left: 4px; color: var(--muted); font-size: 10.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  .strip .smalls { display: grid; grid-template-rows: 1fr 1fr; gap: var(--space-xs); min-width: 0; }
+  .strip .smalls .act { min-width: 0; }
+  @media (max-width: 720px) { .strip .smalls { grid-template-rows: none; } }
+  .rk-body.kings { margin-top: var(--space-sm); padding: 0; background: none; border: 0; box-shadow: none; text-align: left; }
+  .rk-body .season-seg { margin: 0 0 var(--space-sm); }
+  .rk-body .week { margin: 0; }
+  .modal .seg { margin: var(--space-xs) 0; }
+
+  /* faixa da coroa no topo: o 1º do ranking de recordes, fininha */
+  .crown-bar { display: flex; align-items: center; gap: .7em; width: 100%; text-align: left; font: inherit; color: var(--text); cursor: pointer; padding: .55em .85em; margin: 0 0 var(--space-sm); border-radius: 16px;
+    border: 1px solid oklch(86% 0.17 92 / .38); background: linear-gradient(90deg, oklch(86% 0.17 92 / .16), var(--surface-2) 70%); transition: transform var(--duration) var(--ease-spring); }
+  .crown-bar[hidden] { display: none; }
+  .crown-bar:hover, .crown-bar:focus-visible { transform: translateY(-1px); outline: none; border-color: var(--yellow); }
+  .crown-bar .ic { width: 38px; height: 38px; flex: none; display: grid; place-items: center; border-radius: 12px; background: oklch(86% 0.17 92 / .22); color: var(--yellow); }
+  .crown-bar .ic .i { width: 20px; height: 20px; }
+  .crown-bar .tx { flex: 1; min-width: 0; font-size: var(--fs-sm); line-height: 1.3; }
+  .crown-bar .tx b { font-size: var(--fs-base); }
+  .crown-bar .tx em { font-style: normal; color: var(--muted); font-size: var(--fs-xs); margin-left: .25em; }
+  .crown-bar .tx small { display: block; color: var(--muted); font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .crown-bar .go { color: var(--muted); font-size: 1.4rem; line-height: 1; }
+  .crown-bar b.fr-bronze { color: #e0aa7c; } .crown-bar b.fr-silver { color: #dfe3ee; } .crown-bar b.fr-gold { color: #ffd34d; }
+  .crown-bar b.fr-diamond { background: linear-gradient(90deg, #7fe7ff, #b79bff, #7fe7ff); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 3.5s linear infinite; }
+  /* sem o atalho "Quem manda", os duelos ocupam o espaço dos atalhos pequenos inteiro */
+  .strip .smalls { grid-template-rows: 1fr; }
+  .strip .smalls .act { height: 100%; }
+  @media (max-width: 720px) { .strip .smalls { grid-template-columns: 1fr; } }
+  .strip.no-tourney .big { min-height: 118px; }
