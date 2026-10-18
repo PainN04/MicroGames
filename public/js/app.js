@@ -99,6 +99,7 @@ function renderMenu() {
     <section class="daily glass" id="daily" data-game="${dailyGame()}" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
     <section class="champs glass" id="champs"${champsHtml() ? '' : ' hidden'}>${champsHtml()}</section>
     <section class="week glass" id="week" hidden></section>
+    <section class="tourney glass" id="tourney" hidden></section>
     <div class="menu-bar"><h2>Jogos</h2><span class="hint">Ranking:</span>${seasonSeg()}</div>
     <section class="grid" aria-label="Jogos">` +
     menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
@@ -106,8 +107,10 @@ function renderMenu() {
         <h3>${g.name}</h3>
         <span class="rec">${recHtml(id)}</span>
       </button>`).join('') + `</section>
-    <section class="kings glass" id="kings"></section>`);
+    <section class="kings glass" id="kings"></section>
+    <section class="teams kings glass" id="teams" hidden></section>`);
   renderKings();
+  renderTourney(); renderTeams();
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
   bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
   bindDaily();
@@ -124,6 +127,7 @@ function refreshMenu() {
   if (!$('#kings')) return;
   for (const id in GAMES) { const rec = $(`.card[data-id="${id}"] .rec`); if (rec) rec.innerHTML = recHtml(id); }
   renderKings();
+  renderTourney(); renderTeams();
   const side = $('#daily .daily-side');
   if (side) side.innerHTML = dailySideHtml();
   const champs = $('#champs');
@@ -153,7 +157,7 @@ async function showMenu() {
   currentView = 'menu';
   if (changed) setTimeout(pingSession, 0);
   swap(renderMenu);
-  await fetchScores();
+  await Promise.all([fetchScores(), loadSocial()]);
   // o jogo do dia mudou depois que o servidor respondeu (ex.: o vencedor de ontem escolheu o de hoje): redesenha o menu
   if (currentView === 'menu' && $('#daily') && $('#daily').dataset.game !== dailyGame()) renderMenu();
   if (currentView === 'menu') { refreshMenu(); maybeCongrats(); }
@@ -166,8 +170,9 @@ async function showMenu() {
 function boardHtml(id) {
   const g = GAMES[id], rows = bestPerPlayer(id).slice(0, 10);
   return `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}` + (rows.length
-    ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${rankBadge(k + 1)}</span>${nameHtml(n, { cls: 'name', extra: ticketStar(n) })}<span>${fmt(g, s)}</span></li>`).join('') + '</ol>'
-    : `<p class="empty">${seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`);
+    ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${rankBadge(k + 1)}</span>${nameHtml(n, { cls: 'name', extra: ticketStar(n) })}<span class="sc">${fmt(g, s)}</span>${rxButton(id, n)}${rxChips(id, n)}</li>`).join('') + '</ol>'
+    : `<p class="empty">${seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`)
+    + (me ? `<button class="btn ghost board-duel" data-duel="${id}">${icon('swords')} Desafiar alguém</button>` : '');
 }
 // desenha o ranking da partida e liga o seletor Mês/Geral
 function renderBoard(id) {
@@ -175,6 +180,8 @@ function renderBoard(id) {
   if (!b) return;
   b.innerHTML = boardHtml(id);
   bindSeasonSeg(b, () => renderBoard(id));
+  bindReactions(b, id);
+  b.querySelector('[data-duel]')?.addEventListener('click', () => duelsModal({ game: id }));
 }
 
 function play(id) {
@@ -201,6 +208,7 @@ function play(id) {
     $('#restart').onclick = () => play(id);
     renderBoard(id);
     fetchScores().then(() => renderBoard(id));
+    loadSocial().then(() => currentView === id && renderBoard(id));
     main.classList.add('game-view');
     window.scrollTo(0, 0);
     fitGame();
@@ -311,11 +319,28 @@ function kicked(msg) {
   showMenu();
   loginModal(msg || 'Sua conta entrou em outro dispositivo — só dá pra usar em um por vez.');
 }
-// texto de um aviso de recorde tomado (balão e lista usam o mesmo)
+// texto de um aviso (balão e lista usam o mesmo): recorde tomado, reação, duelo, torneio
 function noteHtml(n) {
   const g = GAMES[n.game];
-  const where = n.kind === 'geral' ? 'o recorde geral' : `a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`;
-  return `<b>${esc(n.by)}</b> tomou ${where} no ${g.name}<small>${fmt(g, n.score)} (o seu era ${fmt(g, n.old)}) · toque pra revidar</small>`;
+  switch (n.kind) {
+    case 'reaction': return `<b>${esc(n.by)}</b> reagiu ${n.emoji} ao seu recorde no ${g.name}<small>${fmt(g, n.score)}</small>`;
+    case 'duel_new': return `<b>${esc(n.by)}</b> te desafiou pra um duelo de ${g.name}<small>vale a melhor partida até ${untilText(n.until).replace('até ', '')} · toque pra ver</small>`;
+    case 'duel_end': return `Duelo de ${g.name} contra <b>${esc(n.vs)}</b>: ${{ win: 'você ganhou! 🏆', lose: 'você perdeu', draw: 'empate' }[n.result]}<small>${n.mine != null ? fmt(g, n.mine) : 'sem partida'} × ${n.theirs != null ? fmt(g, n.theirs) : 'sem partida'}</small>`;
+    case 'duel_cancel': return `<b>${esc(n.by)}</b> cancelou o duelo de ${g.name}`;
+    case 'tourney': return `Torneio da semana (${dayLabelBR(n.start)} – ${dayLabelBR(n.end - 1)}): você ficou em <b>${n.rank}º</b> com ${n.points} pontos${n.rank === 1 ? ' 🏆' : ''}`;
+    default: {
+      const where = n.kind === 'geral' ? 'o recorde geral' : `a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`;
+      return `<b>${esc(n.by)}</b> tomou ${where} no ${g.name}<small>${fmt(g, n.score)} (o seu era ${fmt(g, n.old)}) · toque pra revidar</small>`;
+    }
+  }
+}
+const noteIcon = n => ({ reaction: 'smile', tourney: 'trophy' }[n.kind] || 'swords');
+const noteKnown = n => n.kind === 'tourney' || !!GAMES[n.game];
+/** O que acontece ao tocar no aviso. */
+function noteAct(n) {
+  if (n.kind === 'duel_new' || n.kind === 'duel_end' || n.kind === 'duel_cancel') return duelsModal({ game: n.game });
+  if (n.kind === 'tourney') return showMenu();
+  play(n.game);
 }
 const noteAgo = ms => { const m = Math.round(ms / 60000); return m < 1 ? 'agora' : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.floor(m / 60)} h` : `há ${Math.floor(m / 1440)} d`; };
 
@@ -329,14 +354,14 @@ function setUnread(n) {
 async function openNotes() {
   let notes = [];
   try { ({ notes } = await api('api/notifications')); } catch (err) { return modal(`<h2>Avisos</h2><p class="err">${esc(err.message)}</p><button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`); }
-  const rows = notes.filter(n => GAMES[n.game]);
+  const rows = notes.filter(noteKnown);
   const { el, close } = modal(`<h2>${icon('bell')} Avisos</h2>
     ${rows.length ? `<div class="note-list">${rows.map((n, i) => `<button class="note-row${n.unread ? ' new' : ''}" data-i="${i}">
-      <span class="ic">${icon('swords')}</span><span>${noteHtml(n)}<small class="when">${noteAgo(Date.now() - n.at)}</small></span></button>`).join('')}</div>`
-      : '<p>Nenhum aviso por enquanto. Quando alguém passar um recorde seu, aparece aqui.</p>'}
+      <span class="ic">${icon(noteIcon(n))}</span><span>${noteHtml(n)}<small class="when">${noteAgo(Date.now() - n.at)}</small></span></button>`).join('')}</div>`
+      : '<p>Nenhum aviso por enquanto. Quando alguém passar um recorde seu, reagir a ele ou te desafiar, aparece aqui.</p>'}
     <button class="btn ghost" id="notesClose">Fechar</button>`);
   el.querySelector('#notesClose').onclick = close;
-  el.querySelectorAll('.note-row').forEach(b => { b.onclick = () => { close(); play(rows[b.dataset.i].game); }; });
+  el.querySelectorAll('.note-row').forEach(b => { b.onclick = () => { close(); noteAct(rows[b.dataset.i]); }; });
   if (notes.some(n => n.unread)) { setUnread(0); api('api/notifications/read', { method: 'POST', body: {} }).catch(() => {}); }
 }
 
@@ -345,22 +370,21 @@ function showNotes(notes) {
   let box = $('#toasts');
   if (!box) { box = document.createElement('div'); box.id = 'toasts'; box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
   for (const n of notes) {
-    const g = GAMES[n.game];
-    if (!g) continue;
+    if (!noteKnown(n)) continue;
     const t = document.createElement('button');
-    t.className = 'toast glass';
-    t.innerHTML = `<span class="ic">${icon('swords')}</span><span>${noteHtml(n)}</span>`;
-    t.onclick = () => { t.remove(); play(n.game); };
+    t.className = 'toast glass' + (['reaction', 'tourney'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win') ? ' good' : '');
+    t.innerHTML = `<span class="ic">${icon(noteIcon(n))}</span><span>${noteHtml(n)}</span>`;
+    t.onclick = () => { t.remove(); noteAct(n); };
     box.appendChild(t);
     setTimeout(() => t.remove(), 12_000);
   }
-  sfx.bad?.();
+  notes.some(n => ['reaction', 'tourney'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win')) ? sfx.good?.() : sfx.bad?.();
 }
 async function pingSession() {
   if (!me || document.hidden) return;
   try {
     const { block, notes, unread } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' || currentView === 'report' ? 'admin' : currentView));
-    if (notes?.length) showNotes(notes);
+    if (notes?.length) { showNotes(notes); loadSocial().then(() => currentView === 'menu' && refreshMenu()); }
     setUnread(unread);
     // admin bloqueou (ou liberou): atualiza; se estava jogando, encerra a partida
     if (!!block !== !!gate?.manual) {
