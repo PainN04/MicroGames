@@ -513,3 +513,26 @@ test('semana de torneio: segunda a domingo no horário de Brasília', () => {
   assert.equal(social.weekOf(social.weekEnd(w) - 1), w);
   assert.deepEqual([0, 1, 2, 3, 6, 9].map(social.pointsFor), [10, 7, 5, 4, 1, 1]);
 });
+
+test('equipes de exemplo: só aparecem na versão de teste da Vercel, uma vez, e nunca sobrescrevem as do admin', async () => {
+  const ana = await login('ana', 'senha-ana-123');
+  const bia = await login('bia', 'senha-bia-123');
+  await sql`UPDATE users SET team = ${null}`;
+  await sql`DELETE FROM settings WHERE key = ${'preview_teams_seeded'}`;
+  // produção (sem VERCEL_ENV=preview): nada acontece
+  assert.deepEqual((await ana('/api/social')).body.teams, {});
+  process.env.VERCEL_ENV = 'preview';
+  try {
+    const teams = (await ana('/api/social')).body.teams;
+    const used = new Set(Object.values(teams));
+    assert.ok(Object.keys(teams).length >= 4, 'reparte as contas ativas');
+    assert.ok(used.has('Suporte') && used.has('Implantação') && used.has('Comercial'));
+    // o admin muda uma equipe: a próxima abertura não refaz o sorteio
+    await sql`UPDATE users SET team = ${'Financeiro'} WHERE username = ${'bia'}`;
+    assert.equal((await ana('/api/social')).body.teams.Bia, 'Financeiro');
+    // e quem já tem equipe definida antes do 1º acesso não é mexido
+    await sql`DELETE FROM settings WHERE key = ${'preview_teams_seeded'}`;
+    assert.equal((await ana('/api/social')).body.teams.Bia, 'Financeiro');
+    void bia;
+  } finally { delete process.env.VERCEL_ENV; }
+});
