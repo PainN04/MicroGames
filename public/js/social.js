@@ -83,7 +83,27 @@ async function tourneyModal() {
   el.querySelectorAll('.tgame').forEach(b => b.onclick = () => { close(); play(b.dataset.id); });
 }
 
-/* ---------- atalhos do menu: torneio, duplas, duelos e resumo (uma faixa compacta) ---------- */
+/* ---------- painel do menu: torneio e duplas em cartões maiores, duelos e resumo em atalhos pequenos ---------- */
+const miniRows = rows => (rows.length ? `<ol class="mini">${rows.map(r => `<li class="${r.me ? 'me' : ''}">${rankBadge(r.k)}<span class="nm">${esc(r.name)}</span><b>${r.pts}<small> pts</small></b></li>`).join('')}</ol>` : '');
+function tourneyCardHtml() {
+  const t = social?.tourney;
+  if (!social) return `<div class="bh"><span class="ic">${icon('trophy')}</span><b>Torneio</b></div><p class="bs">…</p>`;
+  const top = t.standings.slice(0, 3).map((r, k) => ({ k: k + 1, name: r.name, pts: r.points, me: r.name === player }));
+  const mine = t.mineRank && t.mineRank > 3 ? `você: ${t.mineRank}º · ${t.mine.points} pts` : t.mineRank ? `você está em ${t.mineRank}º` : 'você ainda não pontuou';
+  return `<div class="bh"><span class="ic">${icon('trophy')}</span><b>Torneio</b><small>acaba em ${leftText(t.end - Date.now())}</small></div>
+    <p class="bs">${mine}</p>
+    ${top.length ? miniRows(top) : '<p class="hint mini-empty">Ninguém pontuou ainda — jogue e saia na frente.</p>'}
+    <div class="tg">${t.games.filter(id => GAMES[id]).map(id => `<span class="chip" title="${esc(GAMES[id].name)}">${icon(GAMES[id].icon)}</span>`).join('')}<small>${t.games.filter(id => GAMES[id]).map(id => GAMES[id].name).join(' · ')}</small></div>`;
+}
+function duosCardHtml() {
+  if (!social) return `<div class="bh"><span class="ic">${icon('users')}</span><b>Duplas</b></div><p class="bs">…</p>`;
+  const my = social.myDuo, rows = duoStandings().slice(0, 3).map((r, k) => ({ k: k + 1, name: r.name, pts: r.pts, me: my.state === 'active' && r.id === my.id }));
+  const status = { none: 'chame alguém e formem uma dupla', out: `convite enviado: ${esc(my.name || '')}`, in: 'você recebeu um convite!' }[my.state] || `sua dupla: ${esc(my.name || '')}`;
+  return `<div class="bh"><span class="ic">${icon('users')}</span><b>Duplas</b><small>${seasonMode === 'all' ? 'geral' : seasonLabel().toLowerCase()}</small></div>
+    <p class="bs${my.state === 'in' ? ' hotline' : ''}">${status}</p>
+    ${rows.length ? miniRows(rows) : '<p class="hint mini-empty">Ninguém formou dupla ainda.</p>'}`;
+}
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
 function renderStrip() {
   const box = $('#strip');
   if (!box) return;
@@ -91,14 +111,17 @@ function renderStrip() {
   box.hidden = false;
   const t = social?.tourney, my = social?.myDuo, open = social?.duels?.open?.length || 0;
   const pill = (id, ic, label, sub, hot = false) => `<button class="act${hot ? ' hot' : ''}" data-act="${id}"><span class="ic">${icon(ic)}</span><span class="tx"><b>${label}</b><small>${sub}</small></span></button>`;
-  const pills = [];
-  if (!social || t?.on) pills.push(pill('tourney', 'trophy', 'Torneio', !social ? '…' : t.mineRank ? `você: ${t.mineRank}º · ${t.mine.points} pts` : 'sem pontos ainda'));
-  pills.push(pill('duos', 'users', 'Duplas', !social ? '…' : (my.state === 'active' ? esc(my.name) : { none: 'formar dupla', out: 'convite enviado', in: 'convite pra você!' }[my.state]), my?.state === 'in'));
-  pills.push(pill('duels', 'swords', 'Duelos', !social ? '…' : open ? `${open} em andamento` : 'desafiar alguém', open > 0));
-  pills.push(pill('recap', 'calendar', 'Minha semana', !social ? '…' : `${recapStats().plays} partida${recapStats().plays === 1 ? '' : 's'}`));
-  box.innerHTML = pills.join('');
+  const showTourney = !social || t?.on;
+  box.className = 'strip' + (showTourney ? '' : ' no-tourney');
+  box.innerHTML = (showTourney ? `<div class="big tourney-card" role="button" tabindex="0" data-act="tourney" aria-label="Torneio da semana">${tourneyCardHtml()}</div>` : '')
+    + `<div class="big duos-card${my?.state === 'in' ? ' hot' : ''}" role="button" tabindex="0" data-act="duos" aria-label="Duplas">${duosCardHtml()}</div>`
+    + `<div class="smalls">${pill('duels', 'swords', 'Duelos', !social ? '…' : open ? open + ' em andamento' : 'desafiar alguém', open > 0)}`
+    + `${pill('recap', 'calendar', 'Minha semana', !social ? '…' : plural(recapStats().plays, 'partida'))}</div>`;
   const go = { tourney: tourneyModal, duos: duosModal, duels: () => duelsModal(), recap: async () => { await loadSocial(); recapModal(); } };
-  box.querySelectorAll('[data-act]').forEach(b => b.onclick = go[b.dataset.act]);
+  box.querySelectorAll('[data-act]').forEach(b => {
+    b.onclick = go[b.dataset.act];
+    if (b.getAttribute('role') === 'button') b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go[b.dataset.act](); } };
+  });
 }
 
 /* ---------- duplas ---------- */
