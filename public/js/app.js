@@ -38,17 +38,15 @@ async function loadWeek() {
   try { weekData = await api('api/geiko/week'); } catch { weekData = null; }
   renderWeek();
 }
-function renderWeek() {
-  const box = $('#week');
-  if (!box) return;
-  const d = weekData;
-  if (!d || (!d.champion && d.me == null)) { box.hidden = true; return; }
-  box.hidden = false;
+// texto do destaque de tickets ('' se não há dados do Geiko); aparece na janela "Rankings"
+function weekInnerHtml(d = weekData) {
+  if (!d || (!d.champion && d.me == null)) return '';
   const list = d.people?.filter(p => p.count > 0).slice(0, 5);
-  box.innerHTML = `<span class="ic">${icon('ticket')}</span>
+  return `<span class="ic">${icon('ticket')}</span>
     <div><b>${d.champion ? `Destaque da semana: <a href="#" data-profile="${esc(d.champion.name)}">${esc(d.champion.name)}</a> — ${d.champion.count} ticket${d.champion.count > 1 ? 's' : ''} resolvido${d.champion.count > 1 ? 's' : ''}` : 'Ninguém resolveu ticket esta semana ainda'}</b>
       <small>${list?.length > 1 ? list.map((p, k) => `${k + 1}º ${esc(p.name)} ${p.count}`).join(' · ') + ' · ' : ''}${d.me != null ? `Você: ${d.me} desde segunda.` : ''} Quem mais resolver até sexta ganha o selo de ticket no ranking.</small></div>`;
 }
+function renderWeek() { /* o destaque dos tickets agora fica na janela "Rankings" (atalho do menu) */ }
 
 // quadro do desafio do dia (topo do menu)
 function dailyHtml() {
@@ -106,9 +104,7 @@ function renderMenu() {
         <h3>${g.name}</h3>
         <span class="rec">${recHtml(id)}</span>
       </button>`).join('') + `</section>
-    <section class="week glass" id="week" hidden></section>
-    <section class="kings glass" id="kings"></section>`);
-  renderKings();
+`);
   renderChamps(); renderStrip();
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
   bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
@@ -123,9 +119,8 @@ function renderMenu() {
 }
 // Quando o ranking novo chega, só troca os textos (sem redesenhar nem reanimar os cards).
 function refreshMenu() {
-  if (!$('#kings')) return;
+  if (!$('#daily')) return;
   for (const id in GAMES) { const rec = $(`.card[data-id="${id}"] .rec`); if (rec) rec.innerHTML = recHtml(id); }
-  renderKings();
   renderStrip();
   const side = $('#daily .daily-side');
   if (side) side.innerHTML = dailySideHtml();
@@ -133,22 +128,6 @@ function refreshMenu() {
   refreshPickRow();
   applyMeFlair();
 }
-// rodapé do menu: "Quem manda" (do período escolhido) e "Hall da fama" (meses encerrados) em abas
-let kingsTab = 'kings';
-function renderKings() {
-  const box = $('#kings');
-  if (!box) return;
-  const hall = hallHtml();
-  if (!hall) kingsTab = 'kings';
-  const who = seasonMode === 'all' ? `${icon('crown')} Quem manda (geral)` : `${icon('crown')} Quem manda em ${seasonLabel().toLowerCase()}`;
-  box.innerHTML = `<div class="kings-head">${hall
-      ? `<div class="seg" role="tablist" aria-label="Ranking do escritório">${[['kings', who], ['hall', `${icon('landmark')} Hall da fama`]].map(([t, l]) =>
-          `<button role="tab" data-tab="${t}" aria-selected="${kingsTab === t}" aria-pressed="${kingsTab === t}">${l}</button>`).join('')}</div>`
-      : `<h2>${who}</h2>`}</div>
-    ${kingsTab === 'hall' ? hall : kingsHtml()}`;
-  box.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { kingsTab = b.dataset.tab; renderKings(); });
-}
-
 async function showMenu() {
   stop();
   const changed = currentView !== 'menu';

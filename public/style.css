@@ -957,3 +957,7 @@
   .strip .smalls { display: grid; grid-template-rows: 1fr 1fr; gap: var(--space-xs); min-width: 0; }
   .strip .smalls .act { min-width: 0; }
   @media (max-width: 720px) { .strip .smalls { grid-template-rows: none; } }
+  .rk-body.kings { margin-top: var(--space-sm); padding: 0; background: none; border: 0; box-shadow: none; text-align: left; }
+  .rk-body .season-seg { margin: 0 0 var(--space-sm); }
+  .rk-body .week { margin: 0; }
+  .modal .seg { margin: var(--space-xs) 0; }

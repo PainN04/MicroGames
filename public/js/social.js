@@ -109,19 +109,36 @@ function renderStrip() {
   if (!box) return;
   if (!me) { box.hidden = true; return; }
   box.hidden = false;
-  const t = social?.tourney, my = social?.myDuo, open = social?.duels?.open?.length || 0;
+  const t = social?.tourney, my = social?.myDuo, open = social?.duels?.open?.length || 0, king = champions()[0];
   const pill = (id, ic, label, sub, hot = false) => `<button class="act${hot ? ' hot' : ''}" data-act="${id}"><span class="ic">${icon(ic)}</span><span class="tx"><b>${label}</b><small>${sub}</small></span></button>`;
   const showTourney = !social || t?.on;
   box.className = 'strip' + (showTourney ? '' : ' no-tourney');
   box.innerHTML = (showTourney ? `<div class="big tourney-card" role="button" tabindex="0" data-act="tourney" aria-label="Torneio da semana">${tourneyCardHtml()}</div>` : '')
     + `<div class="big duos-card${my?.state === 'in' ? ' hot' : ''}" role="button" tabindex="0" data-act="duos" aria-label="Duplas">${duosCardHtml()}</div>`
     + `<div class="smalls">${pill('duels', 'swords', 'Duelos', !social ? '…' : open ? open + ' em andamento' : 'desafiar alguém', open > 0)}`
-    + `${pill('recap', 'calendar', 'Minha semana', !social ? '…' : plural(recapStats().plays, 'partida'))}</div>`;
-  const go = { tourney: tourneyModal, duos: duosModal, duels: () => duelsModal(), recap: async () => { await loadSocial(); recapModal(); } };
+    + `${pill('rank', 'crown', 'Quem manda', king ? `${esc(king[0])} · ${plural(king[1], 'recorde')}` : 'ver rankings')}</div>`;
+  const go = { tourney: tourneyModal, duos: duosModal, duels: () => duelsModal(), rank: () => rankingsModal() };
   box.querySelectorAll('[data-act]').forEach(b => {
     b.onclick = go[b.dataset.act];
     if (b.getAttribute('role') === 'button') b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go[b.dataset.act](); } };
   });
+}
+
+/* ---------- rankings (janela): Quem manda, Hall da fama e destaque dos tickets ---------- */
+let rankTab = 'kings';
+function rankingsModal(tab = rankTab) {
+  const hall = hallHtml(), week = weekInnerHtml();
+  if ((tab === 'hall' && !hall) || (tab === 'week' && !week)) tab = 'kings';
+  rankTab = tab;
+  const tabs = [['kings', 'crown', 'Quem manda'], hall && ['hall', 'landmark', 'Hall da fama'], week && ['week', 'ticket', 'Tickets']].filter(Boolean);
+  const body = tab === 'kings' ? `${seasonSeg()}${kingsHtml()}` : tab === 'hall' ? hall : `<div class="week">${week}</div>`;
+  const { el, close } = modal(`<h2>${icon('crown')} Rankings</h2>
+    ${tabs.length > 1 ? `<div class="seg" role="tablist" aria-label="Rankings">${tabs.map(([t, ic, l]) => `<button role="tab" data-rk="${t}" aria-selected="${tab === t}" aria-pressed="${tab === t}">${icon(ic)} ${l}</button>`).join('')}</div>` : ''}
+    <div class="rk-body kings">${body}</div><button class="btn ghost" id="rkClose">Fechar</button>`, { wide: true });
+  el.querySelector('#rkClose').onclick = close;
+  el.querySelectorAll('[data-rk]').forEach(b => b.onclick = () => { close(); rankingsModal(b.dataset.rk); });
+  bindSeasonSeg(el.querySelector('.rk-body'), () => { refreshMenu(); close(); rankingsModal('kings'); });
+  el.addEventListener('click', e => { if (e.target.closest('[data-profile]')) close(); }); // abrir um perfil fecha a janela
 }
 
 /* ---------- duplas ---------- */
