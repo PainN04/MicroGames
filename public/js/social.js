@@ -8,9 +8,9 @@ async function loadSocial() {
   const n = social?.duels?.open?.length || 0;
   const b = $('#duelsCnt');
   if (b) { b.textContent = n; b.hidden = !n; }
+  setDuoBadge();
   return social;
 }
-const teamOf = name => social?.teams?.[name] || null;
 const dayLabelBR = ms => new Date(ms).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
 /** "3 dias", "5 h", "20 min" */
 function leftText(ms) {
@@ -84,27 +84,92 @@ function renderTourney() {
   $('#duelsOpen').onclick = () => duelsModal();
 }
 
-/* ---------- ranking por equipe ---------- */
-// por jogo, os 3 primeiros dão 3/2/1 pontos pra equipe de cada um (conta o período escolhido: mês ou geral)
-function teamStandings(range = currentRange()) {
-  if (!social) return [];
-  const teams = {};
-  const slot = t => (teams[t] ||= { team: t, pts: 0, firsts: 0, members: 0 });
-  for (const p of social.people) if (p.team) slot(p.team).members++;
-  for (const id in GAMES) bestPerPlayer(id, range).slice(0, 3).forEach(([n], i) => { const t = teamOf(n); if (t) { slot(t).pts += 3 - i; if (!i) slot(t).firsts++; } });
-  return Object.values(teams).sort((a, b) => b.pts - a.pts || b.firsts - a.firsts || a.team.localeCompare(b.team, 'pt-BR'));
+/* ---------- duplas ---------- */
+/** A dupla ativa de uma pessoa (pelo nome), ou null. */
+const duoOfName = name => (social?.duos || []).find(d => d.aName === name || d.bName === name) || null;
+/** Melhor partida de uma pessoa num jogo dentro de uma janela de tempo (null = não jogou). */
+function bestIn(id, name, since, until = Infinity) {
+  let best = null;
+  for (const s of scores[id] || []) if (s.name === name && s.date >= since && s.date < until && (best === null || better(GAMES[id], s.score, best))) best = s.score;
+  return best;
 }
-function renderTeams() {
-  const box = $('#teams');
+// Por jogo: a dupla só entra se OS DOIS jogaram (depois de formada); a nota é a média das melhores partidas dos dois.
+// As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos. Conta o período escolhido (mês ou geral).
+function duoStandings(range = currentRange()) {
+  const duos = (social?.duos || []).map(d => ({ ...d, pts: 0, podiums: 0, firsts: 0 }));
+  if (!duos.length) return [];
+  for (const id in GAMES) {
+    const g = GAMES[id], entries = [];
+    for (const d of duos) {
+      const since = Math.max(range.since || 0, d.formedAt || 0);
+      const x = bestIn(id, d.aName, since, range.until), y = bestIn(id, d.bName, since, range.until);
+      if (x != null && y != null) entries.push({ d, v: (x + y) / 2 });
+    }
+    entries.sort((p, q) => (p.v === q.v ? 0 : better(g, p.v, q.v) ? -1 : 1));
+    entries.slice(0, 3).forEach((e, i) => { e.d.pts += 3 - i; e.d.podiums++; if (!i) e.d.firsts++; });
+  }
+  return duos.sort((p, q) => q.pts - p.pts || q.firsts - p.firsts || p.name.localeCompare(q.name, 'pt-BR'));
+}
+function renderDuos() {
+  const box = $('#duos');
   if (!box) return;
-  const rows = teamStandings();
-  if (rows.length < 1) { box.hidden = true; return; }
+  if (!me || !social) { box.hidden = true; return; }
   box.hidden = false;
-  const mine = me?.team;
-  box.innerHTML = `<div class="kings-head"><h2>${icon('users')} Equipes <small class="hint">${seasonMode === 'all' ? 'geral' : seasonLabel().toLowerCase()}</small></h2></div>
-    <ol>${rows.map((r, k) => `<li class="${r.team === mine ? 'me' : ''}">${rankBadge(k + 1)} <b class="tn">${esc(r.team)}</b> <span class="tp">${r.pts} pts</span>
-      <small>${r.firsts} recorde${r.firsts === 1 ? '' : 's'} · ${r.members} pessoa${r.members === 1 ? '' : 's'}</small></li>`).join('')}</ol>
-    <p class="hint t-rules">Em cada jogo, o 1º lugar dá 3 pontos pra equipe dele, o 2º dá 2 e o 3º dá 1.</p>`;
+  const rows = duoStandings(), my = social.myDuo;
+  const cta = { none: 'Formar dupla', out: 'Convite enviado', in: 'Convite pra você!', active: 'Minha dupla' }[my.state];
+  box.innerHTML = `<div class="kings-head"><h2>${icon('users')} Duplas <small class="hint">${seasonMode === 'all' ? 'geral' : seasonLabel().toLowerCase()}</small></h2>
+      <button class="btn ${my.state === 'in' ? '' : 'ghost'}" id="duoOpen">${cta}</button></div>
+    ${rows.length ? `<ol>${rows.map((r, k) => `<li class="${my.state === 'active' && r.id === my.id ? 'me' : ''}">${rankBadge(k + 1)} <b class="tn">${esc(r.name)}</b> <span class="tp">${r.pts} pts</span>
+      <small>${esc(r.aName)} & ${esc(r.bName)} · ${r.firsts} jogo${r.firsts === 1 ? '' : 's'} em 1º · ${r.podiums} pódio${r.podiums === 1 ? '' : 's'}</small></li>`).join('')}</ol>`
+      : '<p class="hint" style="text-align:left;margin:0">Ninguém formou dupla ainda. Chame um colega e escolham um nome!</p>'}
+    <p class="hint t-rules">Cada um chama quem quiser e dá o nome que quiser à dupla. Em cada jogo, a dupla só pontua se <b>os dois</b> jogaram depois de formada; vale a média das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos.</p>`;
+  $('#duoOpen').onclick = () => duoModal();
+}
+function setDuoBadge() {
+  const b = $('#duoCnt');
+  if (b) { const n = social?.myDuo?.state === 'in' ? 1 : 0; b.textContent = n; b.hidden = !n; }
+}
+async function duoModal(pre = {}) {
+  if (!me) return loginModal();
+  await loadSocial();
+  if (!social) return modal(`<h2>${icon('users')} Dupla</h2><p>Não deu pra carregar agora. Tente de novo em instantes.</p><button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`);
+  const my = social.myDuo, partner = my.state === 'none' ? null : (my.aId === me.id ? my.bName : my.aName);
+  let body;
+  if (my.state === 'active') {
+    body = `<p>Você e <b>${esc(partner)}</b> formam a dupla <b>${esc(my.name)}</b> desde ${dayLabelBR(my.formedAt)}.</p>
+      <form id="duoRename" class="admin"><label>Nome da dupla<input name="name" maxlength="24" value="${esc(my.name)}" required></label><p class="err" id="duoErr"></p>
+      <button class="btn">Salvar nome</button></form>
+      <button class="btn ghost" id="duoLeave">Sair da dupla</button>`;
+  } else if (my.state === 'out') {
+    body = `<p>Convite enviado pra <b>${esc(partner)}</b>, com o nome <b>${esc(my.name)}</b>. Aguardando a resposta — o convite vale por mais ${leftText(my.expiresAt - Date.now())}.</p><p class="err" id="duoErr"></p>
+      <button class="btn ghost" id="duoCancel">Cancelar convite</button>`;
+  } else if (my.state === 'in') {
+    body = `<p><b>${esc(partner)}</b> te chamou pra formar a dupla <b>${esc(my.name)}</b>. Vale por mais ${leftText(my.expiresAt - Date.now())}.</p><p class="err" id="duoErr"></p>
+      <div class="recap-btns"><button class="btn" id="duoYes">${icon('circle-check')} Aceitar</button><button class="btn ghost" id="duoNo">Recusar</button></div>`;
+  } else {
+    const free = social.people.filter(p => p.id !== me.id && p.free).sort((x, y) => x.name.localeCompare(y.name, 'pt-BR'));
+    body = free.length ? `<p class="hint" style="text-align:left">Chame um colega pra formar dupla e escolham o nome. Ele precisa aceitar (o convite vale 48h).</p>
+      <form id="duoForm" class="admin"><label>Quem você quer chamar<select name="partner" required><option value="">Escolha…</option>${free.map(p => `<option value="${p.id}"${pre.partner === p.name ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
+      <label>Nome da dupla<input name="name" maxlength="24" placeholder="ex.: Os Imbatíveis" required></label><p class="err" id="duoErr"></p>
+      <button class="btn">${icon('users')} Chamar pra dupla</button></form>`
+      : '<p>Todo mundo já está em dupla ou com convite aberto. Quando alguém ficar livre, aparece aqui.</p>';
+  }
+  const { el, close } = modal(`<h2>${icon('users')} Minha dupla</h2>${body}
+    <details class="duo-how"><summary>Como a pontuação funciona</summary><p>Em cada jogo, a dupla só entra no ranking se <b>os dois</b> jogaram depois de formada. A nota é a <b>média</b> das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos, e a soma nos jogos define a classificação (mês ou geral). Partidas de antes da dupla não contam.</p></details>
+    <button class="btn ghost" id="duoClose">Fechar</button>`);
+  el.querySelector('#duoClose').onclick = close;
+  const call = async (path, bodyObj, after) => {
+    const err = el.querySelector('#duoErr');
+    if (err) err.textContent = '';
+    try { await api(path, { method: 'POST', body: bodyObj || {} }); await loadSocial(); setDuoBadge(); if (currentView === 'menu') refreshMenu(); after ? after() : (close(), duoModal()); }
+    catch (e) { if (err) err.textContent = e.message; else announce(e.message); }
+  };
+  el.querySelector('#duoForm')?.addEventListener('submit', e => { e.preventDefault(); const f = new FormData(e.target); call('api/duos', { partnerId: Number(f.get('partner')), name: f.get('name') }); });
+  el.querySelector('#duoRename')?.addEventListener('submit', e => { e.preventDefault(); call(`api/duos/${my.id}/rename`, { name: new FormData(e.target).get('name') }); });
+  el.querySelector('#duoLeave')?.addEventListener('click', () => { if (confirm(`Sair da dupla ${my.name}? Ela é desfeita pros dois e os pontos dela se perdem.`)) call(`api/duos/${my.id}/leave`); });
+  el.querySelector('#duoCancel')?.addEventListener('click', () => call(`api/duos/${my.id}/cancel`));
+  el.querySelector('#duoYes')?.addEventListener('click', () => { sfx.good(); call(`api/duos/${my.id}/accept`); });
+  el.querySelector('#duoNo')?.addEventListener('click', () => call(`api/duos/${my.id}/decline`));
 }
 
 /* ---------- duelos ---------- */
@@ -137,7 +202,7 @@ async function duelsModal(pre = {}) {
     <p class="hint" style="text-align:left">Desafie alguém num jogo. Por 24 horas, vale a <b>melhor partida de cada um</b> naquele jogo (só conta jogar depois do desafio). Quem fizer mais leva. ${wins ? `Você já ganhou <b>${wins}</b>.` : ''}</p>
     <div id="dOpen">${social.duels.open.length ? social.duels.open.map(duelRowHtml).join('') : '<p class="hint" style="text-align:left">Nenhum duelo em andamento.</p>'}</div>
     <form id="dForm" class="admin duel-form">
-      <label>Contra quem<select name="opp" required><option value="">Escolha…</option>${others.map(p => `<option value="${p.id}"${pre.opponent === p.name ? ' selected' : ''}>${esc(p.name)}${p.team ? ' · ' + esc(p.team) : ''}</option>`).join('')}</select></label>
+      <label>Contra quem<select name="opp" required><option value="">Escolha…</option>${others.map(p => `<option value="${p.id}"${pre.opponent === p.name ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
       <label>Jogo<select name="game">${duelGames().map(id => `<option value="${id}"${id === defGame ? ' selected' : ''}>${esc(GAMES[id].name)}</option>`).join('')}</select></label>
       <p class="err" id="dErr"></p>
       <button class="btn">${icon('swords')} Desafiar</button>
@@ -207,8 +272,8 @@ function drawRecap(st) {
   // título e nome
   g.font = `700 112px ${FONT}`; g.fillStyle = '#ffffff'; g.fillText('Minha semana', 72, 290);
   g.font = `700 64px ${FONT}`; g.fillStyle = '#ffd34d'; g.fillText(player, 72, 372);
-  const team = me?.team;
-  if (team) { g.font = `500 38px ${FONT}`; g.fillStyle = 'rgba(255,255,255,.65)'; g.fillText(team, 72, 426); }
+  const duo = social?.myDuo?.state === 'active' ? social.myDuo : null;
+  if (duo) { g.font = `500 38px ${FONT}`; g.fillStyle = 'rgba(255,255,255,.65)'; g.fillText(`Dupla ${duo.name}`, 72, 426); }
   // 6 números
   const tiles = [
     [st.plays, st.plays === 1 ? 'partida jogada' : 'partidas jogadas'],

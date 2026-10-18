@@ -889,3 +889,8 @@
   .recap-img { display: block; margin: var(--space-sm) auto; max-width: min(300px, 100%); height: auto; border-radius: 16px; border: 1px solid var(--border-strong); box-shadow: 0 12px 30px oklch(0% 0 0 / .4); background: var(--surface-2); aspect-ratio: 4 / 5; }
   .recap-btns { display: flex; gap: var(--space-xs); justify-content: center; flex-wrap: wrap; }
   .tgame small.you { white-space: normal; }
+  .teams .kings-head { justify-content: space-between; }
+  .teams .kings-head .btn { min-height: 38px; padding: 0 1em; }
+  .duo-how { margin: var(--space-sm) 0; text-align: left; font-size: var(--fs-sm); color: var(--muted); }
+  .duo-how summary { cursor: pointer; color: var(--text); }
+  .duo-how p { margin: .5rem 0 0; line-height: 1.45; }

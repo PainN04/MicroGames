@@ -24,12 +24,16 @@ function showAdmin() {
           <label>Nome (aparece no ranking)<input name="name" maxlength="40" required></label>
           <label>Usuário (login)<input name="username" maxlength="32" pattern="[A-Za-z0-9._\\-]{3,32}" required></label>
           <label>ID do Geiko<input name="geikoId" inputmode="numeric" pattern="\\d*" placeholder="vazio = sem fila"></label>
-          <label>Equipe/setor<input name="team" maxlength="24" placeholder="opcional"></label>
           <label>Papel<select name="role"><option value="player">Jogador</option><option value="admin">Admin</option></select></label>
           <button class="btn">+ Criar conta</button>
         </form>
         <p class="err" id="nuErr" style="color:oklch(80% 0.14 18)"></p>
         <div class="scroll" style="max-height:none"><table class="tickets users" id="usersTable"><tbody><tr><td>Carregando...</td></tr></tbody></table></div>
+      </section>
+      <section class="glass">
+        <h2>Duplas</h2>
+        <p class="note">As duplas são formadas pelos próprios jogadores (convite + aceite). Aqui você só modera: renomear um nome inadequado ou desfazer uma dupla.</p>
+        <div id="duosAdmin"><p class="hint" style="text-align:left">Carregando...</p></div>
       </section>
       <section class="glass">
         <h2>Regra de bloqueio</h2>
@@ -55,7 +59,35 @@ function showAdmin() {
     loadUsers();
     loadRules();
     loadOnline();
+    loadAdminDuos();
   });
+}
+
+// ---------- duplas (moderação) ----------
+async function loadAdminDuos() {
+  const box = $('#duosAdmin');
+  if (!box) return;
+  try {
+    const { duos } = await api('api/admin/duos');
+    box.innerHTML = duos.length ? `<div class="scroll" style="max-height:none"><table class="tickets users"><thead><tr><th>Dupla</th><th>Pessoas</th><th>Situação</th><th></th></tr></thead><tbody>${duos.map(d => `<tr data-id="${d.id}">
+        <td>${esc(d.name)}</td><td>${esc(d.a)} & ${esc(d.b)}</td><td>${d.status === 'active' ? 'ativa' : 'convite aberto'}</td>
+        <td><div class="actions"><button class="btn ghost" data-duo="rename">Renomear</button><button class="btn ghost" data-duo="end">Desfazer</button></div></td></tr>`).join('')}</tbody></table></div>`
+      : '<p class="hint" style="text-align:left">Nenhuma dupla ainda.</p>';
+    box.querySelectorAll('[data-duo]').forEach(b => b.onclick = async () => {
+      const row = b.closest('tr'), id = row.dataset.id, d = duos.find(x => String(x.id) === id);
+      try {
+        if (b.dataset.duo === 'rename') {
+          const name = prompt('Novo nome da dupla:', d.name);
+          if (name == null) return;
+          await api(`api/admin/duos/${id}/rename`, { method: 'POST', body: { name } });
+        } else {
+          if (!confirm(`Desfazer a dupla ${d.name}? Os dois são avisados.`)) return;
+          await api(`api/admin/duos/${id}/end`, { method: 'POST', body: {} });
+        }
+        loadAdminDuos();
+      } catch (err) { alert(err.message); }
+    });
+  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
 }
 
 // ---------- quem está online ----------
@@ -471,12 +503,11 @@ async function loadUsers() {
   if (!table) return;
   try {
     const { users } = await api('api/admin/users');
-    table.innerHTML = `<thead><tr><th>Nome</th><th>Usuário</th><th>ID Geiko</th><th>Equipe</th><th>Papel</th><th></th></tr></thead><tbody>` +
+    table.innerHTML = `<thead><tr><th>Nome</th><th>Usuário</th><th>ID Geiko</th><th>Papel</th><th></th></tr></thead><tbody>` +
       users.map(u => `<tr class="${u.active ? '' : 'off'}" data-id="${u.id}">
         <td>${esc(u.name)}${u.mustChange ? ' <span class="tag" title="Ainda não trocou a senha temporária">• senha temporária</span>' : ''}${u.active ? '' : ' <span class="tag">• desativada</span>'}${u.block ? ` <span class="tag" style="color:var(--red)" title="${esc(u.block.reason || '')}">${icon('lock')} bloqueado ${untilText(u.block.until)}</span>` : ''}</td>
         <td>${esc(u.username)}</td>
         <td>${u.geikoId ? esc(u.geikoId) : '<span class="hint">—</span>'}</td>
-        <td>${u.team ? esc(u.team) : '<span class="hint">—</span>'}</td>
         <td><span class="pill-role ${u.role}">${u.role === 'admin' ? 'Admin' : 'Jogador'}</span></td>
         <td><div class="actions">${u.canEditRecords && u.id !== me.id ? '<span class="hint">conta do dono</span>' : `
           ${u.id === me.id ? '' : u.block ? `<button class="btn ghost" data-act="unblock">${icon('lock-open')} Desbloquear</button>` : `<button class="btn ghost" data-act="block">${icon('lock')} Bloquear</button>`}
@@ -543,7 +574,6 @@ async function userAction(act, u) {
         <label>Nome (aparece no ranking)<input name="name" maxlength="40" value="${esc(u.name)}" required></label>
         <label>Usuário (login)<input name="username" maxlength="32" value="${esc(u.username)}" required></label>
         <label>ID do Geiko (vazio = sem fila, nunca bloqueia)<input name="geikoId" inputmode="numeric" value="${esc(u.geikoId || '')}"></label>
-        <label>Equipe/setor (vira o ranking por equipe; vazio = sem equipe)<input name="team" maxlength="24" value="${esc(u.team || '')}"></label>
         <label>Papel<select name="role" ${u.id === me.id ? 'disabled' : ''}><option value="player">Jogador</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option></select></label>
         <p class="err" id="eerr"></p>
         <button class="btn">Salvar</button>

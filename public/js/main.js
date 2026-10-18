@@ -36,6 +36,7 @@ $('#home').onclick = showMenu;
 $('#acctBtn').onclick = () => toggleAcct();
 $('#mNotes').onclick = () => { toggleAcct(false); openNotes(); };
 $('#mDuels').onclick = () => { toggleAcct(false); duelsModal(); };
+$('#mDuo').onclick = () => { toggleAcct(false); duoModal(); };
 $('#mRecap').onclick = async () => { toggleAcct(false); await loadSocial(); recapModal(); };
 $('#mProfile').onclick = () => { toggleAcct(false); showProfile(player); };
 $('#mPass').onclick = () => { toggleAcct(false); passwordModal(false); };

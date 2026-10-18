@@ -110,13 +110,14 @@ function showProfile(name = player) {
     main.innerHTML = `<div class="admin profile">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('user')} ${esc(name)}${teamOf(name) ? ` <span class="tag team-tag">${icon('users')} ${esc(teamOf(name))}</span>` : ''}</h2><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p></div>
-        ${name !== player && me ? `<button class="btn ghost" id="profDuel">${icon('swords')} <span>Desafiar</span></button>` : name === player ? `<button class="btn ghost" id="profRecap">${icon('calendar')} <span>Minha semana</span></button>` : ''}
+        <div class="title"><h2>${icon('user')} ${esc(name)}${duoOfName(name) ? ` <span class="tag team-tag" title="Dupla de ${esc(duoOfName(name).aName)} e ${esc(duoOfName(name).bName)}">${icon('users')} ${esc(duoOfName(name).name)}</span>` : ''}</h2><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p></div>
+        ${name !== player && me ? `${social?.myDuo?.state === 'none' && social.people.find(p => p.name === name)?.free ? `<button class="btn ghost" id="profDuo">${icon('users')} <span>Chamar pra dupla</span></button>` : ''}<button class="btn ghost" id="profDuel">${icon('swords')} <span>Desafiar</span></button>` : name === player ? `<button class="btn ghost" id="profRecap">${icon('calendar')} <span>Minha semana</span></button>` : ''}
       </div>
       <div id="prof"><p class="hint" style="text-align:left">Carregando...</p></div>
     </div>`;
     $('#back').onclick = showMenu;
     $('#profDuel')?.addEventListener('click', () => duelsModal({ opponent: name }));
+    $('#profDuo')?.addEventListener('click', () => duoModal({ partner: name }));
     $('#profRecap')?.addEventListener('click', async () => { await loadSocial(); recapModal(); });
     renderProfile(name);
     Promise.all([fetchScores(), loadSocial()]).then(() => currentView === 'profile' && renderProfile(name));

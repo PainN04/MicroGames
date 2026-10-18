@@ -392,20 +392,6 @@ test('combos e itens raros: pontuações maiores agora cabem nos limites, mas co
 const notesOf = async c => (await c('/api/notifications')).body.notes;
 const idOf = async u => (await sql`SELECT id FROM users WHERE username = ${u}`)[0].id;
 
-test('social: sem login não vê; equipe vem do admin e aparece pra todos', async () => {
-  assert.equal((await client()('/api/social')).status, 401);
-  const dono = await login('paulo', 'senha-dono-123'), ana = await login('ana', 'senha-ana-123');
-  const anaId = await idOf('ana');
-  assert.equal((await ana(`/api/admin/users/${anaId}`, { method: 'PATCH', body: { team: 'Suporte' } })).status, 403, 'jogador não define equipe');
-  assert.equal((await dono(`/api/admin/users/${anaId}`, { method: 'PATCH', body: { team: 'x'.repeat(30) } })).status, 400, 'nome de equipe tem limite');
-  assert.equal((await dono(`/api/admin/users/${anaId}`, { method: 'PATCH', body: { team: '  Suporte  ' } })).status, 200);
-  const r = (await ana('/api/social')).body;
-  assert.equal(r.teams.Ana, 'Suporte');
-  assert.ok(r.people.some(x => x.name === 'Bia'));
-  assert.equal((await dono(`/api/admin/users/${anaId}`, { method: 'PATCH', body: { name: 'Ana' } })).status, 200);
-  assert.equal((await ana('/api/social')).body.teams.Ana, 'Suporte', 'editar outro campo não apaga a equipe');
-});
-
 test('reações: ao recorde de outra pessoa, uma por pessoa, avisa uma vez e zera quando o recorde cai', async () => {
   const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123');
   assert.equal((await play(bia, 'tijolos', 100)).status, 201);
@@ -514,29 +500,6 @@ test('semana de torneio: segunda a domingo no horário de Brasília', () => {
   assert.deepEqual([0, 1, 2, 3, 6, 9].map(social.pointsFor), [10, 7, 5, 4, 1, 1]);
 });
 
-test('equipes de exemplo: só aparecem na versão de teste da Vercel, uma vez, e nunca sobrescrevem as do admin', async () => {
-  const ana = await login('ana', 'senha-ana-123');
-  const bia = await login('bia', 'senha-bia-123');
-  await sql`UPDATE users SET team = ${null}`;
-  await sql`DELETE FROM settings WHERE key = ${'preview_teams_seeded'}`;
-  // produção (sem VERCEL_ENV=preview): nada acontece
-  assert.deepEqual((await ana('/api/social')).body.teams, {});
-  process.env.VERCEL_ENV = 'preview';
-  try {
-    const teams = (await ana('/api/social')).body.teams;
-    const used = new Set(Object.values(teams));
-    assert.ok(Object.keys(teams).length >= 4, 'reparte as contas ativas');
-    assert.ok(used.has('Suporte') && used.has('Implantação') && used.has('Comercial'));
-    // o admin muda uma equipe: a próxima abertura não refaz o sorteio
-    await sql`UPDATE users SET team = ${'Financeiro'} WHERE username = ${'bia'}`;
-    assert.equal((await ana('/api/social')).body.teams.Bia, 'Financeiro');
-    // e quem já tem equipe definida antes do 1º acesso não é mexido
-    await sql`DELETE FROM settings WHERE key = ${'preview_teams_seeded'}`;
-    assert.equal((await ana('/api/social')).body.teams.Bia, 'Financeiro');
-    void bia;
-  } finally { delete process.env.VERCEL_ENV; }
-});
-
 test('torneio: na produção só começa em 19/10/2026; na versão de teste já vale na semana atual', async () => {
   const social = require('../lib/social');
   const ana = { id: await idOf('ana'), name: 'Ana' };
@@ -549,4 +512,86 @@ test('torneio: na produção só começa em 19/10/2026; na versão de teste já 
     assert.equal(t.games.length, 3);
   } finally { delete process.env.VERCEL_ENV; }
   assert.equal((await social.socialState(ana, social.weekStart(social.TOURNEY_FIRST_WEEK) + 1000)).tourney.on, true);
+});
+
+test('duplas: convite, aceite, nome único, renomear, sair — e cada pessoa em uma dupla só', async () => {
+  assert.equal((await client()('/api/social')).status, 401);
+  const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123'), dono = await login('paulo', 'senha-dono-123');
+  const anaId = await idOf('ana'), biaId = await idOf('bia'), donoId = await idOf('paulo');
+  const convite = (c, partnerId, name) => c('/api/duos', { method: 'POST', body: { partnerId, name } });
+  assert.equal((await convite(ana, anaId, 'Sozinha')).status, 400, 'não dá pra formar dupla consigo mesma');
+  assert.equal((await convite(ana, biaId, 'x')).status, 400, 'nome curto demais');
+  assert.equal((await convite(ana, biaId, 'n'.repeat(30))).status, 400, 'nome longo demais');
+  assert.equal((await convite(ana, 99999, 'Fantasmas')).status, 404);
+  const feito = await convite(ana, biaId, '  Os   Imbatíveis ');
+  assert.equal(feito.status, 201);
+  assert.ok((await notesOf(bia)).some(n => n.kind === 'duo_invite' && n.by === 'Ana' && n.name === 'Os Imbatíveis'), 'espaços sobrando saem do nome');
+
+  const daBia = (await bia('/api/social')).body, daAna = (await ana('/api/social')).body;
+  assert.equal(daBia.myDuo.state, 'in'); assert.equal(daAna.myDuo.state, 'out');
+  assert.equal(daAna.people.find(x => x.name === 'Bia').free, false, 'quem tem convite aberto não está livre');
+  assert.equal(daAna.duos.length, 0, 'só dupla ativa entra no ranking');
+  assert.equal((await convite(ana, donoId, 'Outra')).status, 409, 'quem convidou não convida outra pessoa');
+  assert.equal((await convite(dono, biaId, 'Outra')).status, 409, 'a convidada já está ocupada');
+  assert.equal((await ana(`/api/duos/${feito.body.id}/accept`, { method: 'POST', body: {} })).status, 403, 'só a convidada aceita');
+  assert.equal((await ana(`/api/duos/${feito.body.id}/leave`, { method: 'POST', body: {} })).status, 409, 'convite ainda não é dupla pra sair');
+
+  assert.equal((await bia(`/api/duos/${feito.body.id}/accept`, { method: 'POST', body: {} })).status, 200);
+  assert.ok((await notesOf(ana)).some(n => n.kind === 'duo_accept' && n.by === 'Bia'));
+  const ativa = (await ana('/api/social')).body;
+  assert.equal(ativa.myDuo.state, 'active');
+  assert.equal(ativa.duos.length, 1);
+  assert.deepEqual([ativa.duos[0].name, ativa.duos[0].aName, ativa.duos[0].bName], ['Os Imbatíveis', 'Ana', 'Bia']);
+  assert.ok(ativa.duos[0].formedAt > 0);
+
+  // outra dupla não pode usar o mesmo nome (maiúsculas não contam)
+  const outro = await login('outroadm', 'senha-adm-123'), outroId = await idOf('outroadm');
+  assert.equal((await convite(dono, outroId, 'OS IMBATÍVEIS')).status, 409);
+  assert.equal((await convite(dono, outroId, 'Dupla Dois')).status, 201);
+  assert.equal((await bia(`/api/duos/${feito.body.id}/rename`, { method: 'POST', body: { name: 'dupla dois' } })).status, 409, 'nome já usado por outra');
+  assert.equal((await bia(`/api/duos/${feito.body.id}/rename`, { method: 'POST', body: { name: 'Ana e Bia' } })).status, 200);
+  assert.equal((await outro('/api/social')).body.duos.length, 1);
+  assert.equal((await dono(`/api/duos/${feito.body.id}/rename`, { method: 'POST', body: { name: 'Roubado' } })).status, 403, 'não é a dupla dele');
+
+  assert.equal((await bia(`/api/duos/${feito.body.id}/leave`, { method: 'POST', body: {} })).status, 200);
+  assert.ok((await notesOf(ana)).some(n => n.kind === 'duo_left' && n.by === 'Bia'));
+  const livre = (await ana('/api/social')).body;
+  assert.equal(livre.myDuo.state, 'none'); assert.equal(livre.duos.length, 0);
+  assert.equal(livre.people.find(x => x.name === 'Bia').free, true);
+  assert.equal((await bia(`/api/duos/${feito.body.id}/leave`, { method: 'POST', body: {} })).status, 409, 'já acabou');
+});
+
+test('duplas: recusar, cancelar, convite que expira e moderação do admin', async () => {
+  const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123'), dono = await login('paulo', 'senha-dono-123');
+  const biaId = await idOf('bia'), donoId = await idOf('paulo');
+  const convite = (c, partnerId, name) => c('/api/duos', { method: 'POST', body: { partnerId, name } });
+  const acao = (c, id, a, body = {}) => c(`/api/duos/${id}/${a}`, { method: 'POST', body });
+
+  const d1 = (await convite(ana, biaId, 'Recusada')).body.id;
+  assert.equal((await acao(bia, d1, 'decline')).status, 200);
+  assert.ok((await notesOf(ana)).some(n => n.kind === 'duo_decline' && n.by === 'Bia'));
+  assert.equal((await acao(bia, d1, 'accept')).status, 409, 'já respondido');
+
+  const d2 = (await convite(ana, biaId, 'Cancelada')).body.id;
+  assert.equal((await acao(bia, d2, 'cancel')).status, 409, 'só quem convidou cancela');
+  assert.equal((await acao(ana, d2, 'cancel')).status, 200);
+  assert.ok((await notesOf(bia)).some(n => n.kind === 'duo_cancel' && n.by === 'Ana'));
+
+  const d3 = (await convite(ana, biaId, 'Vencida')).body.id;
+  await sql`UPDATE duos SET expires_at = ${Date.now() - 1000} WHERE id = ${d3}`;
+  assert.equal((await acao(bia, d3, 'accept')).status, 409, 'convite expirado não vira dupla');
+  assert.equal((await ana('/api/social')).body.myDuo.state, 'none');
+
+  // admin: lista, renomeia e desfaz (e avisa os dois)
+  const d4 = (await convite(ana, biaId, 'Nome Ruim')).body.id;
+  assert.equal((await acao(bia, d4, 'accept')).status, 200);
+  assert.equal((await ana('/api/admin/duos')).status, 403, 'jogador não modera');
+  assert.equal((await dono('/api/admin/duos')).body.duos.find(d => d.id === d4).a, 'Ana');
+  assert.equal((await dono(`/api/admin/duos/${d4}/rename`, { method: 'POST', body: { name: 'Nome Bom' } })).status, 200);
+  assert.equal((await ana('/api/social')).body.myDuo.name, 'Nome Bom');
+  assert.equal((await ana(`/api/admin/duos/${d4}/end`, { method: 'POST', body: {} })).status, 403);
+  assert.equal((await dono(`/api/admin/duos/${d4}/end`, { method: 'POST', body: {} })).status, 200);
+  assert.ok((await notesOf(bia)).some(n => n.kind === 'duo_left' && n.by === 'o admin'));
+  assert.equal((await ana('/api/social')).body.myDuo.state, 'none');
+  void donoId;
 });

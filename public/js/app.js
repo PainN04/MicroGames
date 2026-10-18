@@ -108,9 +108,9 @@ function renderMenu() {
         <span class="rec">${recHtml(id)}</span>
       </button>`).join('') + `</section>
     <section class="kings glass" id="kings"></section>
-    <section class="teams kings glass" id="teams" hidden></section>`);
+    <section class="teams kings glass" id="duos" hidden></section>`);
   renderKings();
-  renderTourney(); renderTeams();
+  renderTourney(); renderDuos();
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
   bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
   bindDaily();
@@ -127,7 +127,7 @@ function refreshMenu() {
   if (!$('#kings')) return;
   for (const id in GAMES) { const rec = $(`.card[data-id="${id}"] .rec`); if (rec) rec.innerHTML = recHtml(id); }
   renderKings();
-  renderTourney(); renderTeams();
+  renderTourney(); renderDuos();
   const side = $('#daily .daily-side');
   if (side) side.innerHTML = dailySideHtml();
   const champs = $('#champs');
@@ -327,6 +327,11 @@ function noteHtml(n) {
     case 'duel_new': return `<b>${esc(n.by)}</b> te desafiou pra um duelo de ${g.name}<small>vale a melhor partida até ${untilText(n.until).replace('até ', '')} · toque pra ver</small>`;
     case 'duel_end': return `Duelo de ${g.name} contra <b>${esc(n.vs)}</b>: ${{ win: 'você ganhou! 🏆', lose: 'você perdeu', draw: 'empate' }[n.result]}<small>${n.mine != null ? fmt(g, n.mine) : 'sem partida'} × ${n.theirs != null ? fmt(g, n.theirs) : 'sem partida'}</small>`;
     case 'duel_cancel': return `<b>${esc(n.by)}</b> cancelou o duelo de ${g.name}`;
+    case 'duo_invite': return `<b>${esc(n.by)}</b> te chamou pra formar a dupla <b>${esc(n.name)}</b><small>toque pra responder · vale até ${untilText(n.until).replace('até ', '')}</small>`;
+    case 'duo_accept': return `<b>${esc(n.by)}</b> aceitou formar a dupla <b>${esc(n.name)}</b> com você 🎉`;
+    case 'duo_decline': return `<b>${esc(n.by)}</b> recusou o convite pra dupla ${esc(n.name)}`;
+    case 'duo_cancel': return `<b>${esc(n.by)}</b> cancelou o convite pra dupla ${esc(n.name)}`;
+    case 'duo_left': return n.by === 'o admin' ? `A dupla <b>${esc(n.name)}</b> foi desfeita pelo admin` : `<b>${esc(n.by)}</b> saiu da dupla ${esc(n.name)}`;
     case 'tourney': return `Torneio da semana (${dayLabelBR(n.start)} – ${dayLabelBR(n.end - 1)}): você ficou em <b>${n.rank}º</b> com ${n.points} pontos${n.rank === 1 ? ' 🏆' : ''}`;
     default: {
       const where = n.kind === 'geral' ? 'o recorde geral' : `a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`;
@@ -334,12 +339,14 @@ function noteHtml(n) {
     }
   }
 }
-const noteIcon = n => ({ reaction: 'smile', tourney: 'trophy' }[n.kind] || 'swords');
-const noteKnown = n => n.kind === 'tourney' || !!GAMES[n.game];
+const isDuoNote = n => String(n.kind || '').startsWith('duo_');
+const noteIcon = n => (isDuoNote(n) ? 'users' : { reaction: 'smile', tourney: 'trophy' }[n.kind] || 'swords');
+const noteKnown = n => n.kind === 'tourney' || isDuoNote(n) || !!GAMES[n.game];
 /** O que acontece ao tocar no aviso. */
 function noteAct(n) {
   if (n.kind === 'duel_new' || n.kind === 'duel_end' || n.kind === 'duel_cancel') return duelsModal({ game: n.game });
   if (n.kind === 'tourney') return showMenu();
+  if (isDuoNote(n)) return duoModal();
   play(n.game);
 }
 const noteAgo = ms => { const m = Math.round(ms / 60000); return m < 1 ? 'agora' : m < 60 ? `há ${m} min` : m < 1440 ? `há ${Math.floor(m / 60)} h` : `há ${Math.floor(m / 1440)} d`; };
@@ -372,13 +379,13 @@ function showNotes(notes) {
   for (const n of notes) {
     if (!noteKnown(n)) continue;
     const t = document.createElement('button');
-    t.className = 'toast glass' + (['reaction', 'tourney'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win') ? ' good' : '');
+    t.className = 'toast glass' + (['reaction', 'tourney', 'duo_accept'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win') ? ' good' : '');
     t.innerHTML = `<span class="ic">${icon(noteIcon(n))}</span><span>${noteHtml(n)}</span>`;
     t.onclick = () => { t.remove(); noteAct(n); };
     box.appendChild(t);
     setTimeout(() => t.remove(), 12_000);
   }
-  notes.some(n => ['reaction', 'tourney'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win')) ? sfx.good?.() : sfx.bad?.();
+  notes.some(n => ['reaction', 'tourney', 'duo_invite', 'duo_accept'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win')) ? sfx.good?.() : sfx.bad?.();
 }
 async function pingSession() {
   if (!me || document.hidden) return;
