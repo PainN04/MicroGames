@@ -662,3 +662,109 @@ test('duplas: o admin escolhe desde quando as partidas contam (agora, início do
   assert.equal(d.since, d.formedAt, 'sem ajuste do admin: desde a formação');
   await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
 });
+
+/* ---------- desempenho: idas e voltas ao banco ---------- */
+// Cada consulta ao Neon é uma ida e volta pela rede, então o que pesa é quantas rodadas uma rota espera em fila.
+// O medidor troca o sql do teste por um que segura a resposta até a próxima volta do event loop (como a rede faria):
+// consultas disparadas juntas (Promise.all) caem na mesma rodada; uma que espera a outra abre rodada nova.
+async function measure(fn) {
+  const store = getStore(), real = store.sql;
+  const m = { queries: [], rounds: 0 };
+  let batch = null;
+  store.sql = (strings, ...values) => {
+    m.queries.push(strings.join('?').replace(/\s+/g, ' ').trim());
+    if (!batch) {
+      m.rounds++;
+      batch = [];
+      setImmediate(() => { const b = batch; batch = null; for (const done of b) done(); });
+    }
+    const p = real(strings, ...values);
+    return new Promise((resolve, reject) => batch.push(() => p.then(resolve, reject)));
+  };
+  try { m.result = await fn(); } finally { store.sql = real; }
+  return m;
+}
+
+const notUsers = q => !/FROM users\b/.test(q) || /WHERE id = \?/.test(q); // a lista de contas (usersMap), não a sessão
+
+// Limites = o que as rotas fazem depois do commit "Mais leve" (2d48477); entre parênteses, o que faziam antes.
+// Se um teste daqui falhar, alguma consulta voltou a esperar outra sem precisar — veja `m.queries` pra achar qual.
+test('desempenho: /api/auth/me lê a sessão e depois, juntos, bloqueio e avisos (2 rodadas; antes 3)', async () => {
+  const ana = await login('ana', 'senha-ana-123');
+  const m = await measure(() => ana('/api/auth/me'));
+  assert.equal(m.result.status, 200);
+  assert.ok(m.result.body.user);
+  assert.ok(m.rounds <= 2, `${m.rounds} rodadas: ${m.queries.join(' | ')}`);
+});
+
+test('desempenho: ping sem duelo vencido não busca a lista de contas (3 rodadas; antes 6)', async () => {
+  const ana = await login('ana', 'senha-ana-123');
+  await sql`UPDATE duels SET status = ${'cancelled'} WHERE status = ${'open'}`;
+  await sql`UPDATE notifications SET seen = ${true}`; // sem aviso novo pra entregar (entregar é mais uma rodada)
+  const m = await measure(() => ana('/api/auth/ping'));
+  assert.equal(m.result.status, 200);
+  assert.ok(m.queries.every(notUsers), 'nenhuma leitura de todas as contas: ' + m.queries.join(' | '));
+  assert.ok(m.rounds <= 3, `${m.rounds} rodadas: ${m.queries.join(' | ')}`);
+});
+
+test('desempenho: ping que fecha um duelo busca as contas uma vez e avisa os dois juntos', async () => {
+  const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123');
+  const d = await ana('/api/duels', { method: 'POST', body: { opponentId: await idOf('bia'), game: 'mira' } });
+  assert.equal(d.status, 201);
+  await sql`UPDATE duels SET ends_at = ${Date.now()} WHERE id = ${d.body.id}`;
+  await new Promise(r => setTimeout(r, 5));
+  const m = await measure(() => ana('/api/auth/ping'));
+  assert.equal(m.result.status, 200);
+  assert.equal(m.queries.filter(q => !notUsers(q)).length, 1, 'lista de contas lida uma vez');
+  // sessão, presença+duelos vencidos, contas, placares dos dois, fecha, avisos dos dois, avisos novos+contador, marca vistos
+  assert.ok(m.rounds <= 8, `${m.rounds} rodadas: ${m.queries.join(' | ')}`);
+  assert.ok((await notesOf(bia)).some(n => n.kind === 'duel_end' && n.duel === d.body.id));
+});
+
+test('desempenho: /api/social faz as leituras em paralelo, com quantos duelos abertos houver (6 rodadas; antes 14)', async () => {
+  const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123');
+  await sql`UPDATE duels SET status = ${'cancelled'} WHERE status = ${'open'}`;
+  const biaId = await idOf('bia');
+  for (const game of ['mira', 'memoria']) assert.equal((await ana('/api/duels', { method: 'POST', body: { opponentId: biaId, game } })).status, 201);
+  const m = await measure(() => ana('/api/social'));
+  assert.equal(m.result.status, 200);
+  assert.equal(m.result.body.duels.open.length, 2);
+  assert.ok(m.rounds <= 6, `${m.rounds} rodadas: ${m.queries.join(' | ')}`);
+  // um duelo aberto a mais não pode custar rodada a mais (os placares saem todos juntos)
+  assert.equal((await bia('/api/duels', { method: 'POST', body: { opponentId: await idOf('paulo'), game: 'mira' } })).status, 201);
+  assert.equal((await ana('/api/duels', { method: 'POST', body: { opponentId: await idOf('paulo'), game: 'mira' } })).status, 201);
+  const m2 = await measure(() => ana('/api/social'));
+  assert.equal(m2.result.body.duels.open.length, 3);
+  assert.equal(m2.rounds, m.rounds, 'mesmas rodadas com mais duelos');
+  await sql`UPDATE duels SET status = ${'cancelled'} WHERE status = ${'open'}`;
+});
+
+test('desempenho: semanas de torneio já fechadas não são conferidas uma a uma', async () => {
+  const social = require('../lib/social');
+  const now = social.weekEnd(social.TOURNEY_FIRST_WEEK + 3) + 3 * 3600_000;
+  const ana = { id: await idOf('ana'), name: 'Ana' };
+  await social.socialState(ana, now); // fecha o que faltar
+  const m = await measure(() => social.socialState(ana, now));
+  // a única leitura por chave é a dos jogos da semana atual; antes vinha mais uma por semana fechada
+  assert.equal(m.queries.filter(q => /FROM settings WHERE key = \?/.test(q)).length, 1, 'nenhuma consulta por semana: ' + m.queries.join(' | '));
+  assert.equal(m.queries.filter(q => /key LIKE \?/.test(q)).length, 1, 'semanas fechadas lidas uma vez só');
+});
+
+test('desempenho: ranking e prêmios do dia saem numa rodada só', async () => {
+  for (const p of ['/api/scores', '/api/flair']) {
+    const m = await measure(() => client()(p));
+    assert.equal(m.result.status, 200, p);
+    assert.equal(m.rounds, 1, `${p}: ${m.queries.join(' | ')}`);
+  }
+});
+
+test('desempenho: instância nova com o banco em dia confere as tabelas com 1 consulta (antes ~27)', () => {
+  // processo separado = instância nova (o ensureSchema daqui já rodou), apontando pro mesmo banco de teste
+  const { execFileSync } = require('node:child_process');
+  const code = `
+    const store = require('./lib/store'), real = store.getStore().sql; let n = 0;
+    store.getStore().sql = (...a) => { n++; return real(...a); };
+    require('./lib/schema').ensureSchema().then(() => console.log(n));`;
+  const out = execFileSync(process.execPath, ['-e', code], { cwd: path.join(__dirname, '..'), env: process.env, encoding: 'utf8' });
+  assert.equal(Number(out.trim()), 1);
+});
