@@ -145,17 +145,27 @@ function renderCrown() {
 let rankTab = 'kings';
 function rankingsModal(tab = rankTab) {
   const hall = hallHtml(), week = weekInnerHtml();
-  if ((tab === 'hall' && !hall) || (tab === 'week' && !week)) tab = 'kings';
-  rankTab = tab;
   const tabs = [['kings', 'crown', 'Quem manda'], hall && ['hall', 'landmark', 'Hall da fama'], week && ['week', 'ticket', 'Tickets']].filter(Boolean);
-  const body = tab === 'kings' ? `${seasonSeg()}${kingsHtml()}` : tab === 'hall' ? hall : `<div class="week">${week}</div>`;
+  const bodyOf = t => t === 'kings' ? `${seasonSeg()}${kingsHtml()}` : t === 'hall' ? hall : `<div class="week">${week}</div>`;
+  if (!tabs.some(([t]) => t === tab)) tab = 'kings';
+  rankTab = tab;
   const { el, close } = modal(`<h2>${icon('crown')} Rankings</h2>
     ${tabs.length > 1 ? `<div class="seg" role="tablist" aria-label="Rankings">${tabs.map(([t, ic, l]) => `<button role="tab" data-rk="${t}" aria-selected="${tab === t}" aria-pressed="${tab === t}">${icon(ic)} ${l}</button>`).join('')}</div>` : ''}
-    <div class="rk-body kings">${body}</div><button class="btn ghost" id="rkClose">Fechar</button>`, { wide: true });
+    <div class="rk-body kings"></div><button class="btn ghost" id="rkClose">Fechar</button>`, { wide: true });
+  const body = el.querySelector('.rk-body');
+  // troca de aba / de período só refaz o miolo — a janela fica no lugar (recriar faria a animação de entrada piscar)
+  const paint = () => {
+    body.innerHTML = bodyOf(rankTab);
+    bindSeasonSeg(body, () => { refreshMenu(); paint(); });
+  };
+  el.querySelectorAll('[data-rk]').forEach(b => b.onclick = () => {
+    rankTab = b.dataset.rk;
+    el.querySelectorAll('[data-rk]').forEach(x => { const on = x === b; x.setAttribute('aria-selected', on); x.setAttribute('aria-pressed', on); });
+    paint();
+  });
   el.querySelector('#rkClose').onclick = close;
-  el.querySelectorAll('[data-rk]').forEach(b => b.onclick = () => { close(); rankingsModal(b.dataset.rk); });
-  bindSeasonSeg(el.querySelector('.rk-body'), () => { refreshMenu(); close(); rankingsModal('kings'); });
   el.addEventListener('click', e => { if (e.target.closest('[data-profile]')) close(); }); // abrir um perfil fecha a janela
+  paint();
 }
 
 /* ---------- duplas ---------- */
