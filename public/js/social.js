@@ -5,9 +5,6 @@ let social = null;
 async function loadSocial() {
   if (localMode || !me || me.mustChange) { social = null; return null; }
   try { social = await api('api/social'); } catch { /* sem rede: mantém o último */ }
-  const n = social?.duels?.open?.length || 0;
-  const b = $('#duelsCnt');
-  if (b) { b.textContent = n; b.hidden = !n; }
   setDuoBadge();
   return social;
 }
