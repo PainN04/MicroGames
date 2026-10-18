@@ -33,6 +33,14 @@ function showAdmin() {
       <section class="glass">
         <h2>Duplas</h2>
         <p class="note">As duplas são formadas pelos próprios jogadores (convite + aceite). Aqui você só modera: renomear um nome inadequado ou desfazer uma dupla.</p>
+        <form class="row" id="duoNew" autocomplete="off">
+          <label>Pessoa 1<select name="aId" required></select></label>
+          <label>Pessoa 2<select name="bId" required></select></label>
+          <label>Nome da dupla<input name="name" maxlength="24" placeholder="ex.: Os Imbatíveis" required></label>
+          <button class="btn">+ Criar dupla</button>
+        </form>
+        <p class="err" id="duoNewErr" style="color:oklch(80% 0.14 18)"></p>
+        <p class="note">A dupla criada aqui já nasce ativa (sem convite) e vale a partir de agora, como qualquer outra. Só aparecem pessoas que não estão em dupla nem com convite aberto.</p>
         <div id="duosAdmin"><p class="hint" style="text-align:left">Carregando...</p></div>
       </section>
       <section class="glass">
@@ -68,7 +76,23 @@ async function loadAdminDuos() {
   const box = $('#duosAdmin');
   if (!box) return;
   try {
-    const { duos } = await api('api/admin/duos');
+    const [{ duos }, { users }] = await Promise.all([api('api/admin/duos'), api('api/admin/users')]);
+    // formulário de criação: só quem está livre (ativo e fora de qualquer dupla)
+    const busy = new Set(duos.flatMap(d => [d.aId, d.bId]));
+    const free = users.filter(u => u.active && !busy.has(u.id)).sort((x, y) => x.name.localeCompare(y.name, 'pt-BR'));
+    const opts = '<option value="">Escolha…</option>' + free.map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('');
+    for (const n of ['aId', 'bId']) { const sel = document.querySelector(`#duoNew select[name=${n}]`); if (sel) sel.innerHTML = opts; }
+    const form = $('#duoNew');
+    if (form) form.onsubmit = async e => {
+      e.preventDefault();
+      const f = new FormData(e.target), err = $('#duoNewErr');
+      err.textContent = '';
+      try {
+        await api('api/admin/duos', { method: 'POST', body: { aId: Number(f.get('aId')), bId: Number(f.get('bId')), name: f.get('name') } });
+        e.target.reset();
+        loadAdminDuos();
+      } catch (e2) { err.textContent = e2.message; }
+    };
     box.innerHTML = duos.length ? `<div class="scroll" style="max-height:none"><table class="tickets users"><thead><tr><th>Dupla</th><th>Pessoas</th><th>Situação</th><th></th></tr></thead><tbody>${duos.map(d => `<tr data-id="${d.id}">
         <td>${esc(d.name)}</td><td>${esc(d.a)} & ${esc(d.b)}</td><td>${d.status === 'active' ? 'ativa' : 'convite aberto'}</td>
         <td><div class="actions"><button class="btn ghost" data-duo="rename">Renomear</button><button class="btn ghost" data-duo="end">Desfazer</button></div></td></tr>`).join('')}</tbody></table></div>`

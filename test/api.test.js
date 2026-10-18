@@ -595,3 +595,32 @@ test('duplas: recusar, cancelar, convite que expira e moderação do admin', asy
   assert.equal((await ana('/api/social')).body.myDuo.state, 'none');
   void donoId;
 });
+
+test('duplas: o admin forma uma dupla direto (já ativa), com as mesmas regras de nome e de pessoa livre', async () => {
+  const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123'), dono = await login('paulo', 'senha-dono-123');
+  const anaId = await idOf('ana'), biaId = await idOf('bia'), donoId = await idOf('paulo');
+  const criar = (c, aId, bId, name) => c('/api/admin/duos', { method: 'POST', body: { aId, bId, name } });
+  // limpa o que testes anteriores deixaram abertos
+  await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
+  assert.equal((await criar(ana, anaId, biaId, 'Intrusa')).status, 403, 'jogador não cria dupla pelo admin');
+  assert.equal((await criar(dono, anaId, anaId, 'Mesma')).status, 400, 'duas pessoas diferentes');
+  assert.equal((await criar(dono, anaId, 99999, 'Fantasma')).status, 404);
+  assert.equal((await criar(dono, anaId, biaId, 'x')).status, 400, 'nome curto');
+  const feita = await criar(dono, anaId, biaId, 'Criada pelo Admin');
+  assert.equal(feita.status, 201);
+  const vista = (await ana('/api/social')).body;
+  assert.equal(vista.myDuo.state, 'active', 'nasce ativa, sem convite');
+  assert.equal(vista.myDuo.name, 'Criada pelo Admin');
+  assert.ok(vista.myDuo.formedAt > 0);
+  assert.ok((await notesOf(bia)).some(n => n.kind === 'duo_admin_new' && n.with === 'Ana'));
+  assert.ok((await notesOf(ana)).some(n => n.kind === 'duo_admin_new' && n.with === 'Bia'));
+  const lista = (await dono('/api/admin/duos')).body.duos.find(d => d.id === feita.body.id);
+  assert.deepEqual([lista.aId, lista.bId], [anaId, biaId]);
+  assert.equal((await criar(dono, anaId, donoId, 'Outra')).status, 409, 'Ana já está em dupla');
+  assert.equal((await criar(dono, donoId, biaId, 'Outra')).status, 409, 'Bia já está em dupla');
+  const outroId = await idOf('outroadm');
+  assert.equal((await criar(dono, donoId, outroId, 'criada PELO admin')).status, 409, 'nome já usado (maiúsculas não contam)');
+  assert.equal((await criar(dono, donoId, outroId, 'Dupla dos Admins')).status, 201);
+  assert.equal((await dono(`/api/admin/duos/${feita.body.id}/end`, { method: 'POST', body: {} })).status, 200);
+  await sql`UPDATE duos SET status = ${'ended'} WHERE status = ${'active'}`;
+});
