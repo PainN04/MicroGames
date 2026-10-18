@@ -894,3 +894,40 @@
   .duo-how { margin: var(--space-sm) 0; text-align: left; font-size: var(--fs-sm); color: var(--muted); }
   .duo-how summary { cursor: pointer; color: var(--text); }
   .duo-how p { margin: .5rem 0 0; line-height: 1.45; }
+
+  /* ---------- menu mais enxuto: campeões dentro do desafio, atalhos em faixa ---------- */
+  .daily-champs { grid-column: 1 / -1; padding: var(--space-sm) var(--space-md) var(--space-md); border-top: 1px solid var(--border); background: oklch(100% 0 0 / .02); }
+  .daily-champs.champs { padding: var(--space-sm) var(--space-md) var(--space-md); }
+  .champs-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-sm); margin-bottom: var(--space-xs); }
+  .champs-head h3 { margin: 0; }
+  .link-btn { background: none; border: 0; color: var(--primary); font: inherit; font-size: var(--fs-xs); font-weight: 600; cursor: pointer; padding: .3em .5em; border-radius: 8px; }
+  .link-btn:hover { background: var(--surface-2); }
+  .daily-champs:not(.open) li.more { display: none; }
+  .strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-xs); margin: 0 0 var(--space-md); min-height: 62px; }
+  .strip[hidden] { display: none; }
+  .strip .act { display: flex; align-items: center; gap: .65em; text-align: left; font: inherit; color: var(--text); cursor: pointer; padding: .65em .8em; border-radius: 16px; min-width: 0;
+    border: 1px solid var(--border); background: var(--surface-2); transition: transform var(--duration) var(--ease-spring), border-color var(--duration); }
+  .strip .act:hover { transform: translateY(-2px); border-color: var(--border-strong); }
+  .strip .act .ic { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 12px; background: oklch(70% 0.19 290 / .18); color: oklch(85% 0.12 290); }
+  .strip .act .ic .i { width: 18px; height: 18px; }
+  .strip .act .tx { min-width: 0; }
+  .strip .act b { display: block; font-size: var(--fs-sm); }
+  .strip .act small { display: block; color: var(--muted); font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .strip .act.hot { border-color: var(--yellow); background: oklch(86% 0.17 92 / .1); }
+  .strip .act.hot .ic { background: oklch(86% 0.17 92 / .2); color: var(--yellow); }
+  @media (max-width: 720px) { .strip { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .week { margin: var(--space-lg) 0 0; }
+  .tourney-body .t-head, .teams .kings-head { margin-top: 0; }
+  .hero { padding-bottom: var(--space-md); }
+  @media (max-width: 700px) { .daily-stage { min-height: 104px; } .daily-stage .z3d { scale: .72; } .daily-info { padding-top: var(--space-sm); } }
+  /* celular: o desafio sem o palco 3D, só o último campeão (o resto em "ver mais") e os atalhos numa linha que rola */
+  @media (min-width: 561px) { .champs-head.few .link-btn { display: none; } }
+  @media (max-width: 560px) {
+    .hero p { display: none; }
+    .daily-stage { display: none; }
+    .daily-info { padding-top: var(--space-md); }
+    .daily-champs:not(.open) li:nth-child(n+2) { display: none; }
+    .strip { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(158px, 1fr); overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; padding-bottom: 2px; }
+    .strip::-webkit-scrollbar { display: none; }
+    .strip .act { scroll-snap-align: start; }
+  }

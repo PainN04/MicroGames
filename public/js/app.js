@@ -62,7 +62,8 @@ function dailyHtml() {
       <button class="btn" id="dailyPlay">${icon('play')} Jogar</button>
       <div class="pick-row" id="pickRow">${pickRowHtml()}</div>
     </div>
-    <div class="daily-side">${dailySideHtml()}</div>`;
+    <div class="daily-side">${dailySideHtml()}</div>
+    <div class="daily-champs champs" id="champs" hidden></div>`;
 }
 // ranking do dia (atualiza sozinho quando o placar chega, sem redesenhar o palco 3D)
 function dailySideHtml() {
@@ -97,10 +98,7 @@ function renderMenu() {
   main.replaceChildren(heroNode);
   main.insertAdjacentHTML('beforeend', `
     <section class="daily glass" id="daily" data-game="${dailyGame()}" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
-    <section class="champs glass" id="champs"${champsHtml() ? '' : ' hidden'}>${champsHtml()}</section>
-    <section class="week glass" id="week" hidden></section>
-    <section class="tourney glass" id="tourney" hidden></section>
-    <section class="teams kings glass" id="duos" hidden></section>
+    <div class="strip" id="strip"${me ? '' : ' hidden'}></div>
     <div class="menu-bar"><h2>Jogos</h2><span class="hint">Ranking:</span>${seasonSeg()}</div>
     <section class="grid" aria-label="Jogos">` +
     menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
@@ -108,9 +106,10 @@ function renderMenu() {
         <h3>${g.name}</h3>
         <span class="rec">${recHtml(id)}</span>
       </button>`).join('') + `</section>
+    <section class="week glass" id="week" hidden></section>
     <section class="kings glass" id="kings"></section>`);
   renderKings();
-  renderTourney(); renderDuos();
+  renderChamps(); renderStrip();
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
   bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
   bindDaily();
@@ -127,11 +126,10 @@ function refreshMenu() {
   if (!$('#kings')) return;
   for (const id in GAMES) { const rec = $(`.card[data-id="${id}"] .rec`); if (rec) rec.innerHTML = recHtml(id); }
   renderKings();
-  renderTourney(); renderDuos();
+  renderStrip();
   const side = $('#daily .daily-side');
   if (side) side.innerHTML = dailySideHtml();
-  const champs = $('#champs');
-  if (champs) { const h = champsHtml(); champs.innerHTML = h; champs.hidden = !h; }
+  renderChamps();
   refreshPickRow();
   applyMeFlair();
 }
