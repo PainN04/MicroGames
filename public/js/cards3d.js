@@ -667,6 +667,9 @@ SMALL.addEventListener?.('change', () => { if (currentView === 'menu' && documen
 
 // botão de brilho no header: liga/desliga o 3D (fica salvo no navegador). Desligado = emoji parado, sem biblioteca nem animação.
 let fx3dOn = (() => { try { return localStorage.getItem('mg_3d') !== 'off'; } catch { return true; } })();
+// com o 3D ligado, as bibliotecas já começam a baixar agora (enquanto a página descobre quem está logado),
+// e não só quando o menu é desenhado — as cenas aparecem antes. Falhou? enhanceCards tenta de novo.
+if (fx3dOn) { loadLib(ZDOG_URL).catch(() => {}); loadLib(TILT_URL).catch(() => {}); }
 function renderFx3d() {
   const b = $('#fx3d');
   b.setAttribute('aria-pressed', fx3dOn);

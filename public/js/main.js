@@ -53,10 +53,11 @@ setInterval(() => { if (currentView === 'menu' && !document.hidden) refreshGate(
 (async function boot() {
   if (localMode) return showMenu(); // aberto direto do arquivo: sem servidor, sem login
   let me0 = null;
+  if (!pending().length) scoresEarly = requestScores(); // o ranking é público: baixa enquanto descobre quem está logado
   try { me0 = await api('api/auth/me'); } catch {}
   const { user = null, gate: g = null, reason } = me0 || {};
   if (user) { setMe(user); setUnread(me0.unread); if (!user.mustChange) gate = g; }
-  if (user && !user.mustChange && location.hash === '#recordes' && user.canEditRecords) return showRecords();
+  if (user && !user.mustChange && location.hash === '#recordes' && user.canEditRecords) { scoresEarly = null; return showRecords(); }
   showMenu();
   if (!me0) return loginModal('Não consegui falar com o servidor. Tente de novo.');
   if (!user) return loginModal(reason === 'other-device' ? 'Sua conta entrou em outro dispositivo — só dá pra usar em um por vez.' : '');

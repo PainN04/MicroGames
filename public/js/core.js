@@ -37,15 +37,24 @@ async function flushPending() {
     localStorage.setItem('mg_pending', JSON.stringify(queue));
   }
 }
+// Ranking e prêmios do dia (jogo escolhido e molduras) baixam juntos — os dois são públicos.
+function requestScores() {
+  const get = url => fetch(url).then(r => { if (!r.ok) throw new Error(r.status); return r.json(); });
+  const req = { scores: get('api/scores'), flair: get('api/flair') };
+  req.scores.catch(() => {}); req.flair.catch(() => {}); // o erro é tratado em fetchScores; isto só evita "promessa sem dono"
+  return req;
+}
+// O boot já pede o ranking junto com o login (sem esperar /api/auth/me); a primeira ida ao menu aproveita esse pedido.
+let scoresEarly = null;
 async function fetchScores() {
   if (localMode) { scores = localScores(); online = false; }
   else {
     try {
       await flushPending();
-      const r = await fetch('api/scores');
-      if (!r.ok) throw new Error(r.status);
-      scores = await r.json(); online = true;
-      try { const f = await fetch('api/flair'); if (f.ok) { flair = await f.json(); localStorage.setItem('mg_flair', JSON.stringify(flair)); } } catch {} // jogo escolhido e molduras: falhar aqui não derruba o ranking
+      const req = scoresEarly || requestScores();
+      scoresEarly = null;
+      scores = await req.scores; online = true;
+      try { flair = await req.flair; localStorage.setItem('mg_flair', JSON.stringify(flair)); } catch {} // jogo escolhido e molduras: falhar aqui não derruba o ranking
       crownMemo = undefined;
       try { localStorage.setItem('mg_cache', JSON.stringify(scores)); } catch {}
     } catch { online = false; }

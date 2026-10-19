@@ -71,6 +71,12 @@ const play = (c, game, score, proof) => c('/api/scores', { method: 'POST', body:
 
 /* ---------- login e sessão ---------- */
 
+test('schema: guarda a versão das tabelas pra instância nova não refazer as migrações', async () => {
+  const { schemaKey } = require('../lib/schema');
+  const rows = await sql`SELECT key FROM settings WHERE key LIKE ${'schema:%'}`;
+  assert.deepEqual(rows.map(r => r.key), [schemaKey()], 'uma marca só, a da versão atual');
+});
+
 test('login: senha errada recusa, certa entra', async () => {
   const c = client();
   assert.equal((await c('/api/auth/login', { method: 'POST', body: { username: 'ana', password: 'errada' } })).status, 401);
@@ -440,6 +446,7 @@ test('duelo: desafio, só vale partida depois do desafio, vence a melhor, avisa 
   const aviso = n => n.kind === 'duel_end';
   const dela = (await notesOf(ana)).find(aviso), dele = (await notesOf(bia)).find(aviso);
   assert.equal(dela.result, 'lose'); assert.equal(dele.result, 'win');
+  assert.equal(dela.vs, 'Bia'); assert.equal(dele.vs, 'Ana'); // nomes certos (a lista de contas é buscada só quando um duelo fecha)
   assert.equal((await notesOf(ana)).filter(aviso).length, 1, 'avisa uma vez só');
   const after = (await bia('/api/social')).body;
   assert.equal(after.duels.open.length, 0);

@@ -842,8 +842,11 @@
   .t-head { display: flex; align-items: center; gap: var(--space-sm); flex-wrap: wrap; margin-bottom: var(--space-sm); }
   .t-head h2 { margin: 0; font-size: var(--fs-lg); letter-spacing: -0.02em; display: flex; align-items: center; gap: .45em; }
   .t-head h2 .i { color: var(--yellow); }
-  .t-body { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--space-md); }
-  .tgames { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-xs); }
+  /* janela estreita (560px): jogos um por linha e classificação embaixo, nada cortado */
+  .t-body { display: grid; grid-template-columns: 1fr; gap: var(--space-md); }
+  .tgames { display: grid; grid-template-columns: 1fr; gap: var(--space-xs); }
+  .tgames .tgame { flex-direction: row; flex-wrap: wrap; align-items: center; column-gap: .6em; }
+  .tgames .tgame small { flex-basis: 100%; white-space: normal; }
   .tgame { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; font: inherit; color: var(--text); cursor: pointer; padding: .7em .8em; border-radius: 16px; border: 1px solid var(--border); min-width: 0;
     background: linear-gradient(160deg, oklch(30% 0.08 var(--h) / .55), var(--surface-2)); transition: transform var(--duration) var(--ease-spring), border-color var(--duration); }
   .tgame:hover { transform: translateY(-2px); border-color: oklch(75% 0.12 var(--h)); }
@@ -865,10 +868,10 @@
   .teams { margin-top: var(--space-md); }
   .teams .kings-head h2 small { font-weight: 400; font-size: var(--fs-xs); }
   .teams ol { flex-direction: column; flex-wrap: nowrap; gap: 4px; }
-  .teams li { display: flex; align-items: center; flex-wrap: wrap; gap: .5em; border-radius: 14px; }
+  .teams li { display: flex; align-items: center; flex-wrap: wrap; gap: .3em .5em; padding: .55em .9em; border-radius: 14px; background: var(--surface-2); font-size: var(--fs-sm); }
   .teams li .tn { color: var(--text); }
   .teams li .tp { margin-left: auto; font-weight: 700; color: var(--yellow); }
-  .teams li small { flex-basis: 100%; color: var(--muted); padding-left: 2.4rem; font-size: var(--fs-xs); }
+  .teams li small { flex-basis: 100%; color: var(--muted); padding-left: calc(1.25em + .5em); font-size: var(--fs-xs); }
   .team-tag { font-size: var(--fs-xs); vertical-align: middle; display: inline-flex; align-items: center; gap: .35em; }
   .team-tag .i { width: 1em; height: 1em; }
 

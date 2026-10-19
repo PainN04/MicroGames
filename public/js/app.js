@@ -136,13 +136,14 @@ async function showMenu() {
   currentView = 'menu';
   if (changed) setTimeout(pingSession, 0);
   swap(renderMenu);
+  const week = loadWeek(); // tickets da semana (Geiko) em paralelo com o ranking — só aparecem na janela "Rankings"
   await Promise.all([fetchScores(), loadSocial()]);
   // o jogo do dia mudou depois que o servidor respondeu (ex.: o vencedor de ontem escolheu o de hoje): redesenha o menu
   if (currentView === 'menu' && $('#daily') && $('#daily').dataset.game !== dailyGame()) renderMenu();
   if (currentView === 'menu') { refreshMenu(); maybeCongrats(); }
   checkVersion();
   if (me && !me.mustChange) refreshGate();
-  await loadWeek();
+  await week;
   if (currentView === 'menu') refreshMenu();
 }
 
