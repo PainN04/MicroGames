@@ -159,7 +159,9 @@ Clique no nome de qualquer pessoa pra abrir o perfil. São **43 conquistas**, co
 flowchart LR
     A[Jogador abre um jogo] --> B{Tem ID do Geiko?}
     B -- não --> OK[Libera]
-    B -- sim --> C[Busca tickets abertos<br/>cache de 60s]
+    B -- sim --> H{Horário livre?<br/>18h–8h ou fim de semana}
+    H -- sim --> OK
+    H -- não --> C[Busca tickets abertos<br/>cache de 60s]
     C -->|Geiko fora do ar| OK
     C --> D[Soma o peso de cada ticket]
     D --> E{Passou do limite?}
@@ -170,6 +172,7 @@ flowchart LR
 - Cada pessoa tem **conta própria**: senha com scrypt, sessão em cookie httpOnly com JWT assinado com `SESSION_SECRET`. O nome no ranking é o da conta, e no primeiro login a pessoa troca a senha temporária.
 - **Uma conta = um aparelho:** cada login grava um `session_id` novo e derruba a sessão anterior. A página confere a cada 20s (`/api/auth/ping`) e mostra o aviso.
 - Contas com **ID do Geiko** vinculado têm os jogos bloqueados quando a fila passa do limite. Quem não tem ID do Geiko nunca é bloqueado, e se o Geiko cair a regra libera em vez de travar todo mundo.
+- **Horário livre:** das 18h às 8h (horário de Brasília) nos dias úteis e o sábado e domingo inteiros, ninguém é bloqueado pela fila, mesmo com ticket aberto. O selo continua mostrando a fila, e o bloqueio manual do admin continua valendo nesse horário.
 - A consulta é a mesma do GeikoDashboard: `POST /attendance/search` com `attendantIds` + `openAttendance`.
 - **A regra é editável no painel admin** e fica na tabela `settings`. Os valores padrão:
 
@@ -179,6 +182,7 @@ flowchart LR
 | Peso por prioridade | `URG 2` · `ALT 1,5` · `MED 1` · `NOR 1` · `BAI 0,75` · sem prioridade `2,5` | Quanto cada ticket pesa. |
 | Sem interação | `× 1,5` | Ninguém mexeu desde a abertura, ou tem mensagem nova sem resposta. |
 | Aguardando cliente | `× 0,25` | Já interagiu e está esperando retorno do cliente. |
+| Horário livre | ligado · `18h` às `8h` · fim de semana | Fora desse horário a fila bloqueia; dentro dele libera todo mundo. |
 
 - O **selo no topo** mostra o estado da fila. Bloqueado, ele diz o menor número de tickets que, resolvidos, liberam; liberado, quanto ainda cabe na fila antes de bloquear.
 
@@ -189,7 +193,7 @@ flowchart LR
 Só pra contas com papel de admin:
 
 - 👥 **Contas:** criar, editar, desativar, vincular ID do Geiko, liberar ou bloquear manualmente.
-- 🚦 **Regra do Geiko:** limite, pesos e multiplicadores.
+- 🚦 **Regra do Geiko:** limite, pesos, multiplicadores e horário livre.
 - 📊 **Relatório:** partidas por pessoa × jogo, por dia e por hora.
 - 🧑‍💻 **Jogo × trabalho:** na semana, quantas partidas cada pessoa jogou comparado aos tickets que fechou e à fila atual.
 - ✏️ **Editor de recordes:** só a conta dona (`RECORDS_OWNER`) mexe em recorde, mesmo sendo admin.
