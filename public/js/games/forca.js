@@ -1,5 +1,5 @@
 GAMES.forca = {
-  name: 'Forca', icon: 'forca', hue: 20, desc: 'Descubra a palavra de TI ou do escritório antes de errar 6 letras. Acertou a palavra, vem outra. Letra do teclado ou toque nas letras. Errou 6, acabou.',
+  name: 'Forca', icon: 'forca', hue: 20, desc: 'Descubra a palavra de TI ou do escritório antes de errar 6 letras. Os erros continuam na próxima palavra: cada acerto tira só um. Letra do teclado ou toque nas letras. Errou 6, acabou.',
   better: 'high', unit: 'pontos',
   start(el, done) {
     // [palavra, dica]
@@ -47,7 +47,7 @@ GAMES.forca = {
     const next = () => {
       const w = deck.pop();
       if (!w) return finish();
-      [word, hint] = w; plain = norm(word); guessed = new Set(); wrong = 0; locked = false;
+      [word, hint] = w; plain = norm(word); guessed = new Set(); locked = false;
       keys.forEach(k => { k.disabled = false; k.className = 'key'; });
       el.querySelector('#hint').textContent = 'Dica: ' + hint + ' · ' + plain.replace(/[^A-Z]/g, '').length + ' letras';
       draw();
@@ -63,7 +63,8 @@ GAMES.forca = {
         if ([...plain].every(c => !ALPHA.includes(c) || guessed.has(c))) {
           // palavra completa: letras da palavra + erros que sobraram
           const gain = plain.replace(/[^A-Z]/g, '').length + (MAX - wrong);
-          pts += gain; solved++; locked = true; draw();
+          // os erros seguem para a próxima palavra, acertar só tira um
+          pts += gain; solved++; wrong = Math.max(0, wrong - 1); locked = true; draw();
           el.querySelector('#p').textContent = pts; el.querySelector('#w').textContent = solved;
           floatLabel('+' + gain);
           timers.push(setTimeout(next, 900));
