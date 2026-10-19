@@ -83,6 +83,7 @@ Confere a sintaxe de todos os scripts da página (`scripts/check-front.js`) e ro
 - Cada pessoa tem conta própria (senha com scrypt, sessão em cookie httpOnly com JWT assinado com `SESSION_SECRET`). O nome no ranking é o da conta. No primeiro login a pessoa troca a senha temporária.
 - Uma conta = um aparelho: cada login grava um `session_id` novo e derruba a sessão anterior; a página confere a cada 20s (`/api/auth/ping`) e mostra o aviso.
 - Contas com **ID do Geiko** vinculado têm os jogos bloqueados quando a fila de tickets abertos passa do limite. A regra (pesos por prioridade, multiplicador sem interação, multiplicador de status de espera, limite) fica no **Painel admin** e é guardada na tabela `settings`. Quem não tem ID do Geiko nunca é bloqueado.
+- **Horário livre**: das 18h às 8h (horário de Brasília) nos dias úteis e o sábado e domingo inteiros, ninguém é bloqueado pela fila, mesmo com ticket aberto. Os horários e o fim de semana são editáveis no Painel admin; o bloqueio manual do admin continua valendo nesse horário.
 - A consulta é a mesma do GeikoDashboard: `POST /attendance/search` com `attendantIds` + `openAttendance` (cache de 60s por atendente). Se o Geiko cair, libera em vez de travar todo mundo.
 - O selo no topo mostra o estado da fila; bloqueado, ele diz quantos tickets faltam resolver pra liberar.
 

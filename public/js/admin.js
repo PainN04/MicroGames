@@ -637,6 +637,13 @@ async function loadRules() {
           <label title="Desligado: todo mundo vê só quem mais resolveu; os números de cada um ficam no Relatório"><input type="checkbox" name="weeklyPublic" ${rules.weeklyPublic ? 'checked' : ''}> Mostrar ranking de tickets da semana pra todos</label></label>
         <label>Bloqueia quando a soma passar de<input type="number" name="limit" step="0.25" min="0" value="${rules.limit}"></label>
       </div>
+      <p class="note" style="margin-bottom:6px">Horário livre (Brasília) — nesse horário o site libera pra todo mundo, mesmo com ticket aberto. O bloqueio manual continua valendo.</p>
+      <div class="row" style="margin-bottom:var(--space-sm)">
+        <label class="checks"><label><input type="checkbox" name="fh_enabled" ${rules.freeHours.enabled ? 'checked' : ''}> Horário livre ligado</label>
+          <label><input type="checkbox" name="fh_weekends" ${rules.freeHours.weekends ? 'checked' : ''}> Sábado e domingo o dia todo</label></label>
+        <label>Livre a partir das (h)<input type="number" name="fh_from" step="1" min="0" max="23" value="${rules.freeHours.from}"></label>
+        <label>Até as (h)<input type="number" name="fh_to" step="1" min="0" max="23" value="${rules.freeHours.to}"></label>
+      </div>
       <p class="note" style="margin-bottom:6px">Peso por prioridade</p>
       <div class="row" style="margin-bottom:var(--space-sm)">
         ${PRIO_FIELDS.map(([k, label]) => `<label>${label}<input type="number" name="p_${k}" step="0.25" min="0" value="${rules.priority[k]}"></label>`).join('')}
@@ -661,6 +668,7 @@ async function loadRules() {
         priority: Object.fromEntries(PRIO_FIELDS.map(([k]) => [k, f.get('p_' + k)])),
         noInteractionMult: f.get('noInteractionMult'),
         waitingClientMult: f.get('waitingClientMult'),
+        freeHours: { enabled: f.get('fh_enabled') === 'on', weekends: f.get('fh_weekends') === 'on', from: f.get('fh_from'), to: f.get('fh_to') },
         // sem a lista do Geiko na tela, mantém a que já estava salva
         waitingClientSituationIds: sitEntries.length ? f.getAll('sit').map(Number) : rules.waitingClientSituationIds,
       };

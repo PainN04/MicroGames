@@ -523,6 +523,13 @@ function gatePopHtml() {
       <div class="acts"><button class="btn ghost" id="gateRefresh">${icon('refresh-cw')} Atualizar</button></div>`;
   }
   const pct = Math.min(100, gate.limit ? (gate.total / gate.limit) * 100 : 100);
+  if (gate.free) {
+    return `<b>${icon('circle-check')} Horário livre</b>
+      <p>Fora do expediente todo mundo joga, com ou sem ticket aberto. A fila volta a contar ${untilText(gate.free.until).replace('até', 'às')}.
+        ${gate.error ? '' : `Sua fila agora: <b>${fmtW(gate.total)}</b> de ${fmtW(gate.limit)} pontos.`}</p>
+      <div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>
+      <div class="acts"><button class="btn ghost" id="gateSee">Ver tickets</button><button class="btn ghost" id="gateRefresh">${icon('refresh-cw')} Atualizar</button></div>`;
+  }
   return `<b>${gate.blocked ? icon('lock') + ' Jogos bloqueados' : icon('circle-check') + ' Liberado pra jogar'}</b>
     <p>${gate.error ? esc(gate.error) : `Sua fila no Geiko soma <b>${fmtW(gate.total)}</b> pontos — o limite é ${fmtW(gate.limit)}. ${gateHint()}`}</p>
     <div class="meter" aria-hidden="true"><i style="width:${pct}%"></i></div>
@@ -563,7 +570,7 @@ function renderGate() {
     const pill = $('#gatePill');
     pill.className = `gate-pill ${gate.blocked ? 'blocked' : gate.error ? 'warn' : 'ok'}`;
     pill.innerHTML = gatePillHtml();
-    pill.title = gate.blocked ? 'Jogos bloqueados — clique pra ver' : 'Sua fila no Geiko — clique pra ver';
+    pill.title = gate.blocked ? 'Jogos bloqueados — clique pra ver' : gate.free ? 'Horário livre — clique pra ver' : 'Sua fila no Geiko — clique pra ver';
     pill.onclick = () => toggleGatePop();
     const pop = $('#gatePop');
     pop.className = `gate-pop glass ${gate.blocked ? 'blocked' : 'ok'}`;
@@ -592,7 +599,7 @@ function gateDialog() {
   const { el, close } = modal(`
     <h2>${gate.blocked ? icon('lock') + ' Fila cheia' : 'Sua fila no Geiko'}</h2>
     <p>Cada ticket tem um peso: sem prioridade ou sem interação pesa mais; aguardando o cliente pesa menos.
-      Soma atual <b>${fmtW(gate.total)}</b>, limite <b>${fmtW(gate.limit)}</b>.</p>
+      Soma atual <b>${fmtW(gate.total)}</b>, limite <b>${fmtW(gate.limit)}</b>.${gate.free ? ` Agora é horário livre: liberado ${untilText(gate.free.until)}.` : ''}</p>
     ${ticketsTable(gate.tickets)}
     <button class="btn" id="gclose">Fechar</button>`, { wide: true });
   el.querySelector('#gclose').onclick = close;

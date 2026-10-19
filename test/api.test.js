@@ -19,7 +19,7 @@ const { handle } = require('../lib/router');
 const { ensureSchema } = require('../lib/schema');
 const { sql, getStore } = require('../lib/store');
 const auth = require('../lib/auth');
-const { weigh, DEFAULT_RULES } = require('../lib/geiko');
+const { weigh, freeWindow, DEFAULT_RULES } = require('../lib/geiko');
 
 let server, base;
 
@@ -279,6 +279,22 @@ test('pesos dos tickets do Geiko', () => {
   assert.equal(w({ priority: null }), 2.5, 'sem prioridade pesa mais');
   assert.equal(w({ priority: 'NOR', lastInteractionDate: at }), 1.5, 'sem interação: x1.5');
   assert.equal(w({ priority: 'NOR', attendanceSituationId: 2 }), 0.25, 'aguardando cliente: x0.25');
+});
+
+test('horário livre: das 18h às 8h (Brasília) e fim de semana libera todo mundo', () => {
+  const at = iso => Date.parse(iso + '-03:00');
+  const free = iso => freeWindow(DEFAULT_RULES, at(iso));
+  assert.equal(free('2026-10-19T10:00:00'), null, 'segunda 10h: expediente');
+  assert.equal(free('2026-10-19T17:59:00'), null, 'segunda 17h59: ainda expediente');
+  assert.equal(free('2026-10-19T18:00:00').until, at('2026-10-20T08:00:00'), 'segunda 18h: livre até terça 8h');
+  assert.equal(free('2026-10-20T07:30:00').until, at('2026-10-20T08:00:00'), 'madrugada de terça');
+  assert.equal(free('2026-10-20T08:00:00'), null, 'terça 8h: volta o bloqueio');
+  assert.equal(free('2026-10-23T19:00:00').until, at('2026-10-26T08:00:00'), 'sexta à noite: livre até segunda 8h');
+  assert.equal(free('2026-10-25T14:00:00').until, at('2026-10-26T08:00:00'), 'domingo à tarde');
+  const off = { ...DEFAULT_RULES, freeHours: { ...DEFAULT_RULES.freeHours, enabled: false } };
+  assert.equal(freeWindow(off, at('2026-10-25T14:00:00')), null, 'desligado no painel');
+  const noWeekend = { ...DEFAULT_RULES, freeHours: { ...DEFAULT_RULES.freeHours, weekends: false } };
+  assert.equal(freeWindow(noWeekend, at('2026-10-25T14:00:00')), null, 'sem fim de semana: domingo 14h bloqueia');
 });
 
 test('bootstrap do banco de teste: não existe na produção nem quando já há contas', async () => {
