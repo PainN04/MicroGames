@@ -865,10 +865,10 @@
   .teams { margin-top: var(--space-md); }
   .teams .kings-head h2 small { font-weight: 400; font-size: var(--fs-xs); }
   .teams ol { flex-direction: column; flex-wrap: nowrap; gap: 4px; }
-  .teams li { display: flex; align-items: center; flex-wrap: wrap; gap: .5em; border-radius: 14px; }
+  .teams li { display: flex; align-items: center; flex-wrap: wrap; gap: .3em .5em; padding: .55em .9em; border-radius: 14px; background: var(--surface-2); font-size: var(--fs-sm); }
   .teams li .tn { color: var(--text); }
   .teams li .tp { margin-left: auto; font-weight: 700; color: var(--yellow); }
-  .teams li small { flex-basis: 100%; color: var(--muted); padding-left: 2.4rem; font-size: var(--fs-xs); }
+  .teams li small { flex-basis: 100%; color: var(--muted); padding-left: calc(1.25em + .5em); font-size: var(--fs-xs); }
   .team-tag { font-size: var(--fs-xs); vertical-align: middle; display: inline-flex; align-items: center; gap: .35em; }
   .team-tag .i { width: 1em; height: 1em; }
 
