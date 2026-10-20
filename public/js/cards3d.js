@@ -71,8 +71,8 @@ const SCENES_3D = {
     const SIDES = {
       front: (w, h, d) => ({ width: w, height: h, translate: { z: d / 2 } }),
       top: (w, h, d) => ({ width: w, height: d, translate: { y: -h / 2 }, rotate: { x: Z.TAU / 4 } }),
-      left: (w, h, d) => ({ width: d, height: h, translate: { x: -w / 2 }, rotate: { y: -Z.TAU / 4 } }),
-      right: (w, h, d) => ({ width: d, height: h, translate: { x: w / 2 }, rotate: { y: Z.TAU / 4 } }),
+      left: (w, h, d) => ({ width: d, height: h, translate: { x: -w / 2 }, rotate: { y: Z.TAU / 4 } }),
+      right: (w, h, d) => ({ width: d, height: h, translate: { x: w / 2 }, rotate: { y: -Z.TAU / 4 } }),
     };
     const TONE = { front: 0, top: 0.3, left: -0.15, right: -0.3 };
     const block = (addTo, w, h, d, color, translate, sides, stroke = 1.5) => {
@@ -122,7 +122,7 @@ const SCENES_3D = {
       const f = Math.min(1, k / 0.55);
       const turn = smooth(Math.min(1, f * 1.5));
       piece.translate.x = X(2) + (X(6) - X(2)) * smooth(Math.min(1, f * 1.3));
-      piece.translate.y = -64 + (LAND + 64) * f * f;
+      piece.translate.y = -46 + (LAND + 46) * f * f;
       piece.rotate.z = (1 - turn) * (Math.PI / 2);
       ghost.visible = k < 0.55;
       // 0,55–0,8: a linha de baixo (agora completa) pisca em branco; 0,8: some e o que estava em cima desce uma casa
@@ -133,14 +133,15 @@ const SCENES_3D = {
       const regrow = k < 0.12 ? smooth(k / 0.12) : 1;
       stack.forEach(s => {
         s.g.paint(blink && s.r === 0 ? '#ffffff' : s.color);
-        if (s.r === 0) { s.g.visible = !gone; s.g.scale = regrow; }
+        if (s.r === 0) { s.g.visible = !gone && regrow > 0.15; s.g.scale = regrow; }
         else s.g.translate.y = Y(s.r) + (drop + (1 - regrow)) * C;
       });
       // a peça: o cubo de baixo some com a linha e os outros 3 descem; no fim do ciclo eles encolhem e somem
       pieceCubes.forEach((pc, i) => {
         pc.paint(blink && i === 0 ? '#ffffff' : CYAN);
-        pc.visible = !(gone && i === 0);
-        pc.scale = k > 0.9 ? Math.max(0.01, 1 - smooth((k - 0.9) / 0.1)) : 1;
+        const shrink = k > 0.9 ? 1 - smooth(Math.min(1, (k - 0.9) / 0.08)) : 1;
+        pc.visible = !(gone && i === 0) && shrink > 0.15;
+        pc.scale = shrink;
       });
       if (gone) piece.translate.y = LAND + drop * C;
       const sk = (k - 0.8) / 0.14;
