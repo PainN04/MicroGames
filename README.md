@@ -101,7 +101,7 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados co
 | **Pong** 🎨 | Rebata a bola e passe pela máquina, que acelera a cada ponto. 3 vidas. |
 | **Corredor** 🎨 | Pule cactos e abaixe dos pássaros altos, cada vez mais rápido. |
 | **Come-Come** 🎨 | Coma as bolinhas e fuja dos fantasmas; as grandes deixam eles azuis. 3 vidas e túnel lateral. |
-| **Ritmo** 🎨 | Aperte D F J K no tempo da nota, com música gerada (o BPM sobe de 100 a 150). 45s. |
+| **Ritmo** 🎨 | Aperte D F J K no tempo da nota, com música gerada (o BPM sobe de 100 a 150). Bom 50, Ótimo 100, Perfeito 200 (±18 ms do centro). 45s. |
 
 <div align="center">
 <img src="docs/img/2048.png" alt="Jogo 2048 com o ranking ao lado" width="420">

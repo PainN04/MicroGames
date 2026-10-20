@@ -407,6 +407,8 @@ test('combos e itens raros: pontuações maiores agora cabem nos limites, mas co
   assert.equal((await play(bia, 'cores', 2000)).status, 422);
   assert.equal((await play(bia, 'matematica', 150)).status, 201);
   assert.equal((await play(bia, 'matematica', 9000)).status, 422);
+  assert.equal((await play(bia, 'ritmo', 80000)).status, 201, 'Ritmo só com Perfeitos (200 pts) e combo x4 passa de 80 mil');
+  assert.equal((await play(bia, 'ritmo', 150000)).status, 422);
 });
 
 /* ---------- social e competição ---------- */
