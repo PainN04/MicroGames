@@ -384,17 +384,17 @@ test('prêmios do desafio do dia: só o vencedor de ontem escolhe o jogo de aman
   assert.equal((await ana('/api/profile/frame', { method: 'POST', body: { frame: null } })).status, 200, 'dá pra tirar a moldura');
 
   // avatar pré-pronto e título
-  assert.equal((await client()('/api/profile/look', { method: 'POST', body: { avatar: 'gato:290' } })).status, 401, 'sem login não escolhe avatar');
-  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'gato:12' } })).status, 400, 'cor fora da lista');
+  assert.equal((await client()('/api/profile/look', { method: 'POST', body: { avatar: 'lia:290' } })).status, 401, 'sem login não escolhe avatar');
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'lia:12' } })).status, 400, 'cor fora da lista');
   assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'nao-existe:290' } })).status, 400);
   assert.equal((await ana('/api/profile/look', { method: 'POST', body: { title: '<b>x</b>' } })).status, 400);
-  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'gato:290' } })).status, 200);
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'lia:290' } })).status, 200);
   const look = await ana('/api/profile/look', { method: 'POST', body: { title: 'estreia' } });
-  assert.deepEqual(look.body, { avatar: 'gato:290', title: 'estreia' }, 'mandar só o título mantém o avatar');
+  assert.deepEqual(look.body, { avatar: 'lia:290', title: 'estreia' }, 'mandar só o título mantém o avatar');
   const looks = (await client()('/api/flair')).body;
-  assert.equal(looks.avatars.Ana, 'gato:290');
+  assert.equal(looks.avatars.Ana, 'lia:290');
   assert.equal(looks.titles.Ana, 'estreia');
-  assert.equal((await ana('/api/auth/me')).body.user.avatar, 'gato:290');
+  assert.equal((await ana('/api/auth/me')).body.user.avatar, 'lia:290');
   assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: null, title: null } })).status, 200, 'dá pra tirar os dois');
   assert.equal((await client()('/api/flair')).body.avatars.Ana, undefined);
 });

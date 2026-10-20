@@ -41,7 +41,7 @@ function applyMeFlair() {
   if (!av) return;
   av.dataset.frame = me?.frame || '';
   const a = parseAvatar(me?.avatar);
-  av.innerHTML = a ? a.emoji : icon('user');
+  av.innerHTML = a ? avatarImg(a) : icon('user');
   av.classList.toggle('has-pa', !!a);
   av.style.setProperty('--h', a ? a.hue : '');
   av.classList.toggle('crowned', !!me && isCrowned(me.name));
@@ -156,10 +156,11 @@ function bindFrames(name) {
 }
 
 // ----- avatar pré-pronto e título (perfil) -----
+const avatarImg = a => `<img src="img/avatars/${a.id}.svg" alt="" loading="lazy" decoding="async">`;
 /** Bolinha com o avatar escolhido ("id:cor"); '' se não escolheu nenhum. */
 function avatarHtml(v, cls = '') {
   const a = parseAvatar(v);
-  return a ? `<span class="pa${cls ? ' ' + cls : ''}" style="--h:${a.hue}" aria-hidden="true">${a.emoji}</span>` : '';
+  return a ? `<span class="pa${cls ? ' ' + cls : ''}" style="--h:${a.hue}" aria-hidden="true">${avatarImg(a)}</span>` : '';
 }
 /** Título que essa pessoa escolheu, se ela ainda tem a conquista: o item de ACHIEVEMENTS ou null. */
 function titleOf(name, s) {
@@ -177,7 +178,7 @@ function lookHtml(s) {
     <div class="avatar-list">${AVATARS.map(a => {
       const ok = !a.ach || achOf(a.ach)?.test(s), using = cur?.id === a.id;
       return `<button class="avt${using ? ' using' : ''}" data-avatar="${a.id}" ${ok ? '' : 'disabled'} title="${ok ? a.name : `Libera com a conquista “${achOf(a.ach).name}”`}">
-        <span class="pa big" style="--h:${hue}">${ok ? a.emoji : icon('lock')}</span><small>${ok ? a.name : achOf(a.ach).name}</small></button>`;
+        <span class="pa big" style="--h:${hue}">${ok ? avatarImg(a) : icon('lock')}</span><small>${ok ? a.name : achOf(a.ach).name}</small></button>`;
     }).join('')}<button class="avt${cur ? '' : ' using'}" data-avatar=""><span class="pa big none">${icon('user')}</span><small>Nenhum</small></button></div>
     <label class="title-pick"><b>Título</b> <select id="titlePick"><option value="">Sem título</option>${titles.map(a => `<option value="${a.id}"${me?.title === a.id ? ' selected' : ''}>${a.name}</option>`).join('')}</select></label>
     <p class="note">O título aparece junto do seu nome no perfil. Dá pra escolher qualquer conquista que você já tem.</p></section>`;
