@@ -43,6 +43,9 @@ const DIGITS = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc', 'afgcd', 'afgedc', 'ab
 const digitLines = d => [...DIGITS[d]].map(s => SEG[s]);
 const LETTERS = {
   A: [[[-4, 7], [0, -7], [4, 7]], [[-2.2, 1], [2.2, 1]]],
+  B: [[[-4, 7], [-4, -7], [2, -7], [4, -5], [4, -2], [2, 0], [-4, 0]], [[2, 0], [4, 2], [4, 5], [2, 7], [-4, 7]]],
+  C: [[[4, -7], [-4, -7], [-4, 7], [4, 7]]],
+  D: [[[-4, -7], [2, -7], [4, -4], [4, 4], [2, 7], [-4, 7], [-4, -7]]],
   E: [[[4, -7], [-4, -7], [-4, 7], [4, 7]], [[-4, 0], [2, 0]]],
   L: [[[-4, -7], [-4, 7], [4, 7]]],
   R: [[[-4, 7], [-4, -7], [2, -7], [4, -5], [4, -2], [2, 0], [-4, 0]], [[0, 0], [4, 7]]],
@@ -621,34 +624,63 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.5) * 0.25;
     };
   },
-  // ponto de interrogação girando sobre 4 alternativas; a certa acende verde e pula, uma de cada vez
+  // balão de pergunta com um "?" de volume e as alternativas A–D: a certa fica verde, sobe e solta confete
   quiz(Z, illo) {
-    const q = new Z.Anchor({ addTo: illo, translate: { y: -26 } });
-    new Z.Shape({
-      addTo: q, closed: false, stroke: 6, color: '#4dc3ff',
-      path: [{ x: -8, y: -8 }, { arc: [{ x: -8, y: -18 }, { x: 0, y: -18 }] }, { arc: [{ x: 8, y: -18 }, { x: 8, y: -9 }] },
-        { arc: [{ x: 8, y: -2 }, { x: 0, y: 1 }] }, { x: 0, y: 6 }],
+    // balão (placa clara com rabinho) balançando de leve — nunca de lado, senão o "?" vira um traço
+    const bubble = new Z.Anchor({ addTo: illo, translate: { y: -24 } });
+    slab(Z, bubble, 52, 34, 6, '#eef0fb');
+    new Z.Shape({ addTo: bubble, path: [{ x: -12, y: 16 }, { x: -20, y: 26 }, { x: -2, y: 16 }], fill: true, stroke: 2, color: '#d9dcf0' });
+    // "?" com espessura: três camadas do escuro (atrás) ao claro (frente), igual ao raio do Reflexo
+    const qPath = [{ x: -8, y: -8 }, { arc: [{ x: -8, y: -18 }, { x: 0, y: -18 }] }, { arc: [{ x: 8, y: -18 }, { x: 8, y: -9 }] },
+      { arc: [{ x: 8, y: -2 }, { x: 0, y: 1 }] }, { x: 0, y: 6 }].map(p => (p.arc ? { arc: p.arc.map(q => ({ x: q.x * 0.62, y: q.y * 0.62 + 2 })) } : { x: p.x * 0.62, y: p.y * 0.62 + 2 }));
+    const mark = new Z.Anchor({ addTo: bubble });
+    ['#5a3fd0', '#6f52e8', '#8b6cff'].forEach((color, i) => {
+      const z = 3.5 + i * 1.6;
+      new Z.Shape({ addTo: mark, path: qPath, closed: false, stroke: 4.5, color, translate: { z } });
+      new Z.Shape({ addTo: mark, stroke: 5, color, translate: { y: 12, z } });
     });
-    new Z.Shape({ addTo: q, stroke: 7, color: '#4dc3ff', translate: { y: 15 } });
-    const base = ['#8b6cff', '#ff8a5c', '#ffd34d', '#ff6b8a'];
+    // alternativas: placa colorida + letra
+    const base = ['#8b6cff', '#ff8a5c', '#4dc3ff', '#ff6b8a'];
     const opts = base.map((c, i) => {
-      const a = new Z.Anchor({ addTo: illo, translate: { x: (i % 2 ? 1 : -1) * 21, y: 22 + Math.floor(i / 2) * 18 } });
-      const box = slab(Z, a, 36, 13, 5, c);
-      return { a, box, c };
+      const a = new Z.Anchor({ addTo: illo, translate: { x: (i % 2 ? 1 : -1) * 19, y: 18 + Math.floor(i / 2) * 19 } });
+      const box = slab(Z, a, 34, 15, 5, c);
+      // frente da placa + letra + "texto" num Group (desenhados em ordem, como uma peça só): a letra fora do centro
+      // ficaria atrás da placa quando a cena gira, porque a Zdog ordena cada peça solta pelo próprio centro
+      const face = new Z.Group({ addTo: a, translate: { z: 3.6 } });
+      const front = new Z.Rect({ addTo: face, width: 32, height: 13, stroke: 2, fill: true, color: c });
+      glyph(Z, face, LETTERS['ABCD'[i]].map(l => l.map(([x, y]) => [x - 16, y])), { color: '#ffffff', z: 0.4, scale: 0.6, stroke: 2 });
+      new Z.Shape({ addTo: face, path: [{ x: -2, y: 0 }, { x: 10, y: 0 }], stroke: 2.4, color: shade(c, 0.45), translate: { z: 0.4 } }); // "texto" da alternativa
+      return { a, box, front, c };
     });
+    const check = new Z.Shape({ addTo: illo, path: [{ x: -5, y: 0 }, { x: -1.5, y: 4 }, { x: 6, y: -5 }], closed: false, stroke: 3.5, color: '#ffffff' });
+    const confetti = Array.from({ length: 8 }, (_, i) => ({ s: new Z.Shape({ addTo: illo, stroke: 3, color: PALETTE[i % PALETTE.length] }), ang: (i / 8) * Z.TAU }));
     const paint = (box, c) => {
       box.color = box.frontFace = c; box.topFace = shade(c, 0.25); box.leftFace = shade(c, -0.12); box.rightFace = shade(c, -0.25);
       box.bottomFace = shade(c, -0.35); box.rearFace = shade(c, -0.15);
     };
     let lit = -1;
     return t => {
-      q.rotate.y = t * 1.4;
-      q.translate.y = -26 + Math.sin(t * 2) * 3;
-      const step = t * 0.7, right = [2, 0, 3, 1][Math.floor(step) % 4], k = step % 1;
-      if (right !== lit) { opts.forEach((o, i) => paint(o.box, i === right ? '#3ddc97' : o.c)); lit = right; }
-      opts.forEach((o, i) => { o.a.translate.z = i === right ? Math.sin(Math.min(1, k * 2) * Math.PI) * 10 : 0; });
+      bubble.rotate.y = Math.sin(t * 1.2) * 0.35;
+      bubble.rotate.z = Math.sin(t * 0.9) * 0.06;
+      bubble.translate.y = -24 + Math.sin(t * 1.8) * 2.5;
+      mark.scale = 1 + Math.max(0, Math.sin(t * 3.6)) * 0.08;
+      // uma pergunta a cada ~1,5s: a resposta certa acende verde, sobe e solta confete
+      const step = t * 0.65, right = [2, 0, 3, 1][Math.floor(step) % 4], k = step % 1;
+      if (right !== lit) { opts.forEach((o, i) => { const c = i === right ? '#3ddc97' : o.c; paint(o.box, c); o.front.color = c; }); lit = right; }
+      const pop = Math.sin(Math.min(1, k * 2.2) * Math.PI);
+      opts.forEach((o, i) => { o.a.translate.z = i === right ? 4 + pop * 8 : 0; o.a.scale = i === right ? 1 + pop * 0.06 : 1; });
+      const r = opts[right].a.translate;
+      check.translate.set({ x: r.x + 10, y: r.y, z: r.z + 4 });
+      check.visible = k > 0.08;
+      const burst = Math.min(1, k * 1.6);
+      confetti.forEach(({ s, ang }, i) => {
+        s.visible = k < 0.62;
+        const d = 6 + burst * 22;
+        s.translate.set({ x: r.x + Math.cos(ang) * d, y: r.y + Math.sin(ang) * d * 0.7 - burst * 6, z: r.z + 6 + (i % 2 ? 4 : -2) });
+        s.stroke = 3.2 * (1 - burst) + 0.6;
+      });
       illo.rotate.x = -0.3;
-      illo.rotate.y = Math.sin(t * 0.45) * 0.35;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.3;
     };
   },
   // fileiras de letras virando verde, amarelo e cinza
