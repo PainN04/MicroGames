@@ -10,7 +10,7 @@ Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas e conquis
 ![Node](https://img.shields.io/badge/node-%E2%89%A5%2022-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![Vercel](https://img.shields.io/badge/deploy-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 ![Neon](https://img.shields.io/badge/banco-Neon%20Postgres-00e599?style=for-the-badge&logo=postgresql&logoColor=white)
-![Testes](https://img.shields.io/badge/testes-33%20passando-22c55e?style=for-the-badge)
+![Testes](https://img.shields.io/badge/testes-35%20passando-22c55e?style=for-the-badge)
 
 <br>
 
@@ -44,7 +44,7 @@ Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas e conquis
 | | |
 | --- | --- |
 | 🎯 **27 jogos rápidos** | De 10 segundos a poucos minutos por partida, no computador ou no celular (teclado, mouse, toque, deslize ou botões na tela). |
-| 🏅 **Ranking de verdade** | Por jogo, do mês e geral. O servidor confere cada pontuação (faixas válidas e trava anti-autoclicker) antes de gravar. |
+| 🏅 **Ranking de verdade** | Por jogo, do mês e geral. O servidor confere cada pontuação (faixa válida em todos os jogos e trava anti-autoclicker) antes de gravar. |
 | 📅 **Desafio do dia** | Um jogo sorteado por dia, igual pra todo mundo. Quem ganha leva a coroa e escolhe o jogo de amanhã. |
 | ⚔️ **Social** | Reações nos recordes, duelos de 24h, torneio semanal e duplas. |
 | 🎖️ **43 conquistas** | Calculadas na página a partir do histórico de partidas, sem nada extra no banco. |
@@ -59,7 +59,7 @@ Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas e conquis
 <img src="docs/img/jogos.png" alt="Grade de jogos do menu, com cards 3D" width="780">
 </div>
 
-Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados com 🎨 usam **Phaser**; os outros são DOM puro.
+Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados com 🎨 usam **Phaser**; os outros são DOM puro. Os jogos Phaser pausam sozinhos quando você troca de aba ou de janela.
 
 ### ⚡ Reflexo e precisão
 
@@ -279,6 +279,7 @@ Pra mudar a porta, defina `PORT` antes (no PowerShell: `$env:PORT=3000`). O serv
 
 - `vercel.json` manda todo `/api/*` pra função única `api/index.js` (limite de 30s) e agenda o cron diário de backup.
 - Com o banco de teste vazio, `GET /api/homolog/bootstrap` cria o admin dono e mostra a senha temporária uma vez. Só existe nos previews e só enquanto não há nenhuma conta.
+- O `GET /api/scores` manda um `ETag`: se o ranking não mudou desde a última abertura do menu, o servidor responde só `304` e o navegador usa a cópia que já tem.
 - A página recarrega sozinha quando o `index.html` muda no servidor, só no menu e nunca no meio de uma partida.
 
 <br>
@@ -323,7 +324,7 @@ npm test
 Roda duas coisas:
 
 1. `scripts/check-front.js` confere a sintaxe de cada script da página e de todos juntos (declaração repetida entre arquivos dá erro).
-2. `test/api.test.js` roda **33 testes** da API com `node --test`.
+2. `test/api.test.js` roda **35 testes** da API com `node --test`.
 
 <br>
 
