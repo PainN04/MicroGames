@@ -522,7 +522,7 @@ test('torneio semanal: 3 jogos por semana, pontos por posição, pódio fechado 
   const campea = after.tourney.last;
   assert.equal(campea.week, week);
   assert.equal(campea.top[0].name, 'Ana');
-  assert.equal(after.trophies.Ana, 1);
+  assert.equal(after.trophies.Ana, (during.trophies.Ana || 0) + 1, 'ganha 1 troféu (outros testes podem ter dado troféus de semanas anteriores)');
   const ana1 = (await sql`SELECT text FROM notifications WHERE user_id = ${ana}`).map(r => JSON.parse(r.text)).filter(n => n.kind === 'tourney' && n.week === week);
   assert.equal(ana1.length, 1); assert.equal(ana1[0].rank, 1);
   await social.socialState({ id: bia, name: 'Bia' }, social.weekEnd(week) + 7200_000);
