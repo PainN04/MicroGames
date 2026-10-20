@@ -172,13 +172,16 @@ function lookHtml(s) {
   const cur = parseAvatar(me?.avatar), hue = lookHue ?? cur?.hue ?? AVATAR_HUES[0];
   const achOf = id => ACHIEVEMENTS.find(a => a.id === id);
   const titles = ACHIEVEMENTS.filter(a => a.test(s));
+  const achBtn = a => {
+    const ok = !a.ach || achOf(a.ach)?.test(s);
+    return avtBtn(a, hue, cur, ok, ok ? a.name : achOf(a.ach).name, `Libera com a conquista “${achOf(a.ach)?.name}”`);
+  };
   return `<section class="glass" style="margin-top:var(--space-md)"><h2>${icon('smile')} Avatar e título</h2>
     <p class="note">O avatar aparece no topo, no perfil e ao lado do seu nome nos rankings. Os com cadeado liberam com conquistas.</p>
     <div class="hue-list" aria-label="Cor do fundo">${AVATAR_HUES.map(h => `<button class="hue${h === hue ? ' on' : ''}" data-hue="${h}" style="--h:${h}" aria-label="Cor de fundo" aria-pressed="${h === hue}"></button>`).join('')}</div>
-    <div class="avatar-list">${AVATARS.map(a => {
-      const ok = !a.ach || achOf(a.ach)?.test(s);
-      return avtBtn(a, hue, cur, ok, ok ? a.name : achOf(a.ach).name, `Libera com a conquista “${achOf(a.ach)?.name}”`);
-    }).join('')}<button class="avt${cur ? '' : ' using'}" data-avatar=""><span class="pa big none">${icon('user')}</span><small>Nenhum</small></button></div>
+    <div class="avatar-list">${AVATARS.filter(a => !a.id.startsWith('i-')).map(achBtn).join('')}<button class="avt${cur ? '' : ' using'}" data-avatar=""><span class="pa big none">${icon('user')}</span><small>Nenhum</small></button></div>
+    <h3 class="avt-sub">${icon('sparkles')} Ícones</h3>
+    <div class="avatar-list">${AVATARS.filter(a => a.id.startsWith('i-')).map(achBtn).join('')}</div>
     <h3 class="avt-sub">${icon('gamepad-2')} Jogos <small>jogue uma partida pra liberar o do jogo</small></h3>
     <div class="avatar-list">${menuOrder().map(([id, g]) => avtBtn({ id: 'jogo-' + id, game: id }, hue, cur, s.games.has(id), g.name, `Jogue ${g.name} pra liberar`)).join('')}</div>
     <label class="title-pick"><b>Título</b> <select id="titlePick"><option value="">Sem título</option>${titles.map(a => `<option value="${a.id}"${me?.title === a.id ? ' selected' : ''}>${a.name}</option>`).join('')}</select></label>
