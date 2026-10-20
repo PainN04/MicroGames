@@ -1,6 +1,10 @@
 // ---------- painel admin ----------
 const PRIO_FIELDS = [['URG', 'Urgente'], ['ALT', 'Alta'], ['MED', 'Média'], ['NOR', 'Normal'], ['BAI', 'Baixa'], ['none', 'Sem prioridade']];
 
+// partes do Painel, cada uma numa aba
+const ADMIN_PANES = [['online', 'eye', 'Online'], ['contas', 'users', 'Contas'], ['duplas', 'users', 'Duplas'], ['geiko', 'clock', 'Fila do Geiko']];
+let adminPane = 'online';
+
 function showAdmin() {
   if (me?.role !== 'admin') return;
   stop();
@@ -11,14 +15,16 @@ function showAdmin() {
     main.innerHTML = `<div class="admin">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('settings')} Painel admin</h2><p>Contas de quem joga, vínculo com o Geiko e a regra de bloqueio por fila.</p></div>
+        <div class="title"><h2>${icon('settings')} Administração</h2><p>Contas de quem joga, vínculo com o Geiko e a regra de bloqueio por fila.</p></div>
       </div>
-      <section class="glass">
+      ${adminTabsHtml('admin')}
+      <div class="seg view-tabs sub" role="tablist" aria-label="Painel">${ADMIN_PANES.map(([k, ic, l]) => `<button role="tab" data-pane-btn="${k}" aria-selected="${adminPane === k}" aria-pressed="${adminPane === k}">${icon(ic)} ${l}</button>`).join('')}</div>
+      <section class="glass" data-pane="online"${adminPane === 'online' ? '' : ' hidden'}>
         <h2><span class="live-dot"></span>Online agora <span class="hint" id="onCount" style="font-size:var(--fs-sm)"></span></h2>
         <p class="note">Quem está com o site aberto e visível (atualiza a cada 15s). Quem minimiza ou troca de aba sai da lista em ~1 min.</p>
         <div id="onlineList"><p class="hint" style="text-align:left">Carregando...</p></div>
       </section>
-      <section class="glass">
+      <section class="glass" data-pane="contas"${adminPane === 'contas' ? '' : ' hidden'}>
         <h2>Contas</h2>
         <form class="row" id="newUser" autocomplete="off">
           <label>Nome (aparece no ranking)<input name="name" maxlength="40" required></label>
@@ -30,7 +36,7 @@ function showAdmin() {
         <p class="err" id="nuErr" style="color:oklch(80% 0.14 18)"></p>
         <div class="scroll" style="max-height:none"><table class="tickets users" id="usersTable"><tbody><tr><td>Carregando...</td></tr></tbody></table></div>
       </section>
-      <section class="glass">
+      <section class="glass" data-pane="duplas"${adminPane === 'duplas' ? '' : ' hidden'}>
         <h2>Duplas</h2>
         <p class="note">As duplas são formadas pelos próprios jogadores (convite + aceite). Aqui você só modera: renomear um nome inadequado ou desfazer uma dupla.</p>
         <form class="row" id="duoNew" autocomplete="off">
@@ -44,13 +50,13 @@ function showAdmin() {
         <p class="note">A dupla criada aqui já nasce ativa (sem convite). Em "As partidas contam desde" você escolhe se vale tudo que os dois já jogaram, só o mês, ou só daqui pra frente. Só aparecem pessoas que não estão em dupla nem com convite aberto.</p>
         <div id="duosAdmin"><p class="hint" style="text-align:left">Carregando...</p></div>
       </section>
-      <section class="glass">
+      <section class="glass" data-pane="geiko"${adminPane === 'geiko' ? '' : ' hidden'}>
         <h2>Regra de bloqueio</h2>
         <p class="note">Cada ticket aberto do atendente vale um peso. Se a soma passar do limite, os jogos ficam bloqueados.
           Peso = prioridade × multiplicador (sem interação ou status de espera). Quem não tem ID do Geiko nunca é bloqueado.</p>
         <form id="rulesForm"><p class="hint" style="text-align:left">Carregando...</p></form>
       </section>
-      <section class="glass">
+      <section class="glass" data-pane="geiko"${adminPane === 'geiko' ? '' : ' hidden'}>
         <h2>Testar ID do Geiko</h2>
         <p class="note">Confere a fila de um atendente com a regra atual (útil pra validar o vínculo antes de criar a conta).</p>
         <form class="row" id="testForm"><label>ID do Geiko<input name="geikoId" inputmode="numeric" pattern="\\d+" required></label><button class="btn ghost">Testar</button></form>
@@ -58,6 +64,11 @@ function showAdmin() {
       </section>
     </div>`;
     $('#back').onclick = showMenu;
+    main.querySelectorAll('[data-pane-btn]').forEach(b => b.onclick = () => {
+      adminPane = b.dataset.paneBtn;
+      main.querySelectorAll('[data-pane-btn]').forEach(x => { x.setAttribute('aria-pressed', x === b); x.setAttribute('aria-selected', x === b); });
+      main.querySelectorAll('[data-pane]').forEach(sec => { sec.hidden = sec.dataset.pane !== adminPane; });
+    });
     $('#newUser').onsubmit = createUser;
     $('#testForm').onsubmit = async e => {
       e.preventDefault();
@@ -158,9 +169,10 @@ function showRecords() {
     main.innerHTML = `<div class="admin">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('wrench')} Editor de recordes</h2>
-          <p>Só admins. Mudar aqui altera o ranking na hora. Pra abrir direto numa aba nova: <a href="${location.pathname}#recordes" target="_blank" style="color:var(--primary)">${esc(location.host)}/#recordes</a></p></div>
+        <div class="title"><h2>${icon('settings')} Administração</h2>
+          <p>Mudar aqui altera o ranking na hora. Pra abrir direto numa aba nova: <a href="${location.pathname}#recordes" target="_blank" style="color:var(--primary)">${esc(location.host)}/#recordes</a></p></div>
       </div>
+      ${adminTabsHtml('records')}
       <section class="glass">
         <div class="row" style="margin-bottom:var(--space-sm)">
           <label>Ver<select id="recMode"><option value="game">Por jogo</option><option value="user">Por pessoa</option></select></label>
@@ -325,8 +337,9 @@ function showReport() {
     main.innerHTML = `<div class="admin report">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('chart-column')} Relatório</h2><p>Quanto o pessoal está jogando — por pessoa, por jogo, por dia e por hora.</p></div>
+        <div class="title"><h2>${icon('settings')} Administração</h2><p>Quanto o pessoal está jogando — por pessoa, por jogo, por dia e por hora.</p></div>
       </div>
+      ${adminTabsHtml('report')}
       <div class="row" style="justify-content:space-between">
         <div class="seg" role="group" aria-label="Período">
           ${[[1, 'Hoje'], [7, '7 dias'], [30, '30 dias'], [0, 'Tudo']].map(([d, l]) => `<button data-days="${d}" aria-pressed="${reportState.days === d}">${l}</button>`).join('')}
@@ -677,6 +690,17 @@ async function loadRules() {
     };
   } catch (err) { form.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
 }
+
+// abas da administração: Painel, Relatório e Recordes (este só pra conta dona)
+function adminTabsHtml(cur) {
+  const tabs = [['admin', 'settings', 'Painel'], ['report', 'chart-column', 'Relatório'], ['records', 'wrench', 'Recordes']].filter(([k]) => k !== 'records' || me?.canEditRecords);
+  return `<div class="seg view-tabs" role="tablist" aria-label="Administração">${tabs.map(([k, ic, l]) =>
+    `<button role="tab" data-atab="${k}" aria-selected="${cur === k}" aria-pressed="${cur === k}">${icon(ic)} ${l}</button>`).join('')}</div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-atab]');
+  if (b && b.getAttribute('aria-pressed') !== 'true') ({ admin: showAdmin, report: showReport, records: showRecords })[b.dataset.atab]?.();
+});
 
 // menu da conta (topo)
 function toggleAcct(open = $('#acctMenu').hidden) {

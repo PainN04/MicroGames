@@ -313,6 +313,7 @@ function noteHtml(n) {
     case 'duel_end': return `Duelo de ${g.name} contra <b>${esc(n.vs)}</b>: ${{ win: 'você ganhou! 🏆', lose: 'você perdeu', draw: 'empate' }[n.result]}<small>${n.mine != null ? fmt(g, n.mine) : 'sem partida'} × ${n.theirs != null ? fmt(g, n.theirs) : 'sem partida'}</small>`;
     case 'duel_cancel': return `<b>${esc(n.by)}</b> cancelou o duelo de ${g.name}`;
     case 'duo_invite': return `<b>${esc(n.by)}</b> te chamou pra formar a dupla <b>${esc(n.name)}</b><small>toque pra responder · vale até ${untilText(n.until).replace('até ', '')}</small>`;
+    case 'duo_record': return `<b>${esc(n.by)}</b>, da sua dupla <b>${esc(n.name)}</b>, ${n.scope === 'geral' ? 'bateu o recorde geral' : `assumiu a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`} no ${g.name} 🎉<small>${fmt(g, n.score)} · toque pra jogar também</small>`;
     case 'duo_admin_new': return `O admin formou a dupla <b>${esc(n.name)}</b> entre você e <b>${esc(n.with)}</b> 🎉`;
     case 'duo_accept': return `<b>${esc(n.by)}</b> aceitou formar a dupla <b>${esc(n.name)}</b> com você 🎉`;
     case 'duo_decline': return `<b>${esc(n.by)}</b> recusou o convite pra dupla ${esc(n.name)}`;
@@ -326,11 +327,14 @@ function noteHtml(n) {
   }
 }
 const isDuoNote = n => String(n.kind || '').startsWith('duo_');
-const noteIcon = n => (isDuoNote(n) ? 'users' : { reaction: 'smile', tourney: 'trophy' }[n.kind] || 'swords');
-const noteKnown = n => n.kind === 'tourney' || isDuoNote(n) || !!GAMES[n.game];
+const noteIcon = n => (n.kind === 'duo_record' ? 'trophy' : isDuoNote(n) ? 'users' : { reaction: 'smile', tourney: 'trophy' }[n.kind] || 'swords');
+const noteKnown = n => (n.kind === 'duo_record' ? !!GAMES[n.game] : n.kind === 'tourney' || isDuoNote(n) || !!GAMES[n.game]);
 /** O que acontece ao tocar no aviso. */
 function noteAct(n) {
-  if (n.kind === 'duel_new' || n.kind === 'duel_end' || n.kind === 'duel_cancel') return duelsModal({ game: n.game });
+  // duelo acabado: abre já com a revanche preenchida (mesmo jogo, mesma pessoa) — é só apertar Desafiar
+  if (n.kind === 'duel_end') return duelsModal({ game: n.game, opponent: n.vs });
+  if (n.kind === 'duel_new' || n.kind === 'duel_cancel') return duelsModal({ game: n.game });
+  if (n.kind === 'duo_record') return play(n.game);
   if (n.kind === 'tourney') return showMenu();
   if (isDuoNote(n)) return duoModal();
   play(n.game);
@@ -365,13 +369,13 @@ function showNotes(notes) {
   for (const n of notes) {
     if (!noteKnown(n)) continue;
     const t = document.createElement('button');
-    t.className = 'toast glass' + (['reaction', 'tourney', 'duo_accept', 'duo_admin_new'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win') ? ' good' : '');
+    t.className = 'toast glass' + (['reaction', 'tourney', 'duo_accept', 'duo_admin_new', 'duo_record'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win') ? ' good' : '');
     t.innerHTML = `<span class="ic">${icon(noteIcon(n))}</span><span>${noteHtml(n)}</span>`;
     t.onclick = () => { t.remove(); noteAct(n); };
     box.appendChild(t);
     setTimeout(() => t.remove(), 12_000);
   }
-  notes.some(n => ['reaction', 'tourney', 'duo_invite', 'duo_accept', 'duo_admin_new'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win')) ? sfx.good?.() : sfx.bad?.();
+  notes.some(n => ['reaction', 'tourney', 'duo_invite', 'duo_accept', 'duo_admin_new', 'duo_record'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win')) ? sfx.good?.() : sfx.bad?.();
 }
 async function pingSession() {
   if (!me || document.hidden) return;
@@ -413,9 +417,7 @@ function setMe(user) {
   player = user?.name || '';
   $('#pname').textContent = player || '—';
   $('#acctWho').innerHTML = user ? `<b>${esc(user.name)}</b>${user.role === 'admin' ? 'Administrador' : 'Jogador'}` : '';
-  $('#mAdmin').hidden = user?.role !== 'admin';
-  $('#mRecords').hidden = !user?.canEditRecords;
-  $('#mReport').hidden = user?.role !== 'admin';
+  $('#mAdmin').hidden = $('#sepAdmin').hidden = user?.role !== 'admin';
   applyMeFlair();
 }
 

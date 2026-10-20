@@ -55,7 +55,7 @@ async function fetchScores() {
       scoresEarly = null;
       scores = await req.scores; online = true;
       try { flair = await req.flair; localStorage.setItem('mg_flair', JSON.stringify(flair)); } catch {} // jogo escolhido e molduras: falhar aqui não derruba o ranking
-      crownMemo = undefined;
+      crownMemo = monthKingsMemo = undefined;
       try { localStorage.setItem('mg_cache', JSON.stringify(scores)); } catch {}
     } catch { online = false; }
   }
@@ -115,6 +115,7 @@ const dayStart = i => { const t = i * DAY_MS; return t + new Date(t).getTimezone
 // o sorteio (daily.js) + o jogo que o vencedor de ontem escolheu pra hoje (flair.picks, vem do servidor)
 let flair = (() => { try { return JSON.parse(localStorage.getItem('mg_flair')) || { picks: {}, frames: {} }; } catch { return { picks: {}, frames: {} }; } })();
 let crownMemo; // quem ganhou o desafio de ontem (recalculado quando o placar muda)
+let monthKingsMemo; // nome → meses que ganhou (idem)
 function dailyGame(i = dayIndex()) { return scheduledGame(Object.keys(GAMES), i, flair.picks); }
 const dayRange = (i = dayIndex()) => ({ since: dayStart(i), until: dayStart(i + 1) });
 /** Quem ganhou cada desafio dos dias já encerrados deste mês: [[nome, vitórias]] */
@@ -138,6 +139,14 @@ function hallOfFame() {
     const games = Object.keys(GAMES).map(id => [id, bestPerPlayer(id, range)[0]]).filter(([, top]) => top);
     return { key, kings: champions(range), games };
   });
+}
+/** Meses (chave AAAA-MM) em que a pessoa terminou como campeã — o selo fixo do perfil e dos rankings. */
+function monthsWonBy(name) {
+  if (monthKingsMemo === undefined) {
+    monthKingsMemo = {};
+    for (const m of hallOfFame()) { const k = m.kings[0]?.[0]; if (k) (monthKingsMemo[k] ||= []).push(m.key); }
+  }
+  return monthKingsMemo[name] || [];
 }
 function better(g, a, b) { return g.better === 'low' ? a < b : a > b; }
 // Retorna 'ok' (salvou), 'queued' (servidor fora, reenvia depois) ou a mensagem de recusa do servidor.
@@ -269,7 +278,34 @@ function mountPhaser(wrap, width, height, scene) {
       scene,
     });
   }).catch(e => { if (!dead) wrap.innerHTML = `<p class="hint">${icon('triangle-alert')} ${esc(e.message)}</p>`; });
-  return () => { dead = true; removeEventListener('mg:fit', size); game?.destroy(true); };
+  // Pausa sozinho quando a pessoa troca de aba, de janela ou bloqueia o celular (antes o jogo seguia e ela morria sem ver).
+  // Para as cenas (física, tempo e animações da cena congelam) e só volta quando ela clica em Continuar.
+  let paused = [];
+  const pause = () => {
+    if (!game || dead || paused.length) return;
+    paused = game.scene.getScenes(true);
+    if (!paused.length) return;
+    paused.forEach(s => s.scene.pause());
+    const ov = document.createElement('div');
+    ov.className = 'pause-ov';
+    ov.innerHTML = `<p>Jogo pausado</p><button class="btn">${icon('play')} Continuar</button>`;
+    ov.querySelector('button').onclick = e => { e.stopPropagation(); resume(); };
+    wrap.append(ov);
+    ov.querySelector('button').focus();
+  };
+  const resume = () => {
+    paused.forEach(s => s.scene.isPaused() && s.scene.resume());
+    paused = [];
+    wrap.querySelector('.pause-ov')?.remove();
+  };
+  const onHide = () => { if (document.hidden) pause(); };
+  document.addEventListener('visibilitychange', onHide);
+  addEventListener('blur', pause);
+  return () => {
+    dead = true; removeEventListener('mg:fit', size);
+    document.removeEventListener('visibilitychange', onHide); removeEventListener('blur', pause);
+    game?.destroy(true);
+  };
 }
 // Altura que sobra pro #game até o fim da tela (com a página no topo) → variável CSS --avail.
 // Os jogos em HTML usam no CSS; os em Phaser, no mountPhaser (evento mg:fit).

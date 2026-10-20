@@ -10,7 +10,7 @@ function statsFor(name) {
   const rankIn = (id, range = {}) => { const i = bestPerPlayer(id, range).findIndex(([n]) => n === name); return i < 0 ? null : i + 1; };
   const firsts = Object.keys(GAMES).filter(id => rankIn(id) === 1).length;
   const podiums = Object.keys(GAMES).filter(id => (rankIn(id) || 99) <= 3).length;
-  const monthsWon = hallOfFame().filter(m => m.kings[0]?.[0] === name).map(m => m.key);
+  const monthsWon = monthsWonBy(name);
   // desafios do dia ganhos (dias já encerrados, desde a primeira partida de todo mundo)
   let dailyWins = 0, dailyRun = 0, dailyStreak = 0;
   const first = Math.min(...Object.values(scores).flat().map(s => s.date), Date.now());
@@ -100,8 +100,11 @@ function achievementsHtml(s) {
   }).join('') + '</div>';
 }
 
-function showProfile(name = player) {
+// abas do perfil: Resumo, Conquistas, Recordes e (no seu) Personalizar
+let profTab = 'resumo';
+function showProfile(name = player, tab = 'resumo') {
   if (!name) return;
+  profTab = tab;
   stop();
   currentView = 'profile';
   setTimeout(pingSession, 0);
@@ -110,7 +113,7 @@ function showProfile(name = player) {
     main.innerHTML = `<div class="admin profile">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('user')} ${esc(name)}${duoOfName(name) ? ` <span class="tag team-tag" title="Dupla de ${esc(duoOfName(name).aName)} e ${esc(duoOfName(name).bName)}">${icon('users')} ${esc(duoOfName(name).name)}</span>` : ''}</h2><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p></div>
+        <div class="title"><h2><span id="profAv">${avatarHtml(flair.avatars?.[name], 'big') || icon('user')}</span> ${esc(name)}<span id="profTitle"></span>${duoOfName(name) ? ` <span class="tag team-tag" title="Dupla de ${esc(duoOfName(name).aName)} e ${esc(duoOfName(name).bName)}">${icon('users')} ${esc(duoOfName(name).name)}</span>` : ''}</h2><p class="pbio" id="profBio" hidden></p><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p><div class="mtitles" id="mtitles"></div></div>
         ${name !== player && me ? `${social?.myDuo?.state === 'none' && social.people.find(p => p.name === name)?.free ? `<button class="btn ghost" id="profDuo">${icon('users')} <span>Chamar pra dupla</span></button>` : ''}<button class="btn ghost" id="profDuel">${icon('swords')} <span>Desafiar</span></button>` : name === player ? `<button class="btn ghost" id="profRecap">${icon('calendar')} <span>Minha semana</span></button>` : ''}
       </div>
       <div id="prof"><p class="hint" style="text-align:left">Carregando...</p></div>
@@ -128,9 +131,23 @@ function renderProfile(name) {
   const box = $('#prof');
   if (!box) return;
   const s = statsFor(name);
-  if (!s.plays.length) { box.innerHTML = '<section class="glass"><p class="hint" style="text-align:left">Ainda não jogou nenhuma partida.</p></section>'; return; }
+  const t = titleOf(name, s);
+  $('#profTitle') && ($('#profTitle').innerHTML = t ? ` <span class="tag ptitle" title="${esc(t.desc)}">${icon(t.icon)} ${t.name}</span>` : '');
+  $('#profAv') && ($('#profAv').innerHTML = avatarHtml(flair.avatars?.[name], 'big') || icon('user'));
+  const bio = $('#profBio');
+  if (bio) { bio.innerHTML = bioHtml(name); bio.hidden = !bio.innerHTML; bindBioDel(name); }
+  if (!s.plays.length) {
+    const own = name === player && me;
+    box.innerHTML = own ? profTabsHtml(own, ['resumo', 'personalizar']) + (profTab === 'personalizar' ? lookHtml(s) : '<section class="glass"><p class="hint" style="text-align:left">Ainda não jogou nenhuma partida.</p></section>')
+      : '<section class="glass"><p class="hint" style="text-align:left">Ainda não jogou nenhuma partida.</p></section>';
+    bindProfTabs(name);
+    if (own && profTab === 'personalizar') bindLook(name);
+    return;
+  }
   const MONTH = { since: monthStart() };
   const unlocked = ACHIEVEMENTS.filter(a => a.test(s)).length;
+  const titles = $('#mtitles');
+  if (titles) titles.innerHTML = [...s.monthsWon].reverse().map(k => `<span class="mtitle">${icon('medal')} Campeão de ${monthName(k, true).toLowerCase()}</span>`).join('');
   const kpis = `<div class="kpis">
     <div class="kpi glass"><div class="l">Partidas</div><div class="v">${s.plays.length}</div><span class="d">desde ${new Date(s.plays[0].date).toLocaleDateString('pt-BR')}</span></div>
     <div class="kpi glass"><div class="l">Recordes gerais</div><div class="v">${s.firsts}</div><span class="d">${s.podiums} no pódio</span></div>
@@ -161,14 +178,19 @@ function renderProfile(name) {
     const pos = s.rankIn(id), posM = s.rankIn(id, MONTH), medal = p => (p ? rankBadge(p) : '—');
     return `<tr><td>${icon(g.icon)} ${g.name}</td><td><b>${fmt(g, best)}</b></td><td>${medal(pos)}</td><td>${medal(posM)}</td><td>${mine.length}</td></tr>`;
   }).join('');
-  box.innerHTML = kpis
-    + `<section class="glass" style="margin-top:var(--space-md)"><h2>${icon('award')} Conquistas</h2>${achievementsHtml(s)}</section>`
-    + (name === player && me ? framesHtml(s) : '')
-    + chart
-    + `<section class="glass" style="margin-top:var(--space-md)"><h2>Recordes</h2>
-      <table class="tickets users prof-table"><thead><tr><th>Jogo</th><th>Melhor</th><th>Geral</th><th>${monthName(monthKey(now))}</th><th>Partidas</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+  const own = name === player && me;
+  if (profTab === 'personalizar' && !own) profTab = 'resumo';
+  const body = {
+    resumo: () => kpis + showcaseHtml(name, s) + chart,
+    conquistas: () => `<section class="glass"><h2>${icon('award')} Conquistas <small class="hint">${unlocked}/${ACHIEVEMENTS.length}</small></h2>${achievementsHtml(s)}</section>`,
+    recordes: () => `<section class="glass"><h2>${icon('trophy')} Recordes</h2>
+      <table class="tickets users prof-table"><thead><tr><th>Jogo</th><th>Melhor</th><th>Geral</th><th>${monthName(monthKey(now))}</th><th>Partidas</th></tr></thead><tbody>${rows}</tbody></table></section>`,
+    personalizar: () => lookHtml(s),
+  }[profTab] || (() => '');
+  box.innerHTML = profTabsHtml(own) + body();
+  bindProfTabs(name);
   bindVizTips(box);
-  if (name === player && me) bindFrames(name);
+  if (own && profTab === 'personalizar') bindLook(name);
 }
 
 // nomes nos rankings abrem o perfil
@@ -178,3 +200,13 @@ document.addEventListener('click', e => {
   e.preventDefault();
   showProfile(el.dataset.profile);
 });
+
+const PROF_TABS = [['resumo', 'chart-column', 'Resumo'], ['conquistas', 'award', 'Conquistas'], ['recordes', 'trophy', 'Recordes'], ['personalizar', 'palette', 'Personalizar']];
+function profTabsHtml(own, only) {
+  const tabs = PROF_TABS.filter(([k]) => (own || k !== 'personalizar') && (!only || only.includes(k)));
+  return `<div class="seg view-tabs" role="tablist" aria-label="Perfil">${tabs.map(([k, ic, l]) =>
+    `<button role="tab" data-ptab="${k}" aria-selected="${profTab === k}" aria-pressed="${profTab === k}">${icon(ic)} ${l}</button>`).join('')}</div>`;
+}
+function bindProfTabs(name) {
+  document.querySelectorAll('[data-ptab]').forEach(b => b.onclick = () => { profTab = b.dataset.ptab; renderProfile(name); });
+}

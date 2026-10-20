@@ -32,6 +32,9 @@ async function checkVersion() {
 checkVersion();
 setInterval(checkVersion, 30000);
 
+// App instalável: o service worker (sw.js) não guarda cache, só habilita o "Instalar app" do navegador.
+if (!localMode && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
 $('#home').onclick = showMenu;
 $('#acctBtn').onclick = () => toggleAcct();
 $('#mNotes').onclick = () => { toggleAcct(false); openNotes(); };
@@ -40,8 +43,6 @@ $('#mProfile').onclick = () => { toggleAcct(false); showProfile(player); };
 $('#mPass').onclick = () => { toggleAcct(false); passwordModal(false); };
 $('#mLogout').onclick = () => { toggleAcct(false); logout(); };
 $('#mAdmin').onclick = () => { toggleAcct(false); showAdmin(); };
-$('#mRecords').onclick = () => { toggleAcct(false); showRecords(); };
-$('#mReport').onclick = () => { toggleAcct(false); showReport(); };
 addEventListener('hashchange', () => { if (location.hash === '#recordes' && me?.canEditRecords) showRecords(); });
 $('#mute').onclick = () => { muted = !muted; localStorage.setItem('mg_mute', muted ? '1' : '0'); renderMute(); if (!muted) sfx.good(); };
 renderMute();
