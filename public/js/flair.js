@@ -156,8 +156,7 @@ function bindFrames(name) {
 }
 
 // ----- avatar pré-pronto e título (perfil) -----
-const avatarImg = a => (a.game ? `<span class="pa-ic">${icon(GAMES[a.game].icon)}</span>`
-  : `<img src="img/avatars/${a.id}.svg" alt="" loading="lazy" decoding="async">`);
+const avatarImg = a => `<img src="img/avatars/${a.id}.svg" alt="" loading="lazy" decoding="async">`;
 /** Bolinha com o avatar escolhido ("id:cor"); '' se não escolheu nenhum. */
 function avatarHtml(v, cls = '') {
   const a = parseAvatar(v);
