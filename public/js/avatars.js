@@ -4,7 +4,9 @@
 // Open Peeps (Pablo Stanley, CC0), Pixel Art (DiceBear, CC0) e Bottts (Pablo Stanley, livre pra uso comercial).
 // Imagem própria em vez de emoji: fica igual em qualquer aparelho.
 // `ach`: o avatar só libera com essa conquista (a conferência é na página, que é onde as conquistas são calculadas).
-// Macaco: desenho próprio. Avatares de jogo ("jogo-<id do jogo>"): o ícone do jogo, liberado depois de jogar uma partida dele.
+// Macaco: desenho próprio. Avatares de jogo ("jogo-<id do jogo>"): um desenho que lembra o jogo (img/avatars/jogo-<id>.svg,
+// do Fluent Emoji Flat da Microsoft e do Flat Color Icons, licença MIT), liberado depois de jogar uma partida dele.
+// Jogo novo precisa do seu jogo-<id>.svg (o teste confere).
 // Gravado no banco como "id:cor", ex.: "lia:290".
 const AVATARS = [
   ['lia', 'Lia'], ['bia', 'Bia'], ['clara', 'Clara'], ['dani', 'Dani'], ['edu', 'Edu'], ['rafa', 'Rafa'], ['gui', 'Gui'], ['mel', 'Mel'],
