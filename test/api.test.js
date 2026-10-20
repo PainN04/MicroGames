@@ -394,7 +394,24 @@ test('prêmios do desafio do dia: só o vencedor de ontem escolhe o jogo de aman
   for (const g of GAMES) assert.ok(fs.existsSync(path.join(__dirname, '..', 'public', 'img', 'avatars', `jogo-${g}.svg`)), `falta o avatar do jogo ${g}`);
   assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'lia:290' } })).status, 200);
   const look = await ana('/api/profile/look', { method: 'POST', body: { title: 'estreia' } });
-  assert.deepEqual(look.body, { avatar: 'lia:290', title: 'estreia' }, 'mandar só o título mantém o avatar');
+  assert.deepEqual(look.body, { avatar: 'lia:290', title: 'estreia', showcase: null, bio: null }, 'mandar só o título mantém o avatar');
+
+  // vitrine e frase
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { showcase: { ach: ['a1', 'a2', 'a3', 'a4'] } } })).status, 400, 'no máximo 3 conquistas');
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { showcase: { ach: [], game: 'nao-existe' } } })).status, 400);
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { bio: 'x'.repeat(61) } })).status, 400, 'frase até 60');
+  const vit = await ana('/api/profile/look', { method: 'POST', body: { showcase: { ach: ['estreia', 'estreia', 'cobra'], game: 'snake' }, bio: '  oi\n  pessoal  ' } });
+  assert.equal(vit.status, 200);
+  assert.deepEqual(vit.body.showcase, { ach: ['estreia', 'cobra'], game: 'snake' }, 'conquista repetida conta uma vez');
+  assert.equal(vit.body.bio, 'oi pessoal', 'frase vira uma linha só');
+  const looks2 = (await client()('/api/flair')).body;
+  assert.equal(looks2.bios.Ana, 'oi pessoal');
+  assert.equal(looks2.showcases.Ana.game, 'snake');
+  assert.equal((await bia('/api/admin/bio', { method: 'POST', body: { name: 'Ana' } })).status, 403, 'só admin apaga a frase');
+  const adm = await login('outroadm', 'senha-adm-123');
+  assert.equal((await adm('/api/admin/bio', { method: 'POST', body: { name: 'Ana' } })).status, 200);
+  assert.equal((await client()('/api/flair')).body.bios.Ana, undefined, 'admin apagou a frase');
+  assert.equal((await ana('/api/profile/frame', { method: 'POST', body: { frame: 'fogo' } })).status, 200, 'moldura de conquista');
   const looks = (await client()('/api/flair')).body;
   assert.equal(looks.avatars.Ana, 'lia:290');
   assert.equal(looks.titles.Ana, 'estreia');
