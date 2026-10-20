@@ -110,7 +110,7 @@ function showProfile(name = player) {
     main.innerHTML = `<div class="admin profile">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('user')} ${esc(name)}${duoOfName(name) ? ` <span class="tag team-tag" title="Dupla de ${esc(duoOfName(name).aName)} e ${esc(duoOfName(name).bName)}">${icon('users')} ${esc(duoOfName(name).name)}</span>` : ''}</h2><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p><div class="mtitles" id="mtitles"></div></div>
+        <div class="title"><h2><span id="profAv">${avatarHtml(flair.avatars?.[name], 'big') || icon('user')}</span> ${esc(name)}<span id="profTitle"></span>${duoOfName(name) ? ` <span class="tag team-tag" title="Dupla de ${esc(duoOfName(name).aName)} e ${esc(duoOfName(name).bName)}">${icon('users')} ${esc(duoOfName(name).name)}</span>` : ''}</h2><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p><div class="mtitles" id="mtitles"></div></div>
         ${name !== player && me ? `${social?.myDuo?.state === 'none' && social.people.find(p => p.name === name)?.free ? `<button class="btn ghost" id="profDuo">${icon('users')} <span>Chamar pra dupla</span></button>` : ''}<button class="btn ghost" id="profDuel">${icon('swords')} <span>Desafiar</span></button>` : name === player ? `<button class="btn ghost" id="profRecap">${icon('calendar')} <span>Minha semana</span></button>` : ''}
       </div>
       <div id="prof"><p class="hint" style="text-align:left">Carregando...</p></div>
@@ -128,7 +128,14 @@ function renderProfile(name) {
   const box = $('#prof');
   if (!box) return;
   const s = statsFor(name);
-  if (!s.plays.length) { box.innerHTML = '<section class="glass"><p class="hint" style="text-align:left">Ainda não jogou nenhuma partida.</p></section>'; return; }
+  if (!s.plays.length) {
+    box.innerHTML = '<section class="glass"><p class="hint" style="text-align:left">Ainda não jogou nenhuma partida.</p></section>' + (name === player && me ? lookHtml(s) : '');
+    if (name === player && me) bindLook(name);
+    return;
+  }
+  const t = titleOf(name, s);
+  $('#profTitle') && ($('#profTitle').innerHTML = t ? ` <span class="tag ptitle" title="${esc(t.desc)}">${icon(t.icon)} ${t.name}</span>` : '');
+  $('#profAv') && ($('#profAv').innerHTML = avatarHtml(flair.avatars?.[name], 'big') || icon('user'));
   const MONTH = { since: monthStart() };
   const unlocked = ACHIEVEMENTS.filter(a => a.test(s)).length;
   const titles = $('#mtitles');
@@ -165,12 +172,12 @@ function renderProfile(name) {
   }).join('');
   box.innerHTML = kpis
     + `<section class="glass" style="margin-top:var(--space-md)"><h2>${icon('award')} Conquistas</h2>${achievementsHtml(s)}</section>`
-    + (name === player && me ? framesHtml(s) : '')
+    + (name === player && me ? lookHtml(s) + framesHtml(s) : '')
     + chart
     + `<section class="glass" style="margin-top:var(--space-md)"><h2>Recordes</h2>
       <table class="tickets users prof-table"><thead><tr><th>Jogo</th><th>Melhor</th><th>Geral</th><th>${monthName(monthKey(now))}</th><th>Partidas</th></tr></thead><tbody>${rows}</tbody></table></section>`;
   bindVizTips(box);
-  if (name === player && me) bindFrames(name);
+  if (name === player && me) { bindLook(name); bindFrames(name); }
 }
 
 // nomes nos rankings abrem o perfil

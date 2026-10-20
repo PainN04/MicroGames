@@ -2,6 +2,7 @@
 // Quem ganhou o desafio de ontem: coroa ao lado do nome durante o dia, aviso de parabéns com confete, o direito de
 // escolher o jogo de amanhã, e molduras de avatar (bronze, prata, ouro, diamante) por vitórias. Tudo sai das partidas;
 // só a escolha do jogo e a moldura escolhida ficam no servidor (flair.picks / flair.frames, vindos de /api/flair).
+// Aqui também ficam o avatar pré-pronto e o título que cada um escolhe (flair.avatars / flair.titles).
 const FRAME_DEFS = [['bronze', 'Bronze', 1], ['silver', 'Prata', 3], ['gold', 'Ouro', 7], ['diamond', 'Diamante', 15]];
 
 /** Quem ganhou o desafio do dia i (e com quanto): { name, score, game } ou null se ninguém jogou. */
@@ -25,7 +26,7 @@ const isCrowned = name => !!name && crownHolder() === name;
 /** Nome clicável (abre o perfil), com a cor da moldura e a coroa de quem ganhou ontem. `extra` entra dentro do link. */
 function nameHtml(n, { cls = '', extra = '' } = {}) {
   const fr = flair.frames[n];
-  return `<a href="#" class="nm ${cls}${fr ? ' fr-' + fr : ''}" data-profile="${esc(n)}">${esc(n)}${isCrowned(n) ? ` <span class="crown" title="Ganhou o desafio de ontem">${icon('crown')}</span>` : ''}${monthBadge(n)}${extra}</a>`;
+  return `<a href="#" class="nm ${cls}${fr ? ' fr-' + fr : ''}" data-profile="${esc(n)}">${avatarHtml(flair.avatars?.[n])}${esc(n)}${isCrowned(n) ? ` <span class="crown" title="Ganhou o desafio de ontem">${icon('crown')}</span>` : ''}${monthBadge(n)}${extra}</a>`;
 }
 // selo fixo de quem já foi campeão do mês (com quantas vezes, se foi mais de uma)
 function monthBadge(n) {
@@ -39,6 +40,10 @@ function applyMeFlair() {
   const av = $('#pav');
   if (!av) return;
   av.dataset.frame = me?.frame || '';
+  const a = parseAvatar(me?.avatar);
+  av.innerHTML = a ? a.emoji : icon('user');
+  av.classList.toggle('has-pa', !!a);
+  av.style.setProperty('--h', a ? a.hue : '');
   av.classList.toggle('crowned', !!me && isCrowned(me.name));
 }
 
@@ -148,4 +153,57 @@ function bindFrames(name) {
       renderProfile(name);
     } catch (err) { alert(err.message); }
   });
+}
+
+// ----- avatar pré-pronto e título (perfil) -----
+/** Bolinha com o avatar escolhido ("id:cor"); '' se não escolheu nenhum. */
+function avatarHtml(v, cls = '') {
+  const a = parseAvatar(v);
+  return a ? `<span class="pa${cls ? ' ' + cls : ''}" style="--h:${a.hue}" aria-hidden="true">${a.emoji}</span>` : '';
+}
+/** Título que essa pessoa escolheu, se ela ainda tem a conquista: o item de ACHIEVEMENTS ou null. */
+function titleOf(name, s) {
+  const a = ACHIEVEMENTS.find(x => x.id === flair.titles?.[name]);
+  return a && a.test(s) ? a : null;
+}
+let lookHue = null; // cor escolhida antes de escolher o avatar
+function lookHtml(s) {
+  const cur = parseAvatar(me?.avatar), hue = lookHue ?? cur?.hue ?? AVATAR_HUES[0];
+  const achOf = id => ACHIEVEMENTS.find(a => a.id === id);
+  const titles = ACHIEVEMENTS.filter(a => a.test(s));
+  return `<section class="glass" style="margin-top:var(--space-md)"><h2>${icon('smile')} Avatar e título</h2>
+    <p class="note">O avatar aparece no topo, no perfil e ao lado do seu nome nos rankings. Os com cadeado liberam com conquistas.</p>
+    <div class="hue-list" aria-label="Cor do fundo">${AVATAR_HUES.map(h => `<button class="hue${h === hue ? ' on' : ''}" data-hue="${h}" style="--h:${h}" aria-label="Cor de fundo" aria-pressed="${h === hue}"></button>`).join('')}</div>
+    <div class="avatar-list">${AVATARS.map(a => {
+      const ok = !a.ach || achOf(a.ach)?.test(s), using = cur?.id === a.id;
+      return `<button class="avt${using ? ' using' : ''}" data-avatar="${a.id}" ${ok ? '' : 'disabled'} title="${ok ? a.name : `Libera com a conquista “${achOf(a.ach).name}”`}">
+        <span class="pa big" style="--h:${hue}">${ok ? a.emoji : icon('lock')}</span><small>${ok ? a.name : achOf(a.ach).name}</small></button>`;
+    }).join('')}<button class="avt${cur ? '' : ' using'}" data-avatar=""><span class="pa big none">${icon('user')}</span><small>Nenhum</small></button></div>
+    <label class="title-pick"><b>Título</b> <select id="titlePick"><option value="">Sem título</option>${titles.map(a => `<option value="${a.id}"${me?.title === a.id ? ' selected' : ''}>${a.name}</option>`).join('')}</select></label>
+    <p class="note">O título aparece junto do seu nome no perfil. Dá pra escolher qualquer conquista que você já tem.</p></section>`;
+}
+async function saveLook(body, name) {
+  try {
+    const r = await api('api/profile/look', { method: 'POST', body });
+    me = { ...me, ...r };
+    for (const [k, map] of [['avatar', 'avatars'], ['title', 'titles']]) {
+      flair[map] ||= {};
+      if (r[k]) flair[map][me.name] = r[k]; else delete flair[map][me.name];
+    }
+    try { localStorage.setItem('mg_flair', JSON.stringify(flair)); } catch {}
+    applyMeFlair();
+    renderProfile(name);
+  } catch (err) { alert(err.message); }
+}
+function bindLook(name) {
+  const cur = () => parseAvatar(me?.avatar);
+  document.querySelectorAll('.hue-list .hue').forEach(b => b.onclick = () => {
+    lookHue = Number(b.dataset.hue);
+    if (cur()) saveLook({ avatar: `${cur().id}:${lookHue}` }, name); else renderProfile(name);
+  });
+  document.querySelectorAll('.avatar-list .avt').forEach(b => b.onclick = () => {
+    const id = b.dataset.avatar, hue = lookHue ?? cur()?.hue ?? AVATAR_HUES[0];
+    saveLook({ avatar: id ? `${id}:${hue}` : null }, name);
+  });
+  $('#titlePick')?.addEventListener('change', e => saveLook({ title: e.target.value || null }, name));
 }
