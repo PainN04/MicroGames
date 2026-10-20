@@ -5,7 +5,8 @@
 // Imagem própria em vez de emoji: fica igual em qualquer aparelho.
 // `ach`: o avatar só libera com essa conquista (a conferência é na página, que é onde as conquistas são calculadas).
 // Macaco: desenho próprio. Avatares de jogo ("jogo-<id do jogo>"): um desenho que lembra o jogo (img/avatars/jogo-<id>.svg,
-// do Fluent Emoji Flat da Microsoft e do Flat Color Icons, licença MIT), liberado depois de jogar uma partida dele.
+// ícones do game-icons.net, https://game-icons.net, licença CC BY 3.0, autores Lorc, Delapouite e outros),
+// liberado depois de jogar uma partida dele.
 // Jogo novo precisa do seu jogo-<id>.svg (o teste confere).
 // Gravado no banco como "id:cor", ex.: "lia:290".
 const AVATARS = [
