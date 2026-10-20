@@ -40,7 +40,6 @@ $('#acctBtn').onclick = () => toggleAcct();
 $('#mNotes').onclick = () => { toggleAcct(false); openNotes(); };
 $('#mDuo').onclick = () => { toggleAcct(false); duoModal(); };
 $('#mProfile').onclick = () => { toggleAcct(false); showProfile(player); };
-$('#mLook').onclick = () => { toggleAcct(false); showProfile(player, 'personalizar'); };
 $('#mPass').onclick = () => { toggleAcct(false); passwordModal(false); };
 $('#mLogout').onclick = () => { toggleAcct(false); logout(); };
 $('#mAdmin').onclick = () => { toggleAcct(false); showAdmin(); };
