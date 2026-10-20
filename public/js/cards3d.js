@@ -61,53 +61,95 @@ const smooth = k => k * k * (3 - 2 * k);
 
 // Cada cena recebe (Z, illo) e devolve update(t) — t em segundos.
 const SCENES_3D = {
-  // poço do Tetris com pilha colorida: a peça I cai girando, encaixa no buraco, a linha pisca, some e a pilha desce
+  // poço do Tetris com pilha colorida: a peça I cai girando, encaixa no buraco, a linha pisca, some e a pilha desce.
+  // Tudo fica num Group com a ordem de desenho feita à mão (fundo, chão e paredes de dentro, cubos de baixo pra cima
+  // e de trás pra frente, frente das paredes por último) — a ordenação automática da Zdog misturava as faces.
   blocos(Z, illo) {
     const C = 11, COLS = 8, X = c => (c - (COLS - 1) / 2) * C, Y = r => 40 - r * C;
-    // fundo do poço com a grade apagada, paredes e chão
-    const back = new Z.Group({ addTo: illo, translate: { z: -18 } }); // bem atrás: perto dos cubos, a Zdog o ordenaria na frente de alguns
-    new Z.Rect({ addTo: back, width: COLS * C, height: 100, stroke: 1, fill: true, color: '#161a2e', translate: { y: -4 } });
-    for (let c = 1; c < COLS; c++) new Z.Shape({ addTo: back, path: [{ x: X(c) - C / 2, y: -54 }, { x: X(c) - C / 2, y: 46 }], stroke: 0.5, color: '#262b48' });
+    const stage = new Z.Group({ addTo: illo });
+    // bloco só com as faces que a câmera chega a ver (as de trás nunca aparecem); as laterais somem quando viram de costas
+    const SIDES = {
+      front: (w, h, d) => ({ width: w, height: h, translate: { z: d / 2 } }),
+      top: (w, h, d) => ({ width: w, height: d, translate: { y: -h / 2 }, rotate: { x: Z.TAU / 4 } }),
+      left: (w, h, d) => ({ width: d, height: h, translate: { x: -w / 2 }, rotate: { y: -Z.TAU / 4 } }),
+      right: (w, h, d) => ({ width: d, height: h, translate: { x: w / 2 }, rotate: { y: Z.TAU / 4 } }),
+    };
+    const TONE = { front: 0, top: 0.3, left: -0.15, right: -0.3 };
+    const block = (addTo, w, h, d, color, translate, sides, stroke = 1.5) => {
+      const g = new Z.Group({ addTo, translate });
+      const faces = {};
+      for (const s of sides) faces[s] = new Z.Rect({ addTo: g, ...SIDES[s](w, h, d), stroke, fill: true, backface: false, color: shade(color, TONE[s]) });
+      g.paint = c => { for (const s of sides) faces[s].color = shade(c, TONE[s]); };
+      return g;
+    };
+    // fundo do poço com a grade apagada
+    const back = new Z.Group({ addTo: stage, translate: { z: -6 } });
+    new Z.Rect({ addTo: back, width: COLS * C, height: 100, stroke: 1, fill: true, color: '#161a2e', translate: { y: -5 } });
+    for (let c = 1; c < COLS; c++) new Z.Shape({ addTo: back, path: [{ x: X(c) - C / 2, y: -55 }, { x: X(c) - C / 2, y: 45 }], stroke: 0.5, color: '#262b48' });
     for (let r = 0; r < 9; r++) new Z.Shape({ addTo: back, path: [{ x: -COLS * C / 2, y: Y(r) - C / 2 }, { x: COLS * C / 2, y: Y(r) - C / 2 }], stroke: 0.5, color: '#262b48' });
-    for (const s of [-1, 1]) slab(Z, illo, 6, 108, 36, '#3b4166', { translate: { x: s * (COLS * C / 2 + 3), y: -4 } });
-    slab(Z, illo, COLS * C + 12, 6, 36, '#3b4166', { translate: { y: 49 } });
-    // pilha: cada cubo é um bloco com as faces sombreadas (cores do jogo)
+    // chão e paredes: a face de dentro vai antes dos cubos, a frente e o topo vão depois
+    const WALL = '#3b4166', WX = COLS * C / 2 + 3, D = 12;
+    const floor = block(stage, COLS * C, 6, D, WALL, { y: 48.5 }, ['top', 'front'], 2);
+    const inner = [block(stage, 6, 109, D, WALL, { x: -WX, y: -3 }, ['right'], 2), block(stage, 6, 109, D, WALL, { x: WX, y: -3 }, ['left'], 2)];
+    const outer = [block(stage, 6, 109, D, WALL, { x: -WX, y: -3 }, ['left', 'top', 'front'], 2), block(stage, 6, 109, D, WALL, { x: WX, y: -3 }, ['right', 'top', 'front'], 2)];
+    // pilha nas cores do jogo
     const CYAN = '#4dc3ff';
-    const ROW0 = ['#ff6b8a', '#ffd34d', '#8b6cff', '#3ddc97', '#ff8a5c', '#4dc3ff', null, '#ffd34d'];
-    const ROW1 = ['#8b6cff', '#8b6cff', null, '#ff8a5c', '#ff8a5c', null, null, '#3ddc97'];
-    const ROW2 = ['#8b6cff', null, null, null, '#ff8a5c', null, null, null];
-    const block = (c, r, color) => ({ b: cube(Z, illo, C - 1, color, { translate: { x: X(c), y: Y(r) } }), c, r, color });
-    const stack = [ROW0, ROW1, ROW2].flatMap((row, r) => row.map((color, c) => color && block(c, r, color)).filter(Boolean));
-    // peça I: 4 cubos num Anchor que cai e gira; a sombra (contorno) mostra onde ela vai cair
-    const piece = new Z.Anchor({ addTo: illo });
-    const pieceCubes = [0, 1, 2, 3].map(i => cube(Z, piece, C - 1, CYAN, { translate: { y: (i - 1.5) * C } }));
-    const ghost = new Z.Rect({ addTo: illo, width: C - 1, height: C * 4 - 1, stroke: 1.2, color: 'rgba(255,255,255,0.35)', translate: { x: X(6), y: Y(0) - 1.5 * C, z: 0 } });
-    const flash = new Z.Rect({ addTo: illo, width: COLS * C, height: C, stroke: 2, fill: true, color: '#ffffff', translate: { y: Y(0), z: 6 } });
+    const ROWS = [['#ff6b8a', '#ffd34d', '#8b6cff', '#3ddc97', '#ff8a5c', '#4dc3ff', null, '#ffd34d'],
+      ['#8b6cff', '#8b6cff', null, '#ff8a5c', '#ff8a5c', null, null, '#3ddc97'],
+      ['#8b6cff', null, null, null, '#ff8a5c', null, null, null]];
+    const ALL = ['front', 'top', 'left', 'right'];
+    const stack = ROWS.flatMap((row, r) => row.map((color, c) => color && { g: block(stage, C - 1, C - 1, C - 1, color, { x: X(c), y: Y(r) }, ALL), r, color }).filter(Boolean));
+    // peça I: 4 cubos num Anchor que cai girando; o contorno mostra onde ela vai encaixar
+    const piece = new Z.Anchor({ addTo: stage });
+    const pieceCubes = [0, 1, 2, 3].map(i => block(piece, C - 1, C - 1, C - 1, CYAN, { y: (1.5 - i) * C }, ALL));
+    const ghost = new Z.Rect({ addTo: stage, width: C - 1, height: C * 4 - 1, stroke: 1, color: 'rgba(77,195,255,0.55)', translate: { x: X(6), y: Y(0) - 1.5 * C, z: C / 2 } });
+    // faíscas quando a linha some
+    const sparks = Array.from({ length: 10 }, (_, i) => ({ s: new Z.Rect({ addTo: stage, width: 2.6, height: 2.6, stroke: 0.8, fill: true, color: i % 2 ? '#ffffff' : '#ffe68a' }), x: X(i % COLS) + (i > 7 ? 5 : 0), v: 0.6 + (i % 3) * 0.3, a: i % 2 ? 1 : -1 }));
+    const LAND = Y(0) - 1.5 * C;
+    // ordem de desenho: refeita a cada quadro, depois que a Zdog calcula a profundidade de cada peça
+    const cubes = [...stack.map(s => s.g), ...pieceCubes];
+    const baseSort = stage.updateSortValue;
+    stage.updateSortValue = function () {
+      this.flatGraph = cubes;
+      baseSort.call(this);
+      const row = g => Math.round((40 - g.renderOrigin.y) / C);
+      const sorted = cubes.filter(g => g.visible).sort((a, b) => row(a) - row(b) || a.sortValue - b.sortValue);
+      this.flatGraph = [back, floor, ...inner, ...sorted, ghost, ...sparks.map(s => s.s), ...outer];
+    };
     return t => {
       const k = (t / 3.2) % 1;
-      // 0–0,55: cai do alto, deitada, indo pra coluna 6 e girando pra ficar em pé
-      const f = Math.min(1, k / 0.55), land = k >= 0.55;
-      piece.visible = k < 0.8;
-      piece.translate.set({ x: X(2) + (X(6) - X(2)) * smooth(Math.min(1, f * 1.6)), y: -60 + (Y(0) - 1.5 * C + 60) * (f * f), z: 0 });
-      piece.rotate.z = (1 - smooth(Math.min(1, f * 1.4))) * (Math.PI / 2);
-      ghost.visible = !land;
-      // 0,55–0,8: a linha de baixo (agora completa) pisca; 0,8–1: some e o que estava em cima desce uma casa
-      const blink = land && k < 0.8 && Math.floor(k * 40) % 2 === 0;
-      flash.visible = blink;
-      const drop = k < 0.8 ? 0 : smooth((k - 0.8) / 0.12 > 1 ? 1 : (k - 0.8) / 0.12);
+      // 0–0,55: cai do alto deitada, vai pra coluna 6 e gira pra ficar em pé (acelerando no fim, como no jogo)
+      const f = Math.min(1, k / 0.55);
+      const turn = smooth(Math.min(1, f * 1.5));
+      piece.translate.x = X(2) + (X(6) - X(2)) * smooth(Math.min(1, f * 1.3));
+      piece.translate.y = -64 + (LAND + 64) * f * f;
+      piece.rotate.z = (1 - turn) * (Math.PI / 2);
+      ghost.visible = k < 0.55;
+      // 0,55–0,8: a linha de baixo (agora completa) pisca em branco; 0,8: some e o que estava em cima desce uma casa
+      const blink = k >= 0.55 && k < 0.8 && Math.floor((k - 0.55) * 32) % 2 === 0;
+      const gone = k >= 0.8;
+      const drop = gone ? smooth(Math.min(1, (k - 0.8) / 0.08)) : 0;
+      // volta ao começo: a linha de baixo renasce crescendo e a pilha sobe junto
+      const regrow = k < 0.12 ? smooth(k / 0.12) : 1;
       stack.forEach(s => {
-        if (s.r === 0) { s.b.visible = k < 0.8; s.b.scale = 1; }
-        else s.b.translate.y = Y(s.r) + drop * C;
+        s.g.paint(blink && s.r === 0 ? '#ffffff' : s.color);
+        if (s.r === 0) { s.g.visible = !gone; s.g.scale = regrow; }
+        else s.g.translate.y = Y(s.r) + (drop + (1 - regrow)) * C;
       });
-      // a peça que caiu: o cubo de baixo some com a linha, os outros 3 descem junto
-      pieceCubes.forEach((pc, i) => { pc.visible = true; });
-      if (k >= 0.8) {
-        piece.visible = true;
-        pieceCubes[3].visible = false;
-        piece.translate.y = Y(0) - 1.5 * C + drop * C;
-      }
-      // volta ao começo: a linha de baixo reaparece crescendo (como se a pilha subisse de novo)
-      if (k < 0.12) stack.forEach(s => { s.b.scale = s.r === 0 ? smooth(k / 0.12) : 1; });
+      // a peça: o cubo de baixo some com a linha e os outros 3 descem; no fim do ciclo eles encolhem e somem
+      pieceCubes.forEach((pc, i) => {
+        pc.paint(blink && i === 0 ? '#ffffff' : CYAN);
+        pc.visible = !(gone && i === 0);
+        pc.scale = k > 0.9 ? Math.max(0.01, 1 - smooth((k - 0.9) / 0.1)) : 1;
+      });
+      if (gone) piece.translate.y = LAND + drop * C;
+      const sk = (k - 0.8) / 0.14;
+      sparks.forEach(({ s, x, v, a }) => {
+        s.visible = sk > 0 && sk < 1;
+        s.translate.set({ x: x + a * sk * 14 * v, y: Y(0) - sk * 26 * v + sk * sk * 22, z: C / 2 + 1 });
+        s.rotate.z = sk * 5 * v;
+        s.scale = 1 - sk * 0.6;
+      });
       illo.rotate.x = -0.22;
       illo.rotate.y = Math.sin(t * 0.45) * 0.4;
     };
