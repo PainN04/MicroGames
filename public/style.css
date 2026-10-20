@@ -774,10 +774,13 @@
   .pa { display: inline-grid; place-items: center; width: 1.45em; height: 1.45em; margin-right: .35em; border-radius: 50%; vertical-align: -.35em;
     font-size: .9em; line-height: 1; background: oklch(62% 0.14 var(--h)); color: #fff; -webkit-text-fill-color: #fff;
     -webkit-background-clip: border-box; background-clip: border-box; text-shadow: none; animation: none; }
+  .pa { overflow: hidden; }
+  .pa img { width: 100%; height: 100%; display: block; }
   .pa.big { width: 1.7em; height: 1.7em; font-size: 1em; margin-right: .1em; }
   .pa.none { background: var(--surface); color: var(--muted); -webkit-text-fill-color: currentColor; }
   .pa .i { width: .9em; height: .9em; }
-  .acct-btn .av.has-pa { background: oklch(62% 0.14 var(--h)); font-size: 17px; line-height: 1; }
+  .acct-btn .av.has-pa { background: oklch(62% 0.14 var(--h)); overflow: hidden; }
+  .acct-btn .av.has-pa img { width: 100%; height: 100%; display: block; }
   .ptitle { font-size: var(--fs-xs); vertical-align: middle; display: inline-flex; align-items: center; gap: .35em; color: var(--yellow); }
   .ptitle .i { width: 1em; height: 1em; }
   .hue-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
@@ -785,7 +788,7 @@
   .hue.on { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg, #000) inset; }
   .avatar-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr)); gap: 8px; }
   .avt { display: flex; flex-direction: column; align-items: center; gap: .3rem; font: inherit; color: var(--text); cursor: pointer; padding: .55rem .3rem; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
-  .avt .pa.big { font-size: 1.35rem; margin: 0; }
+  .avt .pa.big { font-size: 1.6rem; margin: 0; }
   .avt:disabled { opacity: .45; cursor: not-allowed; }
   .avt:disabled .pa { background: var(--surface); color: var(--muted); -webkit-text-fill-color: currentColor; }
   .avt.using { border-color: var(--primary); background: oklch(70% 0.19 290 / .14); }
