@@ -633,9 +633,13 @@ const SCENES_3D = {
     // "?" com espessura: três camadas do escuro (atrás) ao claro (frente), igual ao raio do Reflexo
     const qPath = [{ x: -8, y: -8 }, { arc: [{ x: -8, y: -18 }, { x: 0, y: -18 }] }, { arc: [{ x: 8, y: -18 }, { x: 8, y: -9 }] },
       { arc: [{ x: 8, y: -2 }, { x: 0, y: 1 }] }, { x: 0, y: 6 }].map(p => (p.arc ? { arc: p.arc.map(q => ({ x: q.x * 0.62, y: q.y * 0.62 + 2 })) } : { x: p.x * 0.62, y: p.y * 0.62 + 2 }));
-    const mark = new Z.Anchor({ addTo: bubble });
+    // frente do balão + "?" num Group (desenhados em ordem, como uma peça só): solto, o pontinho fica abaixo do
+    // centro e a Zdog o ordenava atrás da placa quando a cena girava (o pontinho sumia)
+    const face = new Z.Group({ addTo: bubble, translate: { z: 3.4 } });
+    new Z.Rect({ addTo: face, width: 50, height: 32, stroke: 2, fill: true, color: '#eef0fb' });
+    const mark = new Z.Anchor({ addTo: face });
     ['#5a3fd0', '#6f52e8', '#8b6cff'].forEach((color, i) => {
-      const z = 3.5 + i * 1.6;
+      const z = 0.3 + i * 1.6;
       new Z.Shape({ addTo: mark, path: qPath, closed: false, stroke: 4.5, color, translate: { z } });
       new Z.Shape({ addTo: mark, stroke: 5, color, translate: { y: 12, z } });
     });
