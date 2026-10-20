@@ -1,8 +1,11 @@
 // ---------- telas ----------
 function stop() { if (cleanup) { cleanup(); cleanup = null; } }
 function swap(render) {
-  if (document.startViewTransition && !reduced) document.startViewTransition(render);
-  else render();
+  if (document.startViewTransition && !reduced) {
+    // o navegador cancela a transição (aba oculta, janela redimensionada...) e rejeita as promessas; a tela já foi trocada, então não é erro
+    const t = document.startViewTransition(render);
+    t.ready.catch(() => {}); t.finished.catch(() => {}); t.updateCallbackDone.catch(() => {});
+  } else render();
 }
 function announce(msg) { $('#live').textContent = msg; }
 
@@ -195,6 +198,7 @@ function play(id) {
     const el = $('#game');
     cleanup = g.start(el, async (score, proof) => {
       stop();
+      if (!el.isConnected) return; // saiu da partida (voltou ao menu, trocou de tela) antes de terminar
       // done(null, 'motivo'): partida acabou sem pontuação (ex.: explodiu no Campo Minado) — nada é salvo
       if (score === null) {
         el.innerHTML = `<div class="result"><span class="label">Fim de jogo</span><span class="score">${icon('bomb', { cls: 'big' })}</span>
@@ -210,6 +214,7 @@ function play(id) {
       const hadAch = unlockedFor(player);
       const cheat = g.check?.(score, proof);
       const status = cheat || await saveScore(id, score, proof);
+      if (!el.isConnected) return; // trocou de tela enquanto salvava: o resultado já foi enviado, só não há onde mostrar
       const ok = status === 'ok' || status === 'queued';
       const record = ok && (!prev || better(g, score, prev[1]));
       const monthBest = ok && (!prevMonth || better(g, score, prevMonth[1]));
