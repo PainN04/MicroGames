@@ -14,7 +14,7 @@ const ICONS = {
   "pong":"<path d=\"M4 6v7\"/><path d=\"M20 11v7\"/><circle cx=\"12\" cy=\"12\" r=\"1.6\"/><path d=\"M9 9 7 7\"/><path d=\"m15 15 2 2\"/>",
   "forca":"<path d=\"M5 21h9\"/><path d=\"M8 21V3h8v3\"/><circle cx=\"16\" cy=\"9\" r=\"2.5\"/><path d=\"M16 11.5V16\"/><path d=\"m16 13-2.5 2\"/><path d=\"m16 13 2.5 2\"/>",
   "ligue4":"<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"3\"/><circle cx=\"8\" cy=\"8\" r=\"1.4\"/><circle cx=\"16\" cy=\"8\" r=\"1.4\"/><circle cx=\"8\" cy=\"16\" r=\"1.4\"/><circle cx=\"16\" cy=\"16\" r=\"1.4\"/><circle cx=\"12\" cy=\"12\" r=\"1.4\"/>",
-  "corredor":"<circle cx=\"15\" cy=\"4.5\" r=\"1.8\"/><path d=\"m11 20 2.5-5.5L11 12l2-4 4 2 2.5 3\"/><path d=\"m9.5 9-2.5 3\"/><path d=\"m13.5 14.5 3.5 1.5\"/>",
+  "corredor":"<path d=\"M2 7l6.6 4\"/><ellipse cx=\"12\" cy=\"12.4\" rx=\"4.2\" ry=\"3\" transform=\"rotate(-20 12 12.4)\"/><path d=\"m15.6 10.3 1.4-2.6\"/><circle cx=\"18\" cy=\"6\" r=\"2\"/><path d=\"M20 6.2 23 7\"/><path d=\"M16.6 4.3 15 2.5\"/><path d=\"m18.2 4-.3-2.3\"/><path d=\"m11 15.2-1.6 3.6-2.2.4\"/><path d=\"m13.4 15.2 1.4 3.4 2.2.6\"/>",
   "comecome":"<path d=\"M20.5 7.5A9 9 0 1 0 20.5 16.5L12 12z\"/><circle cx=\"12\" cy=\"7\" r=\".6\"/>",
   "termo":"<rect x=\"3\" y=\"4\" width=\"8\" height=\"7\" rx=\"1.5\"/><rect x=\"13\" y=\"4\" width=\"8\" height=\"7\" rx=\"1.5\"/><rect x=\"3\" y=\"13\" width=\"8\" height=\"7\" rx=\"1.5\"/><path d=\"m15.5 16.5 2 2 3.5-4\"/>",
   "bird":"<path d=\"M16 7h.01\"/><path d=\"M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20\"/><path d=\"m20 7 2 .5-2 .5\"/><path d=\"M10 18v3\"/><path d=\"M14 17.75V21\"/><path d=\"M7 18a6 6 0 0 0 3.84-10.61\"/>",
