@@ -32,6 +32,9 @@ async function checkVersion() {
 checkVersion();
 setInterval(checkVersion, 30000);
 
+// App instalável: o service worker (sw.js) não guarda cache, só habilita o "Instalar app" do navegador.
+if (!localMode && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+
 $('#home').onclick = showMenu;
 $('#acctBtn').onclick = () => toggleAcct();
 $('#mNotes').onclick = () => { toggleAcct(false); openNotes(); };

@@ -324,6 +324,17 @@
   .stroop-word { font-size: var(--fs-3xl); font-weight: 700; letter-spacing: -0.03em; line-height: 1; min-height: 1.1em; user-select: none; }
   .choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: min(440px, 100%); }
   .choices .btn { min-height: 56px; font-size: var(--fs-base); }
+  .quiz-q { margin: 0; font-size: var(--fs-lg); font-weight: 700; text-align: center; max-width: 30ch; min-height: 2.6em; display: grid; place-items: center; }
+  .choices.quiz { width: min(560px, 100%); }
+  .choices.quiz .btn { justify-content: space-between; text-align: left; line-height: 1.25; }
+  .choices.quiz .btn.right { border-color: var(--green); background: oklch(76% 0.18 150 / 0.2); }
+  .choices.quiz .btn.wrong { border-color: var(--red); background: oklch(65% 0.2 25 / 0.2); }
+  .mbadge { color: var(--yellow); display: inline-flex; align-items: center; gap: 1px; }
+  .mbadge small { font-size: .7em; font-weight: 700; }
+  .mtitles { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .mtitles:empty { display: none; }
+  .mtitle { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px; font-size: var(--fs-xs, .8rem); font-weight: 700;
+    color: var(--yellow); border: 1px solid var(--yellow); background: oklch(86% 0.17 92 / .12); }
   .choices kbd { font: inherit; font-size: var(--fs-xs); color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 0 .4em; }
   .shake { animation: shake .25s; }
   /* Caça Números (Schulte) */

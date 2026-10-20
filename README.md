@@ -2,15 +2,15 @@
 
 # 🎮 MicroGame
 
-**27 minigames de navegador pra jogar com o pessoal do trabalho.**
+**28 minigames de navegador pra jogar com o pessoal do trabalho.**
 Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas e conquistas.
 
-![Jogos](https://img.shields.io/badge/jogos-27-8b5cf6?style=for-the-badge)
+![Jogos](https://img.shields.io/badge/jogos-28-8b5cf6?style=for-the-badge)
 ![Sem build](https://img.shields.io/badge/front-JS%20puro%2C%20sem%20build-f59e0b?style=for-the-badge)
 ![Node](https://img.shields.io/badge/node-%E2%89%A5%2022-339933?style=for-the-badge&logo=node.js&logoColor=white)
 ![Vercel](https://img.shields.io/badge/deploy-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)
 ![Neon](https://img.shields.io/badge/banco-Neon%20Postgres-00e599?style=for-the-badge&logo=postgresql&logoColor=white)
-![Testes](https://img.shields.io/badge/testes-35%20passando-22c55e?style=for-the-badge)
+![Testes](https://img.shields.io/badge/testes-36%20passando-22c55e?style=for-the-badge)
 
 <br>
 
@@ -23,7 +23,7 @@ Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas e conquis
 ## 📑 Sumário
 
 - [✨ Destaques](#-destaques)
-- [🕹️ Os 27 jogos](#️-os-27-jogos)
+- [🕹️ Os 28 jogos](#️-os-28-jogos)
 - [🏆 Competição e social](#-competição-e-social)
 - [🚦 Login e bloqueio por fila do Geiko](#-login-e-bloqueio-por-fila-do-geiko)
 - [🛠️ Painel admin](#️-painel-admin)
@@ -43,17 +43,18 @@ Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas e conquis
 
 | | |
 | --- | --- |
-| 🎯 **27 jogos rápidos** | De 10 segundos a poucos minutos por partida, no computador ou no celular (teclado, mouse, toque, deslize ou botões na tela). |
+| 🎯 **28 jogos rápidos** | De 10 segundos a poucos minutos por partida, no computador ou no celular (teclado, mouse, toque, deslize ou botões na tela). |
 | 🏅 **Ranking de verdade** | Por jogo, do mês e geral. O servidor confere cada pontuação (faixa válida em todos os jogos e trava anti-autoclicker) antes de gravar. |
 | 📅 **Desafio do dia** | Um jogo sorteado por dia, igual pra todo mundo. Quem ganha leva a coroa e escolhe o jogo de amanhã. |
 | ⚔️ **Social** | Reações nos recordes, duelos de 24h, torneio semanal e duplas. |
 | 🎖️ **43 conquistas** | Calculadas na página a partir do histórico de partidas, sem nada extra no banco. |
 | 🚦 **Integração com o Geiko** | Quem está com a fila de tickets cheia fica sem jogar até resolver alguns. |
+| 📱 **Instalável** | No celular ou no Chrome, "Instalar app" põe o MicroGame na tela inicial e abre em tela cheia. |
 | ⚡ **Leve** | Sem build nem framework: um arquivo JS por jogo, e a biblioteca de jogos (Phaser) só baixa quando alguém abre um deles. |
 
 <br>
 
-## 🕹️ Os 27 jogos
+## 🕹️ Os 28 jogos
 
 <div align="center">
 <img src="docs/img/jogos.png" alt="Grade de jogos do menu, com cards 3D" width="780">
@@ -85,6 +86,7 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados co
 | **Sudoku** | Menor tempo ganha; dica custa +20s. |
 | **Campo Minado** | Abra todas as casas sem mina. O primeiro clique é sempre seguro. |
 | **2048** | Junte números iguais em 3 minutos ou até travar. |
+| **Quiz de TI** | 70 perguntas de TI e de escritório, 4 alternativas, 60s. Combo até x4; errou, perde 1 ponto e vê a certa. |
 | **Ligue 4** | Contra a máquina, que fica mais esperta a cada vitória. Vitória rápida rende bônus. |
 
 ### 🕹️ Arcade
@@ -129,6 +131,9 @@ Quase tudo sai das **partidas** (tabela `scores`): só o que não dá pra deduzi
 | 🥇 Ouro | 7 |
 | 💎 Diamante | 15 |
 
+### 🏅 Campeão do mês
+Quem termina o mês com mais recordes de 1º lugar ganha um **selo fixo**: uma medalha ao lado do nome em todos os rankings (com o número, se ganhou mais de uma vez) e o título *Campeão de setembro de 2026* no perfil.
+
 ### 🗓️ Torneio semanal
 - Semana de segunda a domingo, no horário de Brasília. Cada semana sorteia **3 jogos**, iguais pra todo mundo, e a soma das posições vira pontos.
 - Pontos por posição em cada jogo: **10, 7, 5, 4, 3, 2** do 1º ao 6º, e **1 ponto** do 7º em diante.
@@ -137,10 +142,10 @@ Quase tudo sai das **partidas** (tabela `scores`): só o que não dá pra deduzi
 - O primeiro torneio da produção é o da semana de **19/10/2026**. Na versão de teste da Vercel ele já vale na semana atual, pra dar pra ver e testar.
 
 ### ⚔️ Duelos
-Desafie alguém num jogo. O duelo dura **24h**, com no máximo **5 abertos** por pessoa.
+Desafie alguém num jogo. O duelo dura **24h**, com no máximo **5 abertos** por pessoa. Nos últimos resultados tem o botão **Revanche** (mesmo jogo, mesma pessoa, num toque), e o aviso de duelo encerrado já abre com a revanche preenchida.
 
 ### 🤝 Duplas
-Duas pessoas formam uma dupla com o nome que quiserem. Quem convida escolhe o nome (2 a 24 caracteres); o convidado tem **48h** pra aceitar ou recusar. Cada pessoa só pode estar numa dupla (ou convite aberto) por vez, e a pontuação da dupla é calculada na página a partir das partidas.
+Duas pessoas formam uma dupla com o nome que quiserem. Quem convida escolhe o nome (2 a 24 caracteres); o convidado tem **48h** pra aceitar ou recusar. Cada pessoa só pode estar numa dupla (ou convite aberto) por vez, e a pontuação da dupla é calculada na página a partir das partidas. Quando alguém da dupla toma o 1º lugar (geral ou do mês) de outra pessoa num jogo, o parceiro recebe um aviso.
 
 ### 👏 Reações, avisos e ranking
 - Reaja ao recorde de alguém direto na linha do ranking.
@@ -149,7 +154,7 @@ Duas pessoas formam uma dupla com o nome que quiserem. Quem convida escolhe o no
 - Uma faixa no topo do menu mostra quem tem mais recordes de 1º lugar (a coroa), com o 2º e o 3º.
 
 ### 🎖️ Perfil e conquistas
-Clique no nome de qualquer pessoa pra abrir o perfil. São **43 conquistas**, como *Estreia*, *Explorador* (10 jogos diferentes), *Zerou o menu* (todos os 27), *Rei de um jogo*, *Campeão da semana*, *Dobradinha*, *Constância* (5 dias úteis seguidos), *Madrugador*, *Hora do almoço*, *Veterano* (500 partidas) e *Lenda da firma* (1000 partidas). Tudo é calculado na página a partir do ranking (`public/js/profile.js`).
+Clique no nome de qualquer pessoa pra abrir o perfil. São **43 conquistas**, como *Estreia*, *Explorador* (10 jogos diferentes), *Zerou o menu* (todos os 28), *Rei de um jogo*, *Campeão da semana*, *Dobradinha*, *Constância* (5 dias úteis seguidos), *Madrugador*, *Hora do almoço*, *Veterano* (500 partidas) e *Lenda da firma* (1000 partidas). Tudo é calculado na página a partir do ranking (`public/js/profile.js`).
 
 <br>
 
@@ -324,7 +329,7 @@ npm test
 Roda duas coisas:
 
 1. `scripts/check-front.js` confere a sintaxe de cada script da página e de todos juntos (declaração repetida entre arquivos dá erro).
-2. `test/api.test.js` roda **35 testes** da API com `node --test`.
+2. `test/api.test.js` roda **36 testes** da API com `node --test`.
 
 <br>
 
@@ -360,7 +365,7 @@ No painel admin dá pra baixar o JSON, importar ou restaurar as partidas de qual
 │   ├── index.html         a página
 │   ├── style.css          estilos
 │   └── js/
-│       ├── games/         um arquivo por jogo (27)
+│       ├── games/         um arquivo por jogo (28)
 │       ├── app.js         menu, ranking, conta e avisos
 │       ├── core.js        placar e sessão
 │       ├── daily.js       sorteio do desafio do dia (cliente e servidor)

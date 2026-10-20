@@ -522,7 +522,7 @@ test('torneio semanal: 3 jogos por semana, pontos por posição, pódio fechado 
   const campea = after.tourney.last;
   assert.equal(campea.week, week);
   assert.equal(campea.top[0].name, 'Ana');
-  assert.equal(after.trophies.Ana, 1);
+  assert.equal(after.trophies.Ana, (during.trophies.Ana || 0) + 1, 'ganha 1 troféu (outros testes podem ter dado troféus de semanas anteriores)');
   const ana1 = (await sql`SELECT text FROM notifications WHERE user_id = ${ana}`).map(r => JSON.parse(r.text)).filter(n => n.kind === 'tourney' && n.week === week);
   assert.equal(ana1.length, 1); assert.equal(ana1[0].rank, 1);
   await social.socialState({ id: bia, name: 'Bia' }, social.weekEnd(week) + 7200_000);
@@ -694,4 +694,21 @@ test('duplas: o admin escolhe desde quando as partidas contam (agora, início do
   d = (await ana('/api/social')).body.myDuo;
   assert.equal(d.since, d.formedAt, 'sem ajuste do admin: desde a formação');
   await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
+});
+
+test('duplas: quem toma o 1º lugar avisa o parceiro (menos quando tomou do próprio parceiro)', async () => {
+  const dono = await login('paulo', 'senha-dono-123'), ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123');
+  const anaId = await idOf('ana'), biaId = await idOf('bia');
+  await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
+  assert.equal((await dono('/api/admin/duos', { method: 'POST', body: { aId: anaId, bId: biaId, name: 'Recordistas' } })).status, 201);
+  const recs = async c => (await notesOf(c)).filter(n => n.kind === 'duo_record' && n.game === 'quiz');
+  assert.equal((await play(dono, 'quiz', 10)).status, 201, 'primeira partida do jogo: ninguém é avisado');
+  assert.equal((await recs(bia)).length, 0);
+  assert.equal((await play(ana, 'quiz', 20)).status, 201, 'Ana tira o recorde do Paulo');
+  const [n] = await recs(bia);
+  assert.ok(n, 'Bia fica sabendo');
+  assert.equal(n.by, 'Ana'); assert.equal(n.scope, 'geral'); assert.equal(n.name, 'Recordistas');
+  assert.equal((await play(bia, 'quiz', 30)).status, 201, 'Bia tira o recorde da própria parceira');
+  assert.equal((await recs(ana)).length, 0, 'Ana recebe só o aviso de recorde tomado');
+  await sql`UPDATE duos SET status = ${'ended'} WHERE status = ${'active'}`;
 });

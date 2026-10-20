@@ -24,7 +24,8 @@ const PORT = Number(process.env.PORT) || 8080;
 // Só a pasta public/ é servida (igual à Vercel): o código do servidor (lib/, scripts/) nunca sai.
 const PUBLIC = path.join(__dirname, 'public');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
-  '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json; charset=utf-8' };
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json; charset=utf-8',
+  '.webmanifest': 'application/manifest+json; charset=utf-8' };
 
 // A página compara essa versão pra se recarregar sozinha quando algum arquivo de public/ muda.
 function newestMtime(dir) {
