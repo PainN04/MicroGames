@@ -156,7 +156,8 @@ function bindFrames(name) {
 }
 
 // ----- avatar pré-pronto e título (perfil) -----
-const avatarImg = a => `<img src="img/avatars/${a.id}.svg" alt="" loading="lazy" decoding="async">`;
+const avatarImg = a => (a.game ? `<span class="pa-ic">${icon(GAMES[a.game].icon)}</span>`
+  : `<img src="img/avatars/${a.id}.svg" alt="" loading="lazy" decoding="async">`);
 /** Bolinha com o avatar escolhido ("id:cor"); '' se não escolheu nenhum. */
 function avatarHtml(v, cls = '') {
   const a = parseAvatar(v);
@@ -176,12 +177,17 @@ function lookHtml(s) {
     <p class="note">O avatar aparece no topo, no perfil e ao lado do seu nome nos rankings. Os com cadeado liberam com conquistas.</p>
     <div class="hue-list" aria-label="Cor do fundo">${AVATAR_HUES.map(h => `<button class="hue${h === hue ? ' on' : ''}" data-hue="${h}" style="--h:${h}" aria-label="Cor de fundo" aria-pressed="${h === hue}"></button>`).join('')}</div>
     <div class="avatar-list">${AVATARS.map(a => {
-      const ok = !a.ach || achOf(a.ach)?.test(s), using = cur?.id === a.id;
-      return `<button class="avt${using ? ' using' : ''}" data-avatar="${a.id}" ${ok ? '' : 'disabled'} title="${ok ? a.name : `Libera com a conquista “${achOf(a.ach).name}”`}">
-        <span class="pa big" style="--h:${hue}">${ok ? avatarImg(a) : icon('lock')}</span><small>${ok ? a.name : achOf(a.ach).name}</small></button>`;
+      const ok = !a.ach || achOf(a.ach)?.test(s);
+      return avtBtn(a, hue, cur, ok, ok ? a.name : achOf(a.ach).name, `Libera com a conquista “${achOf(a.ach)?.name}”`);
     }).join('')}<button class="avt${cur ? '' : ' using'}" data-avatar=""><span class="pa big none">${icon('user')}</span><small>Nenhum</small></button></div>
+    <h3 class="avt-sub">${icon('gamepad-2')} Jogos <small>jogue uma partida pra liberar o do jogo</small></h3>
+    <div class="avatar-list">${menuOrder().map(([id, g]) => avtBtn({ id: 'jogo-' + id, game: id }, hue, cur, s.games.has(id), g.name, `Jogue ${g.name} pra liberar`)).join('')}</div>
     <label class="title-pick"><b>Título</b> <select id="titlePick"><option value="">Sem título</option>${titles.map(a => `<option value="${a.id}"${me?.title === a.id ? ' selected' : ''}>${a.name}</option>`).join('')}</select></label>
     <p class="note">O título aparece junto do seu nome no perfil. Dá pra escolher qualquer conquista que você já tem.</p></section>`;
+}
+function avtBtn(a, hue, cur, ok, label, lockedTip) {
+  return `<button class="avt${cur?.id === a.id ? ' using' : ''}" data-avatar="${a.id}" ${ok ? '' : 'disabled'} title="${ok ? label : lockedTip}">
+    <span class="pa big" style="--h:${hue}">${ok ? avatarImg(a) : icon('lock')}</span><small>${label}</small></button>`;
 }
 async function saveLook(body, name) {
   try {
