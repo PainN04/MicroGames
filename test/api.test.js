@@ -112,10 +112,27 @@ test('pontuação: sem login não salva, logado salva com o nome da conta', asyn
   assert.ok(board.snake.some(s => s.name === 'Ana' && s.score === 12));
 });
 
+test('ranking com ETag: sem mudança responde 304, partida nova muda a resposta', async () => {
+  const c = await login('ana', 'senha-ana-123');
+  const first = await client()('/api/scores');
+  const etag = first.headers.get('etag');
+  assert.ok(etag, 'manda ETag');
+  assert.equal((await client()('/api/scores', { headers: { 'If-None-Match': etag } })).status, 304);
+  assert.equal((await play(c, 'snake', 33)).status, 201);
+  const after = await client()('/api/scores', { headers: { 'If-None-Match': etag } });
+  assert.equal(after.status, 200);
+  assert.notEqual(after.headers.get('etag'), etag);
+});
+
 test('pontuação: jogo inexistente e valor impossível são recusados', async () => {
   const c = await login('ana', 'senha-ana-123');
   assert.equal((await play(c, 'naoexiste', 1)).status, 400);
   assert.equal((await play(c, 'cores', 9999)).status, 422);
+  assert.equal((await play(c, 'reflexo', 5)).status, 422, 'reflexo de 5 ms é impossível');
+  assert.equal((await play(c, 'mira', 1)).status, 422, '20 alvos em 1s é impossível');
+  assert.equal((await play(c, 'digitacao', 500)).status, 422, 'só existem 120 palavras');
+  assert.equal((await play(c, 'memoria', 999)).status, 422);
+  assert.equal((await play(c, 'snake', 99999)).status, 422);
 });
 
 test('anti-cheat do clique: CPS alto demais e ritmo de robô são recusados, humano passa', async () => {
@@ -365,6 +382,42 @@ test('prêmios do desafio do dia: só o vencedor de ontem escolhe o jogo de aman
   assert.equal((await client()('/api/flair')).body.frames.Ana, 'bronze');
   assert.equal((await ana('/api/auth/me')).body.user.frame, 'bronze');
   assert.equal((await ana('/api/profile/frame', { method: 'POST', body: { frame: null } })).status, 200, 'dá pra tirar a moldura');
+
+  // avatar pré-pronto e título
+  assert.equal((await client()('/api/profile/look', { method: 'POST', body: { avatar: 'lia:290' } })).status, 401, 'sem login não escolhe avatar');
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'lia:12' } })).status, 400, 'cor fora da lista');
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'nao-existe:290' } })).status, 400);
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { title: '<b>x</b>' } })).status, 400);
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'jogo-nao-existe:290' } })).status, 400, 'avatar de jogo que não existe');
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'jogo-snake:290' } })).status, 200, 'avatar de jogo');
+  for (const a of require('../public/js/avatars.js').AVATARS) assert.ok(fs.existsSync(path.join(__dirname, '..', 'public', 'img', 'avatars', `${a.id}.svg`)), `falta a imagem do avatar ${a.id}`);
+  for (const g of GAMES) assert.ok(fs.existsSync(path.join(__dirname, '..', 'public', 'img', 'avatars', `jogo-${g}.svg`)), `falta o avatar do jogo ${g}`);
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'lia:290' } })).status, 200);
+  const look = await ana('/api/profile/look', { method: 'POST', body: { title: 'estreia' } });
+  assert.deepEqual(look.body, { avatar: 'lia:290', title: 'estreia', showcase: null, bio: null }, 'mandar só o título mantém o avatar');
+
+  // vitrine e frase
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { showcase: { ach: ['a1', 'a2', 'a3', 'a4'] } } })).status, 400, 'no máximo 3 conquistas');
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { showcase: { ach: [], game: 'nao-existe' } } })).status, 400);
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { bio: 'x'.repeat(61) } })).status, 400, 'frase até 60');
+  const vit = await ana('/api/profile/look', { method: 'POST', body: { showcase: { ach: ['estreia', 'estreia', 'cobra'], game: 'snake' }, bio: '  oi\n  pessoal  ' } });
+  assert.equal(vit.status, 200);
+  assert.deepEqual(vit.body.showcase, { ach: ['estreia', 'cobra'], game: 'snake' }, 'conquista repetida conta uma vez');
+  assert.equal(vit.body.bio, 'oi pessoal', 'frase vira uma linha só');
+  const looks2 = (await client()('/api/flair')).body;
+  assert.equal(looks2.bios.Ana, 'oi pessoal');
+  assert.equal(looks2.showcases.Ana.game, 'snake');
+  assert.equal((await bia('/api/admin/bio', { method: 'POST', body: { name: 'Ana' } })).status, 403, 'só admin apaga a frase');
+  const adm = await login('outroadm', 'senha-adm-123');
+  assert.equal((await adm('/api/admin/bio', { method: 'POST', body: { name: 'Ana' } })).status, 200);
+  assert.equal((await client()('/api/flair')).body.bios.Ana, undefined, 'admin apagou a frase');
+  assert.equal((await ana('/api/profile/frame', { method: 'POST', body: { frame: 'fogo' } })).status, 200, 'moldura de conquista');
+  const looks = (await client()('/api/flair')).body;
+  assert.equal(looks.avatars.Ana, 'lia:290');
+  assert.equal(looks.titles.Ana, 'estreia');
+  assert.equal((await ana('/api/auth/me')).body.user.avatar, 'lia:290');
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: null, title: null } })).status, 200, 'dá pra tirar os dois');
+  assert.equal((await client()('/api/flair')).body.avatars.Ana, undefined);
 });
 
 test('jogos novos: pontuação impossível é recusada, e o Termo só vale uma vez por dia', async () => {
@@ -507,7 +560,7 @@ test('torneio semanal: 3 jogos por semana, pontos por posição, pódio fechado 
   const campea = after.tourney.last;
   assert.equal(campea.week, week);
   assert.equal(campea.top[0].name, 'Ana');
-  assert.equal(after.trophies.Ana, 1);
+  assert.equal(after.trophies.Ana, (during.trophies.Ana || 0) + 1, 'ganha 1 troféu (outros testes podem ter dado troféus de semanas anteriores)');
   const ana1 = (await sql`SELECT text FROM notifications WHERE user_id = ${ana}`).map(r => JSON.parse(r.text)).filter(n => n.kind === 'tourney' && n.week === week);
   assert.equal(ana1.length, 1); assert.equal(ana1[0].rank, 1);
   await social.socialState({ id: bia, name: 'Bia' }, social.weekEnd(week) + 7200_000);
@@ -679,4 +732,21 @@ test('duplas: o admin escolhe desde quando as partidas contam (agora, início do
   d = (await ana('/api/social')).body.myDuo;
   assert.equal(d.since, d.formedAt, 'sem ajuste do admin: desde a formação');
   await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
+});
+
+test('duplas: quem toma o 1º lugar avisa o parceiro (menos quando tomou do próprio parceiro)', async () => {
+  const dono = await login('paulo', 'senha-dono-123'), ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123');
+  const anaId = await idOf('ana'), biaId = await idOf('bia');
+  await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
+  assert.equal((await dono('/api/admin/duos', { method: 'POST', body: { aId: anaId, bId: biaId, name: 'Recordistas' } })).status, 201);
+  const recs = async c => (await notesOf(c)).filter(n => n.kind === 'duo_record' && n.game === 'quiz');
+  assert.equal((await play(dono, 'quiz', 10)).status, 201, 'primeira partida do jogo: ninguém é avisado');
+  assert.equal((await recs(bia)).length, 0);
+  assert.equal((await play(ana, 'quiz', 20)).status, 201, 'Ana tira o recorde do Paulo');
+  const [n] = await recs(bia);
+  assert.ok(n, 'Bia fica sabendo');
+  assert.equal(n.by, 'Ana'); assert.equal(n.scope, 'geral'); assert.equal(n.name, 'Recordistas');
+  assert.equal((await play(bia, 'quiz', 30)).status, 201, 'Bia tira o recorde da própria parceira');
+  assert.equal((await recs(ana)).length, 0, 'Ana recebe só o aviso de recorde tomado');
+  await sql`UPDATE duos SET status = ${'ended'} WHERE status = ${'active'}`;
 });

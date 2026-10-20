@@ -273,7 +273,8 @@ function duelDoneHtml(d) {
   const g = GAMES[d.game];
   if (!g) return '';
   return `<div class="duel done ${d.result}"><span class="ic">${icon(d.result === 'win' ? 'trophy' : 'swords')}</span>
-    <div><b>${RESULT_TXT[d.result]}</b> contra ${esc(d.vs)} · ${g.name}<small>${d.mine != null ? fmt(g, d.mine) : '—'} × ${d.theirs != null ? fmt(g, d.theirs) : '—'}</small></div></div>`;
+    <div><b>${RESULT_TXT[d.result]}</b> contra ${esc(d.vs)} · ${g.name}<small>${d.mine != null ? fmt(g, d.mine) : '—'} × ${d.theirs != null ? fmt(g, d.theirs) : '—'}</small></div>
+    ${d.vsId != null && duelGames().includes(d.game) ? `<div class="acts"><button class="btn ghost" data-rematch="${d.vsId}" data-game="${d.game}">${icon('rotate-ccw')} Revanche</button></div>` : ''}</div>`;
 }
 async function duelsModal(pre = {}) {
   if (!me) return loginModal();
@@ -298,6 +299,14 @@ async function duelsModal(pre = {}) {
   el.querySelectorAll('[data-cancel]').forEach(b => b.onclick = async () => {
     if (!confirm('Cancelar esse duelo? A outra pessoa é avisada.')) return;
     try { await api(`api/duels/${b.dataset.cancel}/cancel`, { method: 'POST', body: {} }); close(); duelsModal(pre); } catch (err) { el.querySelector('#dErr').textContent = err.message; }
+  });
+  // revanche com um toque: mesmo jogo, mesma pessoa
+  el.querySelectorAll('[data-rematch]').forEach(b => b.onclick = async () => {
+    b.disabled = true; el.querySelector('#dErr').textContent = '';
+    try {
+      await api('api/duels', { method: 'POST', body: { opponentId: Number(b.dataset.rematch), game: b.dataset.game } });
+      sfx.good(); close(); duelsModal(pre);
+    } catch (err) { el.querySelector('#dErr').textContent = err.message; b.disabled = false; }
   });
   el.querySelector('#dForm').onsubmit = async e => {
     e.preventDefault();
