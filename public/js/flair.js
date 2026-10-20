@@ -137,7 +137,7 @@ function maybeCongrats() {
 // ----- molduras de avatar (perfil) -----
 function framesHtml(s) {
   const wins = s.dailyWins;
-  return `<section class="glass" style="margin-top:var(--space-md)"><h2>${icon('sparkles')} Molduras de avatar</h2>
+  return `<section class="glass"><h2>${icon('sparkles')} Molduras de avatar</h2>
     <p class="note">As quatro primeiras liberam com desafios do dia ganhos, as outras com conquistas. A moldura aparece no seu avatar e dá cor ao seu nome nos rankings. Você tem ${wins} vitória${wins === 1 ? '' : 's'}.</p>
     <div class="frame-list">${FRAME_DEFS.map(([k, label, need]) => {
       const on = wins >= need, using = me?.frame === k;
@@ -175,32 +175,48 @@ function titleOf(name, s) {
   return a && a.test(s) ? a : null;
 }
 let lookHue = null; // cor escolhida antes de escolher o avatar
+// aba do "Personalizar" no perfil
+const LOOK_TABS = [['avatar', 'smile', 'Avatar'], ['molduras', 'sparkles', 'Molduras'], ['destaques', 'star', 'Título e vitrine'], ['cor', 'palette', 'Cor do app']];
+let lookTab = 'avatar';
 function lookHtml(s) {
+  const tabs = `<div class="seg view-tabs sub" role="tablist" aria-label="Personalizar">${LOOK_TABS.map(([k, ic, l]) =>
+    `<button role="tab" data-look="${k}" aria-selected="${lookTab === k}" aria-pressed="${lookTab === k}">${icon(ic)} ${l}</button>`).join('')}</div>`;
+  const body = lookTab === 'molduras' ? framesHtml(s) : lookTab === 'destaques' ? lookHighlightsHtml(s) : lookTab === 'cor' ? lookThemeHtml() : lookAvatarHtml(s);
+  return tabs + body;
+}
+function lookAvatarHtml(s) {
   const cur = parseAvatar(me?.avatar), hue = lookHue ?? cur?.hue ?? AVATAR_HUES[0];
   const achOf = id => ACHIEVEMENTS.find(a => a.id === id);
-  const titles = ACHIEVEMENTS.filter(a => a.test(s));
-  const sc = me?.showcase || {};
   const achBtn = a => {
     const ok = !a.ach || achOf(a.ach)?.test(s);
     return avtBtn(a, hue, cur, ok, ok ? a.name : achOf(a.ach).name, `Libera com a conquista “${achOf(a.ach)?.name}”`);
   };
-  return `<section class="glass" style="margin-top:var(--space-md)"><h2>${icon('smile')} Avatar e título</h2>
+  return `<section class="glass"><h2>${icon('smile')} Avatar</h2>
     <p class="note">O avatar aparece no topo, no perfil e ao lado do seu nome nos rankings. Os com cadeado liberam com conquistas.</p>
     <div class="hue-list" aria-label="Cor do fundo">${AVATAR_HUES.map(h => `<button class="hue${h === hue ? ' on' : ''}" data-hue="${h}" style="--h:${h}" aria-label="Cor de fundo" aria-pressed="${h === hue}"></button>`).join('')}</div>
+    <h3 class="avt-sub">${icon('user')} Personagens</h3>
     <div class="avatar-list">${AVATARS.filter(a => !a.id.startsWith('i-')).map(achBtn).join('')}<button class="avt${cur ? '' : ' using'}" data-avatar=""><span class="pa big none">${icon('user')}</span><small>Nenhum</small></button></div>
     <h3 class="avt-sub">${icon('sparkles')} Ícones</h3>
     <div class="avatar-list">${AVATARS.filter(a => a.id.startsWith('i-')).map(achBtn).join('')}</div>
     <h3 class="avt-sub">${icon('gamepad-2')} Jogos <small>jogue uma partida pra liberar o do jogo</small></h3>
-    <div class="avatar-list">${menuOrder().map(([id, g]) => avtBtn({ id: 'jogo-' + id, game: id }, hue, cur, s.games.has(id), g.name, `Jogue ${g.name} pra liberar`)).join('')}</div>
+    <div class="avatar-list">${menuOrder().map(([id, g]) => avtBtn({ id: 'jogo-' + id, game: id }, hue, cur, s.games.has(id), g.name, `Jogue ${g.name} pra liberar`)).join('')}</div></section>`;
+}
+function lookHighlightsHtml(s) {
+  const titles = ACHIEVEMENTS.filter(a => a.test(s));
+  const sc = me?.showcase || {};
+  return `<section class="glass"><h2>${icon('star')} Título e vitrine</h2>
+    <h3 class="avt-sub">${icon('award')} Título <small>uma conquista sua, junto do nome no perfil</small></h3>
+    <select class="title-sel" id="titlePick"><option value="">Sem título</option>${titles.map(a => `<option value="${a.id}"${me?.title === a.id ? ' selected' : ''}>${a.name}</option>`).join('')}</select>
     <h3 class="avt-sub">${icon('star')} Vitrine <small>até 3 conquistas e o jogo do coração, em destaque no seu perfil</small></h3>
     <div class="showcase-pick">${[0, 1, 2].map(i => `<select class="scAch" aria-label="Conquista ${i + 1}"><option value="">—</option>${titles.map(a => `<option value="${a.id}"${sc.ach?.[i] === a.id ? ' selected' : ''}>${a.name}</option>`).join('')}</select>`).join('')}
       <select id="scGame" aria-label="Jogo do coração"><option value="">Jogo do coração: nenhum</option>${menuOrder().map(([id, g]) => `<option value="${id}"${sc.game === id ? ' selected' : ''}>${g.name}</option>`).join('')}</select></div>
-    <h3 class="avt-sub">${icon('pencil')} Frase <small>aparece embaixo do seu nome no perfil</small></h3>
-    <form class="bio-pick" id="bioForm"><input class="txt" id="bioInput" maxlength="60" placeholder="Ex.: rei do Sudoku nas horas vagas" value="${esc(me?.bio || '')}"><button class="btn ghost" type="submit">Salvar</button></form>
-    <h3 class="avt-sub">${icon('palette')} Cor do app <small>fica só neste navegador</small></h3>
-    <div class="theme-list">${THEMES.map(([k, label, h1, h2]) => `<button class="theme${k === themeNow() ? ' on' : ''}" data-theme="${k}" style="--t1:oklch(70% 0.19 ${h1});--t2:oklch(74% 0.17 ${h2})" aria-pressed="${k === themeNow()}"><i></i>${label}</button>`).join('')}</div>
-    <label class="title-pick"><b>Título</b> <select id="titlePick"><option value="">Sem título</option>${titles.map(a => `<option value="${a.id}"${me?.title === a.id ? ' selected' : ''}>${a.name}</option>`).join('')}</select></label>
-    <p class="note">O título aparece junto do seu nome no perfil. Dá pra escolher qualquer conquista que você já tem.</p></section>`;
+    <h3 class="avt-sub">${icon('pencil')} Frase <small>até 60 letras, embaixo do seu nome no perfil</small></h3>
+    <form class="bio-pick" id="bioForm"><input class="txt" id="bioInput" maxlength="60" placeholder="Ex.: rei do Sudoku nas horas vagas" value="${esc(me?.bio || '')}"><button class="btn ghost" type="submit">Salvar</button></form></section>`;
+}
+function lookThemeHtml() {
+  return `<section class="glass"><h2>${icon('palette')} Cor do app</h2>
+    <p class="note">Muda a cor de destaque do site. Fica salva só neste navegador.</p>
+    <div class="theme-list">${THEMES.map(([k, label, h1, h2]) => `<button class="theme${k === themeNow() ? ' on' : ''}" data-theme="${k}" style="--t1:oklch(70% 0.19 ${h1});--t2:oklch(74% 0.17 ${h2})" aria-pressed="${k === themeNow()}"><i></i>${label}</button>`).join('')}</div></section>`;
 }
 function avtBtn(a, hue, cur, ok, label, lockedTip) {
   return `<button class="avt${cur?.id === a.id ? ' using' : ''}" data-avatar="${a.id}" ${ok ? '' : 'disabled'} title="${ok ? label : lockedTip}">
@@ -220,6 +236,8 @@ async function saveLook(body, name) {
   } catch (err) { alert(err.message); }
 }
 function bindLook(name) {
+  document.querySelectorAll('[data-look]').forEach(b => b.onclick = () => { lookTab = b.dataset.look; renderProfile(name); });
+  bindFrames(name);
   const cur = () => parseAvatar(me?.avatar);
   document.querySelectorAll('.hue-list .hue').forEach(b => b.onclick = () => {
     lookHue = Number(b.dataset.hue);

@@ -836,6 +836,14 @@
   .theme { display: inline-flex; align-items: center; gap: .5em; font: inherit; font-size: var(--fs-sm); color: var(--text); cursor: pointer; padding: .4rem .75rem .4rem .45rem; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-2); }
   .theme i { width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, var(--t1), var(--t2)); }
   .theme.on { border-color: var(--text); }
+  /* abas das telas (perfil, personalizar, administração) */
+  .view-tabs { display: flex; flex-wrap: wrap; width: fit-content; max-width: 100%; margin: 0 0 var(--space-md); }
+  .view-tabs.sub { margin-bottom: var(--space-sm); }
+  .admin > .view-tabs { margin: 0; }
+  .admin > .view-tabs + .view-tabs.sub { margin-top: calc(var(--space-sm) - var(--space-md)); }
+  .title-sel { font: inherit; font-size: var(--fs-sm); color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: .45rem .6rem; }
+  .admin section[hidden] { display: none; }
+  .acct-sep { display: block; height: 1px; margin: 4px 8px; background: var(--border); }
 
   /* bolinha verde de "ranking compartilhado" some: tudo certo não precisa de aviso. Se o servidor cair, o texto de aviso continua aparecendo. */
   .pill.compact { display: none; }
