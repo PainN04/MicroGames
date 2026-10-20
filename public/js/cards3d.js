@@ -621,6 +621,36 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.5) * 0.25;
     };
   },
+  // ponto de interrogação girando sobre 4 alternativas; a certa acende verde e pula, uma de cada vez
+  quiz(Z, illo) {
+    const q = new Z.Anchor({ addTo: illo, translate: { y: -26 } });
+    new Z.Shape({
+      addTo: q, closed: false, stroke: 6, color: '#4dc3ff',
+      path: [{ x: -8, y: -8 }, { arc: [{ x: -8, y: -18 }, { x: 0, y: -18 }] }, { arc: [{ x: 8, y: -18 }, { x: 8, y: -9 }] },
+        { arc: [{ x: 8, y: -2 }, { x: 0, y: 1 }] }, { x: 0, y: 6 }],
+    });
+    new Z.Shape({ addTo: q, stroke: 7, color: '#4dc3ff', translate: { y: 15 } });
+    const base = ['#8b6cff', '#ff8a5c', '#ffd34d', '#ff6b8a'];
+    const opts = base.map((c, i) => {
+      const a = new Z.Anchor({ addTo: illo, translate: { x: (i % 2 ? 1 : -1) * 21, y: 22 + Math.floor(i / 2) * 18 } });
+      const box = slab(Z, a, 36, 13, 5, c);
+      return { a, box, c };
+    });
+    const paint = (box, c) => {
+      box.color = box.frontFace = c; box.topFace = shade(c, 0.25); box.leftFace = shade(c, -0.12); box.rightFace = shade(c, -0.25);
+      box.bottomFace = shade(c, -0.35); box.rearFace = shade(c, -0.15);
+    };
+    let lit = -1;
+    return t => {
+      q.rotate.y = t * 1.4;
+      q.translate.y = -26 + Math.sin(t * 2) * 3;
+      const step = t * 0.7, right = [2, 0, 3, 1][Math.floor(step) % 4], k = step % 1;
+      if (right !== lit) { opts.forEach((o, i) => paint(o.box, i === right ? '#3ddc97' : o.c)); lit = right; }
+      opts.forEach((o, i) => { o.a.translate.z = i === right ? Math.sin(Math.min(1, k * 2) * Math.PI) * 10 : 0; });
+      illo.rotate.x = -0.3;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.35;
+    };
+  },
   // fileiras de letras virando verde, amarelo e cinza
   termo(Z, illo) {
     const cols = ['#3ddc97', '#ffd34d', '#4a4f6e'], tiles = [];
