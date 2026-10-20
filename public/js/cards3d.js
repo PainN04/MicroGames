@@ -537,55 +537,70 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.45) * 0.4;
     };
   },
-  // pássaro corredor (o do jogo) pulando um saguaro no deserto, com sol e mesa ao fundo
-  corredor(Z, root) {
-    const illo = new Z.Anchor({ addTo: root, scale: 1.25, translate: { y: -8 } }); // pássaro maior no card
-    new Z.Ellipse({ addTo: illo, diameter: 30, stroke: 0, fill: true, color: '#ffc867', translate: { x: 30, y: -26, z: -46 } });
-    slab(Z, illo, 40, 20, 10, '#c4664a', { translate: { x: 22, y: 16, z: -34 } });
-    slab(Z, illo, 104, 5, 30, '#e3aa66', { translate: { y: 28.5 } });
-    const run = new Z.Anchor({ addTo: illo, translate: { x: -22, y: 26 } });
-    const BODY = '#4d5fd6', DARK = '#2b3390';
-    // rabo comprido
-    new Z.Shape({ addTo: run, path: [{ x: -8, y: -17 }, { x: -29, y: -34 }], stroke: 5, color: DARK });
-    new Z.Shape({ addTo: run, path: [{ x: -8, y: -16 }, { x: -28, y: -27 }], stroke: 4, color: '#3a46b0', translate: { z: 2 } });
-    // pernas que viram roda
-    const wheel = new Z.Anchor({ addTo: run, translate: { y: -6, z: 2 } });
-    new Z.Ellipse({ addTo: wheel, diameter: 13, stroke: 1.5, color: 'rgba(255,155,58,.45)' });
-    [0, 1, 2].forEach(i => new Z.Shape({ addTo: wheel, path: [{}, { x: 6.5 }], stroke: 2.2, color: '#ff9b3a', rotate: { z: i * Z.TAU / 3 } }));
-    // corpo, barriga e asa com pintinhas
-    new Z.Shape({ addTo: run, path: [{ x: -4, y: -17 }, { x: 3, y: -15 }], stroke: 18, color: BODY });
-    new Z.Shape({ addTo: run, path: [{ x: 1, y: -12 }, { x: 5, y: -13 }], stroke: 9, color: '#e6e9ff', translate: { z: 5 } });
-    const wing = new Z.Group({ addTo: run, translate: { x: -3, y: -17, z: 8 } });
-    new Z.Ellipse({ addTo: wing, width: 13, height: 7, stroke: 2, fill: true, color: '#2f3897' });
-    [[-3, -1], [1, -1.5], [-1, 1.5], [3, 1]].forEach(([x, y]) => new Z.Shape({ addTo: wing, stroke: 1.6, color: '#dfe5ff', translate: { x, y, z: 1 } }));
+  // pássaro corredor (o do jogo) correndo no lugar numa ilha de areia, com saguaro e sol ao fundo
+  corredor(Z, illo) {
+    const BODY = '#4d5fd6', DARK = '#2b3390', MID = '#3a46b0', LIGHT = '#8fa0ff', G = '#4daa58';
+    // ilha de areia (disco deitado) com pedrinhas
+    new Z.Cylinder({ addTo: illo, diameter: 96, length: 9, stroke: false, color: '#c98a4c', backface: '#f0bb78', translate: { y: 34 }, rotate: { x: Z.TAU / 4 } });
+    [[-30, 8, '#b98656'], [34, -10, '#a07048'], [10, 22, '#cf9d68']].forEach(([x, z, color]) => new Z.Shape({ addTo: illo, stroke: 4, color, translate: { x, y: 29, z } }));
+    // sol com halo, atrás de tudo
+    new Z.Shape({ addTo: illo, stroke: 40, color: 'rgba(255,200,110,.28)', translate: { x: 22, y: -30, z: -44 } });
+    new Z.Shape({ addTo: illo, stroke: 28, color: '#ffcf6a', translate: { x: 22, y: -30, z: -44 } });
+    // saguaro gordinho: tronco e braços em cápsula, faixa clara de brilho e flor
+    const cac = new Z.Anchor({ addTo: illo, translate: { x: 30, y: 30, z: -14 } });
+    new Z.Shape({ addTo: cac, path: [{ y: 0 }, { y: -30 }], stroke: 13, color: G });
+    new Z.Shape({ addTo: cac, path: [{ y: -12 }, { x: -10, y: -12 }, { x: -10, y: -22 }], closed: false, stroke: 7.5, color: G });
+    new Z.Shape({ addTo: cac, path: [{ y: -18 }, { x: 10, y: -18 }, { x: 10, y: -26 }], closed: false, stroke: 7.5, color: '#3d9a4c' });
+    new Z.Shape({ addTo: cac, path: [{ x: -2.5, y: -2 }, { x: -2.5, y: -30 }], stroke: 3, color: '#86dc88', translate: { z: 5 } });
+    const flower = new Z.Group({ addTo: cac, translate: { y: -38, z: 2 } });
+    for (let k = 0; k < 5; k++) new Z.Shape({ addTo: flower, stroke: 4, color: '#ff6f91', translate: { x: Math.cos(k * Z.TAU / 5) * 3, y: Math.sin(k * Z.TAU / 5) * 3 } });
+    new Z.Shape({ addTo: flower, stroke: 3, color: '#ffe36b', translate: { z: 1 } });
+
+    const bird = new Z.Anchor({ addTo: illo, translate: { x: -14, y: 30, z: 8 } });
+    // pernas (atrás e na frente do corpo) balançando em sentidos opostos
+    const legs = [[-4, '#c96a1c'], [4, '#ff9b3a']].map(([z, color]) => {
+      const a = new Z.Anchor({ addTo: bird, translate: { y: -15, z } });
+      new Z.Shape({ addTo: a, path: [{ y: 0 }, { y: 14 }, { x: 6, y: 14 }], closed: false, stroke: 4, color });
+      return a;
+    });
+    // rabo com espessura: camadas do escuro (atrás) ao claro (frente)
+    const tail = new Z.Group({ addTo: bird });
+    [[DARK, -2], [MID, 0], ['#4b5ad0', 2]].forEach(([color, z], i) => new Z.Shape({ addTo: tail, path: [{ x: -8, y: -24 }, { x: -32 + i, y: -44 + i * 3 }], stroke: 7, color, translate: { z } }));
+    // corpo redondo, sombra embaixo, brilho em cima, barriga clara
+    new Z.Shape({ addTo: bird, path: [{ x: -6, y: -22 }, { x: 2, y: -20 }], stroke: 24, color: BODY });
+    new Z.Shape({ addTo: bird, path: [{ x: -4, y: -28 }, { x: 0, y: -28 }], stroke: 8, color: LIGHT, translate: { z: 9 } });
+    new Z.Shape({ addTo: bird, stroke: 14, color: '#eef0ff', translate: { x: 4, y: -16, z: 7 } });
+    const wing = new Z.Group({ addTo: bird, translate: { x: -6, y: -23, z: 12 } });
+    new Z.Ellipse({ addTo: wing, width: 17, height: 10, stroke: 2.5, fill: true, color: '#2f3897', rotate: { z: -0.3 } });
+    [[-4, -1], [1, -2], [-1, 2], [4, 0.5]].forEach(([x, y]) => new Z.Shape({ addTo: wing, stroke: 2.2, color: '#dfe5ff', translate: { x, y, z: 1.5 } }));
     // pescoço, cabeça e crista
-    new Z.Shape({ addTo: run, path: [{ x: 3, y: -21 }, { x: 8, y: -29 }], stroke: 8, color: BODY });
-    [[-3, -45, DARK], [1, -47, '#3a46b0'], [5, -45, '#5566dd']].forEach(([x, y, color]) => new Z.Shape({ addTo: run, path: [{ x: 7, y: -35 }, { x, y }], stroke: 3, color }));
-    new Z.Shape({ addTo: run, stroke: 13, color: BODY, translate: { x: 9, y: -32 } });
-    const face = new Z.Group({ addTo: run, translate: { z: 5 } });
-    new Z.Shape({ addTo: face, path: [{ x: 6, y: -32 }, { x: 8, y: -32 }], stroke: 2.6, color: '#ff6a3d' });
-    new Z.Shape({ addTo: face, stroke: 5.5, color: '#ffffff', translate: { x: 11.5, y: -34 } });
-    new Z.Shape({ addTo: face, stroke: 2.6, color: '#14112e', translate: { x: 12.5, y: -34, z: 1 } });
-    new Z.Shape({ addTo: face, path: [{ x: 9, y: -38 }, { x: 14, y: -37 }], stroke: 1.4, color: '#1b1640', translate: { z: 1 } });
-    // bico comprido
-    new Z.Shape({ addTo: run, path: [{ x: 14, y: -33 }, { x: 27, y: -31 }], stroke: 3.4, color: '#ffd04f' });
-    new Z.Shape({ addTo: run, path: [{ x: 14, y: -31 }, { x: 25, y: -30 }], stroke: 2, color: '#e79a22' });
-    // saguaro: tronco e braços arredondados, com flor
-    const cactus = new Z.Anchor({ addTo: illo, translate: { y: 26 } });
-    const G = '#4daa58';
-    new Z.Shape({ addTo: cactus, path: [{ y: 0 }, { y: -22 }], stroke: 10, color: G });
-    new Z.Shape({ addTo: cactus, path: [{ y: -9 }, { x: -8, y: -9 }, { x: -8, y: -18 }], stroke: 5.5, color: G, closed: false });
-    new Z.Shape({ addTo: cactus, path: [{ y: -13 }, { x: 8, y: -13 }, { x: 8, y: -20 }], stroke: 5.5, color: '#3d9a4c', closed: false });
-    new Z.Shape({ addTo: cactus, path: [{ x: -2, y: -2 }, { x: -2, y: -21 }], stroke: 1.2, color: '#7fd383', translate: { z: 5 } });
-    new Z.Shape({ addTo: cactus, stroke: 5, color: '#ff6f91', translate: { y: -28 } });
+    new Z.Shape({ addTo: bird, path: [{ x: 3, y: -27 }, { x: 8, y: -36 }], stroke: 11, color: BODY });
+    [[-5, -58, DARK, -1], [0, -61, MID, 0], [6, -60, '#5566dd', 1]].forEach(([x, y, color, z]) => new Z.Shape({ addTo: bird, path: [{ x: 6, y: -46 }, { x, y }], stroke: 4.2, color, translate: { z } }));
+    new Z.Shape({ addTo: bird, stroke: 19, color: BODY, translate: { x: 9, y: -41 } });
+    new Z.Shape({ addTo: bird, stroke: 5, color: LIGHT, translate: { x: 5, y: -46, z: 7 } });
+    // bico comprido (cone) — a ponta vira pra frente
+    new Z.Cone({ addTo: bird, diameter: 7, length: 18, stroke: false, color: '#ffd04f', backface: '#e79a22', translate: { x: 16, y: -40 }, rotate: { y: -Z.TAU / 4 } });
+    // olho: mancha laranja, branco, pupila, brilho e sobrancelha decidida (Group = desenhados juntos, na frente)
+    const eye = new Z.Group({ addTo: bird, translate: { z: 9 } });
+    new Z.Shape({ addTo: eye, path: [{ x: 4, y: -40 }, { x: 7, y: -40 }], stroke: 3.5, color: '#ff6a3d' });
+    new Z.Shape({ addTo: eye, stroke: 9, color: '#ffffff', translate: { x: 12, y: -43 } });
+    new Z.Shape({ addTo: eye, stroke: 4.6, color: '#14112e', translate: { x: 13.6, y: -43 } });
+    new Z.Shape({ addTo: eye, stroke: 1.8, color: '#ffffff', translate: { x: 14.6, y: -44.6 } });
+    new Z.Shape({ addTo: eye, path: [{ x: 8, y: -49 }, { x: 16, y: -47.5 }], stroke: 2.2, color: '#1b1640' });
+    // linhas de velocidade e poeirinha atrás dos pés
+    const lines = [-36, -26, -16].map((y, i) => ({ s: new Z.Shape({ addTo: illo, path: [{ x: 0 }, { x: 12 }], stroke: 2.5, color: 'rgba(255,255,255,.75)', translate: { y, z: 4 } }), off: i * 0.33 }));
+    const puffs = [0, 1, 2].map(i => ({ s: new Z.Shape({ addTo: illo, stroke: 7, color: '#f6dcb2', translate: { y: 28, z: 10 } }), off: i / 3 }));
     return t => {
-      const j = (t * 0.8) % 1;
-      run.translate.y = 26 - Math.sin(j * Math.PI) * 30;
-      run.rotate.z = -Math.cos(j * Math.PI) * 0.12;
-      wheel.rotate.z = t * 18;
-      cactus.translate.x = 52 - j * 144;
-      root.rotate.x = -0.12;
-      root.rotate.y = -0.3 + Math.sin(t * 0.4) * 0.2;
+      const step = t * 13;
+      bird.translate.y = 30 - Math.abs(Math.sin(step)) * 3;
+      bird.rotate.z = -0.06 + Math.sin(step * 2) * 0.02;
+      legs.forEach((l, i) => { l.rotate.z = Math.sin(step + i * Math.PI) * 0.95; });
+      tail.rotate.z = Math.sin(step) * 0.05;
+      lines.forEach(({ s, off }) => { const k = (t * 1.6 + off) % 1; s.translate.x = -40 - k * 22; s.visible = k < 0.8; });
+      puffs.forEach(({ s, off }) => { const k = (t * 1.3 + off) % 1; s.translate.x = -20 - k * 26; s.translate.y = 28 - k * 6; s.stroke = 8 * (1 - k) + 0.5; });
+      flower.rotate.z = t * 0.6;
+      illo.rotate.x = -0.28;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.35;
     };
   },
   // come os pontinhos com os fantasmas atrás; pega a bola grande, eles ficam azuis e fogem, e ele come um por um
