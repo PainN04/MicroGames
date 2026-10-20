@@ -770,6 +770,28 @@
   .frame .demo[data-frame="silver"] { box-shadow: 0 0 0 3px #dfe3ee, 0 0 12px oklch(90% 0.02 260 / .4); color: #dfe3ee; }
   .frame .demo[data-frame="gold"] { box-shadow: 0 0 0 3px #ffd34d, 0 0 14px oklch(86% 0.17 92 / .55); color: #ffd34d; }
   .frame .demo[data-frame="diamond"] { box-shadow: 0 0 0 3px #7fe7ff, 0 0 16px #b79bff; color: #b9f0ff; }
+  /* avatar pré-pronto: emoji numa bolinha colorida (--h = matiz). Pequeno ao lado do nome, grande no perfil */
+  .pa { display: inline-grid; place-items: center; width: 1.45em; height: 1.45em; margin-right: .35em; border-radius: 50%; vertical-align: -.35em;
+    font-size: .9em; line-height: 1; background: oklch(62% 0.14 var(--h)); color: #fff; -webkit-text-fill-color: #fff;
+    -webkit-background-clip: border-box; background-clip: border-box; text-shadow: none; animation: none; }
+  .pa.big { width: 1.7em; height: 1.7em; font-size: 1em; margin-right: .1em; }
+  .pa.none { background: var(--surface); color: var(--muted); -webkit-text-fill-color: currentColor; }
+  .pa .i { width: .9em; height: .9em; }
+  .acct-btn .av.has-pa { background: oklch(62% 0.14 var(--h)); font-size: 17px; line-height: 1; }
+  .ptitle { font-size: var(--fs-xs); vertical-align: middle; display: inline-flex; align-items: center; gap: .35em; color: var(--yellow); }
+  .ptitle .i { width: 1em; height: 1em; }
+  .hue-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+  .hue { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; background: oklch(62% 0.14 var(--h)); }
+  .hue.on { border-color: var(--text); box-shadow: 0 0 0 2px var(--bg, #000) inset; }
+  .avatar-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr)); gap: 8px; }
+  .avt { display: flex; flex-direction: column; align-items: center; gap: .3rem; font: inherit; color: var(--text); cursor: pointer; padding: .55rem .3rem; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); }
+  .avt .pa.big { font-size: 1.35rem; margin: 0; }
+  .avt:disabled { opacity: .45; cursor: not-allowed; }
+  .avt:disabled .pa { background: var(--surface); color: var(--muted); -webkit-text-fill-color: currentColor; }
+  .avt.using { border-color: var(--primary); background: oklch(70% 0.19 290 / .14); }
+  .avt small { color: var(--muted); font-size: var(--fs-xs); text-align: center; line-height: 1.2; }
+  .admin .title-pick { display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: .6em; margin-top: 14px; font-size: var(--fs-sm); color: var(--text); }
+  .title-pick select { font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: .45rem .6rem; }
 
   /* bolinha verde de "ranking compartilhado" some: tudo certo não precisa de aviso. Se o servidor cair, o texto de aviso continua aparecendo. */
   .pill.compact { display: none; }
