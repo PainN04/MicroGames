@@ -388,6 +388,8 @@ test('prêmios do desafio do dia: só o vencedor de ontem escolhe o jogo de aman
   assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'lia:12' } })).status, 400, 'cor fora da lista');
   assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'nao-existe:290' } })).status, 400);
   assert.equal((await ana('/api/profile/look', { method: 'POST', body: { title: '<b>x</b>' } })).status, 400);
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'jogo-nao-existe:290' } })).status, 400, 'avatar de jogo que não existe');
+  assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'jogo-snake:290' } })).status, 200, 'avatar de jogo');
   assert.equal((await ana('/api/profile/look', { method: 'POST', body: { avatar: 'lia:290' } })).status, 200);
   const look = await ana('/api/profile/look', { method: 'POST', body: { title: 'estreia' } });
   assert.deepEqual(look.body, { avatar: 'lia:290', title: 'estreia' }, 'mandar só o título mantém o avatar');
