@@ -537,22 +537,55 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.45) * 0.4;
     };
   },
-  // corredor pulando um cacto
-  corredor(Z, illo) {
-    slab(Z, illo, 96, 4, 22, '#4a4f6e', { translate: { y: 28 } });
+  // pássaro corredor (o do jogo) pulando um saguaro no deserto, com sol e mesa ao fundo
+  corredor(Z, root) {
+    const illo = new Z.Anchor({ addTo: root, scale: 1.25, translate: { y: -8 } }); // pássaro maior no card
+    new Z.Ellipse({ addTo: illo, diameter: 30, stroke: 0, fill: true, color: '#ffc867', translate: { x: 30, y: -26, z: -46 } });
+    slab(Z, illo, 40, 20, 10, '#c4664a', { translate: { x: 22, y: 16, z: -34 } });
+    slab(Z, illo, 104, 5, 30, '#e3aa66', { translate: { y: 28.5 } });
     const run = new Z.Anchor({ addTo: illo, translate: { x: -22, y: 26 } });
-    cube(Z, run, 1, '#ffd34d', { width: 12, height: 20, depth: 10, translate: { y: -18 } });
-    cube(Z, run, 1, '#ffd34d', { width: 12, height: 10, depth: 10, translate: { x: 4, y: -34 } });
-    const legs = [-3, 3].map(x => cube(Z, run, 1, '#e0aa2f', { width: 4, height: 8, depth: 4, translate: { x, y: -4 } }));
-    const cactus = cube(Z, illo, 1, '#3ddc97', { width: 9, height: 22, depth: 9, translate: { y: 15 } });
-    cube(Z, cactus, 1, '#3ddc97', { width: 14, height: 4, depth: 4, translate: { y: -2 } });
+    const BODY = '#4d5fd6', DARK = '#2b3390';
+    // rabo comprido
+    new Z.Shape({ addTo: run, path: [{ x: -8, y: -17 }, { x: -29, y: -34 }], stroke: 5, color: DARK });
+    new Z.Shape({ addTo: run, path: [{ x: -8, y: -16 }, { x: -28, y: -27 }], stroke: 4, color: '#3a46b0', translate: { z: 2 } });
+    // pernas que viram roda
+    const wheel = new Z.Anchor({ addTo: run, translate: { y: -6, z: 2 } });
+    new Z.Ellipse({ addTo: wheel, diameter: 13, stroke: 1.5, color: 'rgba(255,155,58,.45)' });
+    [0, 1, 2].forEach(i => new Z.Shape({ addTo: wheel, path: [{}, { x: 6.5 }], stroke: 2.2, color: '#ff9b3a', rotate: { z: i * Z.TAU / 3 } }));
+    // corpo, barriga e asa com pintinhas
+    new Z.Shape({ addTo: run, path: [{ x: -4, y: -17 }, { x: 3, y: -15 }], stroke: 18, color: BODY });
+    new Z.Shape({ addTo: run, path: [{ x: 1, y: -12 }, { x: 5, y: -13 }], stroke: 9, color: '#e6e9ff', translate: { z: 5 } });
+    const wing = new Z.Group({ addTo: run, translate: { x: -3, y: -17, z: 8 } });
+    new Z.Ellipse({ addTo: wing, width: 13, height: 7, stroke: 2, fill: true, color: '#2f3897' });
+    [[-3, -1], [1, -1.5], [-1, 1.5], [3, 1]].forEach(([x, y]) => new Z.Shape({ addTo: wing, stroke: 1.6, color: '#dfe5ff', translate: { x, y, z: 1 } }));
+    // pescoço, cabeça e crista
+    new Z.Shape({ addTo: run, path: [{ x: 3, y: -21 }, { x: 8, y: -29 }], stroke: 8, color: BODY });
+    [[-3, -45, DARK], [1, -47, '#3a46b0'], [5, -45, '#5566dd']].forEach(([x, y, color]) => new Z.Shape({ addTo: run, path: [{ x: 7, y: -35 }, { x, y }], stroke: 3, color }));
+    new Z.Shape({ addTo: run, stroke: 13, color: BODY, translate: { x: 9, y: -32 } });
+    const face = new Z.Group({ addTo: run, translate: { z: 5 } });
+    new Z.Shape({ addTo: face, path: [{ x: 6, y: -32 }, { x: 8, y: -32 }], stroke: 2.6, color: '#ff6a3d' });
+    new Z.Shape({ addTo: face, stroke: 5.5, color: '#ffffff', translate: { x: 11.5, y: -34 } });
+    new Z.Shape({ addTo: face, stroke: 2.6, color: '#14112e', translate: { x: 12.5, y: -34, z: 1 } });
+    new Z.Shape({ addTo: face, path: [{ x: 9, y: -38 }, { x: 14, y: -37 }], stroke: 1.4, color: '#1b1640', translate: { z: 1 } });
+    // bico comprido
+    new Z.Shape({ addTo: run, path: [{ x: 14, y: -33 }, { x: 27, y: -31 }], stroke: 3.4, color: '#ffd04f' });
+    new Z.Shape({ addTo: run, path: [{ x: 14, y: -31 }, { x: 25, y: -30 }], stroke: 2, color: '#e79a22' });
+    // saguaro: tronco e braços arredondados, com flor
+    const cactus = new Z.Anchor({ addTo: illo, translate: { y: 26 } });
+    const G = '#4daa58';
+    new Z.Shape({ addTo: cactus, path: [{ y: 0 }, { y: -22 }], stroke: 10, color: G });
+    new Z.Shape({ addTo: cactus, path: [{ y: -9 }, { x: -8, y: -9 }, { x: -8, y: -18 }], stroke: 5.5, color: G, closed: false });
+    new Z.Shape({ addTo: cactus, path: [{ y: -13 }, { x: 8, y: -13 }, { x: 8, y: -20 }], stroke: 5.5, color: '#3d9a4c', closed: false });
+    new Z.Shape({ addTo: cactus, path: [{ x: -2, y: -2 }, { x: -2, y: -21 }], stroke: 1.2, color: '#7fd383', translate: { z: 5 } });
+    new Z.Shape({ addTo: cactus, stroke: 5, color: '#ff6f91', translate: { y: -28 } });
     return t => {
       const j = (t * 0.8) % 1;
       run.translate.y = 26 - Math.sin(j * Math.PI) * 30;
+      run.rotate.z = -Math.cos(j * Math.PI) * 0.12;
+      wheel.rotate.z = t * 18;
       cactus.translate.x = 52 - j * 144;
-      legs.forEach((l, i) => { l.translate.x = (i ? 3 : -3) + Math.sin(t * 14 + i * Math.PI) * 3; });
-      illo.rotate.x = -0.25;
-      illo.rotate.y = -0.5 + Math.sin(t * 0.4) * 0.2;
+      root.rotate.x = -0.12;
+      root.rotate.y = -0.3 + Math.sin(t * 0.4) * 0.2;
     };
   },
   // come os pontinhos com os fantasmas atrás; pega a bola grande, eles ficam azuis e fogem, e ele come um por um
