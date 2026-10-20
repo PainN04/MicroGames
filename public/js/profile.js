@@ -10,7 +10,7 @@ function statsFor(name) {
   const rankIn = (id, range = {}) => { const i = bestPerPlayer(id, range).findIndex(([n]) => n === name); return i < 0 ? null : i + 1; };
   const firsts = Object.keys(GAMES).filter(id => rankIn(id) === 1).length;
   const podiums = Object.keys(GAMES).filter(id => (rankIn(id) || 99) <= 3).length;
-  const monthsWon = hallOfFame().filter(m => m.kings[0]?.[0] === name).map(m => m.key);
+  const monthsWon = monthsWonBy(name);
   // desafios do dia ganhos (dias já encerrados, desde a primeira partida de todo mundo)
   let dailyWins = 0, dailyRun = 0, dailyStreak = 0;
   const first = Math.min(...Object.values(scores).flat().map(s => s.date), Date.now());
@@ -110,7 +110,7 @@ function showProfile(name = player) {
     main.innerHTML = `<div class="admin profile">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('user')} ${esc(name)}${duoOfName(name) ? ` <span class="tag team-tag" title="Dupla de ${esc(duoOfName(name).aName)} e ${esc(duoOfName(name).bName)}">${icon('users')} ${esc(duoOfName(name).name)}</span>` : ''}</h2><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p></div>
+        <div class="title"><h2>${icon('user')} ${esc(name)}${duoOfName(name) ? ` <span class="tag team-tag" title="Dupla de ${esc(duoOfName(name).aName)} e ${esc(duoOfName(name).bName)}">${icon('users')} ${esc(duoOfName(name).name)}</span>` : ''}</h2><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p><div class="mtitles" id="mtitles"></div></div>
         ${name !== player && me ? `${social?.myDuo?.state === 'none' && social.people.find(p => p.name === name)?.free ? `<button class="btn ghost" id="profDuo">${icon('users')} <span>Chamar pra dupla</span></button>` : ''}<button class="btn ghost" id="profDuel">${icon('swords')} <span>Desafiar</span></button>` : name === player ? `<button class="btn ghost" id="profRecap">${icon('calendar')} <span>Minha semana</span></button>` : ''}
       </div>
       <div id="prof"><p class="hint" style="text-align:left">Carregando...</p></div>
@@ -131,6 +131,8 @@ function renderProfile(name) {
   if (!s.plays.length) { box.innerHTML = '<section class="glass"><p class="hint" style="text-align:left">Ainda não jogou nenhuma partida.</p></section>'; return; }
   const MONTH = { since: monthStart() };
   const unlocked = ACHIEVEMENTS.filter(a => a.test(s)).length;
+  const titles = $('#mtitles');
+  if (titles) titles.innerHTML = [...s.monthsWon].reverse().map(k => `<span class="mtitle">${icon('medal')} Campeão de ${monthName(k, true).toLowerCase()}</span>`).join('');
   const kpis = `<div class="kpis">
     <div class="kpi glass"><div class="l">Partidas</div><div class="v">${s.plays.length}</div><span class="d">desde ${new Date(s.plays[0].date).toLocaleDateString('pt-BR')}</span></div>
     <div class="kpi glass"><div class="l">Recordes gerais</div><div class="v">${s.firsts}</div><span class="d">${s.podiums} no pódio</span></div>

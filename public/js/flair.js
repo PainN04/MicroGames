@@ -25,7 +25,13 @@ const isCrowned = name => !!name && crownHolder() === name;
 /** Nome clicável (abre o perfil), com a cor da moldura e a coroa de quem ganhou ontem. `extra` entra dentro do link. */
 function nameHtml(n, { cls = '', extra = '' } = {}) {
   const fr = flair.frames[n];
-  return `<a href="#" class="nm ${cls}${fr ? ' fr-' + fr : ''}" data-profile="${esc(n)}">${esc(n)}${isCrowned(n) ? ` <span class="crown" title="Ganhou o desafio de ontem">${icon('crown')}</span>` : ''}${extra}</a>`;
+  return `<a href="#" class="nm ${cls}${fr ? ' fr-' + fr : ''}" data-profile="${esc(n)}">${esc(n)}${isCrowned(n) ? ` <span class="crown" title="Ganhou o desafio de ontem">${icon('crown')}</span>` : ''}${monthBadge(n)}${extra}</a>`;
+}
+// selo fixo de quem já foi campeão do mês (com quantas vezes, se foi mais de uma)
+function monthBadge(n) {
+  const won = monthsWonBy(n);
+  if (!won.length) return '';
+  return ` <span class="mbadge" title="Campeão do mês: ${won.map(k => monthName(k, true)).join(', ')}">${icon('medal')}${won.length > 1 ? `<small>${won.length}</small>` : ''}</span>`;
 }
 
 /** Moldura e coroa no avatar do cabeçalho (a própria pessoa). */
