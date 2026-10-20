@@ -112,10 +112,27 @@ test('pontuação: sem login não salva, logado salva com o nome da conta', asyn
   assert.ok(board.snake.some(s => s.name === 'Ana' && s.score === 12));
 });
 
+test('ranking com ETag: sem mudança responde 304, partida nova muda a resposta', async () => {
+  const c = await login('ana', 'senha-ana-123');
+  const first = await client()('/api/scores');
+  const etag = first.headers.get('etag');
+  assert.ok(etag, 'manda ETag');
+  assert.equal((await client()('/api/scores', { headers: { 'If-None-Match': etag } })).status, 304);
+  assert.equal((await play(c, 'snake', 33)).status, 201);
+  const after = await client()('/api/scores', { headers: { 'If-None-Match': etag } });
+  assert.equal(after.status, 200);
+  assert.notEqual(after.headers.get('etag'), etag);
+});
+
 test('pontuação: jogo inexistente e valor impossível são recusados', async () => {
   const c = await login('ana', 'senha-ana-123');
   assert.equal((await play(c, 'naoexiste', 1)).status, 400);
   assert.equal((await play(c, 'cores', 9999)).status, 422);
+  assert.equal((await play(c, 'reflexo', 5)).status, 422, 'reflexo de 5 ms é impossível');
+  assert.equal((await play(c, 'mira', 1)).status, 422, '20 alvos em 1s é impossível');
+  assert.equal((await play(c, 'digitacao', 500)).status, 422, 'só existem 120 palavras');
+  assert.equal((await play(c, 'memoria', 999)).status, 422);
+  assert.equal((await play(c, 'snake', 99999)).status, 422);
 });
 
 test('anti-cheat do clique: CPS alto demais e ritmo de robô são recusados, humano passa', async () => {
