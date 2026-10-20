@@ -86,7 +86,7 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados co
 | **Sudoku** | Menor tempo ganha; dica custa +20s. |
 | **Campo Minado** | Abra todas as casas sem mina. O primeiro clique é sempre seguro. |
 | **2048** | Junte números iguais em 3 minutos ou até travar. |
-| **Quiz de TI** | 70 perguntas de TI e de escritório, 4 alternativas, 60s. Combo até x4; errou, perde 1 ponto e vê a certa. |
+| **Quiz de TI** | Mais de 150 perguntas de TI e de escritório, 4 alternativas, 60s. Combo até x4; errou, perde 1 ponto e vê a certa. |
 | **Ligue 4** | Contra a máquina, que fica mais esperta a cada vitória. Vitória rápida rende bônus. |
 
 ### 🕹️ Arcade
