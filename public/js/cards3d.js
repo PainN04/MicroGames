@@ -219,22 +219,60 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.4) * 0.4;
     };
   },
-  // alvo em 3D e um dardo chegando
+  // alvo num tripé de madeira: a mira desliza até um ponto, o dardo chega, crava, o alvo balança e solta faísca
   mira(Z, illo) {
-    const target = new Z.Anchor({ addTo: illo });
-    [[56, '#ff5c6c'], [44, '#f5f5f7'], [32, '#ff5c6c'], [20, '#f5f5f7'], [9, '#ff5c6c']].forEach(([d, color], i) =>
-      new Z.Ellipse({ addTo: target, diameter: d, stroke: 2, fill: true, color, translate: { z: i * 0.8 } }));
-    new Z.Cylinder({ addTo: target, diameter: 58, length: 4, stroke: false, color: '#a8323d', translate: { z: -2.5 } });
-    const dart = new Z.Anchor({ addTo: illo });
-    new Z.Cylinder({ addTo: dart, diameter: 3, length: 26, stroke: false, color: '#c9ccd8' });
-    new Z.Cone({ addTo: dart, diameter: 6, length: 9, stroke: false, color: '#7d8196', translate: { z: -13 }, rotate: { y: Z.TAU / 2 } });
-    [0, 1].forEach(i => new Z.Shape({ addTo: dart, path: [{ z: 10 }, { z: 16, y: -7 }, { z: 16 }], fill: true, stroke: 1, color: '#4dc3ff', rotate: { z: i * Z.TAU / 4 } }));
+    const wood = '#b9773e';
+    // tripé + sombra no chão
+    new Z.Ellipse({ addTo: illo, diameter: 56, stroke: 0, fill: true, color: 'rgba(0,0,0,0.28)', translate: { y: 50 }, rotate: { x: Z.TAU / 4 } });
+    for (const [x, z] of [[-20, 8], [20, 8], [0, -18]])
+      new Z.Shape({ addTo: illo, path: [{ y: 4, z: -4 }, { x, y: 50, z }], closed: false, stroke: 4, color: shade(wood, z < 0 ? -0.3 : 0) });
+    const target = new Z.Anchor({ addTo: illo, translate: { y: -10 } });
+    // aro (lateral) atrás; a face e os dardos cravados num Group: desenhados em ordem, como uma peça só
+    new Z.Cylinder({ addTo: target, diameter: 62, length: 5, stroke: false, color: '#c9cbd8', backface: '#8a8ca0', translate: { z: -2.5 } });
+    const face = new Z.Group({ addTo: target, translate: { z: 0.3 } });
+    [[60, '#2b2d3f'], [54, '#ff5c6c'], [43, '#f5f5f7'], [32, '#ff5c6c'], [21, '#f5f5f7'], [10, '#ffd34d']].forEach(([d, color]) =>
+      new Z.Ellipse({ addTo: face, diameter: d, stroke: 1, fill: true, color }));
+    const makeDart = (addTo, z0) => {
+      const d = new Z.Anchor({ addTo });
+      new Z.Shape({ addTo: d, path: [{ z: z0 }, { z: z0 + 15 }], stroke: 2.4, color: '#d7d9e6' });
+      new Z.Shape({ addTo: d, path: [{ z: z0 + 11 }, { z: z0 + 17, y: -5 }, { z: z0 + 17 }], fill: true, stroke: 1, color: '#4dc3ff' });
+      new Z.Shape({ addTo: d, path: [{ z: z0 + 11 }, { z: z0 + 17, x: 5 }, { z: z0 + 17 }], fill: true, stroke: 1, color: '#3aa3dd' });
+      return d;
+    };
+    const SPOTS = [[2, -3], [-12, 8], [9, 11], [-4, -14], [14, -6]];
+    const stuck = [0, 1].map(() => makeDart(face, 0.5));
+    const flying = makeDart(target, 0.5); // dentro do alvo: gira junto e crava exatamente no ponto
+    const sparks = Array.from({ length: 7 }, (_, i) => ({ s: new Z.Shape({ addTo: target, stroke: 2.6, color: i % 2 ? '#ffd34d' : '#ffffff' }), a: (i / 7) * Z.TAU }));
+    // mira (retícula) na frente de tudo
+    const reticle = new Z.Group({ addTo: target });
+    new Z.Ellipse({ addTo: reticle, diameter: 16, stroke: 1.6, color: '#ff4d5e' });
+    for (const [x, y] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) new Z.Shape({ addTo: reticle, path: [{ x: x * 5, y: y * 5 }, { x: x * 11, y: y * 11 }], stroke: 1.6, color: '#ff4d5e' });
+    new Z.Shape({ addTo: reticle, stroke: 2, color: '#ff4d5e' });
     return t => {
-      const k = (t * 0.45) % 1, fly = Math.min(1, k / 0.35);
-      dart.translate.set({ x: 4 - (1 - fly) * 30, y: -3 - (1 - fly) * 20, z: 18 + (1 - smooth(fly)) * 90 });
-      target.rotate.y = 0.5 + Math.sin(t * 0.5) * 0.15;
-      dart.rotate.y = target.rotate.y;
-      illo.rotate.x = -0.15;
+      const step = t * 0.5, n = Math.floor(step), k = step % 1;
+      const [sx, sy] = SPOTS[n % SPOTS.length], [px, py] = SPOTS[(n + SPOTS.length - 1) % SPOTS.length];
+      // dardos já cravados: os das duas rodadas anteriores
+      stuck.forEach((d, i) => { const [x, y] = SPOTS[(n + SPOTS.length - 1 - i) % SPOTS.length]; d.translate.set({ x, y }); });
+      // a mira desliza do ponto anterior até o novo
+      const g = smooth(Math.min(1, k / 0.4));
+      reticle.translate.set({ x: px + (sx - px) * g, y: py + (sy - py) * g, z: 30 });
+      reticle.scale = k < 0.45 ? 1 : 1 + Math.sin(Math.min(1, (k - 0.45) / 0.2) * Math.PI) * 0.25;
+      // o dardo voa de trás da câmera até o ponto e crava em 0,55
+      const fly = Math.min(1, Math.max(0, (k - 0.3) / 0.25));
+      flying.visible = k >= 0.3;
+      const hit = k >= 0.55;
+      flying.translate.set({ x: sx + (1 - fly) * 26, y: sy - (1 - fly) * 30, z: hit ? 0 : (1 - smooth(fly)) * 110 });
+      // impacto: o alvo balança e solta faísca
+      const after = hit ? k - 0.55 : 0;
+      target.rotate.x = hit ? Math.sin(after * 40) * 0.12 * Math.exp(-after * 9) : 0;
+      target.rotate.y = 0.35 + Math.sin(t * 0.5) * 0.15 + (hit ? Math.sin(after * 34) * 0.08 * Math.exp(-after * 9) : 0);
+      sparks.forEach(({ s, a }) => {
+        s.visible = hit && after < 0.22;
+        const r = 4 + (after / 0.22) * 16;
+        s.translate.set({ x: sx + Math.cos(a) * r, y: sy + Math.sin(a) * r, z: 10 });
+        s.stroke = 2.8 * (1 - after / 0.22) + 0.4;
+      });
+      illo.rotate.x = -0.12;
     };
   },
   // + − × ÷ girando em órbita
@@ -261,29 +299,67 @@ const SCENES_3D = {
       illo.rotate.x = -0.3;
     };
   },
-  // passarinho batendo asas entre canos
+  // passarinho batendo asas entre canos com borda, nuvens ao fundo, chão rolando e uma estrela pra pegar
   voa(Z, illo) {
-    const pipes = [0, 1].map(i => {
-      const a = new Z.Anchor({ addTo: illo });
-      [-1, 1].forEach(dir => {
-        new Z.Cylinder({ addTo: a, diameter: 14, length: 40, stroke: false, color: '#2fb57a', backface: '#1f8a5a', translate: { y: dir * 42 }, rotate: { x: Z.TAU / 4 } });
-        new Z.Cylinder({ addTo: a, diameter: 18, length: 6, stroke: false, color: '#3ddc97', backface: '#2fb57a', translate: { y: dir * 21 }, rotate: { x: Z.TAU / 4 } });
-      });
-      return { a, off: i * 0.5 };
+    const W = 170; // largura do "mundo" que passa (as coisas saem por um lado e voltam pelo outro)
+    const wrap = x => ((x % W) + W * 1.5) % W - W / 2;
+    // nuvens lá atrás
+    const clouds = [[-40, -46, 0], [30, -34, 0.45], [70, -52, 0.8]].map(([x, y]) => {
+      const a = new Z.Anchor({ addTo: illo, translate: { y, z: -40 } });
+      for (const [cx, cy, s] of [[0, 0, 16], [-9, 3, 11], [9, 3, 12], [4, -5, 11]]) new Z.Shape({ addTo: a, stroke: s, color: '#dfe6ff', translate: { x: cx, y: cy } });
+      return { a, x };
     });
-    const bird = new Z.Anchor({ addTo: illo, translate: { z: 6 } });
-    new Z.Shape({ addTo: bird, stroke: 26, color: '#ffd34d' });
-    new Z.Shape({ addTo: bird, stroke: 13, color: '#fff3c4', translate: { y: 5, z: 6 } });
-    new Z.Shape({ addTo: bird, stroke: 9, color: '#ffffff', translate: { x: 6, y: -5, z: 8 } });
-    new Z.Shape({ addTo: bird, stroke: 4, color: '#10131c', translate: { x: 7.5, y: -5, z: 11 } });
-    new Z.Cone({ addTo: bird, diameter: 8, length: 8, stroke: false, color: '#ff8a5c', translate: { x: 11, y: 1 }, rotate: { y: Z.TAU / 4 } });
-    const wing = new Z.Ellipse({ addTo: bird, width: 15, height: 9, stroke: 3, fill: true, color: '#e8b730', translate: { x: -5, y: 2, z: 12 } });
+    // canos: corpo + borda mais larga, com uma faixa de brilho na frente
+    const GREEN = '#3ddc97', DARK = '#23a86d';
+    const pipe = (addTo, dir) => {
+      const p = new Z.Anchor({ addTo });
+      new Z.Cylinder({ addTo: p, diameter: 18, length: 60, stroke: false, color: GREEN, backface: DARK, translate: { y: dir * 45 }, rotate: { x: Z.TAU / 4 } });
+      new Z.Cylinder({ addTo: p, diameter: 24, length: 8, stroke: false, color: '#5ff0ac', backface: DARK, translate: { y: dir * 18 }, rotate: { x: Z.TAU / 4 } });
+      new Z.Shape({ addTo: p, path: [{ y: dir * 22 }, { y: dir * 72 }], stroke: 2.5, color: '#b5ffd9', translate: { x: -4, z: 8.6 } });
+      return p;
+    };
+    const pipes = [[0, -8], [0.5, 10]].map(([off, gap]) => {
+      const a = new Z.Anchor({ addTo: illo, translate: { y: gap } });
+      pipe(a, -1); pipe(a, 1);
+      return { a, off };
+    });
+    // chão: faixa de grama + terra, com listras andando
+    cube(Z, illo, 1, '#c98a4b', { width: 180, height: 14, depth: 24, translate: { y: 66 } });
+    cube(Z, illo, 1, '#3ddc97', { width: 180, height: 4, depth: 24, translate: { y: 58 } });
+    const stripes = Array.from({ length: 9 }, (_, i) => ({ s: new Z.Shape({ addTo: illo, path: [{ x: 0, y: 0 }, { x: -5, y: 8 }], stroke: 2.2, color: '#a96d35', translate: { y: 64, z: 12.2 } }), x: i * 20 }));
+    // estrela (+3) com volume, no vão do segundo cano
+    const star = new Z.Anchor({ addTo: pipes[1].a });
+    const starPath = Array.from({ length: 10 }, (_, i) => { const r = i % 2 ? 3.6 : 8, a = -Math.PI / 2 + i * Math.PI / 5; return { x: Math.cos(a) * r, y: Math.sin(a) * r }; });
+    ['#c98c12', '#e0a91f', '#ffd34d'].forEach((color, i) => new Z.Shape({ addTo: star, path: starPath, fill: true, stroke: 2, color, translate: { z: -2 + i * 2 } }));
+    // passarinho
+    const bird = new Z.Anchor({ addTo: illo, translate: { x: -18, z: 10 } });
+    new Z.Shape({ addTo: bird, path: [{ x: -12, y: -2 }, { x: -19, y: -6 }, { x: -18, y: 2 }], fill: true, stroke: 3, color: '#e8b730' }); // rabinho
+    new Z.Shape({ addTo: bird, stroke: 28, color: '#ffd34d' });
+    new Z.Shape({ addTo: bird, stroke: 14, color: '#fff3c4', translate: { y: 6, z: 6 } });
+    new Z.Shape({ addTo: bird, stroke: 10, color: '#ffffff', translate: { x: 7, y: -5, z: 8 } });
+    new Z.Shape({ addTo: bird, stroke: 4.5, color: '#10131c', translate: { x: 8.8, y: -5, z: 11.5 } });
+    new Z.Shape({ addTo: bird, stroke: 1.6, color: '#ffffff', translate: { x: 9.6, y: -6.2, z: 13 } });
+    new Z.Cone({ addTo: bird, diameter: 9, length: 9, stroke: false, color: '#ff8a5c', translate: { x: 12, y: 1 }, rotate: { y: Z.TAU / 4 } });
+    const wing = new Z.Ellipse({ addTo: bird, width: 16, height: 10, stroke: 3, fill: true, color: '#e8b730', translate: { x: -5, y: 2, z: 13 } });
     return t => {
-      pipes.forEach(p => { const k = (t * 0.22 + p.off) % 1; p.a.translate.x = 75 - k * 150; });
-      bird.translate.y = Math.sin(t * 2.4) * 10;
-      bird.rotate.z = Math.cos(t * 2.4) * 0.25;
-      wing.rotate.x = Math.sin(t * 14) * 0.9;
-      illo.rotate.y = -0.35;
+      const scroll = t * 34;
+      clouds.forEach(c => { c.a.translate.x = wrap(c.x - t * 6); });
+      pipes.forEach(p => { p.a.translate.x = wrap(70 - p.off * W - scroll); });
+      stripes.forEach(s => { s.s.translate.x = wrap(s.x - scroll); });
+      // o passarinho mira o vão do próximo cano (sobe e desce suave) e bate asas mais rápido quando sobe
+      const next = pipes.reduce((a, b) => (b.a.translate.x > -18 && (a == null || b.a.translate.x < a.a.translate.x) ? b : a), null) || pipes[0];
+      const goal = next.a.translate.y + Math.sin(t * 3) * 4;
+      bird.translate.y += (goal - bird.translate.y) * 0.06;
+      const up = goal < bird.translate.y;
+      bird.rotate.z = Math.max(-0.4, Math.min(0.4, (bird.translate.y - goal) * 0.04));
+      wing.rotate.x = Math.sin(t * (up ? 22 : 12)) * 0.9;
+      // a estrela gira e some quando o passarinho passa por ela
+      const sx = pipes[1].a.translate.x;
+      star.rotate.y = t * 3;
+      star.visible = sx > -14;
+      star.scale = sx > -8 ? 1 : Math.max(0.01, (sx + 14) / 6) * 1.4;
+      illo.rotate.y = -0.3;
+      illo.rotate.x = -0.08;
     };
   },
   // insetos caindo e girando
@@ -390,24 +466,68 @@ const SCENES_3D = {
       illo.rotate.x = -0.35;
     };
   },
-  // invasor de pixels marchando e um tiro subindo
+  // três invasores de pixel marchando (perninhas em 2 quadros), a nave atira e o do meio explode em pixels
   invasores(Z, illo) {
-    const art = ['..X.....X..', '...X...X...', '..XXXXXXX..', '.XX.XXX.XX.', 'XXXXXXXXXXX', 'X.XXXXXXX.X', 'X.X.....X.X', '...XX.XX...'];
-    const inv = new Z.Anchor({ addTo: illo });
-    const back = new Z.Group({ addTo: inv, translate: { z: -3 } }), front = new Z.Group({ addTo: inv, translate: { z: 3 } });
-    art.forEach((row, y) => [...row].forEach((ch, x) => {
-      if (ch !== 'X') return;
-      // placa da frente + sombra atrás dão volume com 2 formas por pixel (um cubo inteiro seria 6)
-      new Z.Rect({ addTo: back, width: 4.6, height: 4.6, stroke: 0.6, fill: true, color: '#4b3699', translate: { x: (x - 5) * 5, y: (y - 3.5) * 5 } });
-      new Z.Rect({ addTo: front, width: 4.6, height: 4.6, stroke: 0.6, fill: true, color: '#9b80ff', translate: { x: (x - 5) * 5, y: (y - 3.5) * 5 } });
-    }));
-    const shot = new Z.Shape({ addTo: illo, path: [{ y: 0 }, { y: 8 }], stroke: 3, color: '#ff6b8a' });
+    // pixel art em 2 quadros (as perninhas mexem), igual ao jogo clássico
+    const CRAB = [['..X.....X..', '...X...X...', '..XXXXXXX..', '.XX.XXX.XX.', 'XXXXXXXXXXX', 'X.XXXXXXX.X', 'X.X.....X.X', '...XX.XX...'],
+      ['..X.....X..', 'X..X...X..X', 'X.XXXXXXX.X', 'XXX.XXX.XXX', 'XXXXXXXXXXX', '.XXXXXXXXX.', '..X.....X..', '.X.......X.']];
+    const SQUID = [['...XX...', '..XXXX..', '.XXXXXX.', 'XX.XX.XX', 'XXXXXXXX', '..X..X..', '.X.XX.X.', 'X.X..X.X'],
+      ['...XX...', '..XXXX..', '.XXXXXX.', 'XX.XX.XX', 'XXXXXXXX', '.X.XX.X.', 'X......X', '.X....X.']];
+    const P = 4.4;
+    // cada quadro: placa da frente + sombra atrás, num Group (desenhado em ordem, como uma peça só)
+    const sprite = (addTo, frames, color) => frames.map(art => {
+      const g = new Z.Group({ addTo });
+      const w = art[0].length, h = art.length;
+      for (const [z, c] of [[-2.5, shade(color, -0.5)], [2.5, color]])
+        art.forEach((row, y) => [...row].forEach((ch, x) => {
+          if (ch === 'X') new Z.Rect({ addTo: g, width: P - 0.5, height: P - 0.5, stroke: 0.6, fill: true, color: c, translate: { x: (x - (w - 1) / 2) * P, y: (y - (h - 1) / 2) * P, z } });
+        }));
+      return g;
+    });
+    const mk = (x, y, z, s, frames, color) => {
+      const a = new Z.Anchor({ addTo: illo, translate: { x, y, z }, scale: s });
+      return { a, frames: sprite(a, frames, color), x, y, color };
+    };
+    const left = mk(-42, -34, -14, 0.62, SQUID, '#3ddc97'), right = mk(42, -34, -14, 0.62, SQUID, '#ff6b8a');
+    const boss = mk(0, -14, 0, 1, CRAB, '#9b80ff');
+    // estrelinhas ao fundo
+    const stars = Array.from({ length: 10 }, (_, i) => new Z.Shape({ addTo: illo, stroke: 1.6, color: '#c9cce0', translate: { x: ((i * 37) % 140) - 70, y: ((i * 53) % 100) - 60, z: -50 } }));
+    // nave: base, cabine e canhão
+    const ship = new Z.Anchor({ addTo: illo, translate: { y: 52, z: 4 } });
+    slab(Z, ship, 30, 7, 10, '#3ddc97');
+    slab(Z, ship, 14, 5, 8, '#5ff0ac', { translate: { y: -5.5 } });
+    slab(Z, ship, 4, 6, 4, '#b5ffd9', { translate: { y: -10 } });
+    const laser = new Z.Shape({ addTo: illo, path: [{ y: 0 }, { y: 9 }], stroke: 2.6, color: '#7dfcc6' });
+    const bomb = new Z.Shape({ addTo: illo, path: [{ x: 0, y: 0 }, { x: 2, y: 3 }, { x: -2, y: 6 }, { x: 0, y: 9 }], closed: false, stroke: 1.8, color: '#ff8a9e' });
+    const bits = Array.from({ length: 12 }, (_, i) => ({ s: new Z.Rect({ addTo: illo, width: 3.6, height: 3.6, stroke: 0.6, fill: true, color: i % 3 ? '#9b80ff' : '#ffffff' }), a: (i / 12) * Z.TAU + (i % 2) * 0.2, v: 0.7 + (i % 3) * 0.25 }));
     return t => {
-      inv.translate.set({ x: Math.round(Math.sin(t * 1.2) * 4) * 5, y: -10 + Math.sin(t * 2.4) * 2 });
-      inv.rotate.y = Math.sin(t * 0.8) * 0.45;
-      const k = (t * 0.7) % 1;
-      shot.translate.set({ x: Math.sin(t * 0.35) * 20, y: 60 - k * 70, z: 6 });
-      illo.rotate.x = -0.15;
+      const frame = Math.floor(t * 2) % 2, march = Math.round(Math.sin(t * 0.9) * 3) * 4;
+      for (const inv of [left, right, boss]) {
+        inv.frames.forEach((g, i) => { g.visible = i === frame; });
+        inv.a.translate.x = inv.x + march;
+      }
+      // ciclo de 2,4s: a nave mira, atira, o laser sobe e acerta o invasor do meio, que explode e volta
+      const k = (t / 2.4) % 1, bx = boss.a.translate.x;
+      ship.translate.x = bx + Math.sin(t * 1.7) * 3 * (k < 0.3 ? 1 : 0);
+      const shot = k >= 0.25 && k < 0.45, hitK = (k - 0.45) / 0.3;
+      laser.visible = shot;
+      laser.translate.set({ x: ship.translate.x, y: 40 - ((k - 0.25) / 0.2) * 52, z: 4 });
+      const dead = k >= 0.45 && k < 0.8;
+      boss.a.visible = !dead;
+      boss.a.scale = k >= 0.8 ? smooth(Math.min(1, (k - 0.8) / 0.15)) : 1;
+      bits.forEach(({ s, a, v }) => {
+        s.visible = dead && hitK < 0.7;
+        const r = 4 + hitK * 40 * v;
+        s.translate.set({ x: bx + Math.cos(a) * r, y: -14 + Math.sin(a) * r + hitK * hitK * 20, z: 2 });
+        s.rotate.z = hitK * 6 * v;
+      });
+      // bomba em zigue-zague caindo do invasor da esquerda
+      const bk = (t * 0.55) % 1;
+      bomb.translate.set({ x: left.a.translate.x, y: -24 + bk * 90, z: -6 });
+      bomb.visible = bk < 0.85;
+      stars.forEach((s, i) => { s.stroke = 1.2 + Math.max(0, Math.sin(t * 2 + i * 1.7)) * 1.4; });
+      illo.rotate.x = -0.12;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.3;
     };
   },
   // campo de quadradinhos, bomba com pavio aceso e bandeira tremulando
@@ -501,20 +621,59 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.4) * 0.35;
     };
   },
-  // forca com o boneco balançando
+  // forca de madeira num tablado, boneco balançando na corda e a palavra TELA aparecendo letra por letra
   forca(Z, illo) {
     const wood = '#c98a4b', skin = '#f4e3b5';
-    new Z.Shape({ addTo: illo, path: [{ x: -24, y: 40 }, { x: -24, y: -40 }, { x: 14, y: -40 }, { x: 14, y: -28 }], closed: false, stroke: 5, color: wood });
-    new Z.Shape({ addTo: illo, path: [{ x: -38, y: 40 }, { x: -10, y: 40 }], closed: false, stroke: 5, color: wood });
-    new Z.Shape({ addTo: illo, path: [{ x: -24, y: -26 }, { x: -10, y: -40 }], closed: false, stroke: 4, color: wood });
-    const man = new Z.Anchor({ addTo: illo, translate: { x: 14, y: -28 } });
-    new Z.Shape({ addTo: man, translate: { y: 8 }, stroke: 13, color: skin });
-    for (const p of [[{ y: 15 }, { y: 36 }], [{ y: 20 }, { x: -9, y: 30 }], [{ y: 20 }, { x: 9, y: 30 }], [{ y: 36 }, { x: -8, y: 52 }], [{ y: 36 }, { x: 8, y: 52 }]])
-      new Z.Shape({ addTo: man, path: p, closed: false, stroke: 3.5, color: skin });
+    // tablado, poste, viga e mão-francesa (tudo com volume)
+    slab(Z, illo, 74, 7, 22, shade(wood, -0.2), { translate: { x: -4, y: 26 } });
+    slab(Z, illo, 7, 76, 7, wood, { translate: { x: -28, y: -15 } });
+    slab(Z, illo, 50, 7, 7, wood, { translate: { x: -6, y: -50 } });
+    new Z.Shape({ addTo: illo, path: [{ x: -28, y: -32 }, { x: -12, y: -48 }], stroke: 4.5, color: shade(wood, -0.1) });
+    // corda e laço
+    new Z.Shape({ addTo: illo, path: [{ x: 14, y: -47 }, { x: 14, y: -36 }], stroke: 2, color: '#e8d7a8' });
+    // boneco (pendurado no ponto da corda): cabeça com olhos em X, camisa azul, braços e pernas
+    const man = new Z.Anchor({ addTo: illo, translate: { x: 14, y: -36 } });
+    new Z.Ellipse({ addTo: man, diameter: 7, stroke: 2, color: '#e8d7a8', translate: { y: 2 }, rotate: { x: Z.TAU / 4 } });
+    const head = new Z.Group({ addTo: man, translate: { y: 9 } });
+    new Z.Shape({ addTo: head, stroke: 14, color: skin });
+    for (const ex of [-3, 3]) for (const d of [1, -1]) new Z.Shape({ addTo: head, path: [{ x: ex - 1.6, y: -1.6 * d - 1 }, { x: ex + 1.6, y: 1.6 * d - 1 }], stroke: 1.2, color: '#3a2a12', translate: { z: 6.6 } });
+    new Z.Shape({ addTo: head, path: [{ x: -2, y: 3.5 }, { x: 2, y: 3.5 }], stroke: 1.2, color: '#3a2a12', translate: { z: 6.4 } });
+    new Z.Shape({ addTo: man, path: [{ y: 17 }, { y: 31 }], stroke: 7, color: '#4dc3ff' });
+    for (const s of [-1, 1]) {
+      new Z.Shape({ addTo: man, path: [{ y: 19 }, { x: s * 9, y: 29 }], stroke: 3.5, color: skin });
+      new Z.Shape({ addTo: man, path: [{ y: 32 }, { x: s * 6, y: 46 }], stroke: 3.8, color: '#3a3f5c' });
+    }
+    // palavra: 4 placas; a letra aparece (e a placa pula) uma de cada vez; completou, todas ficam verdes
+    const WORD = 'TELA';
+    const tiles = [...WORD].map((ch, i) => {
+      const a = new Z.Anchor({ addTo: illo, translate: { x: (i - 1.5) * 19, y: 50 } });
+      const box = slab(Z, a, 16, 17, 5, '#2b2f45');
+      const face = new Z.Group({ addTo: a, translate: { z: 3.4 } });
+      const front = new Z.Rect({ addTo: face, width: 14, height: 15, stroke: 2, fill: true, color: '#2b2f45' });
+      const line = new Z.Shape({ addTo: face, path: [{ x: -4, y: 5.5 }, { x: 4, y: 5.5 }], stroke: 1.6, color: '#8a8fb5' });
+      const letter = glyph(Z, face, LETTERS[ch], { color: '#ffffff', z: 0.4, scale: 0.65, stroke: 2.2 });
+      return { a, box, front, line, letter };
+    });
+    const paint = (o, c) => {
+      o.box.color = o.box.frontFace = c; o.box.topFace = shade(c, 0.25); o.box.leftFace = shade(c, -0.12);
+      o.box.rightFace = shade(c, -0.25); o.box.bottomFace = shade(c, -0.35); o.box.rearFace = shade(c, -0.15); o.front.color = c;
+    };
+    let state = '';
     return t => {
-      man.rotate.z = Math.sin(t * 2) * 0.2;
+      const step = (t * 0.8) % 6, shown = Math.min(4, Math.floor(step)), done = shown === 4;
+      const key = shown + (done ? 'ok' : '');
+      if (key !== state) { tiles.forEach((o, i) => paint(o, done ? '#3ddc97' : i < shown ? '#4b4f7a' : '#2b2f45')); state = key; }
+      tiles.forEach((o, i) => {
+        o.letter.visible = i < shown;
+        o.line.visible = i >= shown;
+        const pop = i === shown - 1 && !done ? Math.sin(Math.min(1, (step % 1) * 2.5) * Math.PI) : done ? Math.max(0, Math.sin((step - 4) * Math.PI * 2 + i * 0.6)) * 0.6 : 0;
+        o.a.translate.z = pop * 8;
+      });
+      // balanço: mais forte no começo da rodada; aliviado (quase parado) quando a palavra sai
+      const sw = done ? 0.06 : 0.22;
+      man.rotate.z = Math.sin(t * 2) * sw;
       illo.rotate.x = -0.15;
-      illo.rotate.y = Math.sin(t * 0.5) * 0.45;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.4;
     };
   },
   // tabuleiro azul (casa por casa, pra Zdog não esconder as peças) e uma peça caindo
@@ -603,73 +762,91 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.45) * 0.35;
     };
   },
-  // come os pontinhos com os fantasmas atrás; pega a bola grande, eles ficam azuis e fogem, e ele come um por um
+  // corredor de labirinto em neon: come os pontinhos com os fantasmas atrás; pega a bola grande, eles ficam azuis
+  // e fogem, ele volta comendo — o fantasma comido vira só olhos e volta correndo pra casa
   comecome(Z, illo) {
-    const T = 10;
-    const dots = Array.from({ length: 6 }, (_, i) => new Z.Shape({ addTo: illo, stroke: 5, color: '#ffd9a8', translate: { x: -30 + i * 14, y: 8 } }));
-    const pellet = new Z.Shape({ addTo: illo, stroke: 11, color: '#ffd9a8', translate: { x: 46, y: 8 } });
-    // corpo achatado com a boca recortada de verdade (o contorno do caminho muda a cada quadro); uma cópia atrás dá volume
+    const T = 9;
+    // paredes do labirinto: placas azul-escuras com a borda em neon
+    const WALL = '#1b2580', NEON = '#4d6bff';
+    const wall = (x, y, w, h) => {
+      slab(Z, illo, w, h, 14, WALL, { translate: { x, y } });
+      new Z.Rect({ addTo: illo, width: w - 2, height: h - 2, stroke: 1.4, color: NEON, translate: { x, y, z: 7.2 } });
+    };
+    wall(0, -16, 176, 6); wall(0, 32, 176, 6);
+    wall(-42, -30, 6, 22); wall(34, -30, 6, 22); wall(-6, 46, 6, 22);
+    const DOTS = Array.from({ length: 8 }, (_, i) => -48 + i * 12);
+    const dots = DOTS.map(x => new Z.Shape({ addTo: illo, stroke: 4.5, color: '#ffd9a8', translate: { x, y: 8 } }));
+    const pellet = new Z.Shape({ addTo: illo, stroke: 11, color: '#ffd9a8', translate: { x: 50, y: 8 } });
+    // corpo achatado com a boca recortada de verdade (o contorno muda a cada quadro); uma cópia atrás dá volume
     const pacPath = (o, dir) => {
-      const m = 0.12 + o * 0.6, pts = [{ x: 0, y: 0 }], put = a => pts.push({ x: Math.cos(a) * 14 * dir, y: Math.sin(a) * 14 });
+      const m = 0.12 + o * 0.6, pts = [{ x: 0, y: 0 }], put = a => pts.push({ x: Math.cos(a) * 13 * dir, y: Math.sin(a) * 13 });
       for (let a = m; a <= Math.PI * 2 - m; a += 0.2) put(a);
       put(Math.PI * 2 - m);
       return pts;
     };
     const pacBack = new Z.Shape({ addTo: illo, path: pacPath(0.5, 1), fill: true, stroke: 3, color: '#d9a92b', translate: { y: 8, z: 6 } });
-    const pac = new Z.Shape({ addTo: illo, path: pacPath(0.5, 1), fill: true, stroke: 3, color: '#ffe14d', translate: { y: 8, z: 10 } }); // à frente dos fantasmas: ele "engole" cada um em vez de ficar por baixo
-    // fantasma: cúpula + barra ondulada embaixo, olhos que olham pra frente (ou carinha assustada quando azul)
-    const ghostPath = [{ x: -12, y: 12 }, { x: -12, y: -2 }];
-    for (let a = Math.PI + 0.2; a <= Math.PI * 2 - 0.2; a += 0.2) ghostPath.push({ x: Math.cos(a) * 12, y: -2 + Math.sin(a) * 12 });
-    ghostPath.push({ x: 12, y: -2 }, { x: 12, y: 12 }, { x: 8, y: 8 }, { x: 4, y: 12 }, { x: 0, y: 8 }, { x: -4, y: 12 }, { x: -8, y: 8 });
-    const COLORS = ['#ff4d5e', '#ff9ee5', '#4dd9ff', '#ffa94d'], SCARED = '#2d4bff', FLASH = '#e8e8ff';
+    const pac = new Z.Shape({ addTo: illo, path: pacPath(0.5, 1), fill: true, stroke: 3, color: '#ffe14d', translate: { y: 8, z: 10 } });
+    // fantasma: cúpula + barra ondulada, olhos que olham pra onde ele anda (ou carinha assustada quando azul)
+    const ghostPath = [{ x: -11, y: 11 }, { x: -11, y: -2 }];
+    for (let a = Math.PI + 0.2; a <= Math.PI * 2 - 0.2; a += 0.2) ghostPath.push({ x: Math.cos(a) * 11, y: -2 + Math.sin(a) * 11 });
+    ghostPath.push({ x: 11, y: -2 }, { x: 11, y: 11 }, { x: 7.3, y: 7.5 }, { x: 3.7, y: 11 }, { x: 0, y: 7.5 }, { x: -3.7, y: 11 }, { x: -7.3, y: 7.5 });
+    const COLORS = ['#ff4d5e', '#ff9ee5', '#4dd9ff'], SCARED = '#2d4bff', FLASH = '#e8e8ff';
     const ghosts = COLORS.map(color => {
-      const a = new Z.Group({ addTo: illo, translate: { y: 6 } });
+      const a = new Z.Group({ addTo: illo, translate: { y: 7 } });
       const back = new Z.Shape({ addTo: a, path: ghostPath, fill: true, stroke: 3, color: shade(color, -0.3), translate: { z: -4 } });
       const body = new Z.Shape({ addTo: a, path: ghostPath, fill: true, stroke: 3, color });
-      const eyes = [-4.5, 4.5].map(x => new Z.Shape({ addTo: a, stroke: 6, color: '#ffffff', translate: { x, y: -3, z: 3 } }));
-      const pupils = [-4.5, 4.5].map(x => new Z.Shape({ addTo: a, stroke: 3, color: '#161625', translate: { x, y: -3, z: 5 } }));
-      const mouth = new Z.Shape({ addTo: a, path: [{ x: -7, y: 5 }, { x: -4, y: 3 }, { x: -1, y: 5 }, { x: 2, y: 3 }, { x: 5, y: 5 }, { x: 8, y: 3 }], closed: false, stroke: 1.6, color: '#ffffff', translate: { z: 4 } });
+      const eyes = [-4, 4].map(x => new Z.Shape({ addTo: a, stroke: 5.5, color: '#ffffff', translate: { x, y: -3, z: 3 } }));
+      const pupils = [-4, 4].map(x => new Z.Shape({ addTo: a, stroke: 2.8, color: '#161625', translate: { x, y: -3, z: 5 } }));
+      const mouth = new Z.Shape({ addTo: a, path: [{ x: -6.5, y: 4.5 }, { x: -3.5, y: 2.5 }, { x: -0.5, y: 4.5 }, { x: 2.5, y: 2.5 }, { x: 5.5, y: 4.5 }], closed: false, stroke: 1.5, color: '#ffffff', translate: { z: 4 } });
       return { a, back, body, eyes, pupils, mouth, color };
     });
+    const look = (g, dx) => g.pupils.forEach((p, j) => { p.translate.x = (j ? 4 : -4) + dx * 1.6; });
     return t => {
       const u = (t % T) / T;
-      let px, dir, o;
-      if (u < 0.5) {
-        // fase 1: come os pontinhos e os fantasmas vêm atrás
-        const k = u / 0.5;
-        px = -44 + k * 90; dir = 1;
-        dots.forEach(d => { d.visible = d.translate.x > px + 6; });
-        pellet.visible = true; pellet.stroke = 10 + Math.sin(t * 8) * 1.5;
+      let px, dir;
+      if (u < 0.45) {
+        // fase 1: entra pela esquerda comendo os pontinhos; os fantasmas vêm atrás
+        const k = u / 0.45;
+        px = -70 + k * 120; dir = 1;
+        dots.forEach((d, i) => { d.visible = DOTS[i] > px - 2; });
+        pellet.visible = true; pellet.stroke = 10 + Math.sin(t * 8) * 1.8;
         ghosts.forEach((g, i) => {
-          g.a.translate.x = px - 28 - i * 26; g.a.translate.y = 6 + Math.sin(t * 6 + i) * 1.5; g.a.visible = true;
+          g.a.translate.x = px - 28 - i * 24; g.a.translate.y = 7 + Math.sin(t * 6 + i) * 1.2;
+          g.a.visible = true; g.body.visible = g.back.visible = true;
           g.body.color = g.color; g.back.color = shade(g.color, -0.3);
-          g.eyes.forEach(e => { e.stroke = 6; });
-          g.pupils.forEach(e => { e.visible = true; e.translate.x = (e === g.pupils[0] ? -4.5 : 4.5) + 1.6; });
+          g.eyes.forEach(e => { e.stroke = 5.5; }); g.pupils.forEach(p => { p.visible = true; }); look(g, 1);
           g.mouth.visible = false;
         });
-        o = 0.25 + 0.75 * Math.abs(Math.sin(t * 9));
       } else {
-        // fase 2: bola grande comida, fantasmas azuis fogem pra esquerda e ele vai comendo um por um
-        const k = (u - 0.5) / 0.5;
-        px = 46 - k * 150; dir = -1;
+        // fase 2: comeu a bola grande; os fantasmas ficam azuis e fogem, ele volta comendo
+        const k = (u - 0.45) / 0.55;
+        px = 50 - k * 130; dir = -1;
         dots.forEach(d => { d.visible = false; });
         pellet.visible = false;
-        const flash = k > 0.55 && Math.floor(t * 6) % 2;
+        const flash = k > 0.6 && Math.floor(t * 6) % 2;
         ghosts.forEach((g, i) => {
-          const gx = 46 - 28 - i * 26 - k * 40;
-          g.a.translate.x = gx; g.a.translate.y = 6 + Math.sin(t * 9 + i) * 1.5;
-          g.a.visible = px > gx + 6; // já comido some
-          g.body.color = flash ? FLASH : SCARED; g.back.color = shade(flash ? '#9aa0c8' : SCARED, -0.3);
-          g.eyes.forEach(e => { e.stroke = 3.5; });
-          g.pupils.forEach(e => { e.visible = false; });
-          g.mouth.visible = true; g.mouth.color = flash ? '#ff4d5e' : '#ffffff';
+          const x0 = 50 - 28 - i * 24, kEat = (50 - x0) / (130 - 58.5);
+          if (k < kEat) {
+            g.a.translate.x = x0 - k * 58.5; g.a.translate.y = 7 + Math.sin(t * 9 + i) * 1.2;
+            g.body.visible = g.back.visible = true;
+            g.body.color = flash ? FLASH : SCARED; g.back.color = shade(flash ? '#9aa0c8' : SCARED, -0.3);
+            g.eyes.forEach(e => { e.stroke = 3.2; }); g.pupils.forEach(p => { p.visible = false; });
+            g.mouth.visible = true; g.mouth.color = flash ? '#ff4d5e' : '#ffffff';
+          } else {
+            // comido: só os olhos, voltando pra casa (direita) bem rápido
+            const back = (k - kEat) * 260;
+            g.a.translate.x = x0 - kEat * 58.5 + back; g.a.translate.y = 7 - Math.min(10, back * 0.1);
+            g.body.visible = g.back.visible = false; g.mouth.visible = false;
+            g.eyes.forEach(e => { e.stroke = 5.5; }); g.pupils.forEach(p => { p.visible = true; }); look(g, 1);
+          }
+          g.a.visible = g.a.translate.x < 90;
         });
-        o = 0.25 + 0.75 * Math.abs(Math.sin(t * 9));
       }
+      const o = 0.25 + 0.75 * Math.abs(Math.sin(t * 9));
       pac.translate.x = pacBack.translate.x = px;
       pac.path = pacBack.path = pacPath(o, dir); pac.updatePath(); pacBack.updatePath();
-      illo.rotate.x = -0.3;
-      illo.rotate.y = Math.sin(t * 0.5) * 0.25;
+      illo.rotate.x = -0.32;
+      illo.rotate.y = Math.sin(t * 0.5) * 0.22;
     };
   },
   // balão de pergunta com um "?" de volume e as alternativas A–D: a certa fica verde, sobe e solta confete
