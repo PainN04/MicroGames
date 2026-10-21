@@ -17,20 +17,58 @@ GAMES.voa = {
         let y = H / 2, vy = 0, started = false, alive = true, pts = 0, passed = 0, made = 0, spawnIn = 0, clock = 0;
         let shield = false, grace = 0, slow = 0;
         const pipes = [], items = []; // item: { x, y, kind: 'star' | 'shield' | 'slow', ph }
+        // ---- cenário desenhado: céu de entardecer, cidade ao longe e prédios mais perto (cada um anda numa velocidade) ----
+        const S2 = 2; // texturas no dobro da resolução, mostradas pela metade (nítidas)
+        const mk = (key, w, h, draw) => { if (this.textures.exists(key)) return; const k = this.make.graphics({ x: 0, y: 0, add: false }); draw(k); k.generateTexture(key, w, h); k.destroy(); };
+        mk('vo_sky', W, H, k => {
+          const top = Phaser.Display.Color.ValueToColor(0x2a1f5c), mid = Phaser.Display.Color.ValueToColor(0x8a4f9e), low = Phaser.Display.Color.ValueToColor(0xf6a77a);
+          for (let yy = 0; yy < H; yy += 4) { // degradê em faixas (gradiente de verdade não sai na textura)
+            const t = yy / H, c = t < 0.55 ? Phaser.Display.Color.Interpolate.ColorWithColor(top, mid, 100, t / 0.55 * 100) : Phaser.Display.Color.Interpolate.ColorWithColor(mid, low, 100, (t - 0.55) / 0.45 * 100);
+            k.fillStyle(Phaser.Display.Color.GetColor(c.r, c.g, c.b)).fillRect(0, yy, W, 4);
+          }
+          k.fillStyle(0xffe0a8, 0.25).fillCircle(W * 0.72, H * 0.62, 70); k.fillStyle(0xffd27a).fillCircle(W * 0.72, H * 0.62, 42);
+          for (let i = 0; i < 40; i++) k.fillStyle(0xffffff, Math.random() * 0.6 + 0.2).fillCircle(Math.random() * W, Math.random() * H * 0.4, Math.random() * 1.2 + 0.3);
+        });
+        const city = (key, h, color, win) => mk(key, W * S2, h * S2, k => {
+          for (let x = 0; x < W * S2; ) {
+            const bw = rand(26, 60) * S2 / 2, bh = rand(h * 0.35, h) * S2;
+            k.fillStyle(color).fillRect(x, h * S2 - bh, bw, bh);
+            if (win) for (let wy = h * S2 - bh + 8; wy < h * S2 - 6; wy += 12) for (let wx = x + 5; wx < x + bw - 6; wx += 10) if (Math.random() < 0.35) k.fillStyle(0xffd98a, 0.7).fillRect(wx, wy, 4, 6);
+            x += bw + rand(0, 4);
+          }
+        });
+        city('vo_far', 150, 0x4a3a86, false);
+        city('vo_near', 110, 0x2a2152, true);
+        this.add.image(0, 0, 'vo_sky').setOrigin(0);
+        const strip = (key, k, h) => ({ k, imgs: [0, 1].map(i => this.add.image(i * W, H, key).setOrigin(0, 1).setScale(1 / S2)), x: 0 });
+        const layers = [strip('vo_far', 0.12), strip('vo_near', 0.3)];
+        const clouds = [0, 1, 2].map(i => this.add.ellipse(i * 160 + rand(0, 80), rand(40, 200), rand(70, 120), rand(18, 28), 0xffd9e8, 0.22));
+        // pássaro: 3 quadros de asa (cima, meio, baixo)
+        [-1, 0, 1].forEach((wing, f) => mk('vo_b' + f, 48 * S2, 40 * S2, k => {
+          const c = (x, y, r) => k.fillCircle(x * S2, y * S2, r * S2), e = (x, y, w, h) => k.fillEllipse(x * S2, y * S2, w * S2, h * S2);
+          k.fillStyle(0xc98a00); c(24, 21, 14);
+          k.fillStyle(0xffd23f); c(23, 19.5, 13);
+          k.fillStyle(0xfff1b8); e(21, 26, 17, 9);
+          k.fillStyle(0xff8fa3, 0.55); c(31, 23, 2.6);
+          k.fillStyle(0xd99500); e(14, 20 + wing * 6.5, 17, 9 - Math.abs(wing) * 1.5);
+          k.fillStyle(0xffb700); e(14, 19 + wing * 6.5, 15, 7 - Math.abs(wing) * 1.5);
+          k.fillStyle(0xffffff); c(30, 14, 5.2);
+          k.fillStyle(0x161625); c(31.6, 14.3, 2.6);
+          k.fillStyle(0xffffff); c(32.4, 13.2, 0.9);
+          k.fillStyle(0xff7a2f).fillTriangle(35 * S2, 17 * S2, 35 * S2, 21.5 * S2, 45 * S2, 19.5 * S2);
+          k.fillStyle(0xd9531a).fillTriangle(35 * S2, 21.5 * S2, 35 * S2, 25 * S2, 43 * S2, 22 * S2);
+        }));
+        let wingT = 0;
         const gfx = this.add.graphics();
         const fxg = this.add.graphics().setDepth(5); // itens, escudo e a cortina da câmera lenta
-        const bird = this.add.container(BX, y, [
-          this.add.circle(0, 0, R, col.bird),
-          this.add.circle(5, -4, 4, 0xffffff), this.add.circle(6, -4, 2, 0x161625),
-          this.add.triangle(R + 1, 2, 0, -4, 0, 4, 9, 0, col.beak),
-        ]).setDepth(4);
+        const bird = this.add.image(BX, y, 'vo_b1').setScale(1 / S2).setDepth(4);
         const trail = this.add.particles(0, 0, 'dot', { speed: 40, angle: { min: 160, max: 200 }, lifespan: 300, scale: { start: 0.7, end: 0 }, tint: col.bird, emitting: false });
         const burst = this.add.particles(0, 0, 'dot', { speed: { min: 60, max: 220 }, lifespan: 520, scale: { start: 1.2, end: 0 }, emitting: false }).setDepth(6);
         const msg = this.add.text(W / 2, H / 2 + 70, 'Toque ou Espaço pra voar', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '22px', color: '#c9cce0' }).setOrigin(0.5);
         const flap = () => {
           if (!alive) return;
           if (!started) { started = true; msg.destroy(); }
-          vy = -330;
+          vy = -330; wingT = 0.24;
           trail.explode(5, BX - R, y);
           beep(520, 50, 'triangle', 0.04);
         };
@@ -151,13 +189,28 @@ GAMES.voa = {
             }
           } else if (!started) y = H / 2 + Math.sin(time / 250) * 8; // flutuando antes de começar
           bird.y = y;
+          // asa: bate rápido logo depois do toque; parado no ar, plana com a asa no meio
+          if (wingT > 0) wingT -= rdt;
+          bird.setTexture('vo_b' + (alive ? (wingT > 0 ? [0, 1, 2, 1][Math.floor(wingT / 0.06) % 4] : started ? 1 : Math.floor(time / 140) % 3) : 2));
+          const sp = started && alive ? Math.min(170 + passed * 3, 260) * rdt * ts : rdt * 20;
+          for (const L of layers) { L.x = (L.x - sp * L.k) % W; L.imgs[0].x = L.x; L.imgs[1].x = L.x + W; }
+          clouds.forEach(c => { c.x -= sp * 0.06 + rdt * 6; if (c.x < -70) c.setPosition(W + 70, rand(40, 200)); });
           bird.rotation = started ? Phaser.Math.Clamp(vy / 600, -0.5, 1.2) : 0;
           bird.alpha = grace > 0 ? (Math.floor(time / 80) % 2 ? 0.35 : 1) : 1;
           gfx.clear();
           for (const p of pipes) {
             const x0 = p.x - PIPE_W / 2, top = p.gapY - p.gap / 2, bot = p.gapY + p.gap / 2;
-            gfx.fillStyle(col.pipe).fillRect(x0, 0, PIPE_W, top).fillRect(x0, bot, PIPE_W, H - bot);
-            gfx.fillStyle(col.cap).fillRect(x0 - 4, top - 18, PIPE_W + 8, 18).fillRect(x0 - 4, bot, PIPE_W + 8, 18);
+            // cano com volume: faixa de luz à esquerda, sombra à direita, contorno e boca mais larga
+            const tube = (x, yy, w, h) => {
+              gfx.fillStyle(0x2fbf71).fillRect(x, yy, w, h);
+              gfx.fillStyle(0x7ff0a8, 0.85).fillRect(x + w * 0.12, yy, w * 0.14, h);
+              gfx.fillStyle(0xb8ffd4, 0.6).fillRect(x + w * 0.16, yy, w * 0.05, h);
+              gfx.fillStyle(0x1e8a55).fillRect(x + w * 0.78, yy, w * 0.22, h);
+              gfx.lineStyle(2, 0x0f4f2f).strokeRect(x, yy, w, h);
+            };
+            tube(x0, -2, PIPE_W, top - 16); tube(x0, bot + 18, PIPE_W, H - bot - 16);
+            tube(x0 - 5, top - 20, PIPE_W + 10, 20); tube(x0 - 5, bot, PIPE_W + 10, 20);
+            gfx.fillStyle(0x000000, 0.18).fillRect(x0, top, PIPE_W, 4).fillRect(x0, bot + 20, PIPE_W, 4);
           }
           fxg.clear();
           const t = time / 1000;

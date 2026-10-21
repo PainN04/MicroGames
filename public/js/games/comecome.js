@@ -1,30 +1,65 @@
 GAMES.comecome = {
-  name: 'Come-Come', icon: 'comecome', hue: 52, desc: 'Coma todas as bolinhas e fuja dos fantasmas. Bolas grandes deixam eles azuis: aí é você quem come! Setas, WASD, deslize ou os botões. 3 vidas.',
+  name: 'Come-Come', icon: 'comecome', hue: 52, desc: 'Coma todas as bolinhas e fuja dos fantasmas. Bolas grandes deixam eles azuis: aí é você quem come! Setas, WASD, deslize ou os botões. A cereja no meio vale bônus e cada fase troca o labirinto. 3 vidas.',
   better: 'high', unit: 'pontos', phaser: true,
   start(el, done) {
     // # parede · . bolinha · o bolinha grande · P onde o jogador começa · espaço = vazio. A linha 9 é um túnel que dá a volta.
-    const MAZE = [
-      '###################',
-      '#........#........#',
-      '#o##.###.#.###.##o#',
-      '#.................#',
-      '#.##.#.#####.#.##.#',
-      '#....#...#...#....#',
+    const MID = [
       '####.### # ###.####',
       '   #.#       #.#   ',
       '####.# ## ## #.####',
       '    .  #   #  .    ',
       '####.# ##### #.####',
       '   #.#       #.#   ',
-      '####.# ##### #.####',
-      '#........#........#',
-      '#.##.###.#.###.##.#',
-      '#o.#.....P.....#.o#',
-      '##.#.#.#####.#.#.##',
-      '#....#...#...#....#',
-      '#.######.#.######.#',
-      '#.................#',
-      '###################'];
+      '####.# ##### #.####'];
+    // 3 labirintos que se revezam a cada fase (o meio, com a casa dos fantasmas e o túnel, é igual nos 3)
+    const MAZES = [
+      ['###################',
+        '#........#........#',
+        '#o##.###.#.###.##o#',
+        '#.................#',
+        '#.##.#.#####.#.##.#',
+        '#....#...#...#....#',
+        ...MID,
+        '#........#........#',
+        '#.##.###.#.###.##.#',
+        '#o.#.....P.....#.o#',
+        '##.#.#.#####.#.#.##',
+        '#....#...#...#....#',
+        '#.######.#.######.#',
+        '#.................#',
+        '###################'],
+      ['###################',
+        '#.................#',
+        '#.##.#.#####.#.##.#',
+        '#o##.#...#...#.##o#',
+        '#....###.#.###....#',
+        '#.##.....#.....##.#',
+        ...MID,
+        '#........#........#',
+        '#.###.##.#.##.###.#',
+        '#o..#....P....#..o#',
+        '###.#.#.###.#.#.###',
+        '#.....#..#..#.....#',
+        '#.###.##.#.##.###.#',
+        '#.................#',
+        '###################'],
+      ['###################',
+        '#........#........#',
+        '#.#####.###.#####.#',
+        '#o...............o#',
+        '#.##.#.##.##.#.##.#',
+        '#....#...#...#....#',
+        ...MID,
+        '#........#........#',
+        '#.##.#.#####.#.##.#',
+        '#o.#.#...P...#.#.o#',
+        '##.#.###.#.###.#.##',
+        '#.................#',
+        '#.######.#.######.#',
+        '#........#........#',
+        '###################'],
+    ];
+    let MAZE = MAZES[0];
     const COLS = 19, ROWS = 21, T = 24, W = COLS * T, H = ROWS * T, TUNNEL = 9;
     const DIR = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
     const KEYS = { ArrowUp: 'up', w: 'up', ArrowDown: 'down', s: 'down', ArrowLeft: 'left', a: 'left', ArrowRight: 'right', d: 'right' };
@@ -37,10 +72,11 @@ GAMES.comecome = {
     let turnTo = () => {};
     el.querySelectorAll('.dbtn').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); turnTo(b.dataset.d); }));
 
-    // chão alcançável a partir do jogador (o resto vira parede), com a volta do túnel
-    const start = (() => { for (let y = 0; y < ROWS; y++) { const x = MAZE[y].indexOf('P'); if (x >= 0) return [x, y]; } })();
-    const floor = MAZE.map(r => [...r].map(() => false));
-    {
+    // chão alcançável a partir do jogador (o resto vira parede), com a volta do túnel. Recalculado a cada labirinto.
+    let start, floor;
+    const loadFloor = () => {
+      for (let y = 0; y < ROWS; y++) { const x = MAZE[y].indexOf('P'); if (x >= 0) start = [x, y]; }
+      floor = MAZE.map(r => [...r].map(() => false));
       const q = [start]; floor[start[1]][start[0]] = true;
       while (q.length) {
         const [x, y] = q.shift();
@@ -52,7 +88,8 @@ GAMES.comecome = {
           floor[ny][nx] = true; q.push([nx, ny]);
         }
       }
-    }
+    };
+    loadFloor();
     const free = (x, y) => y >= 0 && y < ROWS && x >= 0 && x < COLS && floor[y][x];
     /** Dá pra sair de (x,y) na direção d? Devolve a casa de chegada ou null. */
     const nextTile = (x, y, d) => {
@@ -67,15 +104,70 @@ GAMES.comecome = {
     return mountPhaser(el.querySelector('#pw'), W, H, {
       create() {
         dotTexture(this);
-        // paredes: desenhadas uma vez numa textura (desenhar ~190 retângulos a cada quadro deixava o celular lento)
-        const walls = this.make.graphics({ x: 0, y: 0, add: false });
-        walls.fillStyle(0x2b3a8f);
-        for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (MAZE[y][x] === '#') walls.fillRoundedRect(x * T + 2, y * T + 2, T - 4, T - 4, 6);
-        walls.fillStyle(0x3d52c4);
-        for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (MAZE[y][x] === '#' && (y === 0 || y === ROWS - 1 || x === 0 || x === COLS - 1)) walls.fillRoundedRect(x * T + 2, y * T + 2, T - 4, T - 4, 6);
-        walls.generateTexture('maze', W, H);
-        walls.destroy();
-        this.add.image(0, 0, 'maze').setOrigin(0).setDepth(0);
+        // paredes em neon (contorno duplo só nas bordas que dão pro corredor), desenhadas uma vez por labirinto numa textura
+        // (desenhar ~190 retângulos a cada quadro deixava o celular lento)
+        const wallAt = (m, x, y) => x >= 0 && x < COLS && y >= 0 && y < ROWS && m[y][x] === '#';
+        const wallTex = i => {
+          const key = 'maze' + i;
+          if (this.textures.exists(key)) return key;
+          const m = MAZES[i], w = this.make.graphics({ x: 0, y: 0, add: false });
+          w.fillStyle(0x0b0e2a);
+          for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (m[y][x] === '#') w.fillRect(x * T, y * T, T, T);
+          const edges = (inset, width, color, alpha) => {
+            w.lineStyle(width, color, alpha);
+            for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+              if (m[y][x] !== '#') continue;
+              const X = x * T, Y = y * T, a = inset, z = T - inset;
+              const open = (dx, dy) => !wallAt(m, x + dx, y + dy) && !(x + dx < 0 || x + dx >= COLS || y + dy < 0 || y + dy >= ROWS);
+              // cada lado aberto vira uma linha; as pontas se estendem até a casa vizinha se ela também for parede com o mesmo lado aberto
+              if (open(0, -1)) w.lineBetween(X + (wallAt(m, x - 1, y) ? 0 : a), Y + a, X + (wallAt(m, x + 1, y) ? T : z), Y + a);
+              if (open(0, 1)) w.lineBetween(X + (wallAt(m, x - 1, y) ? 0 : a), Y + z, X + (wallAt(m, x + 1, y) ? T : z), Y + z);
+              if (open(-1, 0)) w.lineBetween(X + a, Y + (wallAt(m, x, y - 1) ? 0 : a), X + a, Y + (wallAt(m, x, y + 1) ? T : z));
+              if (open(1, 0)) w.lineBetween(X + z, Y + (wallAt(m, x, y - 1) ? 0 : a), X + z, Y + (wallAt(m, x, y + 1) ? T : z));
+            }
+          };
+          const hue = [0x3d6bff, 0xb04dff, 0x18d1b0][i];
+          edges(4, 7, hue, 0.18); // brilho
+          edges(4, 2, hue, 1);
+          edges(8, 1.2, hue, 0.55); // 2ª linha, por dentro
+          // porta da casa dos fantasmas
+          w.fillStyle(0xff9ee5, 0.9).fillRect(9 * T + 3, 8 * T + T / 2 - 2, T - 6, 3);
+          w.generateTexture(key, W, H);
+          w.destroy();
+          return key;
+        };
+        const wallsImg = this.add.image(0, 0, wallTex(0)).setOrigin(0).setDepth(0);
+        // fantasmas e jogador desenhados uma vez em texturas (corpo com sombra, saia ondulada e brilho)
+        const ghostTex = (key, color) => {
+          if (this.textures.exists(key)) return;
+          const S = 44, c = S / 2, r = 18, k = this.make.graphics({ x: 0, y: 0, add: false });
+          const body = (col, dx, dy, sc) => {
+            k.fillStyle(col);
+            k.fillCircle(c + dx, c - 3 + dy, r * sc);
+            k.fillRect(c - r * sc + dx, c - 3 + dy, r * 2 * sc, r * sc + 2);
+            for (let i = 0; i < 4; i++) k.fillCircle(c - r * sc + dx + (i + 0.5) * (r * 2 * sc / 4), c + r * sc - 1 + dy, r * sc / 4);
+          };
+          body(Phaser.Display.Color.ValueToColor(color).darken(35).color, 0, 1, 1);
+          body(color, -1, 0, 0.93);
+          k.fillStyle(0xffffff, 0.35).fillEllipse(c - 7, c - 12, 9, 5);
+          k.generateTexture(key, S, S); k.destroy();
+        };
+        GHOST_COLORS.forEach((col, i) => ghostTex('gh' + i, col));
+        ghostTex('ghs', 0x2d4bff); ghostTex('ghw', 0xe8ecff);
+        const gimg = GHOST_COLORS.map((_, i) => this.add.image(0, 0, 'gh' + i).setDisplaySize(T + 2, T + 2).setDepth(9));
+        // fruta bônus (cereja desenhada)
+        if (!this.textures.exists('cherry')) {
+          const k = this.make.graphics({ x: 0, y: 0, add: false });
+          k.lineStyle(2.5, 0x3fae4a).beginPath().moveTo(11, 26).lineTo(22, 6).lineTo(31, 26).strokePath();
+          k.fillStyle(0x3fae4a).fillEllipse(26, 7, 11, 5);
+          for (const [x, y] of [[11, 30], [30, 30]]) {
+            k.fillStyle(0x9b0d1f).fillCircle(x, y, 8); k.fillStyle(0xe8283c).fillCircle(x - 1, y - 1, 7);
+            k.fillStyle(0xffffff, 0.7).fillCircle(x - 3.5, y - 3.5, 2);
+          }
+          k.generateTexture('cherry', 42, 40); k.destroy();
+        }
+        const fruit = this.add.image(9 * T + T / 2, 11 * T + T / 2, 'cherry').setDisplaySize(T + 4, T + 4).setDepth(5).setVisible(false);
+        let fruitT = 0, eaten = 0;
         const g = this.add.graphics().setDepth(10);
         const burst = this.add.particles(0, 0, 'dot', { speed: { min: 40, max: 140 }, lifespan: 350, scale: { start: 0.9, end: 0 }, emitting: false }).setDepth(15);
         const msg = this.add.text(W / 2, 11 * T + T / 2, 'Aperte uma seta', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '22px', color: '#ffe27a', backgroundColor: '#1d1f2e' }).setOrigin(0.5).setPadding(8, 2).setDepth(20);
@@ -151,12 +243,16 @@ GAMES.comecome = {
           if (!pellets.has(k)) return;
           const { big, img } = pellets.get(k);
           this.tweens.killTweensOf(img); img.destroy();
-          pellets.delete(k); left--;
+          pellets.delete(k); left--; eaten++;
+          if (eaten === 70 || eaten === 150) { fruit.setVisible(true); fruitT = 9.5; this.tweens.add({ targets: fruit, scale: { from: 0, to: fruit.scale }, duration: 250, ease: 'Back.out' }); }
           score += big ? 50 : 10; hud.p.textContent = score;
           if (big) { fright = frightTime(); chain = 0; sfx.good(); } else beep(pac.x % 2 ? 420 : 380, 30, 'square', 0.02);
           if (!left) {
             level++; hud.f.textContent = level;
             floatText(this, W / 2, 11 * T, `Fase ${level}!`, '#7cffb0'); sfx.record();
+            MAZE = MAZES[(level - 1) % MAZES.length]; loadFloor();
+            wallsImg.setTexture(wallTex((level - 1) % MAZES.length));
+            fruit.setVisible(false); fruitT = 0; eaten = 0;
             fillPellets(); resetPositions(); freeze = 1000;
           }
         };
@@ -213,6 +309,16 @@ GAMES.comecome = {
               else if (want[0] === -pac.dx && want[1] === -pac.dy) reverse(pac);
             }
             advance(pac, dt, eat, e => (want && nextTile(e.x, e.y, want) ? want : nextTile(e.x, e.y, [e.dx, e.dy]) ? [e.dx, e.dy] : [0, 0]));
+            // fruta: some depois de uns segundos; comer vale 100 por fase (até 1000)
+            if (fruitT > 0) {
+              fruitT -= dt;
+              if (fruitT <= 0) fruit.setVisible(false);
+              else if (pac.x === 9 && pac.y === 11) {
+                const pts = Math.min(1000, 100 * level);
+                score += pts; hud.p.textContent = score; fruitT = 0; fruit.setVisible(false);
+                floatText(this, fruit.x, fruit.y - 10, '+' + pts, '#ff7a8a'); burst.setParticleTint(0xe8283c); burst.explode(16, fruit.x, fruit.y); sfx.coin();
+              }
+            }
             // fantasmas
             for (const gh of ghosts) {
               if (gh.wait > 0) { gh.wait -= dt; if (gh.wait > 0) continue; }
@@ -240,22 +346,18 @@ GAMES.comecome = {
           g.clear();
           const flashing = fright > 0 && fright < 2 && Math.floor(time / 180) % 2;
           for (const gh of ghosts) {
-            const [gx, gy] = pos(gh), r = T / 2 - 2;
-            const scared = fright > 0 && !gh.eyes;
-            if (gh.eyes) {
-              g.fillStyle(0xffffff).fillCircle(gx - 4, gy - 2, 3.4).fillCircle(gx + 4, gy - 2, 3.4);
-              g.fillStyle(0x161625).fillCircle(gx - 4 + gh.dx * 1.6, gy - 2 + gh.dy * 1.6, 1.8).fillCircle(gx + 4 + gh.dx * 1.6, gy - 2 + gh.dy * 1.6, 1.8);
-              continue;
-            }
-            g.fillStyle(scared ? (flashing ? 0xffffff : 0x2d4bff) : GHOST_COLORS[gh.id]);
-            g.fillRoundedRect(gx - r, gy - r, r * 2, r * 2 + 1, { tl: r, tr: r, bl: 3, br: 3 });
-            g.fillStyle(0xffffff);
+            const [gx, gy] = pos(gh), scared = fright > 0 && !gh.eyes, img = gimg[gh.id];
+            img.setVisible(!gh.eyes).setPosition(gx, gy + Math.sin(time / 120 + gh.id) * 0.8);
+            if (!gh.eyes) img.setTexture(scared ? (flashing ? 'ghw' : 'ghs') : 'gh' + gh.id);
             if (scared) {
-              g.fillCircle(gx - 4, gy - 2, 2).fillCircle(gx + 4, gy - 2, 2);
-              g.fillRect(gx - 6, gy + 4, 12, 2);
+              g.fillStyle(flashing ? 0xff4d5e : 0xffffff).fillCircle(gx - 4, gy - 2, 2).fillCircle(gx + 4, gy - 2, 2);
+              g.lineStyle(1.6, flashing ? 0xff4d5e : 0xffffff).beginPath();
+              for (let i = 0; i <= 6; i++) g[i ? 'lineTo' : 'moveTo'](gx - 6 + i * 2, gy + 5 + (i % 2 ? -1.5 : 1.5));
+              g.strokePath();
             } else {
-              g.fillCircle(gx - 4, gy - 3, 3.4).fillCircle(gx + 4, gy - 3, 3.4);
-              g.fillStyle(0x161625).fillCircle(gx - 4 + gh.dx * 1.6, gy - 3 + gh.dy * 1.6, 1.8).fillCircle(gx + 4 + gh.dx * 1.6, gy - 3 + gh.dy * 1.6, 1.8);
+              const ey = gh.eyes ? -2 : -3;
+              g.fillStyle(0xffffff).fillEllipse(gx - 4, gy + ey, 6.4, 7.6).fillEllipse(gx + 4, gy + ey, 6.4, 7.6);
+              g.fillStyle(0x1b2bd6).fillCircle(gx - 4 + gh.dx * 1.8, gy + ey + gh.dy * 1.8, 1.9).fillCircle(gx + 4 + gh.dx * 1.8, gy + ey + gh.dy * 1.8, 1.9);
             }
           }
           const [px, py] = pos(pac), face = Math.atan2(pac.dy || 0, pac.dx || 1);
@@ -264,7 +366,9 @@ GAMES.comecome = {
             const k = 1 - dead / 1000; // some aos poucos
             g.fillStyle(0xffe14d).slice(px, py, T / 2 - 1, -Math.PI / 2 + k * Math.PI, -Math.PI / 2 - k * Math.PI + Math.PI * 2, false).fillPath();
           } else {
-            g.fillStyle(0xffe14d).slice(px, py, T / 2 - 1, face + open, face + Math.PI * 2 - open, false).fillPath();
+            g.fillStyle(0xc99a00).slice(px + 1, py + 1, T / 2 - 1, face + open, face + Math.PI * 2 - open, false).fillPath();
+            g.fillStyle(0xffe14d).slice(px, py, T / 2 - 1.5, face + open, face + Math.PI * 2 - open, false).fillPath();
+            g.fillStyle(0xfff6c2, 0.8).fillCircle(px - 3, py - 4, 2.2);
           }
         });
       },

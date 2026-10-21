@@ -17,6 +17,7 @@ GAMES.snake = {
     const hud = { p: el.querySelector('#p'), v: el.querySelector('#v') };
     const col = { tile: 0x24273a, food: hex('--red'), body: hex('--green'), head: hex('--yellow'), gold: 0xffd34d, cut: 0x4dd9ff };
     const KEYS = { ArrowUp: [0, -1], w: [0, -1], ArrowDown: [0, 1], s: [0, 1], ArrowLeft: [-1, 0], a: [-1, 0], ArrowRight: [1, 0], d: [1, 0] };
+    const mixC = (a, b, k) => { const c = Phaser.Display.Color.Interpolate.ColorWithColor(Phaser.Display.Color.ValueToColor(a), Phaser.Display.Color.ValueToColor(b), 100, k * 100); return Phaser.Display.Color.GetColor(c.r, c.g, c.b); };
     const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
     let turnNow = () => {}; // ligado dentro da cena; o D-pad (fora do Phaser) usa
     el.querySelectorAll('.dbtn').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); turnNow(DIRS[b.dataset.d]); }));
@@ -29,8 +30,19 @@ GAMES.snake = {
         dotTexture(this);
         const board = this.add.graphics().fillStyle(col.tile);
         for (let x = 0; x < N; x++) for (let y = 0; y < N; y++) if ((x + y) % 2) board.fillRect(x * S, y * S, S, S);
-        const foodDot = this.add.circle(0, 0, S / 2 - 4, col.food);
-        this.tweens.add({ targets: foodDot, scale: 1.25, yoyo: true, repeat: -1, duration: 420, ease: 'Sine.InOut' });
+        // maçã desenhada (sombra, brilho, cabinho e folha), no dobro da resolução
+        if (!this.textures.exists('sn_apple')) {
+          const k = this.make.graphics({ x: 0, y: 0, add: false });
+          k.fillStyle(0x000000, 0.25).fillEllipse(24, 44, 26, 6);
+          k.fillStyle(0xa3122a).fillCircle(17, 26, 14).fillCircle(31, 26, 14);
+          k.fillStyle(0xe8283c).fillCircle(17, 25, 12.5).fillCircle(30, 25, 12.5);
+          k.fillStyle(0xffffff, 0.65).fillEllipse(14, 19, 7, 10);
+          k.lineStyle(3, 0x6b3b12).lineBetween(24, 15, 26, 4);
+          k.fillStyle(0x3fae4a).fillEllipse(33, 8, 14, 7);
+          k.generateTexture('sn_apple', 48, 48); k.destroy();
+        }
+        const foodDot = this.add.image(0, 0, 'sn_apple').setScale(0.5);
+        this.tweens.add({ targets: foodDot, scale: 0.58, angle: 6, yoyo: true, repeat: -1, duration: 420, ease: 'Sine.InOut' });
         const gold = this.add.graphics();
         const body = this.add.graphics();
         const burst = this.add.particles(0, 0, 'dot', { speed: { min: 60, max: 200 }, lifespan: 450, scale: { start: 1, end: 0 }, tint: col.food, emitting: false });
@@ -107,15 +119,33 @@ GAMES.snake = {
           for (let i = snake.length - 1; i >= 0; i--) {
             // ao crescer, o segmento novo do rabo não tem from[i]: nasce parado onde o rabo estava
             const s = snake[i], f = from[i] ?? from.at(-1);
-            const vx = f.x + (s.x - f.x) * t, vy = f.y + (s.y - f.y) * t;
-            vis[i] = { x: vx, y: vy };
-            body.fillStyle(i ? col.body : col.head).fillRoundedRect(vx * S + 2, vy * S + 2, S - 4, S - 4, 7);
+            vis[i] = { x: f.x + (s.x - f.x) * t, y: f.y + (s.y - f.y) * t };
           }
           vis.length = snake.length;
-          // olhinhos na cabeça, olhando pra onde ela vai
-          const hx = vis[0].x * S + S / 2, hy = vis[0].y * S + S / 2, d = queue[0] || dir;
-          body.fillStyle(0x10131c);
-          for (const side of [-1, 1]) body.fillCircle(hx + d[0] * 5 - d[1] * side * 5, hy + d[1] * 5 + d[0] * side * 5, 2.3);
+          // corpo contínuo: círculos ao longo do caminho, afinando e escurecendo até a ponta do rabo (contorno, cor, pintinhas)
+          const n = vis.length, rad = i => S * 0.42 * (1 - 0.4 * i / Math.max(1, n)), px = v => v * S + S / 2;
+          const tone = i => mixC(0x6ff08c, 0x16876b, i / Math.max(1, n - 1));
+          for (const pass of [0, 1]) for (let i = n - 1; i >= 0; i--) {
+            const a = vis[i], b = vis[i - 1] || a;
+            for (let k = 0; k < (i ? 4 : 1); k++) {
+              const x = px(a.x + (b.x - a.x) * k / 4), y = px(a.y + (b.y - a.y) * k / 4), r = rad(i - k / 4);
+              if (pass) body.fillStyle(tone(i)).fillCircle(x, y, r); else body.fillStyle(0x0b3d2e).fillCircle(x, y, r + 2);
+            }
+          }
+          for (let i = 2; i < n; i += 2) body.fillStyle(0xb8ffcf, 0.35).fillCircle(px(vis[i].x), px(vis[i].y), rad(i) * 0.38);
+          // cabeça: olhos grandes olhando pra onde ela vai e a linguinha de vez em quando
+          const hx = px(vis[0].x), hy = px(vis[0].y), d = queue[0] || dir;
+          body.fillStyle(0xffffff, 0.3).fillCircle(hx - d[1] * 3 - 2, hy - 3, 3.5);
+          if (Math.sin(this.time.now / 160) > 0.6 && alive) {
+            const tx = hx + d[0] * 13, ty = hy + d[1] * 13;
+            body.lineStyle(2, 0xff4d6d).lineBetween(hx + d[0] * 9, hy + d[1] * 9, tx, ty)
+              .lineBetween(tx, ty, tx + d[0] * 3 - d[1] * 3, ty + d[1] * 3 - d[0] * 3).lineBetween(tx, ty, tx + d[0] * 3 + d[1] * 3, ty + d[1] * 3 + d[0] * 3);
+          }
+          for (const side of [-1, 1]) {
+            const ex = hx + d[0] * 3 - d[1] * side * 5.5, ey = hy + d[1] * 3 + d[0] * side * 5.5;
+            body.fillStyle(0xffffff).fillCircle(ex, ey, 4);
+            body.fillStyle(0x10131c).fillCircle(ex + d[0] * 1.6, ey + d[1] * 1.6, 2.2);
+          }
           if (bonus) {
             bonus.ttl -= delta;
             if (bonus.ttl <= 0) bonus = null;
@@ -125,7 +155,11 @@ GAMES.snake = {
                 const r = S / 2 - 2 + pulse; // losango azul: dá pra distinguir da dourada até no celular
                 gold.fillStyle(col.cut).fillPoints([{ x: cx, y: cy - r }, { x: cx + r, y: cy }, { x: cx, y: cy + r }, { x: cx - r, y: cy }], true);
                 gold.fillStyle(0xffffff, 0.75).fillRect(cx - 5, cy - 1, 10, 2);
-              } else gold.fillStyle(col.gold).fillCircle(cx, cy, S / 2 - 3 + pulse);
+              } else {
+                gold.fillStyle(0xc99a00).fillCircle(cx + 1, cy + 1, S / 2 - 3 + pulse);
+                gold.fillStyle(col.gold).fillCircle(cx, cy, S / 2 - 3 + pulse);
+                gold.fillStyle(0xffffff, 0.7).fillCircle(cx - 3, cy - 3, 2.5);
+              }
               gold.lineStyle(2.5, 0xffffff, 0.9).beginPath().arc(cx, cy, S / 2 + 2, -Math.PI / 2, -Math.PI / 2 + k * Math.PI * 2).strokePath();
             }
           }

@@ -382,6 +382,48 @@ function dotTexture(scene) {
   if (scene.textures.exists('dot')) return;
   scene.add.graphics().fillStyle(0xffffff).fillCircle(4, 4, 4).generateTexture('dot', 8, 8).destroy();
 }
+// ---------- kit de arte dos jogos de arcade ----------
+// Mesma técnica do Corredor: cada desenho é pintado uma vez num canvas 2D (degradê, contorno, brilho) no dobro da
+// resolução e vira textura do Phaser. Nada de imagem baixada nem emoji.
+function artKit(scene, R = 2) {
+  const TAU = Math.PI * 2;
+  const tex = (key, w, h, draw) => {
+    if (scene.textures.exists(key)) return key;
+    const t = scene.textures.createCanvas(key, Math.ceil(w * R), Math.ceil(h * R)), c = t.getContext();
+    c.save(); c.scale(R, R); draw(c, w, h); c.restore(); t.refresh();
+    return key;
+  };
+  const lin = (c, x0, y0, x1, y1, stops) => { const g = c.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, col]) => g.addColorStop(o, col)); return g; };
+  const rad = (c, x, y, r0, r1, stops) => { const g = c.createRadialGradient(x, y, r0, x, y, r1); stops.forEach(([o, col]) => g.addColorStop(o, col)); return g; };
+  const rr = (c, x, y, w, h, r) => { c.beginPath(); c.roundRect(x, y, w, h, r); };
+  const ell = (c, x, y, rx, ry, rot = 0) => { c.beginPath(); c.ellipse(x, y, rx, ry, rot, 0, TAU); };
+  /** cor #rrggbb clareada (amt > 0) ou escurecida (amt < 0) */
+  const tone = (hexColor, amt) => {
+    const n = typeof hexColor === 'number' ? hexColor : parseInt(hexColor.slice(1), 16);
+    const ch = sh => { const v = (n >> sh) & 255; return Math.round(amt > 0 ? v + (255 - v) * amt : v * (1 + amt)); };
+    return '#' + [16, 8, 0].map(sh => ch(sh).toString(16).padStart(2, '0')).join('');
+  };
+  /** bloco com relevo: topo claro, base escura, brilho em cima e contorno — tijolo, peça, botão */
+  const bevel = (c, x, y, w, h, r, color, { line = 'rgba(10,10,25,.55)', depth = 0.18 } = {}) => {
+    rr(c, x, y, w, h, r); c.fillStyle = lin(c, 0, y, 0, y + h, [[0, tone(color, 0.35)], [0.45, color], [1, tone(color, -0.35)]]); c.fill();
+    c.lineWidth = 1.2; c.strokeStyle = line; c.stroke();
+    rr(c, x + 2, y + 1.5, w - 4, Math.max(2, h * depth), r * 0.6); c.fillStyle = 'rgba(255,255,255,.35)'; c.fill();
+  };
+  /** bolinha brilhante (bola, fruta, power-up) */
+  const orb = (c, x, y, r, color) => {
+    ell(c, x, y, r, r); c.fillStyle = rad(c, x - r * 0.35, y - r * 0.4, r * 0.1, r * 1.1, [[0, tone(color, 0.75)], [0.45, color], [1, tone(color, -0.45)]]); c.fill();
+    ell(c, x - r * 0.35, y - r * 0.42, r * 0.32, r * 0.2, -0.6); c.fillStyle = 'rgba(255,255,255,.75)'; c.fill();
+  };
+  /** fundo do jogo: degradê vertical + vinheta + estrelinhas/pontos opcionais */
+  const backdrop = (key, w, h, top, bottom, { stars = 0, grid = 0 } = {}) => tex(key, w, h, c => {
+    c.fillStyle = lin(c, 0, 0, 0, h, [[0, top], [1, bottom]]); c.fillRect(0, 0, w, h);
+    for (let i = 0; i < stars; i++) { c.fillStyle = `rgba(255,255,255,${0.15 + Math.random() * 0.5})`; const s = Math.random() < 0.12 ? 1.6 : 0.9; c.fillRect(Math.random() * w, Math.random() * h, s, s); }
+    if (grid) { c.strokeStyle = 'rgba(255,255,255,.035)'; c.lineWidth = 1; for (let x = grid; x < w; x += grid) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); } for (let y = grid; y < h; y += grid) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); } }
+    c.fillStyle = rad(c, w / 2, h / 2, Math.min(w, h) * 0.3, Math.max(w, h) * 0.75, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,.45)']]); c.fillRect(0, 0, w, h);
+  });
+  return { R, TAU, tex, lin, rad, rr, ell, tone, bevel, orb, backdrop };
+}
+
 function floatText(scene, x, y, text, color) {
   const t = scene.add.text(x, y, text, { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '22px', fontStyle: 'bold', color }).setOrigin(0.5);
   scene.tweens.add({ targets: t, y: y - 40, alpha: 0, duration: 650, ease: 'Cubic.Out', onComplete: () => t.destroy() });
