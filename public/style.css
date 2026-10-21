@@ -278,6 +278,13 @@
 
   .result { text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--space-sm); animation: pop .5s var(--ease-spring); }
   .result .score { font-size: var(--fs-3xl); font-weight: 700; letter-spacing: -0.04em; line-height: 1; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .result .place b { color: var(--text); }
+  .part-sum { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 2px 0 4px; max-width: 520px; }
+  .part-sum > div { min-width: 92px; padding: 8px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+  .part-sum dt { font-size: var(--fs-xs, .75rem); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .part-sum dd { margin: 2px 0 0; font-weight: 700; font-size: 1.05rem; }
+  .part-sum .bars { display: flex; align-items: flex-end; gap: 3px; height: 34px; }
+  .part-sum .bars i { display: block; width: 8px; border-radius: 3px 3px 0 0; background: linear-gradient(var(--accent), var(--primary)); }
   .result .label { color: var(--muted); font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .12em; }
   .badge { padding: .4em 1em; border-radius: 999px; background: oklch(86% 0.17 92 / 0.15); color: var(--yellow); border: 1px solid oklch(86% 0.17 92 / 0.35); font-weight: 700; font-size: var(--fs-sm); }
   .badge.warn { background: oklch(66% 0.22 18 / 0.15); color: oklch(82% 0.12 18); border-color: oklch(66% 0.22 18 / 0.4); max-width: 42ch; }

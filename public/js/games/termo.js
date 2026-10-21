@@ -1,3 +1,30 @@
+let termoValid = null;
+
+// Estatísticas do Termo de quem está jogando (sai das partidas guardadas neste navegador, uma chave por dia)
+function termoStats(name, today) {
+  const days = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const m = localStorage.key(i).match(/^mg_termo_(.+)_(\d+)$/);
+    if (!m || m[1] !== name) continue;
+    try { const st = JSON.parse(localStorage.getItem(localStorage.key(i))); if (st?.over) days[+m[2]] = st; } catch {}
+  }
+  const list = Object.entries(days).map(([d, st]) => [+d, st]);
+  const wins = list.filter(([, st]) => st.won);
+  const dist = [1, 2, 3, 4, 5, 6].map(n => wins.filter(([, st]) => st.guesses.length === n).length);
+  let streak = 0;
+  for (let d = days[today] ? today : today - 1; days[d]?.won; d--) streak++;
+  let best = 0, run = 0;
+  for (const [d, st] of list.sort((a, b) => a[0] - b[0])) { run = st.won && days[d - 1]?.won ? run + 1 : st.won ? 1 : 0; best = Math.max(best, run); }
+  const top = Math.max(1, ...dist);
+  return [
+    ['Jogos', list.length],
+    ['Vitórias', list.length ? Math.round(wins.length / list.length * 100) + '%' : '—'],
+    ['Sequência', streak],
+    ['Melhor sequência', best],
+    ['Tentativas 1–6', `<span class="bars">${dist.map(n => `<i style="height:${4 + n / top * 30}px" title="${n}"></i>`).join('')}</span>`],
+  ];
+}
+
 GAMES.termo = {
   name: 'Termo', icon: 'termo', hue: 150, desc: 'A palavra do dia: 5 letras, 6 tentativas, igual pra todo mundo. Verde = letra certa no lugar certo, amarelo = existe em outro lugar, cinza = não tem. Só vale a primeira partida de cada dia. Acertar rápido e em poucas tentativas rende mais pontos.',
   better: 'high', unit: 'pontos',
@@ -20,6 +47,10 @@ GAMES.termo = {
       + 'SALÃO SALDO SALSA SANTO SAQUE SELVA SIGLA SOLTO SOMAR SONDA SUBIR SULCO TELAS TERMO TIPOS TIRAR TOLDO TOMAR TRAMA TREVO TRIBO TRIGO TROCO VAGAS VALER '
       + 'VASTO VAZIO VELAS VIGOR VIRAR VISAR VOLTE VOTAR XEQUE ZELAR').split(' ');
     const POOL = ANSWERS;
+    // palavras aceitas como tentativa (dicionário pt-BR do LibreOffice, 5 letras, sem acento). Se não baixar, aceita qualquer uma.
+    termoValid ??= fetch('data/termo-validas.txt').then(r => r.ok ? r.text() : '').then(t => new Set(t.split(/\s+/).filter(Boolean))).catch(() => null);
+    let valid = null;
+    termoValid.then(v => { valid = v && v.size ? v : null; });
     const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
     const ROWS = 6, LEN = 5;
     const day = dayIndex();
@@ -69,7 +100,7 @@ GAMES.termo = {
       const box = el.querySelector('#tmend');
       el.querySelector('#kb').hidden = true;
       box.hidden = false;
-      box.innerHTML = `<button class="btn ghost" id="shr">${icon('upload')} Copiar resultado</button>`;
+      box.innerHTML = `<dl class="part-sum">${termoStats(player, day).map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><button class="btn ghost" id="shr">${icon('upload')} Copiar resultado</button>`;
       say(st.won ? `Você acertou em ${st.guesses.length}/${ROWS}: ${st.score} pontos. Volte amanhã pra uma palavra nova!` : `A palavra era ${secret}. Volte amanhã pra uma palavra nova!`);
       box.querySelector('#shr').onclick = async () => {
         try { await navigator.clipboard.writeText(shareText()); say('Resultado copiado!'); } catch { say(shareText().replace(/\n/g, ' · ')); }
@@ -77,7 +108,7 @@ GAMES.termo = {
     };
 
     // acertou mas a página recarregou antes de enviar: manda agora (o servidor recusa se já tinha entrado)
-    const send = () => { st.sent = true; save(); done(st.score); };
+    const send = () => { st.sent = true; save(); summarize(termoStats(player, day)); done(st.score); };
     // jogo de hoje já terminou (recarregou a página ou voltou ao jogo): só mostra o resultado
     st.guesses.forEach((g, r) => paintRow(r, g, evaluate(g), false));
     el.querySelector('#n').textContent = tryNo() + '/' + ROWS;
@@ -90,6 +121,7 @@ GAMES.termo = {
     const submit = () => {
       if (busy) return;
       if (cur.length < LEN) { say('Faltam letras'); shake(); return; }
+      if (valid && !valid.has(cur) && !POOL.some(w => norm(w) === cur)) { say('Essa palavra não está na lista'); shake(); return; }
       const guess = cur, res = evaluate(guess), r = st.guesses.length;
       if (!st.t0) st.t0 = Date.now();
       st.guesses.push(guess); cur = ''; busy = true;

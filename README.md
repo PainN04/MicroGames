@@ -387,11 +387,12 @@ No painel admin dá pra baixar o JSON, importar ou restaurar as partidas de qual
 
 ## 📦 Bibliotecas
 
-Tudo no front vem por CDN, **sem build**.
+Sem build: o Phaser fica no próprio site (`public/vendor/`), o resto vem por CDN.
 
 | Biblioteca | Pra quê |
 | --- | --- |
-| [Phaser 3.90](https://phaser.io) | Os 12 jogos marcados com 🎨. Só baixa quando alguém abre um deles (no menu fica pré-buscado em segundo plano). |
+| [Phaser 3.90](https://phaser.io) | Os 12 jogos marcados com 🎨. Servido de `public/vendor/phaser.min.js` (MIT); se o arquivo local falhar, tenta o jsdelivr. Só baixa quando alguém abre um deles (no menu fica pré-buscado em segundo plano). |
+| Dicionário pt-BR do [LibreOffice](https://github.com/LibreOffice/dictionaries/tree/master/pt_BR) (VERO, MPL 2.0 / LGPL 3) | As palavras de 5 letras aceitas como tentativa no Termo, em `public/data/termo-validas.txt` (gerado com as flexões, sem acento). |
 | [Zdog 1.1](https://zzz.dog) e [Vanilla-Tilt 1.8](https://micku7zu.github.io/vanilla-tilt.js/) | Ilustração 3D e inclinação com brilho dos cards do menu. Carregam depois que o menu aparece e dá pra desligar no botão do topo. |
 | [web-vitals 6](https://github.com/GoogleChrome/web-vitals) | Mede LCP, INP, CLS, FCP e TTFB de quem joga e manda pra `/api/vitals`. Local: aparece no terminal do `server.js`. Vercel: em Logs do projeto (linhas `[web-vitals]`). |
 | [Lucide](https://lucide.dev) | Os ícones usados estão embutidos em `public/js/icons.js`, sem biblioteca nem requisição. |

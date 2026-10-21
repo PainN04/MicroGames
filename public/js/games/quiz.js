@@ -169,7 +169,7 @@ GAMES.quiz = {
       ['Responder a todos num e-mail com 200 pessoas é...', 'Quase sempre má ideia', 'Sempre obrigatório', 'Mais rápido', 'Mais seguro'],
     ];
     const DUR = 60;
-    const deck = [...Q].sort(() => Math.random() - 0.5);
+    const deck = shuffled(Q);
     let pts = 0, right = -1, t0 = 0, iv, over = false, lock = false, wait;
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat combo">Combo<b id="cb">x1</b></span><span class="stat">Tempo<b id="t">60s</b></span></div>
       <p class="quiz-q" id="q" aria-live="polite"></p>
@@ -178,7 +178,7 @@ GAMES.quiz = {
     const qEl = el.querySelector('#q'), btns = [...el.querySelectorAll('.choices .btn')], combo = makeCombo(el.querySelector('#cb'));
     function next() {
       const [q, ok, ...bad] = deck.pop() || Q[rand(0, Q.length - 1)];
-      const opts = [ok, ...bad].sort(() => Math.random() - 0.5);
+      const opts = shuffled([ok, ...bad]);
       right = opts.indexOf(ok);
       qEl.textContent = q;
       btns.forEach((b, k) => { b.classList.remove('right', 'wrong'); b.querySelector('span').textContent = opts[k]; });
