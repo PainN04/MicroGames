@@ -173,6 +173,7 @@ GAMES.quiz = {
     const SEEN = 'mg_quiz_seen';
     let seen = []; try { seen = JSON.parse(localStorage.getItem(SEEN)) || []; } catch {}
     const seenSet = new Set(seen);
+    if (dailySeeded) seenSet.clear(), seen = []; // desafio do dia: a ordem sai só da semente, igual pra todo mundo
     const fresh = shuffled(Q.filter(q => !seenSet.has(q[0]))), old = seen.map(t => Q.find(q => q[0] === t)).filter(Boolean).reverse();
     const deck = [...old, ...fresh]; // pop() tira do fim: primeiro as novas, depois as mais antigas já vistas
     let rights = 0, wrongs = 0, bestStreak = 0;
@@ -195,9 +196,8 @@ GAMES.quiz = {
       btns.forEach((b, k) => { b.classList.remove('right', 'wrong'); b.querySelector('span').textContent = opts[k]; });
       lock = false;
     }
-    function answer(k) {
-      if (over || lock) return;
-      if (!t0) {
+    // o tempo começa já (depois da contagem 3, 2, 1): a 1ª pergunta não fica de graça
+    const startClock = () => {
         t0 = performance.now();
         iv = setInterval(() => {
           const left = DUR - (performance.now() - t0) / 1000;
@@ -208,7 +208,9 @@ GAMES.quiz = {
             done(pts);
           }
         }, 100);
-      }
+    };
+    function answer(k) {
+      if (over || lock) return;
       if (k === right) { const m = combo.hit(); pts += m; rights++; bestStreak = Math.max(bestStreak, combo.streak); sfx.good(); popPoints(btns[k], '+' + m); next(); }
       else {
         // mostra a certa por um instante: ensina e evita ficar chutando rápido
@@ -226,6 +228,7 @@ GAMES.quiz = {
     const onKey = e => { const k = +e.key - 1; if (k >= 0 && k < 4 && !e.repeat) answer(k); };
     window.addEventListener('keydown', onKey);
     next();
+    startClock();
     return () => { over = true; clearInterval(iv); clearTimeout(wait); window.removeEventListener('keydown', onKey); };
   }
 };

@@ -1,5 +1,5 @@
 // ---------- telas ----------
-function stop() { if (cleanup) { cleanup(); cleanup = null; } }
+function stop() { if (cleanup) { cleanup(); cleanup = null; } unseedDaily(); }
 function swap(render) {
   if (document.startViewTransition && !reduced) {
     // o navegador cancela a transição (aba oculta, janela redimensionada...) e rejeita as promessas; a tela já foi trocada, então não é erro
@@ -181,6 +181,7 @@ function play(id) {
         <div class="stage-head">
           <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
           <div class="title"><h2>${icon(g.icon)}${g.name}</h2><p>${g.desc}</p></div>
+          <button class="btn ghost icon-btn" id="how" aria-label="Como jogar" title="Como jogar">?</button>
           <button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>
         </div>
         <div class="game" id="game"></div>
@@ -189,6 +190,7 @@ function play(id) {
     </div>`;
     $('#back').onclick = showMenu;
     $('#restart').onclick = () => play(id);
+    $('#how').onclick = () => { if (!HOWTO[id]) return; stop(); const el = $('#game'); el.innerHTML = ''; cleanup = showHowto(id, el, () => play(id)); };
     renderBoard(id);
     fetchScores().then(() => renderBoard(id));
     loadSocial().then(() => currentView === id && renderBoard(id));
@@ -197,7 +199,7 @@ function play(id) {
     fitGame();
     const el = $('#game');
     partSummary = null;
-    cleanup = g.start(el, async (score, proof) => {
+    const onDone = async (score, proof) => {
       stop();
       if (!el.isConnected) return; // saiu da partida (voltou ao menu, trocou de tela) antes de terminar
       // done(null, 'motivo'): partida acabou sem pontuação (ex.: explodiu no Campo Minado) — nada é salvo
@@ -250,7 +252,9 @@ function play(id) {
       $('#again').onclick = () => play(id);
       $('#again').focus();
       $('#loginSave')?.addEventListener('click', () => { setMe(null); loginModal(); });
-    });
+    };
+    // 1ª vez no jogo: "Como jogar"; jogos com tempo: contagem 3, 2, 1; jogo do desafio: sequência igual pra todo mundo
+    prepareGame(id, el, () => { seedDaily(id); cleanup = g.start(el, onDone); });
   });
 }
 

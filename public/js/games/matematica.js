@@ -20,25 +20,27 @@ GAMES.matematica = {
     inp.oninput = () => { inp.value = inp.value.replace(/\D/g, ''); if (inp.value.length >= String(ans).length) submit(); };
     inp.onkeydown = e => { if (e.key === 'Enter' && inp.value !== '') submit(); };
     const submit = () => {
-      if (!t0) {
-        t0 = performance.now();
-        iv = setInterval(() => {
-          const left = 30 - (performance.now() - t0) / 1000;
-          el.querySelector('#t').textContent = Math.max(0, Math.ceil(left)) + 's';
-          if (left <= 0) {
-            clearInterval(iv); inp.disabled = true;
-            summarize([['Acertos', rights], ['Erros', wrongs], ['Maior sequência', bestStreak], ['Contas por minuto', (rights + wrongs) * 2]]);
-            done(ok);
-          }
-        }, 100);
-      }
       const right = +inp.value === ans;
       if (right) { const m = combo.hit(); ok += m; rights++; bestStreak = Math.max(bestStreak, combo.streak); el.querySelector('#ok').textContent = ok; sfx.good(); popPoints(q, '+' + m); }
       else { combo.miss(); wrongs++; beep(160, 120, 'square', 0.03); popPoints(q, String(ans), 'bad'); }
       inp.classList.remove('wrong', 'right'); void inp.offsetWidth; inp.classList.add(right ? 'right' : 'wrong');
       inp.value = ''; gen();
     };
-    gen(); inp.focus();
+    // o tempo começa já (depois da contagem 3, 2, 1)
+    const startTimer = () => {
+      if (t0) return;
+      t0 = performance.now();
+      iv = setInterval(() => {
+        const left = 30 - (performance.now() - t0) / 1000;
+        el.querySelector('#t').textContent = Math.max(0, Math.ceil(left)) + 's';
+        if (left <= 0) {
+          clearInterval(iv); inp.disabled = true;
+          summarize([['Acertos', rights], ['Erros', wrongs], ['Maior sequência', bestStreak], ['Contas por minuto', (rights + wrongs) * 2]]);
+          done(ok);
+        }
+      }, 100);
+    };
+    gen(); inp.focus(); startTimer();
     return () => clearInterval(iv);
   }
 };

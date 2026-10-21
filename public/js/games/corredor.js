@@ -1,9 +1,9 @@
 GAMES.corredor = {
-  name: 'Corredor', icon: 'corredor', hue: 35, desc: 'Seja o pássaro mais rápido do deserto! Toque, clique ou Espaço/↑ pra pular; segure ↓ (ou toque na parte de baixo) pra abaixar. Cactos e urubus baixos pedem pulo; bando de urubus no alto, abaixar. Cada vez mais rápido.',
+  name: 'Corredor', icon: 'corredor', hue: 35, desc: 'Seja o pássaro mais rápido do deserto! Toque, clique ou Espaço/↑ pra pular (segure pra ir mais alto); pegue moedas (+25); segure ↓ (ou toque na parte de baixo) pra abaixar. Cactos e urubus baixos pedem pulo; bando de urubus no alto, abaixar. Cada vez mais rápido.',
   better: 'high', unit: 'pontos', phaser: true,
   start(el, done) {
     const W = 480, H = 300, GY = 250, GRAV = 2300, JUMP = -820, ZOOM = 1.5;
-    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Velocidade<b id="v">1.0x</b></span></div><div class="phaser-wrap" id="pw"></div><p class="hint">Espaço/toque = pular · ↓ ou parte de baixo da tela = abaixar</p>';
+    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Velocidade<b id="v">1.0x</b></span></div><div class="phaser-wrap" id="pw"></div><p class="hint">Espaço/toque = pular (segure pra ir mais alto) · ↓ ou parte de baixo da tela = abaixar</p>';
     const hud = { p: el.querySelector('#p'), v: el.querySelector('#v') };
     // O mundo continua 480x300; a câmera dá zoom e as texturas são pintadas no dobro da resolução, pra ficar nítido.
     return mountPhaser(el.querySelector('#pw'), W * ZOOM, H * ZOOM, {
@@ -13,7 +13,8 @@ GAMES.corredor = {
         scene.cameras.main.setZoom(ZOOM).centerOn(W / 2, H / 2);
         const X = 80; // posição fixa do corredor
         let y = GY, vy = 0, ducking = false, started = false, alive = true, dist = 0, speed = 300, spawnIn = 900, tick = 0, trail = 0, wasAir = false, milestone = 500;
-        let obs = [], nextFlock = false;
+        let obs = [], nextFlock = false, coins = [], bonus = 0, held = false, airT = 0;
+        const score = () => Math.floor(dist / 10) + bonus;
 
         // ---------- cenário (de trás pra frente) ----------
         scene.add.image(0, 0, 'cr_sky').setOrigin(0).setScale(0.5);
@@ -38,23 +39,39 @@ GAMES.corredor = {
         const jump = () => {
           if (!alive) return;
           if (!started) { started = true; msg.destroy(); }
-          if (onGround() && !ducking) { vy = JUMP; dust.explode(6, X - 4, GY); beep(560, 70, 'triangle', 0.04); }
+          if (onGround() && !ducking) { vy = JUMP; held = true; airT = 0; dust.explode(6, X - 4, GY); sfx.jump(); }
         };
         const die = () => {
-          alive = false; sfx.bad();
+          alive = false; sfx.boom();
           scene.cameras.main.shake(240, 0.012); scene.cameras.main.flash(180, 255, 80, 100);
-          scene.time.delayedCall(800, () => done(Math.floor(dist / 10)));
+          scene.time.delayedCall(800, () => done(score()));
         };
         scene.input.keyboard.addCapture('SPACE,UP,DOWN');
         scene.input.keyboard.on('keydown', e => {
           if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key) && !e.repeat) jump();
           if (['ArrowDown', 's', 'S'].includes(e.key)) { ducking = true; if (!started) jump(); if (!onGround()) vy = Math.max(vy, 500); } // abaixar no ar = cai rápido
         });
-        scene.input.keyboard.on('keyup', e => { if (['ArrowDown', 's', 'S'].includes(e.key)) ducking = false; });
+        scene.input.keyboard.on('keyup', e => { if (['ArrowDown', 's', 'S'].includes(e.key)) ducking = false; if ([' ', 'ArrowUp', 'w', 'W'].includes(e.key)) held = false; });
         scene.input.on('pointerdown', p => { if (p.worldY > H * 0.68 && started) { ducking = true; if (!onGround()) vy = Math.max(vy, 500); } else jump(); });
-        scene.input.on('pointerup', () => { ducking = false; });
+        scene.input.on('pointerup', () => { ducking = false; held = false; });
 
         const put = img => { obsLayer.add(img); return img.setScale(0.5); };
+        if (!scene.textures.exists('cr_coin')) { // moeda desenhada: borda escura, face dourada, brilho
+          const k = scene.make.graphics({ x: 0, y: 0, add: false });
+          k.fillStyle(0xa86a00).fillCircle(16, 16, 15); k.fillStyle(0xffc21a).fillCircle(16, 15, 13);
+          k.fillStyle(0xffe27a).fillCircle(16, 15, 9); k.fillStyle(0xe0a000).fillRect(14, 9, 4, 12);
+          k.fillStyle(0xffffff, 0.75).fillEllipse(10, 9, 6, 4);
+          k.generateTexture('cr_coin', 32, 32); k.destroy();
+        }
+        // fileira de moedas no meio do caminho até o próximo obstáculo: no chão ou no alto (aí precisa pular)
+        const coinRow = gap => {
+          const high = Math.random() < 0.5, cy = high ? GY - 92 : GY - 18, x0 = W + 30 + gap / 2 - 22;
+          for (let i = 0; i < 3; i++) {
+            const img = scene.add.image(x0 + i * 22, cy - (high ? Math.sin((i + 0.5) / 3 * Math.PI) * 14 : 0), 'cr_coin').setScale(0.42);
+            obsLayer.add(img);
+            coins.push({ img, ph: i * 0.6 });
+          }
+        };
         const spawn = () => {
           if (nextFlock) {
             // bando no alto: do peito até bem acima do pulo máximo, então não dá pra pular; só passa abaixado
@@ -76,6 +93,7 @@ GAMES.corredor = {
           // Antes de um bando, um respiro a mais pra dar tempo de pousar e abaixar.
           nextFlock = dist > 1800 && Math.random() < 0.2;
           spawnIn = 800 + Math.random() * 800 + (nextFlock ? 250 : 0);
+          if (!nextFlock && Math.random() < 0.4) coinRow(spawnIn / 1000 * speed);
         };
         const place = (o, dt) => {
           if (o.imgs) o.imgs.forEach((img, i) => img.setX(o.x - o.w / 2 + 8 + i * 19));
@@ -92,6 +110,9 @@ GAMES.corredor = {
           if (started && alive) {
             speed = Math.min(640, 300 + dist / 22);
             dist += speed * dt;
+            // pulo variável: soltou cedo, o pulo corta (mínimo garantido de 0,1s pra ainda passar pelos cactos)
+            if (!onGround()) airT += dt;
+            if (!held && vy < -250 && airT > 0.1) vy = -250;
             vy += GRAV * dt; y += vy * dt;
             if (y >= GY) { y = GY; vy = 0; }
             spawnIn -= delta;
@@ -99,7 +120,7 @@ GAMES.corredor = {
             for (const o of obs) o.x -= speed * dt;
             obs = obs.filter(o => o.x > -60 || drop(o));
             const pts = Math.floor(dist / 10);
-            hud.p.textContent = pts;
+            hud.p.textContent = score();
             hud.v.textContent = (speed / 300).toFixed(1) + 'x';
             if (pts >= milestone) {
               const t = txt(70, milestone + '!', 26);
@@ -109,6 +130,17 @@ GAMES.corredor = {
             }
             // caixa do corredor (um pouco menor que o desenho = perdoa bordas)
             const hh = ducking && onGround() ? 22 : 42, bx0 = X - 10, bx1 = X + 10, by0 = y - hh + 3, by1 = y - 2;
+            for (const c of coins) {
+              c.img.x -= speed * dt; c.ph += dt * 6;
+              c.img.setScale(0.42 * Math.abs(Math.cos(c.ph)) + 0.04, 0.42); // gira
+              if (Math.abs(c.img.x - X) < 16 && c.img.y > by0 - 8 && c.img.y < by1 + 8) {
+                bonus += 25; c.dead = true; sfx.coin();
+                const t = scene.add.text(c.img.x, c.img.y - 6, '+25', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#ffe27a', stroke: '#5a3a00', strokeThickness: 3 }).setOrigin(0.5).setResolution(2 * ZOOM);
+                scene.tweens.add({ targets: t, y: t.y - 22, alpha: 0, duration: 600, onComplete: () => t.destroy() });
+              }
+              if (c.img.x < -20) c.dead = true;
+            }
+            coins = coins.filter(c => !c.dead || c.img.destroy());
             for (const o of obs) {
               const ox0 = o.x - o.w / 2 + 3, ox1 = o.x + o.w / 2 - 3, oy1 = o.y - 2, oy0 = o.y - o.h + 3;
               if (bx0 < ox1 && bx1 > ox0 && by0 < oy1 && by1 > oy0) { die(); break; }

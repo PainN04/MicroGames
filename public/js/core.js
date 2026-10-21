@@ -194,10 +194,43 @@ function beep(freq, ms = 90, type = 'sine', vol = 0.07) {
     osc.start(t); osc.stop(t + ms / 1000);
   } catch {}
 }
+// ruído filtrado (explosão, batida): sem arquivo, gerado na hora
+function noise(ms = 300, vol = 0.12, freq = 900) {
+  if (muted) return;
+  try {
+    audioCtx ??= new AudioContext();
+    const t = audioCtx.currentTime, len = Math.ceil(audioCtx.sampleRate * ms / 1000);
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+    const src = audioCtx.createBufferSource(), filt = audioCtx.createBiquadFilter(), gain = audioCtx.createGain();
+    src.buffer = buf; filt.type = 'lowpass'; filt.frequency.setValueAtTime(freq, t); filt.frequency.exponentialRampToValueAtTime(80, t + ms / 1000);
+    gain.gain.value = vol;
+    src.connect(filt).connect(gain).connect(audioCtx.destination);
+    src.start(t);
+  } catch {}
+}
+// som que sobe ou desce de tom (pulo, moeda, power-up)
+function sweep(from, to, ms = 150, type = 'square', vol = 0.04) {
+  if (muted) return;
+  try {
+    audioCtx ??= new AudioContext();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(from, t); osc.frequency.exponentialRampToValueAtTime(to, t + ms / 1000);
+    gain.gain.setValueAtTime(vol, t); gain.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000);
+    osc.connect(gain).connect(audioCtx.destination); osc.start(t); osc.stop(t + ms / 1000);
+  } catch {}
+}
+// vibração no celular (mesmo botão do som: mudo = sem vibrar)
+function buzz(pattern) { if (!muted && navigator.vibrate) try { navigator.vibrate(pattern); } catch {} }
 const sfx = {
-  good: () => beep(880, 70, 'triangle'),
-  bad: () => beep(130, 220, 'sawtooth', 0.05),
-  record: () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 140, 'triangle'), i * 90)),
+  good: () => { beep(880, 70, 'triangle'); buzz(8); },
+  bad: () => { beep(130, 220, 'sawtooth', 0.05); buzz(60); },
+  record: () => { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 140, 'triangle'), i * 90)); buzz([30, 50, 30, 50, 60]); },
+  boom: () => { noise(420, 0.16, 1400); beep(70, 300, 'sine', 0.08); buzz([80, 40, 120]); }, // morreu / explodiu
+  hit: () => { noise(90, 0.08, 2500); buzz(15); }, // batida seca (tijolo, nave)
+  jump: () => sweep(320, 720, 140, 'square', 0.03),
+  coin: () => { sweep(988, 1319, 60, 'square', 0.03); setTimeout(() => sweep(1319, 1760, 120, 'square', 0.03), 60); buzz(10); },
+  power: () => { [440, 554, 659, 880].forEach((f, i) => setTimeout(() => beep(f, 90, 'square', 0.03), i * 55)); buzz([20, 30, 20]); },
 };
 function renderMute() {
   $('#mute').innerHTML = icon(muted ? 'volume-x' : 'volume-2');
@@ -349,6 +382,48 @@ function dotTexture(scene) {
   if (scene.textures.exists('dot')) return;
   scene.add.graphics().fillStyle(0xffffff).fillCircle(4, 4, 4).generateTexture('dot', 8, 8).destroy();
 }
+// ---------- kit de arte dos jogos de arcade ----------
+// Mesma técnica do Corredor: cada desenho é pintado uma vez num canvas 2D (degradê, contorno, brilho) no dobro da
+// resolução e vira textura do Phaser. Nada de imagem baixada nem emoji.
+function artKit(scene, R = 2) {
+  const TAU = Math.PI * 2;
+  const tex = (key, w, h, draw) => {
+    if (scene.textures.exists(key)) return key;
+    const t = scene.textures.createCanvas(key, Math.ceil(w * R), Math.ceil(h * R)), c = t.getContext();
+    c.save(); c.scale(R, R); draw(c, w, h); c.restore(); t.refresh();
+    return key;
+  };
+  const lin = (c, x0, y0, x1, y1, stops) => { const g = c.createLinearGradient(x0, y0, x1, y1); stops.forEach(([o, col]) => g.addColorStop(o, col)); return g; };
+  const rad = (c, x, y, r0, r1, stops) => { const g = c.createRadialGradient(x, y, r0, x, y, r1); stops.forEach(([o, col]) => g.addColorStop(o, col)); return g; };
+  const rr = (c, x, y, w, h, r) => { c.beginPath(); c.roundRect(x, y, w, h, r); };
+  const ell = (c, x, y, rx, ry, rot = 0) => { c.beginPath(); c.ellipse(x, y, rx, ry, rot, 0, TAU); };
+  /** cor #rrggbb clareada (amt > 0) ou escurecida (amt < 0) */
+  const tone = (hexColor, amt) => {
+    const n = typeof hexColor === 'number' ? hexColor : parseInt(hexColor.slice(1), 16);
+    const ch = sh => { const v = (n >> sh) & 255; return Math.round(amt > 0 ? v + (255 - v) * amt : v * (1 + amt)); };
+    return '#' + [16, 8, 0].map(sh => ch(sh).toString(16).padStart(2, '0')).join('');
+  };
+  /** bloco com relevo: topo claro, base escura, brilho em cima e contorno — tijolo, peça, botão */
+  const bevel = (c, x, y, w, h, r, color, { line = 'rgba(10,10,25,.55)', depth = 0.18 } = {}) => {
+    rr(c, x, y, w, h, r); c.fillStyle = lin(c, 0, y, 0, y + h, [[0, tone(color, 0.35)], [0.45, color], [1, tone(color, -0.35)]]); c.fill();
+    c.lineWidth = 1.2; c.strokeStyle = line; c.stroke();
+    rr(c, x + 2, y + 1.5, w - 4, Math.max(2, h * depth), r * 0.6); c.fillStyle = 'rgba(255,255,255,.35)'; c.fill();
+  };
+  /** bolinha brilhante (bola, fruta, power-up) */
+  const orb = (c, x, y, r, color) => {
+    ell(c, x, y, r, r); c.fillStyle = rad(c, x - r * 0.35, y - r * 0.4, r * 0.1, r * 1.1, [[0, tone(color, 0.75)], [0.45, color], [1, tone(color, -0.45)]]); c.fill();
+    ell(c, x - r * 0.35, y - r * 0.42, r * 0.32, r * 0.2, -0.6); c.fillStyle = 'rgba(255,255,255,.75)'; c.fill();
+  };
+  /** fundo do jogo: degradê vertical + vinheta + estrelinhas/pontos opcionais */
+  const backdrop = (key, w, h, top, bottom, { stars = 0, grid = 0 } = {}) => tex(key, w, h, c => {
+    c.fillStyle = lin(c, 0, 0, 0, h, [[0, top], [1, bottom]]); c.fillRect(0, 0, w, h);
+    for (let i = 0; i < stars; i++) { c.fillStyle = `rgba(255,255,255,${0.15 + Math.random() * 0.5})`; const s = Math.random() < 0.12 ? 1.6 : 0.9; c.fillRect(Math.random() * w, Math.random() * h, s, s); }
+    if (grid) { c.strokeStyle = 'rgba(255,255,255,.035)'; c.lineWidth = 1; for (let x = grid; x < w; x += grid) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, h); c.stroke(); } for (let y = grid; y < h; y += grid) { c.beginPath(); c.moveTo(0, y); c.lineTo(w, y); c.stroke(); } }
+    c.fillStyle = rad(c, w / 2, h / 2, Math.min(w, h) * 0.3, Math.max(w, h) * 0.75, [[0, 'rgba(0,0,0,0)'], [1, 'rgba(0,0,0,.45)']]); c.fillRect(0, 0, w, h);
+  });
+  return { R, TAU, tex, lin, rad, rr, ell, tone, bevel, orb, backdrop };
+}
+
 function floatText(scene, x, y, text, color) {
   const t = scene.add.text(x, y, text, { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '22px', fontStyle: 'bold', color }).setOrigin(0.5);
   scene.tweens.add({ targets: t, y: y - 40, alpha: 0, duration: 650, ease: 'Cubic.Out', onComplete: () => t.destroy() });
