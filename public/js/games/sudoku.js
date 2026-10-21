@@ -133,6 +133,22 @@ GAMES.sudoku = {
       }
       msg.textContent = '';
       render();
+      if (n) glowDone(sel);
+    }
+    // linha, coluna ou bloco completo sem repetir: acende em onda a partir da casa jogada
+    function glowDone(at) {
+      const r = (at / 9) | 0, c = at % 9, groups = [
+        Array.from({ length: 9 }, (_, k) => r * 9 + k), Array.from({ length: 9 }, (_, k) => k * 9 + c),
+        Array.from({ length: 9 }, (_, k) => (((BOX(at) / 3) | 0) * 3 + ((k / 3) | 0)) * 9 + (BOX(at) % 3) * 3 + k % 3)];
+      const lit = new Map();
+      for (const g of groups) {
+        const vals = g.map(i => cells[i]);
+        if (vals.every(Boolean) && new Set(vals).size === 9) g.forEach(i => lit.set(i, Math.min(lit.get(i) ?? 99, Math.abs(((i / 9) | 0) - r) + Math.abs(i % 9 - c))));
+      }
+      if (!lit.size) return;
+      const btns = bd.children;
+      for (const [i, d] of lit) { btns[i].style.setProperty('--d', d * 0.04 + 's'); btns[i].classList.add('glow'); }
+      [660, 880].forEach((f, k) => setTimeout(() => beep(f, 90, 'triangle', 0.04), k * 70));
     }
     function undo() {
       const h = history.pop();

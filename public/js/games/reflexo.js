@@ -5,7 +5,8 @@ GAMES.reflexo = {
     let times = [], timer, startAt, state;
     el.innerHTML = '<div class="hud"><span class="stat">Rodada<b id="rd"></b></span></div><button class="reflex" id="rx"></button>';
     const box = el.querySelector('#rx');
-    const set = (cls, txt) => { box.className = 'reflex ' + cls; box.textContent = txt; };
+    // semáforo desenhado ao lado do texto: vermelho esperando, verde pra clicar, amarelo piscando quando foi cedo
+    const set = (cls, txt) => { box.className = 'reflex ' + cls; box.innerHTML = `<span class="sema" aria-hidden="true"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="rx-msg">${esc(txt)}</span>`; };
     function wait() {
       state = 'wait';
       el.querySelector('#rd').textContent = `${times.length + 1}/3`;

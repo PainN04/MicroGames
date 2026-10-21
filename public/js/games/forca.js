@@ -62,15 +62,29 @@ GAMES.forca = {
     const deck = shuffled(WORDS);
     let word = '', hint = '', plain = '', guessed = new Set(), wrong = 0, pts = 0, solved = 0, locked = false, timers = [];
     // forca desenhada em SVG: cada erro mostra mais uma parte do boneco
-    const PARTS = ['<circle cx="150" cy="62" r="16"/>', '<path d="M150 78v52"/>', '<path d="M150 90l-26 24"/>', '<path d="M150 90l26 24"/>', '<path d="M150 130l-22 38"/>', '<path d="M150 130l22 38"/>'];
+    // boneco colorido (cabeça, camiseta, braços, calça) e um rosto que muda de humor conforme os erros
+    const SKIN = 'fill:#f4cba8;stroke:#7a4d2c;stroke-width:3', ARM = 'stroke:#e8b48f;stroke-width:6', LEG = 'stroke:#3d4a8f;stroke-width:7';
+    const PARTS = [`<circle cx="150" cy="62" r="16" style="${SKIN}"/>`, '<path d="M150 79v50" style="stroke:#5ce1ff;stroke-width:11"/>',
+      `<path d="M146 90l-24 24" style="${ARM}"/>`, `<path d="M154 90l24 24" style="${ARM}"/>`, `<path d="M147 128l-20 40" style="${LEG}"/>`, `<path d="M153 128l20 40" style="${LEG}"/>`];
+    const FACE = n => {
+      const eye = 'fill:#1b1410;stroke:none', line = 'stroke:#1b1410;stroke-width:2.2;fill:none';
+      if (n >= MAX) return `<path d="M141 55l6 6M147 55l-6 6M153 55l6 6M159 55l-6 6" style="${line}"/><path d="M143 72q7-5 14 0" style="${line}"/>`; // olhos em X
+      const eyes = n >= 5 ? `<circle cx="144" cy="58" r="3" style="fill:#fff;stroke:#1b1410;stroke-width:1.2"/><circle cx="156" cy="58" r="3" style="fill:#fff;stroke:#1b1410;stroke-width:1.2"/><circle cx="144" cy="58.5" r="1.3" style="${eye}"/><circle cx="156" cy="58.5" r="1.3" style="${eye}"/>`
+        : `<circle cx="144" cy="58" r="2.2" style="${eye}"/><circle cx="156" cy="58" r="2.2" style="${eye}"/>`;
+      const brows = n >= 3 ? `<path d="M140 52l7 2M160 52l-7 2" style="${line}"/>` : '';
+      const mouth = n <= 2 ? `<path d="M143 66q7 6 14 0" style="${line}"/>` : n <= 4 ? `<path d="M144 69h12" style="${line}"/>` : `<ellipse cx="150" cy="69" rx="3.5" ry="4.5" style="${eye}"/>`;
+      const sweat = n >= 4 ? '<path d="M166 50q3 5 0 7q-3-2 0-7z" style="fill:#7ad7ff;stroke:none"/>' : '';
+      return eyes + brows + mouth + sweat;
+    };
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Palavras<b id="w">0</b></span><span class="stat">Erros<b id="e">0/${MAX}</b></span></div>
-      <svg class="gallows" viewBox="0 0 220 190" aria-hidden="true"><g class="base"><path d="M20 182h120M52 182V14h98v34"/></g><g class="body" id="body"></g></svg>
+      <svg class="gallows" viewBox="0 0 220 190" aria-hidden="true"><g class="base"><rect x="14" y="178" width="134" height="9" rx="3" style="fill:#5a3d24;stroke:none"/><rect x="46" y="12" width="12" height="168" rx="3" style="fill:#8a5a2b;stroke:none"/><rect x="50" y="12" width="3" height="166" style="fill:#b07a45;stroke:none"/><rect x="46" y="9" width="112" height="11" rx="3" style="fill:#8a5a2b;stroke:none"/><path d="M58 46L86 20" style="stroke:#6b4a2b;stroke-width:7"/><path d="M150 20v27" style="stroke:#c9a36a;stroke-width:3;stroke-dasharray:4 2"/></g><g class="body" id="body"></g></svg>
       <p class="hint" id="hint"></p>
       <div class="wordline" id="wl" aria-live="polite"></div>
       <div class="keys" id="keys">${[...ALPHA].map(l => `<button class="key" data-l="${l}">${l}</button>`).join('')}</div>`;
     const wl = el.querySelector('#wl'), keys = [...el.querySelectorAll('.key')];
     const draw = () => {
-      el.querySelector('#body').innerHTML = PARTS.slice(0, wrong).join('');
+      el.querySelector('#body').innerHTML = PARTS.slice(0, wrong).join('') + (wrong ? `<g class="face">${FACE(wrong)}</g>` : '');
+      el.querySelector('#body').classList.toggle('dead', wrong >= MAX);
       el.querySelector('#e').textContent = wrong + '/' + MAX;
       // cada palavra num grupo que não quebra no meio (no celular, "PLACA DE VÍDEO" vai pra mais de uma linha)
       wl.innerHTML = word.split(' ').map((w, wi, all) => {

@@ -29,8 +29,14 @@ GAMES.minado = {
     const elapsed = () => (performance.now() - t0) / 1000;
     const lose = i => {
       over = true; clearInterval(iv);
-      for (const m of mines) { cells[m].innerHTML = icon('bomb', { cls: 'bomb' }); cells[m].classList.add('open'); }
+      // as outras minas aparecem em onda a partir da que explodiu; o tabuleiro treme
+      for (const m of mines) {
+        const d = Math.hypot((m % N) - (i % N), ((m / N) | 0) - ((i / N) | 0));
+        cells[m].style.setProperty('--d', d * 0.06 + 's');
+        cells[m].innerHTML = icon('bomb', { cls: 'bomb' }); cells[m].classList.add('open', 'mine');
+      }
       cells[i].classList.add('boom');
+      el.querySelector('#mf').classList.add('shake');
       sfx.boom();
       setTimeout(() => done(null, 'Explodiu! Partida perdida não vai pro ranking — tenta de novo.'), 1000);
     };

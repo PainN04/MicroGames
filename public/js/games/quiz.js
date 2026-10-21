@@ -183,6 +183,7 @@ GAMES.quiz = {
     };
     let pts = 0, right = -1, t0 = 0, iv, over = false, lock = false, wait;
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat combo">Combo<b id="cb">x1</b></span><span class="stat">Tempo<b id="t">60s</b></span></div>
+      <div class="timebar" aria-hidden="true"><i id="tb"></i></div>
       <p class="quiz-q" id="q" aria-live="polite"></p>
       <div class="choices quiz">${[0, 1, 2, 3].map(k => `<button class="btn ghost" data-k="${k}"><span></span> <kbd>${k + 1}</kbd></button>`).join('')}</div>
       <p class="hint">Teclas 1–4 também valem.</p>`;
@@ -193,7 +194,9 @@ GAMES.quiz = {
       const opts = shuffled([ok, ...bad]);
       right = opts.indexOf(ok);
       qEl.textContent = q;
-      btns.forEach((b, k) => { b.classList.remove('right', 'wrong'); b.querySelector('span').textContent = opts[k]; });
+      // pergunta entra e as alternativas viram como cartas, uma depois da outra
+      qEl.classList.remove('qin'); void qEl.offsetWidth; qEl.classList.add('qin');
+      btns.forEach((b, k) => { b.classList.remove('right', 'wrong', 'flip'); b.querySelector('span').textContent = opts[k]; b.style.setProperty('--d', k * 0.05 + 's'); void b.offsetWidth; b.classList.add('flip'); });
       lock = false;
     }
     // o tempo começa já (depois da contagem 3, 2, 1): a 1ª pergunta não fica de graça
@@ -202,6 +205,7 @@ GAMES.quiz = {
         iv = setInterval(() => {
           const left = DUR - (performance.now() - t0) / 1000;
           el.querySelector('#t').textContent = Math.max(0, Math.ceil(left)) + 's';
+          const bar = el.querySelector('#tb'); bar.style.transform = `scaleX(${Math.max(0, left / DUR)})`; bar.classList.toggle('low', left < 10);
           if (left <= 0 && !over) {
             over = true; clearInterval(iv); clearTimeout(wait);
             summarize([['Acertos', rights], ['Erros', wrongs], ['Precisão', rights + wrongs ? Math.round(rights / (rights + wrongs) * 100) + '%' : '—'], ['Maior sequência', bestStreak]]);
