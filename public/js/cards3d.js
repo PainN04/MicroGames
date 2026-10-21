@@ -50,6 +50,12 @@ const LETTERS = {
   L: [[[-4, -7], [-4, 7], [4, 7]]],
   R: [[[-4, 7], [-4, -7], [2, -7], [4, -5], [4, -2], [2, 0], [-4, 0]], [[0, 0], [4, 7]]],
   T: [[[-4, -7], [4, -7]], [[0, -7], [0, 7]]],
+  O: [[[-2, -7], [2, -7], [4, -5], [4, 5], [2, 7], [-2, 7], [-4, 5], [-4, -5], [-2, -7]]],
+  S: [[[4, -6], [2, -7], [-2, -7], [-4, -5], [-4, -2], [-2, 0], [2, 0], [4, 2], [4, 5], [2, 7], [-2, 7], [-4, 6]]],
+  U: [[[-4, -7], [-4, 5], [-2, 7], [2, 7], [4, 5], [4, -7]]],
+  V: [[[-4, -7], [0, 7], [4, -7]]],
+  X: [[[-4, -7], [4, 7]], [[4, -7], [-4, 7]]],
+  Z: [[[-4, -7], [4, -7], [-4, 7], [4, 7]]],
 };
 // Group: os traços são desenhados juntos, como uma peça só — senão a ordenação 3D esconde alguns atrás da placa
 function glyph(Z, addTo, lines, { color = '#1a1a1a', stroke = 2.4, scale = 0.8, z = 0 } = {}) {
@@ -471,39 +477,118 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.45) * 0.35;
     };
   },
-  // teclado em perspectiva com teclas sendo apertadas
+  // teclado deitado e um monitor: cada tecla apertada desce e acende, a letra aparece na tela; palavra completa
+  // fica verde e a próxima começa
   digitacao(Z, illo) {
-    const marks = ['T', 'E', 'R', 'A', 'L'];
-    const keys = [];
-    for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) {
-      const a = new Z.Anchor({ addTo: illo, translate: { x: (c - 1.5) * 18 + r * 4, y: (r - 1) * 18 } });
-      slab(Z, a, 15, 15, 7, '#2b2f45');
-      const ch = marks[(r * 4 + c) % marks.length];
-      if ((r * 4 + c) % 2 === 0) glyph(Z, a, LETTERS[ch], { color: '#cfd3ff', z: 4.5, scale: 0.6, stroke: 1.6 });
-      keys.push(a);
-    }
+    // monitor atrás do teclado
+    const mon = backdrop(Z, illo, 0, { translate: { y: -36, z: -16 } });
+    slab(Z, mon, 92, 40, 6, '#2b2f45');
+    slab(Z, mon, 10, 16, 4, '#23263a', { translate: { y: 26, z: -3 } });
+    const scr = backdrop(Z, illo, 1, { sort: false, translate: { y: -36, z: -12.6 } });
+    new Z.Rect({ addTo: scr, width: 86, height: 34, stroke: 2, fill: true, color: '#141826' });
+    const WORDS = ['REDE', 'DATA', 'BETA', 'CASA'];
+    // uma letra de cada palavra por posição; só a que está sendo usada aparece
+    const slots = [0, 1, 2, 3].map(i => {
+      const g = new Z.Group({ addTo: scr, translate: { x: (i - 1.5) * 15 - 6 } });
+      const set = {};
+      for (const ch of new Set(WORDS.map(w => w[i]))) set[ch] = glyph(Z, g, LETTERS[ch], { stroke: 2.4, scale: 0.85, color: '#cfe0ff' });
+      return set;
+    });
+    const caret = new Z.Shape({ addTo: scr, path: [{ y: -7 }, { y: 7 }], stroke: 2, color: '#4dc3ff' });
+    const check = new Z.Shape({ addTo: scr, path: [{ x: -5, y: 0 }, { x: -1.5, y: 4 }, { x: 6, y: -5 }], closed: false, stroke: 3, color: '#3ddc97', translate: { x: 32 } });
+    // teclado deitado: base + teclas (cada tecla é um bloco com a letra na frente)
+    const kb = new Z.Anchor({ addTo: illo, translate: { y: 30, z: 6 }, rotate: { x: -0.62 } });
+    const base = backdrop(Z, kb, 2);
+    slab(Z, base, 104, 50, 6, '#3b4166');
+    const ROWS = ['QWERTYUI', 'ASDFGHJ', 'ZXCVBN'], K = 11.5, keys = {};
+    ROWS.forEach((row, r) => [...row].forEach((ch, c) => {
+      const g = new Z.Group({ addTo: kb, updateSort: true, translate: { x: (c - (row.length - 1) / 2) * K + r * 2.5, y: (r - 1.5) * K + 2, z: 3 } });
+      const box = slab(Z, g, K - 2, K - 2, 4, '#e8eaf6', { translate: { z: 2 } });
+      const face = new Z.Group({ addTo: g, translate: { z: 4.2 } });
+      const front = new Z.Rect({ addTo: face, width: K - 3.5, height: K - 3.5, stroke: 1.5, fill: true, color: '#e8eaf6' });
+      if (LETTERS[ch]) glyph(Z, face, LETTERS[ch], { color: '#4a4f75', stroke: 1.5, scale: 0.42, z: 0.3 });
+      keys[ch] = { g, box, front };
+    }));
+    const space = new Z.Group({ addTo: kb, updateSort: true, translate: { y: 2 * K - 1, z: 3 } });
+    slab(Z, space, 50, K - 3, 4, '#e8eaf6', { translate: { z: 2 } });
+    const paint = (k, c) => {
+      k.box.color = k.box.frontFace = c; k.box.topFace = shade(c, 0.25); k.box.leftFace = shade(c, -0.12);
+      k.box.rightFace = shade(c, -0.25); k.box.bottomFace = shade(c, -0.35); k.box.rearFace = shade(c, -0.15); k.front.color = c;
+    };
+    let lit = null;
     return t => {
-      const a = Math.floor(t * 5) % keys.length, b = Math.floor(t * 5 * 0.7 + 5) % keys.length;
-      keys.forEach((k, i) => { k.translate.z = i === a || i === b ? -4 : 0; });
-      illo.rotate.x = -0.75;
-      illo.rotate.z = Math.sin(t * 0.5) * 0.1;
+      // por palavra: 4 teclas (0,35s cada), fica verde um tempo e some
+      const T = 2.6, n = Math.floor(t / T), word = WORDS[n % WORDS.length], k = (t % T) / T;
+      const typed = Math.min(4, Math.floor(k * 4 / 0.55)), f = (k * 4 / 0.55) % 1, done = typed === 4;
+      slots.forEach((set, i) => Object.entries(set).forEach(([ch, g]) => {
+        g.visible = ch === word[i] && i < typed;
+        g.children.forEach(s => { s.color = done ? '#3ddc97' : '#cfe0ff'; });
+      }));
+      caret.visible = !done && Math.floor(t * 4) % 2 === 0;
+      caret.translate.x = (typed - 1.5) * 15 - 6 - 7.5;
+      check.visible = done;
+      check.scale = done ? Math.min(1, (k - 0.55) * 10) : 1;
+      // a tecla da letra atual desce e acende
+      const pressing = !done && f < 0.5 ? keys[word[typed]] : null;
+      if (pressing !== lit) {
+        if (lit) { paint(lit, '#e8eaf6'); lit.g.translate.z = 3; }
+        if (pressing) { paint(pressing, '#ffd34d'); pressing.g.translate.z = 1; }
+        lit = pressing;
+      }
+      illo.rotate.x = -0.15;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.3;
     };
   },
-  // quatro botões do Genius acendendo em sequência
+  // aparelho redondo do Genius: as quatro teclas acendem na sequência (sobem e brilham), o visor do meio mostra
+  // a fase; sequência completa, todas piscam e a fase sobe
   memoria(Z, illo) {
-    const colors = ['#3ddc97', '#ff6b8a', '#ffd34d', '#4dc3ff'];
-    const pads = colors.map((c, i) => {
-      const a = new Z.Anchor({ addTo: illo, translate: { x: (i % 2 - 0.5) * 30, y: (Math.floor(i / 2) - 0.5) * 30 } });
-      slab(Z, a, 26, 26, 8, shade(c, -0.45));
-      const glow = new Z.Rect({ addTo: a, width: 22, height: 22, stroke: 3, fill: true, color: shade(c, 0.2), translate: { z: 4.6 } });
-      return { a, glow };
+    const base = backdrop(Z, illo, 0);
+    new Z.Cylinder({ addTo: base, diameter: 112, length: 10, stroke: false, color: '#20243a', backface: '#2b2f45' });
+    const top = backdrop(Z, illo, 1, { sort: false, translate: { z: 5.2 } });
+    new Z.Ellipse({ addTo: top, diameter: 108, stroke: 2, fill: true, color: '#2b2f45' });
+    // quarto de anel (de a0 até a0 + 90°, com uma folguinha entre as teclas)
+    const quarter = (a0, r1, r2) => {
+      const pts = [], gap = 0.09, n = 10;
+      for (let i = 0; i <= n; i++) { const a = a0 + gap + (Math.PI / 2 - 2 * gap) * i / n; pts.push({ x: Math.cos(a) * r2, y: Math.sin(a) * r2 }); }
+      for (let i = n; i >= 0; i--) { const a = a0 + gap * 1.6 + (Math.PI / 2 - 3.2 * gap) * i / n; pts.push({ x: Math.cos(a) * r1, y: Math.sin(a) * r1 }); }
+      return pts;
+    };
+    const COLORS = ['#3ddc97', '#ff4d6a', '#ffd34d', '#4dc3ff'];
+    const pads = COLORS.map((c, i) => {
+      const path = quarter(-Math.PI + i * Math.PI / 2, 20, 50);
+      new Z.Shape({ addTo: top, path, fill: true, stroke: 2, color: shade(c, -0.6) }); // vão escuro embaixo da tecla
+      const g = new Z.Group({ addTo: illo, translate: { z: 6.5 } });
+      const side = new Z.Shape({ addTo: g, path, fill: true, stroke: 2.5, color: shade(c, -0.35) });
+      const face = new Z.Shape({ addTo: g, path, fill: true, stroke: 2, color: shade(c, -0.15), translate: { z: 2.5 } });
+      const mid = (-Math.PI + i * Math.PI / 2) + Math.PI / 4;
+      const glow = new Z.Shape({ addTo: g, path: quarter(-Math.PI + i * Math.PI / 2, 26, 44), fill: true, stroke: 3, color: shade(c, 0.45), translate: { z: 2.8 } });
+      const shine = new Z.Shape({ addTo: g, path: [{ x: Math.cos(mid - 0.3) * 42, y: Math.sin(mid - 0.3) * 42 }, { x: Math.cos(mid - 0.05) * 44, y: Math.sin(mid - 0.05) * 44 }], stroke: 2.4, color: 'rgba(255,255,255,0.5)', translate: { z: 3 } });
+      return { g, face, glow, shine, c };
     });
-    const seq = [0, 2, 1, 3, 2, 0, 3, 1];
+    // centro: botão escuro com o visor da fase
+    const hub = new Z.Group({ addTo: illo, translate: { z: 9 } });
+    new Z.Ellipse({ addTo: hub, diameter: 34, stroke: 3, fill: true, color: '#161a2b' });
+    new Z.Ellipse({ addTo: hub, diameter: 34, stroke: 2, color: '#4a4f75' });
+    const digits = [0, 1].map(i => Array.from({ length: 10 }, (_, d) => glyph(Z, hub, digitLines(d).map(l => l.map(([x, y]) => [x + (i ? 6 : -6), y])), { color: '#ff4d6a', stroke: 2.4, scale: 0.75 })));
+    const SEQ = [0, 2, 1, 3, 2, 0, 3, 1];
     return t => {
-      const lit = seq[Math.floor(t * 1.8) % seq.length];
-      pads.forEach((p, i) => { p.glow.visible = i === lit; p.a.translate.z = i === lit ? 7 : 0; });
-      illo.rotate.x = -0.45 + Math.sin(t * 0.6) * 0.15;
-      illo.rotate.y = Math.sin(t * 0.4) * 0.4;
+      // fase n mostra n+2 teclas; 0,45s por tecla; depois todas piscam
+      const T = 0.45, rounds = [3, 4, 5];
+      let time = t % rounds.reduce((s, n) => s + n * T + 1.1, 0), r = 0;
+      while (time > rounds[r] * T + 1.1) { time -= rounds[r] * T + 1.1; r++; }
+      const n = rounds[r], step = Math.floor(time / T), f = (time / T) % 1, show = step < n;
+      const lit = show && f < 0.7 ? SEQ[step] : -1;
+      const party = !show && Math.floor((time - n * T) * 6) % 2 === 0 && time - n * T < 0.8;
+      pads.forEach((p, i) => {
+        const on = i === lit || party;
+        p.face.color = on ? p.c : shade(p.c, -0.15);
+        p.glow.visible = on;
+        p.g.translate.z = on ? 8.5 : 6.5;
+      });
+      const level = show ? r + 1 : r + 2;
+      digits.forEach((set, i) => set.forEach((g, d) => { g.visible = d === (i ? level % 10 : Math.floor(level / 10)); }));
+      illo.rotate.x = -0.55;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.3;
     };
   },
   // alvo num tripé de madeira: a mira desliza até um ponto, o dardo chega, crava, o alvo balança e solta faísca
@@ -562,28 +647,57 @@ const SCENES_3D = {
       illo.rotate.x = -0.12;
     };
   },
-  // + − × ÷ girando em órbita
+  // calculadora: a conta é digitada tecla por tecla (a tecla desce e acende), o "=" mostra o resultado em verde
   matematica(Z, illo) {
-    const sym = (lines, dots, color) => {
-      const a = new Z.Anchor({ addTo: illo });
-      lines.forEach(l => new Z.Shape({ addTo: a, path: l, closed: false, stroke: 6, color }));
-      dots.forEach(d => new Z.Shape({ addTo: a, translate: d, stroke: 7, color }));
-      return a;
+    const OPS = {
+      '+': [[[-4, 0], [4, 0]], [[0, -4], [0, 4]]], '-': [[[-4, 0], [4, 0]]], 'x': [[[-3.2, -3.2], [3.2, 3.2]], [[3.2, -3.2], [-3.2, 3.2]]],
+      '/': [[[-4, 0], [4, 0]], [[0, -5], [0, -4.6]], [[0, 4.6], [0, 5]]], '=': [[[-4, -2.2], [4, -2.2]], [[-4, 2.2], [4, 2.2]]],
     };
-    const s = 9;
-    const items = [
-      sym([[{ x: -s }, { x: s }], [{ y: -s }, { y: s }]], [], '#3ddc97'),
-      sym([[{ x: -s }, { x: s }]], [], '#ff6b8a'),
-      sym([[{ x: -s, y: -s }, { x: s, y: s }], [{ x: s, y: -s }, { x: -s, y: s }]], [], '#ffd34d'),
-      sym([[{ x: -s }, { x: s }]], [{ y: -8 }, { y: 8 }], '#4dc3ff'),
-    ];
+    const lines = ch => OPS[ch] || digitLines(+ch);
+    const body = backdrop(Z, illo, 0);
+    slab(Z, body, 80, 104, 10, '#2b2f45');
+    const front = backdrop(Z, illo, 1, { sort: false, translate: { z: 5.4 } });
+    new Z.Rect({ addTo: front, width: 76, height: 100, stroke: 2, fill: true, color: '#2b2f45' });
+    new Z.Rect({ addTo: front, width: 66, height: 24, stroke: 2, fill: true, color: '#141826', translate: { y: -34 } });
+    // visor: até 3 posições; cada uma tem todos os símbolos prontos e mostra um
+    const CH = '0123456789+-x/=';
+    const cells = [0, 1, 2].map(i => Object.fromEntries([...CH].map(ch => [ch, glyph(Z, front, lines(ch).map(l => l.map(([x, y]) => [x + (i - 1) * 14 / 0.9, y - 34 / 0.9])), { color: '#cfe0ff', stroke: 2.4, scale: 0.9 })])));
+    // teclas
+    const GRID = ['789/', '456x', '123-', '0.=+'], KEY = 15, keys = {};
+    GRID.forEach((row, r) => [...row].forEach((ch, c) => {
+      const op = '/x-+='.includes(ch), color = ch === '=' ? '#ff8a5c' : op ? '#8b6cff' : '#e8eaf6';
+      const g = new Z.Group({ addTo: illo, updateSort: true, translate: { x: (c - 1.5) * (KEY + 2), y: (r - 0.5) * (KEY + 1) + 4, z: 5 } });
+      const box = slab(Z, g, KEY - 1, KEY - 2, 5, color, { translate: { z: 2.5 } });
+      const face = new Z.Group({ addTo: g, translate: { z: 5.3 } });
+      const top = new Z.Rect({ addTo: face, width: KEY - 3, height: KEY - 4, stroke: 1.5, fill: true, color });
+      const fg = op ? '#ffffff' : '#4a4f75';
+      if (ch === '.') new Z.Shape({ addTo: face, stroke: 2.4, color: fg, translate: { y: 3 } });
+      else glyph(Z, face, lines(ch), { color: fg, stroke: 1.8, scale: 0.55, z: 0.3 });
+      keys[ch] = { g, box, top, color };
+    }));
+    const paint = (k, c) => {
+      k.box.color = k.box.frontFace = c; k.box.topFace = shade(c, 0.25); k.box.leftFace = shade(c, -0.12);
+      k.box.rightFace = shade(c, -0.25); k.box.bottomFace = shade(c, -0.35); k.box.rearFace = shade(c, -0.15); k.top.color = c;
+    };
+    const SUMS = [['7+5', '12'], ['9x3', '27'], ['8-6', '2'], ['6/2', '3']];
+    let lit = null;
     return t => {
-      items.forEach((a, i) => {
-        const ang = t * 0.7 + i * Z.TAU / 4;
-        a.translate.set({ x: Math.cos(ang) * 32, y: Math.sin(ang * 2) * 6, z: Math.sin(ang) * 32 });
-        a.rotate.y = t * 1.5 + i;
-      });
-      illo.rotate.x = -0.3;
+      // 3 teclas da conta + "=" (0,35s cada), resultado fica um tempo
+      const T = 2.8, [expr, res] = SUMS[Math.floor(t / T) % SUMS.length], k = (t % T) / 0.35;
+      const step = Math.floor(k), f = k % 1, answered = step >= 4;
+      const text = answered ? res.padStart(3, ' ') : expr.slice(0, Math.min(3, step + (f > 0.3 ? 1 : 0))).padEnd(3, ' ');
+      cells.forEach((set, i) => Object.entries(set).forEach(([ch, g]) => {
+        g.visible = text[i] === ch;
+        g.children.forEach(s => { s.color = answered ? '#3ddc97' : '#cfe0ff'; });
+      }));
+      const press = step < 4 && f < 0.55 ? keys[step < 3 ? expr[step] : '='] : null;
+      if (press !== lit) {
+        if (lit) { paint(lit, lit.color); lit.g.translate.z = 5; }
+        if (press) { paint(press, '#ffd34d'); press.g.translate.z = 2.5; }
+        lit = press;
+      }
+      illo.rotate.x = -0.28;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.35;
     };
   },
   // passarinho batendo asas entre canos com borda, nuvens ao fundo, chão rolando e uma estrela pra pegar
@@ -649,42 +763,118 @@ const SCENES_3D = {
       illo.rotate.x = -0.08;
     };
   },
-  // insetos caindo e girando
+  // chuva de besouros caindo e um notebook desviando pra lá e pra cá; quando um passa raspando, sai faísca
   chuva(Z, illo) {
-    const bug = (color, spots) => {
-      const a = new Z.Anchor({ addTo: illo });
-      [-1, 0, 1].forEach(r => [-1, 1].forEach(s => new Z.Shape({ addTo: a, path: [{ x: s * 4, y: r * 4 }, { x: s * 11, y: r * 5 + 3 }], stroke: 1.8, color: '#2a2d3d' })));
-      new Z.Shape({ addTo: a, stroke: 16, color, translate: { y: 3 } });
-      new Z.Shape({ addTo: a, stroke: 10, color: '#2a2d3d', translate: { y: -8 } });
-      [-1, 1].forEach(s => {
-        new Z.Shape({ addTo: a, path: [{ x: s * 2, y: -11 }, { x: s * 6, y: -17 }], stroke: 1.5, color: '#2a2d3d' });
-        new Z.Shape({ addTo: a, stroke: 2.5, color: '#fff', translate: { x: s * 2.5, y: -9, z: 4.5 } });
-      });
-      if (spots) [[-3, 0], [3, 2], [-2, 6], [3, 7]].forEach(([x, y]) => new Z.Shape({ addTo: a, stroke: 3.5, color: '#1a1a1a', translate: { x, y, z: 7 } }));
-      return a;
+    const bug = (color, i) => {
+      const g = new Z.Group({ addTo: illo, updateSort: true });
+      // patinhas e antenas atrás do corpo
+      [-1, 0, 1].forEach(r => [-1, 1].forEach(s => new Z.Shape({ addTo: g, path: [{ x: s * 3, y: r * 4 }, { x: s * 9, y: r * 4.5 + 2 }, { x: s * 11, y: r * 5 + 5 }], closed: false, stroke: 1.6, color: '#1d2033', translate: { z: -1 } })));
+      [-1, 1].forEach(s => new Z.Shape({ addTo: g, path: [{ x: s * 2, y: -10 }, { x: s * 5, y: -15 }, { x: s * 8, y: -15 }], closed: false, stroke: 1.4, color: '#1d2033', translate: { z: -1 } }));
+      new Z.Shape({ addTo: g, stroke: 9, color: '#1d2033', translate: { y: -7 } }); // cabeça
+      new Z.Shape({ addTo: g, stroke: 16, color: shade(color, -0.25), translate: { y: 3, z: -1.5 } }); // casco (volume)
+      new Z.Shape({ addTo: g, stroke: 15, color, translate: { y: 3 } });
+      // asas: risca no meio, pintinhas e brilho (num Group na frente, desenhados em ordem)
+      const top = new Z.Group({ addTo: g, translate: { z: 7.6 } });
+      new Z.Shape({ addTo: top, path: [{ y: -4 }, { y: 10 }], stroke: 1.2, color: shade(color, -0.45) });
+      for (const [x, y] of [[-3.5, 0], [3.5, 2], [-3, 6.5], [3, 7.5]]) new Z.Shape({ addTo: top, stroke: 3, color: shade(color, -0.55), translate: { x, y } });
+      new Z.Shape({ addTo: top, path: [{ x: -4, y: -2 }, { x: -2, y: -4 }], stroke: 2, color: 'rgba(255,255,255,0.7)' });
+      [-1, 1].forEach(s => new Z.Shape({ addTo: g, stroke: 2.4, color: '#ffffff', translate: { x: s * 2.2, y: -8.5, z: 4 } }));
+      return { g, x: [-46, -10, 26, 52][i], off: [0, 0.55, 0.25, 0.8][i], spin: i % 2 ? 1 : -1 };
     };
-    const bugs = [['#3ddc97', false], ['#ff5c6c', true], ['#8b6cff', false], ['#ffd34d', true]].map(([c, sp], i) => ({ a: bug(c, sp), x: [-28, 22, -6, 32][i], z: [10, -12, 24, -26][i], off: i * 0.25 }));
+    const bugs = ['#3ddc97', '#ff4d6a', '#8b6cff', '#ffd34d'].map(bug);
+    // notebook: base com teclado + tela aberta com um rostinho
+    const lap = new Z.Anchor({ addTo: illo, translate: { y: 46 } });
+    slab(Z, lap, 42, 4, 26, '#b5bad3', { translate: { y: 4 } });
+    const kbd = new Z.Group({ addTo: lap, translate: { y: 1.8 }, rotate: { x: Z.TAU / 4 } });
+    new Z.Rect({ addTo: kbd, width: 36, height: 16, stroke: 1, fill: true, color: '#4a4f75', translate: { y: -2 } });
+    const lid = new Z.Anchor({ addTo: lap, translate: { y: 2, z: -12 }, rotate: { x: 0.25 } });
+    slab(Z, lid, 42, 28, 3, '#b5bad3', { translate: { y: -14 } });
+    const scr = new Z.Group({ addTo: lid, translate: { y: -14, z: 1.7 } });
+    new Z.Rect({ addTo: scr, width: 36, height: 22, stroke: 1.5, fill: true, color: '#141826' });
+    const eyes = [-6, 6].map(x => new Z.Shape({ addTo: scr, path: [{ x, y: -4 }, { x, y: -1 }], stroke: 2.6, color: '#4dc3ff' }));
+    const mouth = new Z.Shape({ addTo: scr, path: [{ x: -5, y: 4 }, { bezier: [{ x: -2, y: 7 }, { x: 2, y: 7 }, { x: 5, y: 4 }] }], closed: false, stroke: 2, color: '#4dc3ff' });
+    const sparks = Array.from({ length: 6 }, (_, i) => ({ s: new Z.Shape({ addTo: illo, path: [{ x: 0 }, { x: 4 }], stroke: 1.8, color: i % 2 ? '#ffd34d' : '#ffffff' }), a: (i / 6) * Z.TAU }));
     return t => {
-      for (const b of bugs) {
-        const k = (t * 0.12 + b.off) % 1;
-        b.a.translate.set({ x: b.x + Math.sin(t + b.off * 9) * 6, y: -75 + k * 150, z: b.z });
-        b.a.rotate.z = Math.sin(t * 1.3 + b.off * 7) * 0.8;
-        b.a.rotate.y = t * 0.8 + b.off * 5;
-      }
+      // o notebook passeia de um lado pro outro; cada besouro cai mirando um pouco ao lado de onde ele vai estar
+      const P = 2.4, lapX = tt => Math.sin(tt * 0.9) * 30;
+      lap.translate.x = lapX(t);
+      lap.rotate.z = -Math.cos(t * 0.9) * 0.12;
+      const ys = bugs.map((b, i) => {
+        const tt = t + b.off * P, c = Math.floor(tt / P), k = (tt / P) % 1, arrive = t + (0.75 - k) * P;
+        const side = (c * 3 + i) % 2 ? 1 : -1, x = Math.max(-62, Math.min(62, lapX(arrive) + side * (34 + ((c * 37 + i * 13) % 4) * 8)));
+        b.g.translate.set({ x: x + Math.sin(t * 2 + i) * 2, y: -80 + k * 170, z: 6 });
+        b.g.rotate.z = Math.sin(t * 3 + i * 2) * 0.3 * b.spin;
+        return b.g.translate.y;
+      });
+      // passou raspando: faísca e cara de susto
+      const near = bugs.find((b, i) => ys[i] > 24 && ys[i] < 56 && Math.abs(b.g.translate.x - lap.translate.x) < 42);
+      eyes.forEach(e => { e.stroke = near ? 4 : 2.6; });
+      mouth.path = near ? [{ x: -2, y: 4 }, { bezier: [{ x: -2, y: 7 }, { x: 2, y: 7 }, { x: 2, y: 4 }] }, { bezier: [{ x: 2, y: 1 }, { x: -2, y: 1 }, { x: -2, y: 4 }] }] : [{ x: -5, y: 4 }, { bezier: [{ x: -2, y: 7 }, { x: 2, y: 7 }, { x: 5, y: 4 }] }];
+      mouth.updatePath();
+      sparks.forEach(({ s, a }) => {
+        s.visible = !!near;
+        if (!near) return;
+        const p = near.g.translate, k = (t * 3) % 1;
+        s.translate.set({ x: p.x + Math.cos(a) * (8 + k * 8), y: p.y + 6 + Math.sin(a) * (8 + k * 8), z: 10 });
+        s.rotate.z = a;
+      });
+      illo.rotate.x = -0.2;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.3;
     };
   },
-  // esferas coloridas girando em volta de uma que troca de cor
+  // placa com o nome de uma cor pintado em OUTRA cor; o botão da cor da tinta (não da palavra) é apertado,
+  // acende com um ✓ e a próxima palavra entra virando
   cores(Z, illo) {
-    const ring = new Z.Anchor({ addTo: illo, rotate: { x: 0.9 } });
-    const balls = PALETTE.map((c, i) => new Z.Shape({ addTo: ring, stroke: 13, color: c, translate: { x: Math.cos(i * Z.TAU / 6) * 36, y: Math.sin(i * Z.TAU / 6) * 36 } }));
-    const center = new Z.Shape({ addTo: illo, stroke: 24, color: PALETTE[0] });
-    const shine = new Z.Shape({ addTo: illo, stroke: 6, color: '#ffffff', translate: { x: -5, y: -5, z: 10 } });
+    const INK = { amarelo: '#ffd34d', verde: '#3ddc97', rosa: '#ff6b8a', azul: '#4dc3ff' };
+    const ROUNDS = [['AZUL', 'amarelo'], ['ROXO', 'verde'], ['VERDE', 'rosa'], ['ROSA', 'azul']];
+    const card = new Z.Anchor({ addTo: illo, translate: { y: -20 } });
+    slab(Z, card, 96, 42, 6, '#eef0fb');
+    const face = new Z.Group({ addTo: card, translate: { z: 3.4 } });
+    new Z.Rect({ addTo: face, width: 94, height: 40, stroke: 2, fill: true, color: '#eef0fb' });
+    // as palavras: letras em traço grosso com uma "sombra" escura logo atrás (dá relevo de tinta)
+    const words = ROUNDS.map(([w, ink]) => {
+      const g = new Z.Group({ addTo: face });
+      [...w].forEach((ch, i) => {
+        const x = (i - (w.length - 1) / 2) * 17;
+        glyph(Z, g, LETTERS[ch].map(l => l.map(([px, py]) => [px + x / 1.3, py + 0.8])), { color: shade(INK[ink], -0.35), stroke: 3.6, scale: 1.3, z: 0.2 });
+        glyph(Z, g, LETTERS[ch].map(l => l.map(([px, py]) => [px + x / 1.3, py])), { color: INK[ink], stroke: 3.6, scale: 1.3, z: 0.4 });
+      });
+      return g;
+    });
+    // botões de tinta: gota com volume (três camadas) e brilho
+    const KEYS = Object.keys(INK);
+    const buttons = KEYS.map((name, i) => {
+      const a = new Z.Anchor({ addTo: illo, translate: { x: (i - 1.5) * 26, y: 30 } });
+      new Z.Cylinder({ addTo: a, diameter: 22, length: 6, stroke: false, color: shade(INK[name], -0.35), frontFace: INK[name], translate: { z: 3 } });
+      const top = new Z.Group({ addTo: a, translate: { z: 6.3 } });
+      const ring = new Z.Ellipse({ addTo: top, diameter: 27, stroke: 2.5, color: '#ffffff' });
+      new Z.Shape({ addTo: top, path: [{ x: -6, y: -3 }, { x: -3, y: -6 }], stroke: 2.4, color: 'rgba(255,255,255,0.65)' });
+      const check = new Z.Shape({ addTo: top, path: [{ x: -4.5, y: 0 }, { x: -1.2, y: 3.5 }, { x: 5, y: -4 }], closed: false, stroke: 3, color: '#ffffff' });
+      return { a, ring, check, name };
+    });
+    const sparks = Array.from({ length: 8 }, (_, i) => ({ s: new Z.Shape({ addTo: illo, stroke: 3, color: PALETTE[i % PALETTE.length] }), a: (i / 8) * Z.TAU }));
     return t => {
-      ring.rotate.z = t * 0.6;
-      center.color = PALETTE[Math.floor(t * 0.9) % PALETTE.length];
-      center.translate.y = shine.translate.y = Math.sin(t * 2) * 3;
-      shine.translate.y -= 5;
-      balls.forEach((b, i) => { b.stroke = 12 + Math.sin(t * 3 + i) * 2; });
+      const T = 2.2, n = Math.floor(t / T) % ROUNDS.length, k = (t % T) / T, ink = ROUNDS[n][1];
+      words.forEach((g, i) => { g.visible = i === n; });
+      // a placa entra virando, fica, e vira de novo no fim
+      card.rotate.x = k < 0.15 ? (1 - smooth(k / 0.15)) * -Math.PI / 2 : k > 0.9 ? smooth((k - 0.9) / 0.1) * Math.PI / 2 : 0;
+      card.translate.y = -20 + Math.sin(t * 1.6) * 1.5;
+      // em 0,45 aperta o botão da cor da TINTA
+      const press = k > 0.42 && k < 0.52, ok = k >= 0.45 && k < 0.9;
+      buttons.forEach(b => {
+        const me = b.name === ink;
+        b.a.translate.z = me && press ? -3 : me && ok ? 3 + Math.sin(Math.min(1, (k - 0.45) * 6) * Math.PI) * 5 : 0;
+        b.ring.visible = me && ok;
+        b.check.visible = me && ok;
+      });
+      const bx = (KEYS.indexOf(ink) - 1.5) * 26, sk = (k - 0.45) / 0.3;
+      sparks.forEach(({ s, a }) => {
+        s.visible = sk > 0 && sk < 1;
+        s.translate.set({ x: bx + Math.cos(a) * (10 + sk * 18), y: 30 + Math.sin(a) * (10 + sk * 14), z: 10 });
+        s.stroke = 3 * (1 - sk) + 0.5;
+      });
+      illo.rotate.x = -0.3;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.35;
     };
   },
   // números em placas; a próxima da sequência levanta
