@@ -169,7 +169,17 @@ GAMES.quiz = {
       ['Responder a todos num e-mail com 200 pessoas é...', 'Quase sempre má ideia', 'Sempre obrigatório', 'Mais rápido', 'Mais seguro'],
     ];
     const DUR = 60;
-    const deck = shuffled(Q);
+    // não repete as perguntas das últimas partidas: as já vistas (guardadas neste navegador) vão pro fim do baralho
+    const SEEN = 'mg_quiz_seen';
+    let seen = []; try { seen = JSON.parse(localStorage.getItem(SEEN)) || []; } catch {}
+    const seenSet = new Set(seen);
+    const fresh = shuffled(Q.filter(q => !seenSet.has(q[0]))), old = seen.map(t => Q.find(q => q[0] === t)).filter(Boolean).reverse();
+    const deck = [...old, ...fresh]; // pop() tira do fim: primeiro as novas, depois as mais antigas já vistas
+    let rights = 0, wrongs = 0, bestStreak = 0;
+    const markSeen = q => {
+      seen = [...seen.filter(t => t !== q), q].slice(-Math.floor(Q.length * 0.8));
+      try { localStorage.setItem(SEEN, JSON.stringify(seen)); } catch {}
+    };
     let pts = 0, right = -1, t0 = 0, iv, over = false, lock = false, wait;
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat combo">Combo<b id="cb">x1</b></span><span class="stat">Tempo<b id="t">60s</b></span></div>
       <p class="quiz-q" id="q" aria-live="polite"></p>
@@ -178,6 +188,7 @@ GAMES.quiz = {
     const qEl = el.querySelector('#q'), btns = [...el.querySelectorAll('.choices .btn')], combo = makeCombo(el.querySelector('#cb'));
     function next() {
       const [q, ok, ...bad] = deck.pop() || Q[rand(0, Q.length - 1)];
+      markSeen(q);
       const opts = shuffled([ok, ...bad]);
       right = opts.indexOf(ok);
       qEl.textContent = q;
@@ -191,18 +202,23 @@ GAMES.quiz = {
         iv = setInterval(() => {
           const left = DUR - (performance.now() - t0) / 1000;
           el.querySelector('#t').textContent = Math.max(0, Math.ceil(left)) + 's';
-          if (left <= 0 && !over) { over = true; clearInterval(iv); clearTimeout(wait); done(pts); }
+          if (left <= 0 && !over) {
+            over = true; clearInterval(iv); clearTimeout(wait);
+            summarize([['Acertos', rights], ['Erros', wrongs], ['Precisão', rights + wrongs ? Math.round(rights / (rights + wrongs) * 100) + '%' : '—'], ['Maior sequência', bestStreak]]);
+            done(pts);
+          }
         }, 100);
       }
-      if (k === right) { pts += combo.hit(); sfx.good(); next(); }
+      if (k === right) { const m = combo.hit(); pts += m; rights++; bestStreak = Math.max(bestStreak, combo.streak); sfx.good(); popPoints(btns[k], '+' + m); next(); }
       else {
         // mostra a certa por um instante: ensina e evita ficar chutando rápido
-        combo.miss();
+        combo.miss(); wrongs++;
         pts = Math.max(0, pts - 1);
+        popPoints(btns[k], '−1', 'bad');
         beep(160, 120, 'square', 0.03);
         lock = true;
         btns[k].classList.add('wrong'); btns[right].classList.add('right');
-        wait = setTimeout(next, 900);
+        wait = setTimeout(next, 1300);
       }
       el.querySelector('#p').textContent = pts;
     }

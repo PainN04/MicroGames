@@ -144,7 +144,15 @@ GAMES.ligue4 = {
       say('Máquina pensando...');
       timers.push(setTimeout(cpuPlay, 450));
     };
-    cells.forEach(cell => cell.onclick = () => play(+cell.dataset.c));
+    cells.forEach(cell => cell.onclick = () => { play(+cell.dataset.c); preview(-1); });
+    // prévia: passando o mouse numa coluna, aparece a peça (meio transparente) onde ela vai cair
+    const preview = c => {
+      cells.forEach(x => x.classList.remove('ghost'));
+      if (c < 0 || busy || over || grid[c][R - 1] !== 0) return;
+      at(c, R - 1 - grid[c].indexOf(0)).classList.add('ghost');
+    };
+    cells.forEach(cell => cell.onpointerenter = e => { if (e.pointerType === 'mouse') preview(+cell.dataset.c); });
+    el.querySelector('#c4').onpointerleave = () => preview(-1);
     el.querySelector('#again').onclick = newRound;
     const onKey = e => { if (/^[1-7]$/.test(e.key)) play(+e.key - 1); else if (e.key === 'Enter' && !el.querySelector('#nx').hidden) newRound(); };
     addEventListener('keydown', onKey);

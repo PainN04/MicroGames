@@ -32,7 +32,13 @@ GAMES.reflexo = {
       else if (state === 'early') { if (performance.now() >= lockedUntil) wait(); }
       else if (state === 'go') {
         times.push(Math.round(performance.now() - startAt));
-        if (times.length === 3) return done(Math.round(times.reduce((a, b) => a + b) / 3));
+        if (times.length === 3) {
+          // média da galera = média do melhor de cada pessoa no ranking geral
+          const bests = bestPerPlayer('reflexo', {}).map(([, v]) => v);
+          const crowd = bests.length ? Math.round(bests.reduce((a, b) => a + b) / bests.length) : 0;
+          summarize([...times.map((t, k) => [`Rodada ${k + 1}`, t + ' ms']), ['Melhor', Math.min(...times) + ' ms'], ...(crowd ? [['Média da galera', crowd + ' ms']] : [])]);
+          return done(Math.round(times.reduce((a, b) => a + b) / 3));
+        }
         state = 'between'; set('between', `${times.at(-1)} ms — clique pra próxima`);
       } else if (state === 'between') wait();
     };

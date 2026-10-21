@@ -1,5 +1,5 @@
 GAMES.anagrama = {
-  name: 'Anagrama', icon: 'spell-check', hue: 60, desc: 'Desembaralhe as palavras em 60s. Digite e Enter (ou clique nas letras). Palavra maior vale mais. Pular não custa ponto.',
+  name: 'Anagrama', icon: 'spell-check', hue: 60, desc: 'Desembaralhe as palavras em 60s. Digite e Enter (ou clique nas letras). Palavra maior vale mais. Pular não custa ponto; a dica revela uma letra e tira 1 ponto da palavra.',
   better: 'high', unit: 'pontos',
   start(el, done) {
     const WORDS = ('AMIGO BANANA CABELO CADEIRA CAMISA CANETA CARRO CAVALO CHAVE CINEMA COELHO COMIDA CORAGEM CORRIDA DESENHO DINHEIRO DOMINGO ESCOLA ESPELHO ESTRELA '
@@ -11,11 +11,12 @@ GAMES.anagrama = {
     const sorted = w => [...w].sort().join('');
     const DUR = 60;
     const deck = shuffled(WORDS);
+    let hints = 0; // letras reveladas na palavra atual: cada uma tira 1 ponto dela (mínimo 1)
     let word = '', pts = 0, solved = 0, t0 = 0, iv, over = false;
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Palavras<b id="w">0</b></span><span class="stat">Tempo<b id="t">60s</b></span></div>
       <div class="tiles" id="tiles"></div>
       <input class="txt" id="in" placeholder="digite a palavra + Enter" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Palavra">
-      <div class="row-btns"><button class="btn ghost" id="clr">${icon('delete')} Apagar</button><button class="btn ghost" id="skip">Pular ${icon('skip-forward')}</button></div>`;
+      <div class="row-btns"><button class="btn ghost" id="clr">${icon('delete')} Apagar</button><button class="btn ghost" id="tip">${icon('lightbulb')} Dica (−1)</button><button class="btn ghost" id="skip">Pular ${icon('skip-forward')}</button></div>`;
     const inp = el.querySelector('#in'), tilesEl = el.querySelector('#tiles');
     const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
     const syncTiles = () => {
@@ -33,7 +34,15 @@ GAMES.anagrama = {
       do mix = shuffled(word).join(''); while (mix === word);
       tilesEl.innerHTML = [...mix].map(l => `<button class="tile" data-l="${l}">${l}</button>`).join('');
       tilesEl.querySelectorAll('.tile').forEach(t => t.onclick = () => { startClock(); inp.value += t.dataset.l; syncTiles(); inp.focus(); });
-      inp.value = '';
+      inp.value = ''; hints = 0;
+    };
+    // dica: escreve as primeiras letras certas (uma a mais a cada toque)
+    const tip = () => {
+      if (over || hints >= word.length - 1) return;
+      startClock();
+      hints++;
+      inp.value = word.slice(0, hints); syncTiles(); inp.focus();
+      beep(520, 60, 'sine', 0.03);
     };
     const startClock = () => {
       if (t0) return;
@@ -51,7 +60,9 @@ GAMES.anagrama = {
       startClock();
       // vale qualquer palavra da lista com as mesmas letras (ex.: outra ordem válida)
       if (sorted(guess) === sorted(word) && WORDS.includes(guess)) {
-        pts += word.length; solved++;
+        const gain = Math.max(1, word.length - hints);
+        pts += gain; solved++;
+        popPoints(tilesEl, '+' + gain);
         el.querySelector('#p').textContent = pts; el.querySelector('#w').textContent = solved;
         sfx.good();
         next();
@@ -63,6 +74,7 @@ GAMES.anagrama = {
     inp.oninput = () => { startClock(); syncTiles(); };
     inp.onkeydown = e => { if (e.key === 'Enter') submit(); };
     el.querySelector('#clr').onclick = () => { inp.value = ''; syncTiles(); inp.focus(); };
+    el.querySelector('#tip').onclick = tip;
     el.querySelector('#skip').onclick = () => { if (over) return; startClock(); beep(300, 50, 'sine', 0.02); next(); inp.focus(); };
     next();
     inp.focus();

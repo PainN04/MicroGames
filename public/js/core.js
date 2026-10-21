@@ -204,6 +204,17 @@ function renderMute() {
   $('#mute').setAttribute('aria-label', muted ? 'Ligar som' : 'Desligar som');
 }
 
+// "+3" subindo e sumindo em cima de um elemento (jogos de tela, como o floatText dos de Phaser). kind: 'bad' = vermelho
+function popPoints(target, text, kind = '') {
+  if (!target?.isConnected) return;
+  const r = target.getBoundingClientRect();
+  const s = Object.assign(document.createElement('span'), { className: 'pop-pts ' + kind, textContent: text });
+  s.style.left = r.left + r.width / 2 + scrollX + 'px';
+  s.style.top = r.top + scrollY + 'px';
+  document.body.append(s);
+  setTimeout(() => s.remove(), 800);
+}
+
 // ---------- combo ----------
 // Jogos de reflexo: a cada 5 acertos seguidos o multiplicador sobe (x1 → x4). Errar zera. `stat` é o <b> do placar.
 const COMBO_STEP = 5, COMBO_MAX = 4;
