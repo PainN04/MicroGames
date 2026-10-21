@@ -439,6 +439,13 @@ test('jogos novos: pontuação impossível é recusada, e o Termo só vale uma v
   assert.equal(isBetter('termo', 600, 450), true);
 });
 
+test('campo minado: vencer em menos de 1s vale (sem tempo mínimo), mas acima de 1h não', async () => {
+  const bia = await login('bia', 'senha-bia-123');
+  assert.equal((await play(bia, 'minado', 0.8)).status, 201, 'dá pra vencer no primeiro clique');
+  assert.equal((await play(bia, 'minado', 3601)).status, 422);
+  assert.equal((await play(bia, 'minado', -1)).status, 422);
+});
+
 test('jogos novos entram no sorteio do dia só a partir do lançamento (dias antigos não mudam)', () => {
   const { scheduledGame, DAILY_SINCE } = require('../public/js/daily.js');
   const { GAMES } = require('../lib/rules');
