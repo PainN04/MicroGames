@@ -42,7 +42,7 @@ const SEG = { a: [[-4, -7], [4, -7]], b: [[4, -7], [4, 0]], c: [[4, 0], [4, 7]],
 const DIGITS = ['abcdef', 'bc', 'abged', 'abgcd', 'fgbc', 'afgcd', 'afgedc', 'abc', 'abcdefg', 'abcdfg'];
 const digitLines = d => [...DIGITS[d]].map(s => SEG[s]);
 const LETTERS = {
-  A: [[[-4, 7], [0, -7], [4, 7]], [[-2.2, 1], [2.2, 1]]],
+  A: [[[-4, 7], [0, -7], [4, 7]], [[-2.6, 2], [2.6, 2]]],
   B: [[[-4, 7], [-4, -7], [2, -7], [4, -5], [4, -2], [2, 0], [-4, 0]], [[2, 0], [4, 2], [4, 5], [2, 7], [-4, 7]]],
   C: [[[4, -7], [-4, -7], [-4, 7], [4, 7]]],
   D: [[[-4, -7], [2, -7], [4, -4], [4, 4], [2, 7], [-4, 7], [-4, -7]]],
@@ -50,6 +50,7 @@ const LETTERS = {
   L: [[[-4, -7], [-4, 7], [4, 7]]],
   R: [[[-4, 7], [-4, -7], [2, -7], [4, -5], [4, -2], [2, 0], [-4, 0]], [[0, 0], [4, 7]]],
   T: [[[-4, -7], [4, -7]], [[0, -7], [0, 7]]],
+  M: [[[-4, 7], [-4, -7], [0, 1], [4, -7], [4, 7]]],
   O: [[[-2, -7], [2, -7], [4, -5], [4, 5], [2, 7], [-2, 7], [-4, 5], [-4, -5], [-2, -7]]],
   S: [[[4, -6], [2, -7], [-2, -7], [-4, -5], [-4, -2], [-2, 0], [2, 0], [4, 2], [4, 5], [2, 7], [-2, 7], [-4, 6]]],
   U: [[[-4, -7], [-4, 5], [-2, 7], [2, 7], [4, 5], [4, -7]]],
@@ -1216,67 +1217,166 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.45) * 0.35;
     };
   },
-  // equalizador pulando e notas subindo
+  // pista de 4 faixas inclinada (estilo Guitar Hero): as notas descem até a linha, o alvo da faixa acende,
+  // sai faísca e o combo sobe
   ritmo(Z, illo) {
-    const bars = [0, 1, 2, 3, 4].map(i => {
-      const a = new Z.Anchor({ addTo: illo, translate: { x: (i - 2) * 13, y: 36 } });
-      cube(Z, a, 1, PALETTE[i], { width: 9, height: 40, depth: 9, translate: { y: -20 } });
-      return a;
+    const LANES = 4, LW = 23, LEN = 125, COLORS = ['#3ddc97', '#ff4d6a', '#ffd34d', '#4dc3ff'];
+    const lx = i => (i - (LANES - 1) / 2) * LW;
+    // pista deitada: tudo dentro de um Anchor girado (y da pista = profundidade)
+    const road = new Z.Anchor({ addTo: illo, translate: { y: 14 }, rotate: { x: -0.78 } });
+    const deck = backdrop(Z, road, 0, { sort: false });
+    new Z.Rect({ addTo: deck, width: LANES * LW + 8, height: LEN, stroke: 2, fill: true, color: '#1d2140' });
+    for (let i = 0; i <= LANES; i++) new Z.Shape({ addTo: deck, path: [{ x: lx(i) - LW / 2, y: -LEN / 2 }, { x: lx(i) - LW / 2, y: LEN / 2 }], stroke: 1.4, color: '#3b4166' });
+    const beats = Array.from({ length: 6 }, () => new Z.Shape({ addTo: deck, path: [{ x: -LANES * LW / 2 }, { x: LANES * LW / 2 }], stroke: 0.8, color: '#2b3157' }));
+    const HIT = LEN / 2 - 16;
+    new Z.Shape({ addTo: deck, path: [{ x: -LANES * LW / 2 - 4, y: HIT }, { x: LANES * LW / 2 + 4, y: HIT }], stroke: 2, color: '#e8eaf6' });
+    // alvos na linha: anel colorido que acende quando a nota chega
+    const targets = COLORS.map((c, i) => {
+      const g = new Z.Group({ addTo: road, translate: { x: lx(i), y: HIT, z: 0.5 } });
+      new Z.Ellipse({ addTo: g, diameter: 17, stroke: 2.8, color: c });
+      const fill = new Z.Ellipse({ addTo: g, diameter: 13, stroke: 1, fill: true, color: shade(c, 0.3) });
+      return { g, fill };
     });
-    const note = color => {
-      const a = new Z.Anchor({ addTo: illo });
-      new Z.Ellipse({ addTo: a, width: 11, height: 8, stroke: 3, fill: true, color, rotate: { z: -0.4 } });
-      new Z.Shape({ addTo: a, path: [{ x: 5, y: -1 }, { x: 5, y: -20 }], stroke: 2.2, color });
-      new Z.Shape({ addTo: a, path: [{ x: 5, y: -20 }, { bezier: [{ x: 9, y: -18 }, { x: 13, y: -14 }, { x: 10, y: -8 }] }], closed: false, stroke: 2.2, color });
-      return a;
-    };
-    const notes = [note('#ffffff'), note('#ffd34d')];
+    // notas: pastilhas com volume em pé sobre a pista
+    const SONG = [[0, 0], [1, 0.5], [2, 1], [3, 1.25], [1, 1.5], [0, 2], [2, 2.5], [3, 2.75], [1, 3], [2, 3.5]];
+    const notes = SONG.map(([lane, at]) => {
+      const g = new Z.Group({ addTo: road, updateSort: true });
+      new Z.Cylinder({ addTo: g, diameter: 16, length: 5, stroke: false, color: shade(COLORS[lane], -0.3), frontFace: COLORS[lane], translate: { z: 2 } });
+      new Z.Ellipse({ addTo: g, diameter: 6, stroke: 1.5, fill: true, color: '#ffffff', translate: { z: 4.2 } });
+      return { g, lane, at };
+    });
+    const bursts = COLORS.map((c, i) => Array.from({ length: 5 }, (_, j) => ({ s: new Z.Shape({ addTo: road, stroke: 2.4, color: j % 2 ? '#ffffff' : c }), a: (j / 5) * Z.TAU })));
+    // combo (em pé, acima da pista)
+    const combo = new Z.Anchor({ addTo: illo, translate: { x: -4, y: -56, z: -20 } });
+    const cx = [Array.from({ length: 10 }, (_, d) => glyph(Z, combo, digitLines(d).map(l => l.map(([x, y]) => [x + 6, y])), { color: '#ffd34d', stroke: 2.6, scale: 0.9 })),
+      Array.from({ length: 10 }, (_, d) => glyph(Z, combo, digitLines(d).map(l => l.map(([x, y]) => [x + 18, y])), { color: '#ffd34d', stroke: 2.6, scale: 0.9 }))];
+    glyph(Z, combo, LETTERS.X.map(l => l.map(([x, y]) => [x - 10, y + 2])), { color: '#ffd34d', stroke: 2.4, scale: 0.6 });
     return t => {
-      bars.forEach((a, i) => { a.scale = { x: 1, y: 0.3 + Math.abs(Math.sin(t * 3.2 + i * 1.3)) * 0.7, z: 1 }; });
-      notes.forEach((n, i) => {
-        const k = (t * 0.3 + i * 0.5) % 1;
-        n.translate.set({ x: -18 + i * 30 + Math.sin(t * 2 + i) * 6, y: 10 - k * 70, z: 12 });
-        n.rotate.y = Math.sin(t * 1.5 + i) * 0.6;
+      const BEAT = 0.5, LOOP = 4, SPEED = 60, song = t / BEAT, now = song % LOOP;
+      beats.forEach((b, i) => { b.translate.y = ((now * 30 + i * 20) % LEN) - LEN / 2; });
+      // quanto falta (em batidas) pra cada nota chegar na linha; negativo = acabou de passar
+      const until = n => { let d = n.at - now; if (d < -1) d += LOOP; return d; };
+      notes.forEach(n => {
+        const d = until(n);
+        n.g.visible = d > -0.08 && d < 3.2;
+        n.g.translate.set({ x: lx(n.lane), y: HIT - d * SPEED * BEAT });
       });
-      illo.rotate.x = -0.2;
-      illo.rotate.y = Math.sin(t * 0.35) * 0.4;
+      targets.forEach((tg, i) => {
+        const since = Math.min(...notes.filter(n => n.lane === i).map(n => -until(n)).filter(v => v >= 0), 9);
+        tg.fill.visible = since < 0.35;
+        tg.g.scale = since < 0.35 ? 1.2 : 1;
+        const bk = since / 0.4;
+        bursts[i].forEach(({ s, a }) => {
+          s.visible = bk < 1;
+          s.translate.set({ x: lx(i) + Math.cos(a) * (6 + bk * 12), y: HIT + Math.sin(a) * (6 + bk * 12), z: 4 + bk * 10 });
+          s.stroke = 2.6 * (1 - bk) + 0.3;
+        });
+      });
+      const n = 8 + (Math.floor(song / LOOP) * SONG.length + SONG.filter(([, at]) => at <= now).length) % 90;
+      cx[0].forEach((g, d) => { g.visible = d === Math.floor(n / 10); });
+      cx[1].forEach((g, d) => { g.visible = d === n % 10; });
+      combo.scale = 1 + Math.max(0, 1 - (now % 0.5) / 0.15) * 0.08;
+      illo.rotate.x = -0.1;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.25;
     };
   },
-  // peças de letra trocando de lugar
+  // peças de madeira com letras embaralhadas: elas pulam e trocam de lugar até formar a palavra, ficam verdes
+  // com um ✓ e embaralham de novo pra próxima palavra
   anagrama(Z, illo) {
-    const word = ['L', 'E', 'T', 'R', 'A'];
-    const tiles = word.map(ch => {
-      const a = new Z.Anchor({ addTo: illo });
-      slab(Z, a, 18, 20, 5, '#f4e3b5');
-      glyph(Z, a, LETTERS[ch], { color: '#3a2a12', z: 3.2, scale: 0.9, stroke: 2.4 });
-      return a;
-    });
-    const perms = [[0, 1, 2, 3, 4], [3, 0, 4, 1, 2], [2, 4, 0, 1, 3], [4, 3, 1, 0, 2]];
-    const slot = i => (i - 2) * 21;
-    return t => {
-      const step = t * 0.5, n = Math.floor(step), k = smooth(Math.min(1, (step - n) * 1.6));
-      const p0 = perms[n % perms.length], p1 = perms[(n + 1) % perms.length];
-      tiles.forEach((a, i) => {
-        a.translate.set({ x: slot(p0[i]) + (slot(p1[i]) - slot(p0[i])) * k, y: Math.sin(t * 2 + i) * 2, z: Math.sin(k * Math.PI) * 16 * (i % 2 ? 1 : -1) });
-        a.rotate.y = Math.sin(k * Math.PI) * 0.6;
+    const WORDS = [['ROTA', 'TARO'], ['SALTO', 'LOTAS'], ['CASA', 'SACA']]; // [certa, embaralhada]
+    const W = 19, xs = (n, i) => (i - (n - 1) / 2) * (W + 3);
+    // suporte (régua de madeira) embaixo das peças
+    const rack = backdrop(Z, illo, 0, { translate: { y: 22 } });
+    slab(Z, rack, 118, 8, 22, '#8a5a32');
+    const pool = {};
+    const tile = ch => {
+      const g = new Z.Group({ addTo: illo, updateSort: true });
+      const box = slab(Z, g, W, W + 2, 6, '#f2d9a6');
+      const face = new Z.Group({ addTo: g, translate: { z: 3.4 } });
+      const front = new Z.Rect({ addTo: face, width: W - 2, height: W, stroke: 1.5, fill: true, color: '#f2d9a6' });
+      glyph(Z, face, LETTERS[ch], { color: '#5a3a1a', stroke: 2.4, scale: 0.85, z: 0.4 });
+      return { g, box, front };
+    };
+    // peças de cada rodada (cada palavra tem as suas)
+    const rounds = WORDS.map(([word, mix]) => {
+      const used = mix.split('').map(() => false);
+      const tiles = [...word].map((ch, i) => {
+        const from = mix.split('').findIndex((c, j) => c === ch && !used[j]);
+        used[from] = true;
+        return { ...tile(ch), from, to: i };
       });
+      return { tiles, n: word.length };
+    });
+    const check = new Z.Shape({ addTo: illo, path: [{ x: -6, y: 0 }, { x: -2, y: 4.5 }, { x: 7, y: -6 }], closed: false, stroke: 4, color: '#3ddc97', translate: { y: -36, z: 6 } });
+    let painted = '';
+    return t => {
+      const T = 3, r = Math.floor(t / T) % rounds.length, k = (t % T) / T, round = rounds[r];
+      // 0–0,25: embaralhada; 0,25–0,6: cada peça pula até seu lugar (uma depois da outra); depois verde
+      const solved = k > 0.6;
+      if (painted !== r + ':' + solved) {
+        round.tiles.forEach(tl => { const c = solved ? '#3ddc97' : '#f2d9a6'; paintBox(tl.box, c); tl.front.color = c; });
+        painted = r + ':' + solved;
+      }
+      rounds.forEach((rd, j) => rd.tiles.forEach(tl => { tl.g.visible = j === r; }));
+      round.tiles.forEach((tl, i) => {
+        const start = 0.25 + i * 0.07, m = smooth(Math.min(1, Math.max(0, (k - start) / 0.18)));
+        const x = xs(round.n, tl.from) + (xs(round.n, tl.to) - xs(round.n, tl.from)) * m;
+        const hop = Math.sin(m * Math.PI) * (tl.from === tl.to ? 0 : 1);
+        const enter = k < 0.08 ? smooth(k / 0.08) : k > 0.94 ? 1 - smooth((k - 0.94) / 0.06) : 1;
+        const cheer = solved ? Math.max(0, Math.sin((k - 0.6) * 14 - i * 0.8)) * 4 : 0;
+        tl.g.translate.set({ x, y: 6 - hop * 16 - cheer - (1 - enter) * 30, z: hop * 14 });
+        tl.g.rotate.z = hop * 0.3 * Math.sign(tl.to - tl.from);
+        tl.g.scale = Math.max(0.01, enter);
+      });
+      check.visible = solved && k < 0.94;
+      check.scale = solved ? Math.min(1, (k - 0.6) * 8) : 1;
       illo.rotate.x = -0.25;
-      illo.rotate.y = Math.sin(t * 0.4) * 0.3;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.4;
     };
   },
-  // raquetes e bolinha trocando de lado
+  // mesa de pong vista de cima, inclinada: a bola (com rastro) vai e volta entre as raquetes; de vez em quando
+  // passa pela máquina, o placar sobe e pisca
   pong(Z, illo) {
-    const top = cube(Z, illo, 1, '#ff6b8a', { width: 30, height: 6, depth: 8, translate: { y: -38 } });
-    const bot = cube(Z, illo, 1, '#e8eaf6', { width: 30, height: 6, depth: 8, translate: { y: 38 } });
-    for (let i = -3; i <= 3; i++) new Z.Shape({ addTo: illo, stroke: 3, color: '#3b4062', translate: { y: i * 10 } });
-    const ball = new Z.Shape({ addTo: illo, stroke: 9, color: '#ffd34d' });
+    const W = 120, H = 80, PX = 52;
+    slab(Z, backdrop(Z, illo, 0), W + 8, H + 8, 8, '#2b3157');
+    const table = backdrop(Z, illo, 1, { sort: false, translate: { z: 4.3 } });
+    new Z.Rect({ addTo: table, width: W + 4, height: H + 4, stroke: 2, fill: true, color: '#161a33' });
+    new Z.Rect({ addTo: table, width: W, height: H, stroke: 1.4, color: '#3b4166' });
+    for (let y = -H / 2 + 5; y < H / 2; y += 10) new Z.Shape({ addTo: table, path: [{ y }, { y: y + 5 }], stroke: 1.6, color: '#3b4166' });
+    // placar: dois números no topo da mesa
+    const score = [-1, 1].map(s => Array.from({ length: 10 }, (_, d) => glyph(Z, table, digitLines(d).map(l => l.map(([x, y]) => [x + s * 16 / 0.9, y - 26 / 0.9])), { color: '#3b4166', stroke: 2.6, scale: 0.9 })));
+    const paddle = (x, color) => { const a = new Z.Anchor({ addTo: illo, translate: { x, z: 8 } }); slab(Z, a, 6, 22, 8, color); return a; };
+    const me = paddle(-PX, '#e8eaf6'), cpu = paddle(PX, '#ff6b8a');
+    const ball = new Z.Shape({ addTo: illo, stroke: 7, color: '#ffd34d' });
+    const trail = [1, 2, 3, 4].map(i => new Z.Shape({ addTo: illo, stroke: 6 - i, color: `rgba(255,211,77,${0.5 - i * 0.1})` }));
+    const ring = new Z.Ellipse({ addTo: illo, diameter: 10, stroke: 2, color: '#ffd34d' });
+    // trajetória: rebate em cima/embaixo (reflete no y); a cada 4 travessias a bola passa pela máquina
+    const reflect = y => { const m = ((y + H / 2 - 4) % (2 * (H - 8)) + 2 * (H - 8)) % (2 * (H - 8)); return (m < H - 8 ? m : 2 * (H - 8) - m) - H / 2 + 4; };
+    const at = s => {
+      const leg = Math.floor(s), f = s - leg, dir = leg % 2 ? -1 : 1, miss = leg % 4 === 2;
+      const x0 = dir > 0 ? -PX + 5 : PX - 5, x1 = dir > 0 ? (miss ? PX + 20 : PX - 5) : -PX + 5;
+      return { x: x0 + (x1 - x0) * f, y: reflect(leg * 37 + f * 55 * (miss ? 1.2 : 1)), miss, leg, f };
+    };
     return t => {
-      const k = (t * 0.7) % 2, u = k < 1 ? k : 2 - k, bx = Math.sin(t * 1.3) * 22;
-      ball.translate.set({ x: bx, y: -32 + u * 64, z: 2 });
-      top.translate.x = Math.sin(t * 1.3 - 0.6) * 20;
-      bot.translate.x = bx * 0.9;
-      illo.rotate.x = -0.45;
-      illo.rotate.y = Math.sin(t * 0.4) * 0.35;
+      const s = t * 0.9, p = at(s);
+      ball.translate.set({ x: p.x, y: p.y, z: 9 });
+      ball.visible = !(p.miss && p.f > 0.95);
+      trail.forEach((tr, i) => { const q = at(s - (i + 1) * 0.035); tr.translate.set({ x: q.x, y: q.y, z: 8 }); tr.visible = Math.floor(s - (i + 1) * 0.035) === p.leg; });
+      // as raquetes seguem a bola (a máquina se atrasa quando vai errar)
+      const toCpu = p.leg % 2 === 0;
+      me.translate.y += ((toCpu ? 0 : p.y) - me.translate.y) * 0.12;
+      cpu.translate.y += ((toCpu && !p.miss ? p.y : toCpu ? p.y + 26 : 0) - cpu.translate.y) * (p.miss ? 0.05 : 0.14);
+      // batida: anel na raquete
+      const hitF = p.f < 0.15 ? p.f / 0.15 : -1;
+      ring.visible = hitF >= 0;
+      ring.translate.set({ x: p.leg % 2 ? PX - 5 : -PX + 5, y: at(Math.floor(s)).y, z: 9 });
+      ring.scale = 1 + hitF * 1.5;
+      // placar: ponto pra cá a cada bola que passa pela máquina
+      const pts = Math.floor((Math.floor(s) + 1) / 4) % 10, flash = p.leg % 4 === 3 && p.f < 0.4 && Math.floor(t * 8) % 2 === 0;
+      score[0].forEach((g, d) => { g.visible = d === pts; g.children.forEach(c => { c.color = flash ? '#ffd34d' : '#5a6190'; }); });
+      score[1].forEach((g, d) => { g.visible = d === 3; g.children.forEach(c => { c.color = '#5a6190'; }); });
+      illo.rotate.x = -0.55;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.3;
     };
   },
   // forca de madeira num tablado, boneco balançando na corda e a palavra TELA aparecendo letra por letra
@@ -1334,23 +1434,59 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.45) * 0.4;
     };
   },
-  // tabuleiro azul (casa por casa, pra Zdog não esconder as peças) e uma peça caindo
+  // grade azul do Ligue 4: as fichas caem pelas colunas quicando, até quatro vermelhas em linha; elas brilham,
+  // uma faixa passa por cima e as fichas caem pra fora pra recomeçar
   ligue4(Z, illo) {
-    const xs = [-22, 0, 22], ys = [-22, 0, 22], cols = ['#ff6b8a', '#ffd34d'];
-    const grid = [[-1, -1, -1], [0, 1, 1], [1, 0, 0]]; // -1 = casa vazia
-    ys.forEach((y, r) => xs.forEach((x, c) => {
-      const a = new Z.Anchor({ addTo: illo, translate: { x, y } });
-      slab(Z, a, 22, 22, 5, '#3454d1');
-      const v = grid[r][c];
-      new Z.Shape({ addTo: a, stroke: 13, color: v < 0 ? '#12162a' : cols[v], translate: { z: 3.5 } });
-    }));
-    const drop = new Z.Shape({ addTo: illo, stroke: 13, color: cols[0], translate: { z: 7 } });
+    const COLS = 5, ROWS = 4, S = 19, cx = c => (c - (COLS - 1) / 2) * S, cy = r => (ROWS - 1 - r) * S - (ROWS - 1) * S / 2 + 8;
+    const board = backdrop(Z, illo, 0);
+    slab(Z, board, COLS * S + 10, ROWS * S + 10, 10, '#3454d1', { translate: { y: 8 } });
+    const front = backdrop(Z, illo, 1, { sort: false, translate: { z: 5.3 } });
+    new Z.Rect({ addTo: front, width: COLS * S + 6, height: ROWS * S + 6, stroke: 2, fill: true, color: '#3454d1', translate: { y: 8 } });
+    for (let c = 0; c < COLS; c++) for (let r = 0; r < ROWS; r++) {
+      new Z.Ellipse({ addTo: front, diameter: S - 5, stroke: 1.5, fill: true, color: '#141a3d', translate: { x: cx(c), y: cy(r) } });
+      new Z.Ellipse({ addTo: front, diameter: S - 4, stroke: 1.2, color: '#5b7bff', translate: { x: cx(c), y: cy(r) } });
+    }
+    // pés da grade
+    for (const s of [-1, 1]) slab(Z, backdrop(Z, illo, 0), 8, 10, 22, '#2a43b0', { translate: { x: s * (COLS * S / 2 + 2), y: ROWS * S / 2 + 14 } });
+    // jogadas: [coluna, cor]; vermelho ganha na diagonal
+    const MOVES = [[1, 0], [2, 1], [2, 0], [3, 1], [3, 0], [4, 1], [3, 0], [4, 1], [4, 0], [0, 1], [4, 0]];
+    const RED = '#ff4d6a', YEL = '#ffd34d';
+    const height = Array(COLS).fill(0);
+    const chips = MOVES.map(([c, p]) => {
+      const r = height[c]++;
+      const g = new Z.Group({ addTo: illo, translate: { x: cx(c), z: 7 } });
+      const color = p ? YEL : RED;
+      new Z.Ellipse({ addTo: g, diameter: S - 5, stroke: 2, fill: true, color: shade(color, -0.3), translate: { z: -1.5 } });
+      new Z.Ellipse({ addTo: g, diameter: S - 5, stroke: 2, fill: true, color });
+      new Z.Ellipse({ addTo: g, diameter: S - 11, stroke: 1.6, color: shade(color, -0.2) });
+      new Z.Shape({ addTo: g, path: [{ x: -4, y: -3 }, { x: -2, y: -5 }], stroke: 1.6, color: 'rgba(255,255,255,0.7)' });
+      return { g, c, r, p };
+    });
+    // diagonal vencedora: (1,0) (2,1) (3,2) (4,3)
+    const WIN = [[1, 0], [2, 1], [3, 2], [4, 3]];
+    const isWin = ch => !ch.p && WIN.some(([c, r]) => c === ch.c && r === ch.r);
+    const band = new Z.Shape({ addTo: illo, path: [{ x: cx(1), y: cy(0) }, { x: cx(4), y: cy(3) }], stroke: 4, color: 'rgba(255,255,255,0.85)' });
     return t => {
-      const k = (t * 0.7) % 1, n = Math.floor(t * 0.7), c = n % 3;
-      drop.translate.set({ x: xs[c], y: -62 + 40 * k * k, z: 7 });
-      drop.color = cols[n % 2];
-      drop.visible = k < 0.97;
-      illo.rotate.x = -0.3;
+      const STEP = 0.42, n = MOVES.length, T = n * STEP + 2, k = t % T;
+      chips.forEach((ch, i) => {
+        const f = (k - i * STEP) / STEP;
+        ch.g.visible = f > 0;
+        // cai da boca de cima até a casa e quica uma vez
+        const y0 = cy(ROWS - 1) - 26, y1 = cy(ch.r), fall = Math.min(1, Math.max(0, f / 0.6));
+        let y = y0 + (y1 - y0) * fall * fall;
+        if (f > 0.6 && f < 1) y -= Math.sin((f - 0.6) / 0.4 * Math.PI) * 4;
+        // fim: tudo despenca pra fora da grade
+        const out = k > n * STEP + 1.4 ? (k - n * STEP - 1.4) / 0.6 : 0;
+        ch.g.translate.y = y + out * out * 120;
+        const glow = k > n * STEP && isWin(ch) && out === 0;
+        ch.g.scale = glow ? 1 + Math.max(0, Math.sin((k - n * STEP) * 10)) * 0.15 : 1;
+      });
+      const bk = (k - n * STEP - 0.2) / 0.4;
+      band.visible = bk > 0 && k < n * STEP + 1.4;
+      band.path[1] = { x: cx(1) + (cx(4) - cx(1)) * Math.min(1, bk), y: cy(0) + (cy(3) - cy(0)) * Math.min(1, bk) };
+      band.updatePath();
+      band.translate.z = 10;
+      illo.rotate.x = -0.2;
       illo.rotate.y = Math.sin(t * 0.45) * 0.4;
     };
   },
@@ -1570,19 +1706,44 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.45) * 0.3;
     };
   },
-  // fileiras de letras virando verde, amarelo e cinza
+  // tabuleiro do Termo: três tentativas viram uma a uma (cinza, amarelo e verde de acordo com TERMO);
+  // a última acerta tudo e as letras pulam
   termo(Z, illo) {
-    const cols = ['#3ddc97', '#ffd34d', '#4a4f6e'], tiles = [];
-    for (let r = 0; r < 2; r++) for (let c = 0; c < 4; c++) {
-      const a = new Z.Anchor({ addTo: illo, translate: { x: (c - 1.5) * 24, y: (r - 0.5) * 26 } });
-      slab(Z, a, 21, 21, 5, cols[(r * 2 + c * 3) % 3]);
-      tiles.push({ a, r, c });
-    }
+    const ANSWER = 'TERMO', GUESSES = ['SALTO', 'CORTE', 'TERMO'], S = 21;
+    const C = { g: '#4a4f6e', y: '#e8b923', v: '#2fbf80' };
+    // cor de cada letra igual ao jogo: verde no lugar, amarelo se existe em outro lugar (contando repetidas)
+    const score = w => {
+      const res = [...w].map((ch, i) => (ch === ANSWER[i] ? 'v' : null)), left = [...ANSWER].filter((ch, i) => w[i] !== ch);
+      return res.map((r, i) => { if (r) return r; const j = left.indexOf(w[i]); if (j >= 0) { left.splice(j, 1); return 'y'; } return 'g'; });
+    };
+    const rows = GUESSES.map((w, r) => {
+      const cols = score(w);
+      return [...w].map((ch, i) => {
+        // a peça gira em x: a frente (vazia, borda) vira e mostra a cor atrás
+        const a = new Z.Anchor({ addTo: illo, translate: { x: (i - 2) * (S + 3), y: (r - 1) * (S + 4) } });
+        const g = new Z.Group({ addTo: a, updateSort: true });
+        const box = slab(Z, g, S, S, 5, '#20243a');
+        const face = new Z.Group({ addTo: g, translate: { z: 2.9 } });
+        const front = new Z.Rect({ addTo: face, width: S - 2, height: S - 2, stroke: 2, fill: true, color: '#20243a' });
+        const border = new Z.Rect({ addTo: face, width: S - 3, height: S - 3, stroke: 1.4, color: '#4a4f6e' });
+        glyph(Z, face, LETTERS[ch], { color: '#ffffff', stroke: 2.4, scale: 0.8, z: 0.3 });
+        return { a, g, box, front, border, color: C[cols[i]], r, i };
+      });
+    });
+    let state = '';
     return t => {
-      tiles.forEach(({ a, r, c }) => {
-        const ph = (t * 0.6 - c * 0.12 - r * 0.7) % 2;
-        a.rotate.x = ph >= 0 && ph < 0.5 ? smooth(ph / 0.5) * Math.PI : ph >= 0.5 ? Math.PI : 0;
-        a.translate.z = ph >= 0 && ph < 0.5 ? Math.sin(ph / 0.5 * Math.PI) * 8 : 0;
+      const FLIP = 0.22, ROW = 5 * FLIP + 0.5, T = 3 * ROW + 1.6, k = t % T;
+      rows.flat().forEach(tl => {
+        // cada letra vira em sequência; no meio do giro troca a cor (a frente "vira" a cor)
+        const f = (k - tl.r * ROW - tl.i * FLIP) / (FLIP * 1.6);
+        const turned = f >= 0.5;
+        tl.a.rotate.x = f > 0 && f < 1 ? Math.sin(f * Math.PI) * Math.PI / 2 * (f < 0.5 ? 1 : -1) : 0;
+        tl.g.visible = k > tl.r * ROW - 0.2 || tl.r === 0;
+        const c = turned ? tl.color : '#20243a';
+        if (tl.front.color !== c) { tl.front.color = c; paintBox(tl.box, c); tl.border.visible = !turned; }
+        // acertou: as letras da última linha pulam em onda
+        const win = tl.r === 2 && k > 3 * ROW;
+        tl.a.translate.z = win ? Math.max(0, Math.sin((k - 3 * ROW) * 8 - tl.i * 0.7)) * 9 : 0;
       });
       illo.rotate.x = -0.3;
       illo.rotate.y = Math.sin(t * 0.45) * 0.35;
