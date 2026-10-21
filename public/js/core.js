@@ -1,6 +1,8 @@
 const $ = s => document.querySelector(s);
 const main = $('#main');
 const rand = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
+// cópia embaralhada de verdade (Fisher-Yates). O sort(() => Math.random() - 0.5) deixa umas ordens mais prováveis que outras.
+const shuffled = list => { const a = [...list]; for (let i = a.length - 1; i > 0; i--) { const j = rand(0, i); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 // Conta logada (vem de /api/auth/me) e o resultado do bloqueio por fila do Geiko.
@@ -229,18 +231,24 @@ function makeCombo(stat) {
 }
 
 // ---------- Phaser ----------
-// ~1 MB: só baixa quando alguém abre a Cobrinha ou a Mira (no menu, fica pré-buscado em segundo plano).
-const PHASER_URL = 'https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js';
+// ~1 MB: só baixa quando alguém abre um jogo de arcade (no menu, fica pré-buscado em segundo plano).
+// Vem do próprio site (public/vendor); a CDN só entra se o arquivo local falhar — redes de empresa às vezes bloqueiam o jsdelivr.
+const PHASER_URL = 'vendor/phaser.min.js';
+const PHASER_CDN = 'https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js';
 let phaserLoading = null;
 function loadPhaser() {
-  return phaserLoading ??= new Promise((resolve, reject) => {
-    if (window.Phaser) return resolve();
+  const load = src => new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = PHASER_URL;
+    s.src = src;
     s.onload = resolve;
-    s.onerror = () => { phaserLoading = null; s.remove(); reject(new Error('Não deu pra carregar o Phaser. Confere a internet e tenta de novo.')); };
+    s.onerror = () => { s.remove(); reject(); };
     document.head.append(s);
   });
+  return phaserLoading ??= window.Phaser ? Promise.resolve()
+    : load(PHASER_URL).catch(() => load(PHASER_CDN)).catch(() => {
+      phaserLoading = null;
+      throw new Error('Não deu pra carregar o Phaser. Confere a internet e tenta de novo.');
+    });
 }
 function prefetchPhaser() {
   if (window.Phaser || $('link[data-phaser]')) return;
@@ -334,6 +342,11 @@ function floatText(scene, x, y, text, color) {
   const t = scene.add.text(x, y, text, { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '22px', fontStyle: 'bold', color }).setOrigin(0.5);
   scene.tweens.add({ targets: t, y: y - 40, alpha: 0, duration: 650, ease: 'Cubic.Out', onComplete: () => t.destroy() });
 }
+
+// Resumo da partida que o jogo manda junto com o resultado (os 3 tempos do Reflexo, precisão da Digitação...).
+// Cada jogo chama summarize([[rótulo, valor], ...]) antes do done(); a tela de resultado mostra e zera.
+let partSummary = null;
+function summarize(rows) { partSummary = rows; }
 
 // tela atual: "menu", "admin", "records", "report" ou o id do jogo
 let currentView = 'menu';

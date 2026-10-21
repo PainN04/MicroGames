@@ -1,5 +1,5 @@
 GAMES.minado = {
-  name: 'Campo Minado', icon: 'bomb', hue: 135, desc: 'Abra todas as casas sem mina. Clique abre; botão direito, toque longo ou o modo marcar marca. O 1º clique é sempre seguro.',
+  name: 'Campo Minado', icon: 'bomb', hue: 135, desc: 'Abra todas as casas sem mina. Clique abre; botão direito, toque longo ou o modo marcar marca. Clicar num número com as bandeiras certas em volta abre os vizinhos. O 1º clique é sempre seguro.',
   better: 'low', unit: 's', decimals: 1,
   start(el, done) {
     const N = 9, MINES = 10;
@@ -61,6 +61,14 @@ GAMES.minado = {
         setTimeout(() => done(score), 500);
       }
     };
+    // "chording": clicar num número já aberto, com as bandeiras certas em volta, abre todos os vizinhos de uma vez
+    const chord = i => {
+      if (over || !open.has(i)) return false;
+      const n = count(i), near = around(i);
+      if (!n || near.filter(j => flags.has(j)).length !== n) return false;
+      for (const j of near) if (!open.has(j) && !flags.has(j)) { reveal(j); if (over) break; }
+      return true;
+    };
     const toggleFlag = i => {
       if (over || open.has(i)) return;
       flags.has(i) ? flags.delete(i) : flags.add(i);
@@ -76,7 +84,7 @@ GAMES.minado = {
         longPress = setTimeout(() => { longFired = true; toggleFlag(i); }, 450);
       };
       cell.onpointerup = cell.onpointerleave = () => clearTimeout(longPress);
-      cell.onclick = () => { if (longFired) { longFired = false; return; } flagMode ? toggleFlag(i) : reveal(i); };
+      cell.onclick = () => { if (longFired) { longFired = false; return; } if (chord(i)) return; flagMode ? toggleFlag(i) : reveal(i); };
     });
     el.querySelector('#flag').onclick = e => {
       flagMode = !flagMode;

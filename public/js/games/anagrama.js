@@ -10,7 +10,7 @@ GAMES.anagrama = {
       + 'PEIXE PIRATA PLANTA POLVO QUADRO RAPOSA SALADA SERPENTE SOLDADO TARTARUGA TELEFONE URSO VAMPIRO VASSOURA ZEBRA').split(' ');
     const sorted = w => [...w].sort().join('');
     const DUR = 60;
-    const deck = [...WORDS].sort(() => Math.random() - 0.5);
+    const deck = shuffled(WORDS);
     let word = '', pts = 0, solved = 0, t0 = 0, iv, over = false;
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Palavras<b id="w">0</b></span><span class="stat">Tempo<b id="t">60s</b></span></div>
       <div class="tiles" id="tiles"></div>
@@ -30,7 +30,7 @@ GAMES.anagrama = {
     const next = () => {
       word = deck.pop() || WORDS[rand(0, WORDS.length - 1)];
       let mix;
-      do mix = [...word].sort(() => Math.random() - 0.5).join(''); while (mix === word);
+      do mix = shuffled(word).join(''); while (mix === word);
       tilesEl.innerHTML = [...mix].map(l => `<button class="tile" data-l="${l}">${l}</button>`).join('');
       tilesEl.querySelectorAll('.tile').forEach(t => t.onclick = () => { startClock(); inp.value += t.dataset.l; syncTiles(); inp.focus(); });
       inp.value = '';

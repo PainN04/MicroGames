@@ -9,8 +9,9 @@ GAMES.mira = {
     const red = hex('--red'), white = hex('--text'), border = hex('--border-strong');
     return mountPhaser(el.querySelector('#pw'), W, H, {
       create() {
-        let hits = 0, miss = 0, t0 = 0, over = false;
-        const elapsed = () => (performance.now() - t0) / 1000 + miss * 0.5;
+        // o tempo soma os quadros da cena: com o jogo pausado (trocou de aba) a cena não roda e o relógio para junto
+        let hits = 0, miss = 0, t0 = 0, run = 0, frameAt = 0, over = false;
+        const elapsed = () => (run + (t0 ? Math.min(performance.now() - frameAt, 100) : 0)) / 1000 + miss * 0.5;
         dotTexture(this);
         const grid = this.add.graphics().lineStyle(1, border, 0.25);
         for (let x = 40; x < W; x += 40) grid.lineBetween(x, 0, x, H);
@@ -30,7 +31,7 @@ GAMES.mira = {
           if (over) return;
           // área de acerto = círculo de 24px de raio, mesmo durante a animação de entrada
           if (Phaser.Math.Distance.Between(p.x, p.y, target.x, target.y) <= R) {
-            if (!t0) t0 = performance.now();
+            if (!t0) { t0 = 1; run = 0; frameAt = performance.now(); }
             hud.h.textContent = ++hits + '/' + TOTAL;
             burst.explode(18, target.x, target.y);
             sfx.good();
@@ -48,7 +49,9 @@ GAMES.mira = {
             beep(160, 90, 'square', 0.03);
           }
         });
-        this.events.on('update', () => { if (t0 && !over) hud.t.textContent = elapsed().toFixed(2) + 's'; });
+        this.events.on('update', () => {
+          if (t0 && !over) { const now = performance.now(); run += Math.min(now - frameAt, 100); frameAt = now; hud.t.textContent = elapsed().toFixed(2) + 's'; }
+        });
         place();
       },
     });

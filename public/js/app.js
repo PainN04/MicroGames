@@ -196,6 +196,7 @@ function play(id) {
     window.scrollTo(0, 0);
     fitGame();
     const el = $('#game');
+    partSummary = null;
     cleanup = g.start(el, async (score, proof) => {
       stop();
       if (!el.isConnected) return; // saiu da partida (voltou ao menu, trocou de tela) antes de terminar
@@ -226,6 +227,7 @@ function play(id) {
       const hasAch = ok ? unlockedFor(player) : hadAch;
       const newAch = ACHIEVEMENTS.filter(x => !hadAch.has(x.id) && hasAch.has(x.id));
       renderBoard(id);
+      const summary = partSummary; partSummary = null;
       el.innerHTML = `<div class="result">
         <span class="label">Resultado</span>
         <span class="score">${fmt(g, score)}</span>
@@ -237,6 +239,8 @@ function play(id) {
           : record ? `<span class="badge">${icon('party-popper')} Novo recorde pessoal!</span>`
           : monthBest ? `<span class="badge">${icon('trending-up')} Seu melhor de ${month}!</span>`
           : prev ? `<span class="hint">Seu recorde: ${fmt(g, prev[1])}${prevMonth ? ` · em ${month}: ${fmt(g, prevMonth[1])}` : ''}</span>` : ''}
+        ${ok ? placeLine(g, id, score) : ''}
+        ${summary?.length ? `<dl class="part-sum">${summary.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>` : ''}
         ${newAch.map(x => `<span class="badge ach-new">${icon(x.icon)} Conquista nova: ${x.name}</span>`).join('')}
         ${status === 'queued' ? `<span class="badge warn">${icon('triangle-alert')} Servidor fora do ar — resultado guardado, envio automático quando ele voltar</span>` : ''}
         <button class="btn" id="again">Jogar de novo</button>
@@ -248,6 +252,21 @@ function play(id) {
       $('#loginSave')?.addEventListener('click', () => { setMe(null); loginModal(); });
     });
   });
+}
+
+// "Você está em 4º de 12 em outubro · faltam 30 pontos pro 3º" (ranking do mês, melhor partida de cada um)
+function placeLine(g, id, score) {
+  const list = bestPerPlayer(id, { since: monthStart() });
+  const pos = list.findIndex(([n]) => n === player);
+  if (pos < 0) return '';
+  const month = monthName(monthKey(Date.now())).toLowerCase();
+  let txt = `Você está em <b>${pos + 1}º de ${list.length}</b> em ${month}`;
+  if (pos > 0) {
+    const [, above] = list[pos - 1], mine = list[pos][1];
+    const gap = Math.abs(above - mine);
+    txt += ` · faltam <b>${fmt(g, +(g.decimals ? gap.toFixed(g.decimals) : gap) || (g.decimals ? 1 / 10 ** g.decimals : 1))}</b> pro ${pos}º`;
+  }
+  return `<span class="hint place">${txt}</span>`;
 }
 
 function confetti() {

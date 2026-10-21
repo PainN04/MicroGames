@@ -24,7 +24,7 @@ GAMES.forca = {
     ];
     const MAX = 6, ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
-    const deck = [...WORDS].sort(() => Math.random() - 0.5);
+    const deck = shuffled(WORDS);
     let word = '', hint = '', plain = '', guessed = new Set(), wrong = 0, pts = 0, solved = 0, locked = false, timers = [];
     // forca desenhada em SVG: cada erro mostra mais uma parte do boneco
     const PARTS = ['<circle cx="150" cy="62" r="16"/>', '<path d="M150 78v52"/>', '<path d="M150 90l-26 24"/>', '<path d="M150 90l26 24"/>', '<path d="M150 130l-22 38"/>', '<path d="M150 130l22 38"/>'];
