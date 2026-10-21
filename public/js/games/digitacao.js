@@ -34,19 +34,6 @@ GAMES.digitacao = {
       }).join(' ');
     }
     inp.oninput = () => {
-      if (!t0) {
-        t0 = performance.now();
-        iv = setInterval(() => {
-          const left = 30 - (performance.now() - t0) / 1000;
-          el.querySelector('#t').textContent = Math.max(0, Math.ceil(left)) + 's';
-          if (left <= 0) {
-            clearInterval(iv); inp.disabled = true;
-            const total = ok + wrongWords;
-            summarize([['Palavras por minuto', ok * 2], ['Precisão', total ? Math.round(ok / total * 100) + '%' : '—'], ['Erradas', wrongWords], ['Letras certas', typed]]);
-            done(ok);
-          }
-        }, 100);
-      }
       if (inp.value.endsWith(' ')) {
         res[i] = inp.value.trim() === words[i];
         if (res[i]) { el.querySelector('#ok').textContent = ++ok; typed += words[i].length; } else { wrongWords++; beep(160, 80, 'square', 0.025); }
@@ -57,7 +44,22 @@ GAMES.digitacao = {
       if (curEl) curEl.classList.toggle('typo', !words[i].startsWith(inp.value.trimStart()));
       inp.classList.toggle('typo', !words[i].startsWith(inp.value.trimStart()));
     };
-    render(); inp.focus();
+    // o tempo começa já (depois da contagem 3, 2, 1)
+    const startTimer = () => {
+      if (t0) return;
+      t0 = performance.now();
+      iv = setInterval(() => {
+        const left = 30 - (performance.now() - t0) / 1000;
+        el.querySelector('#t').textContent = Math.max(0, Math.ceil(left)) + 's';
+        if (left <= 0) {
+          clearInterval(iv); inp.disabled = true;
+          const total = ok + wrongWords;
+          summarize([['Palavras por minuto', ok * 2], ['Precisão', total ? Math.round(ok / total * 100) + '%' : '—'], ['Erradas', wrongWords], ['Letras certas', typed]]);
+          done(ok);
+        }
+      }, 100);
+    };
+    render(); inp.focus(); startTimer();
     return () => clearInterval(iv);
   }
 };

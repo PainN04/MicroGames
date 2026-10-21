@@ -387,7 +387,7 @@ No painel admin dá pra baixar o JSON, importar ou restaurar as partidas de qual
 
 ## 📦 Bibliotecas
 
-Sem build: o Phaser fica no próprio site (`public/vendor/`), o resto vem por CDN.
+Sem build: Phaser, Zdog e Vanilla-Tilt ficam no próprio site (`public/vendor/`, com o jsdelivr de reserva); só o web-vitals vem por CDN.
 
 | Biblioteca | Pra quê |
 | --- | --- |

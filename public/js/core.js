@@ -194,10 +194,43 @@ function beep(freq, ms = 90, type = 'sine', vol = 0.07) {
     osc.start(t); osc.stop(t + ms / 1000);
   } catch {}
 }
+// ruído filtrado (explosão, batida): sem arquivo, gerado na hora
+function noise(ms = 300, vol = 0.12, freq = 900) {
+  if (muted) return;
+  try {
+    audioCtx ??= new AudioContext();
+    const t = audioCtx.currentTime, len = Math.ceil(audioCtx.sampleRate * ms / 1000);
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+    const src = audioCtx.createBufferSource(), filt = audioCtx.createBiquadFilter(), gain = audioCtx.createGain();
+    src.buffer = buf; filt.type = 'lowpass'; filt.frequency.setValueAtTime(freq, t); filt.frequency.exponentialRampToValueAtTime(80, t + ms / 1000);
+    gain.gain.value = vol;
+    src.connect(filt).connect(gain).connect(audioCtx.destination);
+    src.start(t);
+  } catch {}
+}
+// som que sobe ou desce de tom (pulo, moeda, power-up)
+function sweep(from, to, ms = 150, type = 'square', vol = 0.04) {
+  if (muted) return;
+  try {
+    audioCtx ??= new AudioContext();
+    const t = audioCtx.currentTime, osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+    osc.type = type; osc.frequency.setValueAtTime(from, t); osc.frequency.exponentialRampToValueAtTime(to, t + ms / 1000);
+    gain.gain.setValueAtTime(vol, t); gain.gain.exponentialRampToValueAtTime(0.0001, t + ms / 1000);
+    osc.connect(gain).connect(audioCtx.destination); osc.start(t); osc.stop(t + ms / 1000);
+  } catch {}
+}
+// vibração no celular (mesmo botão do som: mudo = sem vibrar)
+function buzz(pattern) { if (!muted && navigator.vibrate) try { navigator.vibrate(pattern); } catch {} }
 const sfx = {
-  good: () => beep(880, 70, 'triangle'),
-  bad: () => beep(130, 220, 'sawtooth', 0.05),
-  record: () => [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 140, 'triangle'), i * 90)),
+  good: () => { beep(880, 70, 'triangle'); buzz(8); },
+  bad: () => { beep(130, 220, 'sawtooth', 0.05); buzz(60); },
+  record: () => { [523, 659, 784, 1047].forEach((f, i) => setTimeout(() => beep(f, 140, 'triangle'), i * 90)); buzz([30, 50, 30, 50, 60]); },
+  boom: () => { noise(420, 0.16, 1400); beep(70, 300, 'sine', 0.08); buzz([80, 40, 120]); }, // morreu / explodiu
+  hit: () => { noise(90, 0.08, 2500); buzz(15); }, // batida seca (tijolo, nave)
+  jump: () => sweep(320, 720, 140, 'square', 0.03),
+  coin: () => { sweep(988, 1319, 60, 'square', 0.03); setTimeout(() => sweep(1319, 1760, 120, 'square', 0.03), 60); buzz(10); },
+  power: () => { [440, 554, 659, 880].forEach((f, i) => setTimeout(() => beep(f, 90, 'square', 0.03), i * 55)); buzz([20, 30, 20]); },
 };
 function renderMute() {
   $('#mute').innerHTML = icon(muted ? 'volume-x' : 'volume-2');

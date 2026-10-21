@@ -26,7 +26,7 @@ GAMES.invasores = {
             enemies.push({ bx: 60 + c * SX, by: 70 + r * SY, row: r, alive: true, o });
           }
         };
-        const gameOver = () => { alive = false; sfx.bad(); this.cameras.main.shake(300, 0.012); this.time.delayedCall(1000, () => done(score)); };
+        const gameOver = () => { alive = false; sfx.boom(); this.cameras.main.shake(300, 0.012); this.time.delayedCall(1000, () => done(score)); };
         const keys = this.input.keyboard.addKeys('LEFT,RIGHT,A,D');
         this.input.keyboard.addCapture('LEFT,RIGHT,SPACE');
         this.input.on('pointerdown', p => { target = p.x; });
@@ -77,7 +77,7 @@ GAMES.invasores = {
               if (!invuln && Math.abs(b.x - px) < 16 && Math.abs(b.y - PY) < 14) {
                 b.y = H + 99;
                 lives--; hud.v.innerHTML = hearts(lives);
-                invuln = 1500; sfx.bad(); this.cameras.main.shake(180, 0.01);
+                invuln = 1500; sfx.boom(); this.cameras.main.shake(180, 0.01);
                 if (lives <= 0) return gameOver();
               }
             }

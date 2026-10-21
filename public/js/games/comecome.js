@@ -163,7 +163,7 @@ GAMES.comecome = {
 
         const die = () => {
           alive = false; lives--; hud.v.innerHTML = hearts(lives);
-          sfx.bad(); this.cameras.main.shake(220, 0.01);
+          sfx.boom(); this.cameras.main.shake(220, 0.01);
           if (lives <= 0) { msg.setText('Fim de jogo').setVisible(true); this.time.delayedCall(900, () => done(score)); return; }
           dead = 1000;
         };

@@ -78,6 +78,7 @@ GAMES.anagrama = {
     el.querySelector('#skip').onclick = () => { if (over) return; startClock(); beep(300, 50, 'sine', 0.02); next(); inp.focus(); };
     next();
     inp.focus();
+    startClock(); // o tempo começa já (depois da contagem 3, 2, 1)
     return () => { over = true; clearInterval(iv); };
   }
 };

@@ -1,15 +1,18 @@
 // ---------- cards 3D do menu: Zdog (ilustração 3D) + Vanilla-Tilt (inclinação com brilho) ----------
 // As duas bibliotecas carregam depois do menu aparecer (não atrasam a página). Cada jogo com cena 3D ganha um
 // <canvas> no canto do card; um único loop anima só os cards visíveis e para com a aba escondida.
-const ZDOG_URL = 'https://cdn.jsdelivr.net/npm/zdog@1.1.3/dist/zdog.dist.min.js';
-const TILT_URL = 'https://cdn.jsdelivr.net/npm/vanilla-tilt@1.8.1/dist/vanilla-tilt.min.js';
+// Ficam no próprio site (public/vendor); a CDN só entra se o arquivo local falhar.
+const ZDOG_URL = 'vendor/zdog.dist.min.js';
+const TILT_URL = 'vendor/vanilla-tilt.min.js';
+const LIB_CDN = { [ZDOG_URL]: 'https://cdn.jsdelivr.net/npm/zdog@1.1.3/dist/zdog.dist.min.js', [TILT_URL]: 'https://cdn.jsdelivr.net/npm/vanilla-tilt@1.8.1/dist/vanilla-tilt.min.js' };
 const libLoads = {};
 function loadLib(url) {
-  return libLoads[url] ??= new Promise((resolve, reject) => {
-    const s = Object.assign(document.createElement('script'), { src: url, async: true, onload: resolve });
-    s.onerror = () => { delete libLoads[url]; s.remove(); reject(new Error('falhou: ' + url)); };
+  const one = src => new Promise((resolve, reject) => {
+    const s = Object.assign(document.createElement('script'), { src, async: true, onload: resolve });
+    s.onerror = () => { s.remove(); reject(new Error('falhou: ' + src)); };
     document.head.append(s);
   });
+  return libLoads[url] ??= one(url).catch(() => one(LIB_CDN[url])).catch(e => { delete libLoads[url]; throw e; });
 }
 
 // clareia (amt > 0) ou escurece (amt < 0) um #rrggbb — dá o volume das faces

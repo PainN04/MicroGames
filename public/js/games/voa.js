@@ -43,7 +43,7 @@ GAMES.voa = {
         };
         const die = () => {
           alive = false;
-          sfx.bad();
+          sfx.boom();
           this.cameras.main.shake(260, 0.012);
           this.cameras.main.flash(200, 255, 80, 100);
           this.time.delayedCall(800, () => done(pts));

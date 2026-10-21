@@ -31,7 +31,7 @@ GAMES.minado = {
       over = true; clearInterval(iv);
       for (const m of mines) { cells[m].innerHTML = icon('bomb', { cls: 'bomb' }); cells[m].classList.add('open'); }
       cells[i].classList.add('boom');
-      sfx.bad();
+      sfx.boom();
       setTimeout(() => done(null, 'Explodiu! Partida perdida não vai pro ranking — tenta de novo.'), 1000);
     };
     const reveal = i => {

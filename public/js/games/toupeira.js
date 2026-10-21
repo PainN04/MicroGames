@@ -80,7 +80,7 @@ GAMES.toupeira = {
       holes[i].classList.add(cls);
       later(() => holes[i].classList.remove(cls), 180);
       if (kind === 'gold') { [1046, 1318, 1568].forEach((f, k) => setTimeout(() => beep(f, 90, 'triangle', 0.05), k * 60)); holes[i].classList.add('gold'); later(() => holes[i].classList.remove('gold'), 260); }
-      else if (gain > 0) beep(gain > 1 ? 1046 : 784, 70, 'triangle'); else sfx.bad();
+      else if (gain > 0) beep(gain > 1 ? 1046 : 784, 70, 'triangle'); else sfx.boom();
       hide(i);
     }
     holes.forEach((h, i) => h.onpointerdown = e => { e.preventDefault(); whack(i); });

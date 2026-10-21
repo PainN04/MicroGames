@@ -28,7 +28,7 @@ GAMES.chuva = {
         const die = () => {
           alive = false;
           player.setTexture('boom').setDisplaySize(40, 40);
-          sfx.bad();
+          sfx.boom();
           this.cameras.main.shake(260, 0.012);
           this.time.delayedCall(800, () => done(+t.toFixed(1)));
         };

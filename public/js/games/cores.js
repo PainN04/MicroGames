@@ -28,18 +28,6 @@ GAMES.cores = {
     }
     function answer(k) {
       if (over) return;
-      if (!t0) {
-        t0 = performance.now();
-        iv = setInterval(() => {
-          const left = 30 - (performance.now() - t0) / 1000;
-          el.querySelector('#t').textContent = Math.max(0, Math.ceil(left)) + 's';
-          if (left <= 0) {
-            over = true; clearInterval(iv);
-            summarize([['Acertos', rights], ['Erros', wrongs], ['Maior sequência', bestStreak]]);
-            done(ok);
-          }
-        }, 100);
-      }
       if (k === want) { const m = combo.hit(); ok += m; rights++; bestStreak = Math.max(bestStreak, combo.streak); sfx.good(); popPoints(w, '+' + m); }
       else {
         combo.miss(); wrongs++;
@@ -54,7 +42,22 @@ GAMES.cores = {
     el.querySelectorAll('.choices .btn').forEach(b => b.onpointerdown = e => { e.preventDefault(); answer(+b.dataset.k); });
     const onKey = e => { const k = +e.key - 1; if (k >= 0 && k < 4 && !e.repeat) answer(k); };
     window.addEventListener('keydown', onKey);
+    // o tempo começa já (depois da contagem 3, 2, 1)
+    const startTimer = () => {
+      if (t0) return;
+      t0 = performance.now();
+      iv = setInterval(() => {
+        const left = 30 - (performance.now() - t0) / 1000;
+        el.querySelector('#t').textContent = Math.max(0, Math.ceil(left)) + 's';
+        if (left <= 0) {
+          over = true; clearInterval(iv);
+          summarize([['Acertos', rights], ['Erros', wrongs], ['Maior sequência', bestStreak]]);
+          done(ok);
+        }
+      }, 100);
+    };
     next();
+    startTimer();
     return () => { clearInterval(iv); window.removeEventListener('keydown', onKey); };
   }
 };

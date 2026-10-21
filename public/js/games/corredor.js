@@ -41,7 +41,7 @@ GAMES.corredor = {
           if (onGround() && !ducking) { vy = JUMP; dust.explode(6, X - 4, GY); beep(560, 70, 'triangle', 0.04); }
         };
         const die = () => {
-          alive = false; sfx.bad();
+          alive = false; sfx.boom();
           scene.cameras.main.shake(240, 0.012); scene.cameras.main.flash(180, 255, 80, 100);
           scene.time.delayedCall(800, () => done(Math.floor(dist / 10)));
         };
