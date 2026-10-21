@@ -95,15 +95,15 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados co
 | --- | --- |
 | **Cobrinha** 🎨 | Acelera a cada fruta; a dourada vale 5 e a azul encolhe o rabo (−3). Curva antecipada pra responder na hora. |
 | **Voa Voa** 🎨 | Passe entre os canos. Aparecem estrela (+3), escudo (aguenta 1 batida) e relógio (câmera lenta). Depois de 20 pontos os canos se mexem. |
-| **Chuva de Bugs** 🎨 | Desvie dos bugs que caem cada vez mais rápido. |
-| **Blocos** 🎨 | Estilo Tetris. |
-| **Quebra-Tijolos** 🎨 | Rebata a bola e quebre os tijolos. 3 vidas. |
+| **Chuva de Bugs** 🎨 | Desvie dos bugs que caem cada vez mais rápido: bug rápido, em zigue-zague e bugão. O café deixa tudo lento por 3s. |
+| **Blocos** 🎨 | Estilo Tetris, com guardar peça (C), girar pros dois lados e 3 próximas. Linhas seguidas e TETRA seguido valem bônus. |
+| **Quebra-Tijolos** 🎨 | Rebata a bola e quebre os tijolos: 6 desenhos de fase, tijolos de 1 a 3 batidas e itens (raquete grande, 3 bolas, bola lenta). 3 vidas. |
 | **Torre** 🎨 | Solte o bloco na torre; o que passa da borda é cortado e os acertos perfeitos aumentam o bloco. |
-| **Invasores** 🎨 | Desvie dos tiros e destrua as naves. O tiro é automático. 3 vidas. |
-| **Pong** 🎨 | Rebata a bola e passe pela máquina, que acelera a cada ponto. 3 vidas. |
-| **Corredor** 🎨 | Pule cactos e abaixe dos pássaros altos, cada vez mais rápido. |
-| **Come-Come** 🎨 | Coma as bolinhas e fuja dos fantasmas; as grandes deixam eles azuis. 3 vidas e túnel lateral. |
-| **Ritmo** 🎨 | Aperte D F J K no tempo da nota, com música gerada (o BPM sobe de 100 a 150). Bom 50, Ótimo 100, Perfeito 200 (±18 ms do centro). 45s. |
+| **Invasores** 🎨 | Desvie dos tiros e destrua as naves. O tiro é automático; barreiras protegem e a nave-mãe vale bônus. 3 vidas. |
+| **Pong** 🎨 | Rebata a bola e passe pela máquina, que acelera a cada ponto. Raquete andando dá efeito na bola. 3 vidas. |
+| **Corredor** 🎨 | Pule cactos e abaixe dos pássaros altos, cada vez mais rápido. Segurar o pulo vai mais alto; moedas valem +25. |
+| **Come-Come** 🎨 | Coma as bolinhas e fuja dos fantasmas; as grandes deixam eles azuis. 3 labirintos que se revezam, cereja bônus, 3 vidas e túnel lateral. |
+| **Ritmo** 🎨 | Aperte D F J K no tempo da nota, com música gerada (o BPM sobe de 100 a 150). Bom 50, Ótimo 100, Perfeito 200 (±18 ms do centro). Notas compridas e ajuste de atraso do som. 45s. |
 
 <div align="center">
 <img src="docs/img/2048.png" alt="Jogo 2048 com o ranking ao lado" width="420">

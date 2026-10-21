@@ -248,6 +248,30 @@ function popPoints(target, text, kind = '') {
   setTimeout(() => s.remove(), 800);
 }
 
+// confete saindo do meio de um elemento (acertou a palavra, completou o bloco...)
+function confetti(target, n = 22) {
+  if (!target?.isConnected || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const r = target.getBoundingClientRect(), cols = ['#ffd34d', '#5ce1ff', '#7cffb0', '#ff6b8a', '#c9b3ff'];
+  for (let i = 0; i < n; i++) {
+    const s = Object.assign(document.createElement('i'), { className: 'confetti' });
+    const a = Math.random() * Math.PI * 2, d = 50 + Math.random() * 90;
+    s.style.cssText = `left:${r.left + r.width / 2 + scrollX}px;top:${r.top + r.height / 2 + scrollY}px;background:${cols[i % cols.length]};`
+      + `--dx:${Math.cos(a) * d}px;--dy:${Math.sin(a) * d - 40}px;--r:${rand(-540, 540)}deg`;
+    document.body.append(s);
+    setTimeout(() => s.remove(), 900);
+  }
+}
+// letra (ou peça) voando de um elemento pra outro: um clone que desliza por cima da página
+function flyTo(from, to, text) {
+  if (!from?.isConnected || !to?.isConnected || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect();
+  const s = Object.assign(document.createElement('span'), { className: 'fly', textContent: text });
+  s.style.cssText = `left:${a.left + scrollX}px;top:${a.top + scrollY}px;width:${a.width}px;height:${a.height}px;`
+    + `--tx:${b.left + Math.min(b.width - 20, 14 + to.value?.length * 14 || b.width / 2) - a.left - a.width / 2}px;--ty:${b.top + b.height / 2 - a.top - a.height / 2}px`;
+  document.body.append(s);
+  setTimeout(() => s.remove(), 300);
+}
+
 // ---------- combo ----------
 // Jogos de reflexo: a cada 5 acertos seguidos o multiplicador sobe (x1 → x4). Errar zera. `stat` é o <b> do placar.
 const COMBO_STEP = 5, COMBO_MAX = 4;

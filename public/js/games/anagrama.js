@@ -32,8 +32,8 @@ GAMES.anagrama = {
       word = deck.pop() || WORDS[rand(0, WORDS.length - 1)];
       let mix;
       do mix = shuffled(word).join(''); while (mix === word);
-      tilesEl.innerHTML = [...mix].map(l => `<button class="tile" data-l="${l}">${l}</button>`).join('');
-      tilesEl.querySelectorAll('.tile').forEach(t => t.onclick = () => { startClock(); inp.value += t.dataset.l; syncTiles(); inp.focus(); });
+      tilesEl.innerHTML = [...mix].map((l, i) => `<button class="tile enter" style="--i:${i * 0.04}s" data-l="${l}">${l}</button>`).join('');
+      tilesEl.querySelectorAll('.tile').forEach(t => t.onclick = () => { startClock(); flyTo(t, inp, t.dataset.l); inp.value += t.dataset.l; syncTiles(); inp.focus(); });
       inp.value = ''; hints = 0;
     };
     // dica: escreve as primeiras letras certas (uma a mais a cada toque)
@@ -62,7 +62,7 @@ GAMES.anagrama = {
       if (sorted(guess) === sorted(word) && WORDS.includes(guess)) {
         const gain = Math.max(1, word.length - hints);
         pts += gain; solved++;
-        popPoints(tilesEl, '+' + gain);
+        popPoints(tilesEl, '+' + gain); confetti(inp);
         el.querySelector('#p').textContent = pts; el.querySelector('#w').textContent = solved;
         sfx.good();
         next();

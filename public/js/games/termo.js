@@ -134,7 +134,12 @@ GAMES.termo = {
       save();
       timers.push(setTimeout(() => {
         el.querySelector('#n').textContent = tryNo() + '/' + ROWS;
-        if (won) { sfx.record(); timers.push(setTimeout(send, 700)); }
+        if (won) {
+          sfx.record();
+          // a linha certa pula, uma letra de cada vez
+          tiles.slice(r * LEN, r * LEN + LEN).forEach((t, i) => { t.style.setProperty('--d', i * 0.09 + 's'); t.classList.remove('flip'); void t.offsetWidth; t.classList.add('bounce'); });
+          timers.push(setTimeout(send, 900));
+        }
         else if (lost) { sfx.bad(); endPanel(); }
         else busy = false;
       }, LEN * 220 + 350));

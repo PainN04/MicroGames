@@ -3,25 +3,37 @@ GAMES.g2048 = {
   better: 'high', unit: 'pontos',
   start(el, done) {
     const N = 4, DUR = 180;
-    let grid = Array(N * N).fill(0), score = 0, t0 = 0, iv, over = false;
+    // peças como objetos com id: assim cada uma desliza da casa antiga pra nova e as que se juntam se encontram no meio
+    let tiles = [], nextId = 0, score = 0, t0 = 0, iv, over = false, busy = null;
+    const gridOf = () => { const g = Array(N * N).fill(0); for (const t of tiles) if (!t.gone) g[t.i] = t.v; return g; };
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Maior<b id="m">2</b></span><span class="stat">Tempo<b id="t">3:00</b></span></div>
-      <div class="g2048" id="b"></div><p class="hint">O tempo começa no primeiro movimento.</p>`;
+      <div class="g2048" id="b">${'<div class="slot"></div>'.repeat(N * N)}</div><p class="hint">O tempo começa no primeiro movimento.</p>`;
     const board = el.querySelector('#b');
     const style = v => {
-      if (!v) return '';
       const k = Math.log2(v);
       return `background:oklch(${Math.max(48, 88 - k * 3.6)}% ${Math.min(0.2, 0.06 + k * 0.014)} ${(95 - k * 24 + 720) % 360});color:${v <= 4 ? '#1d1f2e' : '#fff'}`;
     };
-    const render = (fresh = new Set(), merged = new Set()) => {
-      board.innerHTML = grid.map((v, i) => `<div class="t${fresh.has(i) ? ' pop' : ''}${merged.has(i) ? ' merge' : ''}" style="${style(v)}">${v || ''}</div>`).join('');
-      el.querySelector('#m').textContent = Math.max(...grid);
+    const place = t => { t.el.style.setProperty('--c', t.i % N); t.el.style.setProperty('--r', Math.floor(t.i / N)); };
+    const paint = t => {
+      t.el.firstChild.style.cssText = style(t.v);
+      t.el.firstChild.textContent = t.v;
+      t.el.dataset.d = String(t.v).length;
+    };
+    const spawn = i => {
+      const t = { id: nextId++, v: Math.random() < 0.9 ? 2 : 4, i, el: document.createElement('div') };
+      t.el.className = 't pop'; t.el.innerHTML = '<i></i>';
+      place(t); paint(t); board.append(t.el); tiles.push(t);
+      return t;
+    };
+    const markMax = () => {
+      const m = Math.max(...tiles.map(t => t.v));
+      el.querySelector('#m').textContent = m;
+      for (const t of tiles) t.el.classList.toggle('max', t.v === m && m >= 64);
     };
     const addTile = () => {
-      const empty = grid.map((v, i) => (v ? -1 : i)).filter(i => i >= 0);
-      if (!empty.length) return -1;
-      const i = empty[rand(0, empty.length - 1)];
-      grid[i] = Math.random() < 0.9 ? 2 : 4;
-      return i;
+      const g = gridOf(), empty = g.map((v, i) => (v ? -1 : i)).filter(i => i >= 0);
+      if (!empty.length) return null;
+      return spawn(empty[rand(0, empty.length - 1)]);
     };
     const lines = dir => Array.from({ length: N }, (_, a) => Array.from({ length: N }, (_, b) => {
       if (dir === 'L') return a * N + b;
@@ -29,20 +41,27 @@ GAMES.g2048 = {
       if (dir === 'U') return b * N + a;
       return (N - 1 - b) * N + a;
     }));
-    const canMove = () => grid.some((v, i) => !v
-      || (i % N < N - 1 && grid[i + 1] === v) || (i < N * (N - 1) && grid[i + N] === v));
+    const canMove = () => { const g = gridOf(); return g.some((v, i) => !v || (i % N < N - 1 && g[i + 1] === v) || (i < N * (N - 1) && g[i + N] === v)); };
     const finish = () => { if (over) return; over = true; clearInterval(iv); done(score); };
+    // termina a animação anterior na hora (quem joga rápido não espera o deslize)
+    const settle = () => { if (busy) { clearTimeout(busy.timer); busy.fn(); busy = null; } };
     const move = dir => {
       if (over) return;
+      settle();
       let moved = false;
-      const merged = new Set();
+      const byPos = new Map(tiles.map(t => [t.i, t])), merges = [];
       for (const idx of lines(dir)) {
-        const vals = idx.map(i => grid[i]).filter(Boolean), out = [];
-        for (let k = 0; k < vals.length; k++) {
-          if (vals[k] === vals[k + 1]) { out.push(vals[k] * 2); score += vals[k] * 2; merged.add(idx[out.length - 1]); k++; }
-          else out.push(vals[k]);
+        const line = idx.map(i => byPos.get(i)).filter(Boolean);
+        let out = 0;
+        for (let k = 0; k < line.length; k++) {
+          const t = line[k], nx = line[k + 1], dest = idx[out++];
+          if (nx && nx.v === t.v) {
+            // os dois deslizam pra mesma casa; depois um some e o outro dobra
+            if (t.i !== dest || nx.i !== dest) moved = true;
+            t.i = dest; nx.i = dest; nx.gone = true; merges.push(t);
+            score += t.v * 2; k++;
+          } else { if (t.i !== dest) moved = true; t.i = dest; }
         }
-        idx.forEach((i, k) => { const nv = out[k] || 0; if (grid[i] !== nv) moved = true; grid[i] = nv; });
       }
       if (!moved) return;
       if (!t0) {
@@ -53,11 +72,18 @@ GAMES.g2048 = {
           if (left <= 0) finish();
         }, 200);
       }
+      for (const t of tiles) { t.el.classList.remove('pop', 'merge'); place(t); }
       el.querySelector('#p').textContent = score;
-      merged.size ? beep(440 + Math.log2(Math.max(...[...merged].map(i => grid[i]))) * 40, 60, 'triangle', 0.035) : beep(260, 25, 'sine', 0.02);
-      const fresh = addTile();
-      render(new Set([fresh]), merged);
-      if (!canMove()) { sfx.bad(); setTimeout(finish, 600); }
+      merges.length ? beep(440 + Math.log2(Math.max(...merges.map(t => t.v * 2))) * 40, 60, 'triangle', 0.035) : beep(260, 25, 'sine', 0.02);
+      const after = () => {
+        for (const t of tiles) if (t.gone) t.el.remove();
+        tiles = tiles.filter(t => !t.gone);
+        for (const t of merges) { t.v *= 2; paint(t); void t.el.offsetWidth; t.el.classList.add('merge'); }
+        if (merges.some(t => t.v >= 128)) popPoints(board, '+' + Math.max(...merges.map(t => t.v)), 'good');
+        addTile(); markMax();
+        if (!canMove()) { sfx.bad(); setTimeout(finish, 600); }
+      };
+      busy = { fn: after, timer: setTimeout(() => { busy = null; after(); }, 110) };
     };
     const KEYS = { ArrowLeft: 'L', a: 'L', ArrowRight: 'R', d: 'R', ArrowUp: 'U', w: 'U', ArrowDown: 'D', s: 'D' };
     const onKey = e => {
@@ -74,8 +100,7 @@ GAMES.g2048 = {
       move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'R' : 'L') : (dy > 0 ? 'D' : 'U'));
     };
     window.addEventListener('keydown', onKey);
-    const a = addTile(), b = addTile();
-    render(new Set([a, b]));
-    return () => { over = true; clearInterval(iv); window.removeEventListener('keydown', onKey); };
+    addTile(); addTile(); markMax();
+    return () => { over = true; clearInterval(iv); if (busy) clearTimeout(busy.timer); window.removeEventListener('keydown', onKey); };
   }
 };

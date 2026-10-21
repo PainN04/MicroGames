@@ -3,7 +3,7 @@ GAMES.matematica = {
   better: 'high', unit: 'pontos',
   start(el, done) {
     let ok = 0, ans, t0 = 0, iv, rights = 0, wrongs = 0, bestStreak = 0;
-    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="ok">0</b></span><span class="stat combo">Combo<b id="cb">x1</b></span><span class="stat">Tempo<b id="t">30s</b></span></div><div class="math" id="q" aria-live="polite"></div><input class="txt" id="in" inputmode="numeric" placeholder="resposta + Enter" autocomplete="off" aria-label="Resposta">';
+    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="ok">0</b></span><span class="stat combo">Combo<b id="cb">x1</b></span><span class="stat">Tempo<b id="t">30s</b></span></div><div class="timebar" aria-hidden="true"><i id="tb"></i></div><div class="math" id="q" aria-live="polite"></div><input class="txt" id="in" inputmode="numeric" placeholder="resposta + Enter" autocomplete="off" aria-label="Resposta">';
     const q = el.querySelector('#q'), inp = el.querySelector('#in'), combo = makeCombo(el.querySelector('#cb'));
     // com o combo alto as contas ficam mais difíceis: números maiores e divisão (sempre exata)
     function gen() {
@@ -15,6 +15,7 @@ GAMES.matematica = {
       if (op === '-' && b > a) [a, b] = [b, a];
       ans = op === '+' ? a + b : op === '-' ? a - b : op === '×' ? a * b : a / b;
       q.textContent = `${a} ${op} ${b}`;
+      q.classList.remove('qin'); void q.offsetWidth; q.classList.add('qin'); // conta nova entra pulando
     }
     // envia sozinho quando a resposta tem o mesmo número de dígitos da certa (no celular não precisa do Enter)
     inp.oninput = () => { inp.value = inp.value.replace(/\D/g, ''); if (inp.value.length >= String(ans).length) submit(); };
@@ -33,6 +34,7 @@ GAMES.matematica = {
       iv = setInterval(() => {
         const left = 30 - (performance.now() - t0) / 1000;
         el.querySelector('#t').textContent = Math.max(0, Math.ceil(left)) + 's';
+        const bar = el.querySelector('#tb'); bar.style.transform = `scaleX(${Math.max(0, left / 30)})`; bar.classList.toggle('low', left < 6);
         if (left <= 0) {
           clearInterval(iv); inp.disabled = true;
           summarize([['Acertos', rights], ['Erros', wrongs], ['Maior sequência', bestStreak], ['Contas por minuto', (rights + wrongs) * 2]]);
