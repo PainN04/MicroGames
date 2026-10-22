@@ -80,7 +80,7 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados co
 | **Memória** | Repita a sequência de cores, estilo Genius, com um tom por cor. |
 | **Conta Rápida** | Resolva o máximo de contas em 30s. Combo até x4. |
 | **Digitação** | Máximo de palavras certas em 30s. |
-| **Anagrama** | Desembaralhe palavras em 60s. Palavra maior vale mais; pular não custa ponto. |
+| **Anagrama** | Desembaralhe palavras em 60s com uma dica do tema (ex.: BANANA, dica "Fruta"). Palavra maior vale mais; pular não custa ponto. |
 | **Termo** | A palavra do dia: 5 letras, 6 tentativas, igual pra todo mundo. Só vale a primeira partida de cada dia. |
 | **Forca** | Palavras de TI e do escritório; errou 6 letras, acabou. |
 | **Sudoku** | Menor tempo ganha; dica custa +20s. |

@@ -867,13 +867,18 @@ test('forca: a página só recebe dica e letras descobertas; palavra certa soma,
 
 test('anagrama: confere no servidor, dica tira ponto, e só fecha (e grava) depois dos 60s', async () => {
   await makeUser('gil', 'Gil', 'player', 'senha-gil-123');
-  const { ANAGRAMA_WORDS } = require('../lib/words');
+  const { ANAGRAMA_WORDS, ANAGRAMA_HINTS } = require('../lib/words');
+  // toda palavra tem dica, e a dica não entrega a palavra
+  const plain = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  for (const w of ANAGRAMA_WORDS) assert.ok(ANAGRAMA_HINTS[w] && !plain(ANAGRAMA_HINTS[w]).includes(w), `dica de ${w}`);
   const gil = await login('gil', 'senha-gil-123');
   const r = await gil('/api/rounds', { method: 'POST', body: { game: 'anagrama' } });
   const id = r.body.id, call = body => gil('/api/rounds/' + id, { method: 'POST', body });
   let st = await roundState(id);
   const w1 = ANAGRAMA_WORDS[st.deck[0]];
   assert.notEqual(r.body.view.mix, w1);
+  assert.equal(r.body.view.clue, ANAGRAMA_HINTS[w1], 'a dica vem junto com as letras');
+  assert.ok(!JSON.stringify(r.body).includes(w1), 'a resposta não vai pra página');
   assert.equal([...r.body.view.mix].sort().join(''), [...w1].sort().join(''));
   assert.equal((await call({ action: 'answer', guess: 'XYZ' })).body.result.ok, false);
   assert.equal((await call({ action: 'hint' })).body.result.prefix, w1[0]);
