@@ -43,7 +43,10 @@ const server = http.createServer((req, res) => {
   if (pathname.startsWith('/api/')) return handle(req, res, { version });
   const file = path.join(PUBLIC, decodeURIComponent(pathname === '/' ? '/index.html' : pathname));
   if (file.startsWith(PUBLIC + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()) {
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
+    // mesmos cabeçalhos de segurança do vercel.json, pra testar local igual à produção
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Content-Security-Policy': "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'" });
     return res.end(fs.readFileSync(file));
   }
   res.writeHead(404, { 'Content-Type': 'application/json' });
