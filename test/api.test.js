@@ -100,6 +100,49 @@ test('CSRF: POST sem JSON ou de outra origem é recusado', async () => {
   assert.equal(r1.status, 415);
   const r2 = await fetch(base + '/api/auth/login', { method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json', Origin: 'https://malicioso.example' } });
   assert.equal(r2.status, 403);
+  // "text/plain; application/json" é text/plain (outro site manda sem preflight): não pode passar como JSON
+  const r3 = await fetch(base + '/api/auth/login', { method: 'POST', body: '{}', headers: { 'Content-Type': 'text/plain; application/json' } });
+  assert.equal(r3.status, 415);
+  // Origin "null" (iframe sandbox) é recusado, não vira erro 500
+  const r4 = await fetch(base + '/api/auth/login', { method: 'POST', body: '{}', headers: { 'Content-Type': 'application/json', Origin: 'null' } });
+  assert.equal(r4.status, 403);
+  // salvar pontuação e sair também exigem JSON da própria origem
+  const c = await login('ana', 'senha-ana-123');
+  assert.equal((await c('/api/scores', { method: 'POST', body: { game: 'snake', score: 5 }, headers: { Origin: 'https://malicioso.example' } })).status, 403);
+  assert.equal((await c('/api/auth/logout', { method: 'POST', body: {}, headers: { Origin: 'https://malicioso.example' } })).status, 403);
+  assert.equal((await c('/api/auth/ping')).status, 200, 'o logout de outro site não derrubou a sessão');
+  // corpo "null" não derruba a rota com 500
+  const r5 = await fetch(base + '/api/auth/login', { method: 'POST', body: 'null', headers: { 'Content-Type': 'application/json' } });
+  assert.equal(r5.status, 401);
+});
+
+test('freio de força bruta: 5 erros travam o login, espaço/maiúscula contam como o mesmo usuário, e vale no banco', async () => {
+  await makeUser('cris', 'Cris', 'player', 'senha-cris-123');
+  const c = client();
+  for (const u of ['cris', ' cris', 'CRIS ', 'Cris', '  cris  ']) {
+    assert.equal((await c('/api/auth/login', { method: 'POST', body: { username: u, password: 'errada' } })).status, 401);
+  }
+  const locked = await c('/api/auth/login', { method: 'POST', body: { username: 'cris', password: 'senha-cris-123' } });
+  assert.equal(locked.status, 429, 'travado mesmo com a senha certa');
+  const [row] = await sql`SELECT n, until_at FROM login_fails WHERE key = ${'cris'}`;
+  assert.equal(Number(row.n), 5);
+  assert.ok(Number(row.until_at) > Date.now(), 'o bloqueio fica no banco (vale pra todas as instâncias)');
+  // passou o tempo: entra, e o contador zera
+  await sql`UPDATE login_fails SET until_at = ${Date.now() - 1} WHERE key = ${'cris'}`;
+  assert.equal((await c('/api/auth/login', { method: 'POST', body: { username: 'cris', password: 'senha-cris-123' } })).status, 200);
+  assert.equal((await sql`SELECT 1 AS x FROM login_fails WHERE key = ${'cris'}`).length, 0);
+});
+
+test('trocar senha: chutar a senha atual também trava', async () => {
+  await makeUser('duda', 'Duda', 'player', 'senha-duda-123');
+  const c = await login('duda', 'senha-duda-123');
+  for (let i = 0; i < 5; i++) assert.equal((await c('/api/auth/password', { method: 'POST', body: { current: 'chute' + i, next: 'nova-senha-123' } })).status, 400);
+  assert.equal((await c('/api/auth/password', { method: 'POST', body: { current: 'senha-duda-123', next: 'nova-senha-123' } })).status, 429);
+});
+
+test('cabeçalhos de segurança: a API manda nosniff', async () => {
+  const r = await client()('/api/version');
+  assert.equal(r.headers.get('x-content-type-options'), 'nosniff');
 });
 
 /* ---------- pontuação ---------- */
