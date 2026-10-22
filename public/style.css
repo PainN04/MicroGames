@@ -563,7 +563,8 @@
   ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 220ms; }
 
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    /* dentro do jogo a animação é o próprio feedback (peça caindo, acerto, semáforo), então só corta fora dele */
+    :not(.game *), :not(.game *)::before, :not(.game *)::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
 
   /* ================= refino visual: o site todo no mesmo acabamento dos cards ================= */
@@ -963,7 +964,6 @@
   .tm-k { box-shadow: inset 0 -3px 0 oklch(0% 0 0 / .28), inset 0 1px 0 oklch(100% 0 0 / .12); transition: transform 80ms, box-shadow 80ms; }
   .tm-k:active { transform: translateY(2px); box-shadow: inset 0 -1px 0 oklch(0% 0 0 / .28); }
   .tm-k.g { background: var(--green); color: #10131c; border-color: transparent; } .tm-k.y { background: var(--yellow); color: #10131c; border-color: transparent; } .tm-k.x { opacity: .35; }
-  @media (prefers-reduced-motion: reduce) { .tm-t.flip, .c4c.drop, .c4c.win { animation: none; } }
   .row-btns[hidden], .tm-kb[hidden] { display: none; }
   /* Come-Come: botões de direção numa fileira só (a cruz comia espaço do labirinto, que é alto) */
   @media (pointer: coarse) {
@@ -1223,4 +1223,3 @@
 .choices.quiz { perspective: 700px; }
 .choices.quiz .btn.flip { animation: cardFlip .32s var(--d, 0s) ease-out both; }
 @keyframes cardFlip { from { transform: rotateX(90deg); opacity: .2; } }
-@media (prefers-reduced-motion: reduce) { .choices.quiz .btn.flip, .qin, .g2048 .t, .tm-t.bounce, .mc.open, .mc.mine, .mc.boom, .sd-cell.glow { animation: none; transition: none; } }
