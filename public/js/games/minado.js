@@ -1,5 +1,5 @@
 GAMES.minado = {
-  name: 'Campo Minado', icon: 'bomb', hue: 135, desc: 'Abra todas as casas sem mina. Clique abre; botão direito, toque longo ou o modo marcar marca. O 1º clique é sempre seguro.',
+  name: 'Campo Minado', icon: 'bomb', hue: 135, desc: 'Abra todas as casas sem mina. Clique abre; botão direito, toque longo ou o modo marcar marca. Clicar num número com as bandeiras certas em volta abre os vizinhos. O 1º clique é sempre seguro.',
   better: 'low', unit: 's', decimals: 1,
   start(el, done) {
     const N = 9, MINES = 10;
@@ -29,9 +29,15 @@ GAMES.minado = {
     const elapsed = () => (performance.now() - t0) / 1000;
     const lose = i => {
       over = true; clearInterval(iv);
-      for (const m of mines) { cells[m].innerHTML = icon('bomb', { cls: 'bomb' }); cells[m].classList.add('open'); }
+      // as outras minas aparecem em onda a partir da que explodiu; o tabuleiro treme
+      for (const m of mines) {
+        const d = Math.hypot((m % N) - (i % N), ((m / N) | 0) - ((i / N) | 0));
+        cells[m].style.setProperty('--d', d * 0.06 + 's');
+        cells[m].innerHTML = icon('bomb', { cls: 'bomb' }); cells[m].classList.add('open', 'mine');
+      }
       cells[i].classList.add('boom');
-      sfx.bad();
+      el.querySelector('#mf').classList.add('shake');
+      sfx.boom();
       setTimeout(() => done(null, 'Explodiu! Partida perdida não vai pro ranking — tenta de novo.'), 1000);
     };
     const reveal = i => {
@@ -61,6 +67,14 @@ GAMES.minado = {
         setTimeout(() => done(score), 500);
       }
     };
+    // "chording": clicar num número já aberto, com as bandeiras certas em volta, abre todos os vizinhos de uma vez
+    const chord = i => {
+      if (over || !open.has(i)) return false;
+      const n = count(i), near = around(i);
+      if (!n || near.filter(j => flags.has(j)).length !== n) return false;
+      for (const j of near) if (!open.has(j) && !flags.has(j)) { reveal(j); if (over) break; }
+      return true;
+    };
     const toggleFlag = i => {
       if (over || open.has(i)) return;
       flags.has(i) ? flags.delete(i) : flags.add(i);
@@ -76,7 +90,7 @@ GAMES.minado = {
         longPress = setTimeout(() => { longFired = true; toggleFlag(i); }, 450);
       };
       cell.onpointerup = cell.onpointerleave = () => clearTimeout(longPress);
-      cell.onclick = () => { if (longFired) { longFired = false; return; } flagMode ? toggleFlag(i) : reveal(i); };
+      cell.onclick = () => { if (longFired) { longFired = false; return; } if (chord(i)) return; flagMode ? toggleFlag(i) : reveal(i); };
     });
     el.querySelector('#flag').onclick = e => {
       flagMode = !flagMode;

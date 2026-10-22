@@ -24,7 +24,7 @@ const PORT = Number(process.env.PORT) || 8080;
 // Só a pasta public/ é servida (igual à Vercel): o código do servidor (lib/, scripts/) nunca sai.
 const PUBLIC = path.join(__dirname, 'public');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
-  '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json; charset=utf-8',
+  '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8', '.png': 'image/png', '.json': 'application/json; charset=utf-8',
   '.webmanifest': 'application/manifest+json; charset=utf-8' };
 
 // A página compara essa versão pra se recarregar sozinha quando algum arquivo de public/ muda.
@@ -43,7 +43,10 @@ const server = http.createServer((req, res) => {
   if (pathname.startsWith('/api/')) return handle(req, res, { version });
   const file = path.join(PUBLIC, decodeURIComponent(pathname === '/' ? '/index.html' : pathname));
   if (file.startsWith(PUBLIC + path.sep) && fs.existsSync(file) && fs.statSync(file).isFile()) {
-    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store' });
+    // mesmos cabeçalhos de segurança do vercel.json, pra testar local igual à produção
+    res.writeHead(200, { 'Content-Type': TYPES[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'no-store',
+      'X-Content-Type-Options': 'nosniff', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'strict-origin-when-cross-origin',
+      'Content-Security-Policy': "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'" });
     return res.end(fs.readFileSync(file));
   }
   res.writeHead(404, { 'Content-Type': 'application/json' });

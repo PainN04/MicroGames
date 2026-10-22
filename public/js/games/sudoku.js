@@ -71,6 +71,8 @@ GAMES.sudoku = {
 
     const { solution, puzzle } = makePuzzle();
     const given = puzzle.map(Boolean), cells = puzzle.slice(), notes = new Array(81).fill(0), hinted = new Set();
+    const history = []; // desfazer: cópia da grade e das notas antes de cada mudança
+    const snap = () => { history.push({ cells: cells.slice(), notes: notes.slice(), sel }); if (history.length > 200) history.shift(); };
     let sel = -1, noteMode = false, hints = 0, t0 = performance.now(), iv, over = false;
     const elapsed = () => Math.round((performance.now() - t0) / 1000) + hints * HINT_COST;
     const clock = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -79,8 +81,8 @@ GAMES.sudoku = {
       <div class="sd-board" id="bd" role="grid" aria-label="Sudoku"></div>
       <div class="sd-pad" id="pad">${Array.from({ length: 9 }, (_, i) => `<button class="sd-num" data-n="${i + 1}">${i + 1}</button>`).join('')}</div>
       <div class="sd-tools"><button class="btn ghost" id="note" aria-pressed="false">${icon('pencil')} Notas: desligado</button>
-        <button class="btn ghost" id="del">${icon('delete')} Apagar</button><button class="btn ghost" id="hint">${icon('lightbulb')} Dica (+${HINT_COST}s)</button></div>
-      <p class="hint" id="msg">Toque numa casa e escolha o número. Teclado: 1–9, setas, Apagar, N (notas), H (dica).</p>`;
+        <button class="btn ghost" id="del">${icon('delete')} Apagar</button><button class="btn ghost" id="undo">${icon('rotate-ccw')} Desfazer</button><button class="btn ghost" id="hint">${icon('lightbulb')} Dica (+${HINT_COST}s)</button></div>
+      <p class="hint" id="msg">Toque numa casa e escolha o número. Teclado: 1–9, setas, Apagar, N (notas), H (dica), Ctrl+Z (desfazer).</p>`;
     const bd = el.querySelector('#bd'), msg = el.querySelector('#msg');
 
     // casas que repetem número na linha, coluna ou bloco (ficam vermelhas)
@@ -121,13 +123,41 @@ GAMES.sudoku = {
     }
     function put(n) {
       if (over || sel < 0 || given[sel] || hinted.has(sel)) return;
-      if (noteMode && n) { if (cells[sel]) return; notes[sel] ^= bit(n); render(); return; }
+      if (noteMode && n) { if (cells[sel]) return; snap(); notes[sel] ^= bit(n); render(); return; }
+      if (cells[sel] === n && !notes[sel]) return;
+      snap();
       cells[sel] = n; notes[sel] = 0;
       if (n) { // número colocado some das notas da linha, coluna e bloco
         for (let i = 0; i < 81; i++) if ((((i / 9) | 0) === ((sel / 9) | 0) || i % 9 === sel % 9 || BOX(i) === BOX(sel))) notes[i] &= ~bit(n);
         beep(420 + n * 30, 40, 'triangle', 0.03);
       }
       msg.textContent = '';
+      render();
+      if (n) glowDone(sel);
+    }
+    // linha, coluna ou bloco completo sem repetir: acende em onda a partir da casa jogada
+    function glowDone(at) {
+      const r = (at / 9) | 0, c = at % 9, groups = [
+        Array.from({ length: 9 }, (_, k) => r * 9 + k), Array.from({ length: 9 }, (_, k) => k * 9 + c),
+        Array.from({ length: 9 }, (_, k) => (((BOX(at) / 3) | 0) * 3 + ((k / 3) | 0)) * 9 + (BOX(at) % 3) * 3 + k % 3)];
+      const lit = new Map();
+      for (const g of groups) {
+        const vals = g.map(i => cells[i]);
+        if (vals.every(Boolean) && new Set(vals).size === 9) g.forEach(i => lit.set(i, Math.min(lit.get(i) ?? 99, Math.abs(((i / 9) | 0) - r) + Math.abs(i % 9 - c))));
+      }
+      if (!lit.size) return;
+      const btns = bd.children;
+      for (const [i, d] of lit) { btns[i].style.setProperty('--d', d * 0.04 + 's'); btns[i].classList.add('glow'); }
+      [660, 880].forEach((f, k) => setTimeout(() => beep(f, 90, 'triangle', 0.04), k * 70));
+    }
+    function undo() {
+      const h = history.pop();
+      if (over || !h) return;
+      // dica não se desfaz (o tempo já foi cobrado): a casa da dica continua com a resposta
+      h.cells.forEach((v, i) => { if (!hinted.has(i)) cells[i] = v; });
+      notes.splice(0, 81, ...h.notes); sel = h.sel;
+      msg.textContent = '';
+      beep(300, 40, 'sine', 0.02);
       render();
     }
     function hint() {
@@ -145,10 +175,12 @@ GAMES.sudoku = {
     el.querySelector('#pad').addEventListener('pointerdown', e => { const b = e.target.closest('.sd-num'); if (b && !b.disabled) { e.preventDefault(); put(+b.dataset.n); } });
     el.querySelector('#del').onclick = () => put(0);
     el.querySelector('#hint').onclick = hint;
+    el.querySelector('#undo').onclick = undo;
     const noteBtn = el.querySelector('#note');
     const setNotes = on => { noteMode = on; noteBtn.setAttribute('aria-pressed', on); noteBtn.lastChild.textContent = ` Notas: ${on ? 'ligado' : 'desligado'}`; };
     noteBtn.onclick = () => setNotes(!noteMode);
     const onKey = e => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); return undo(); }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (/^[1-9]$/.test(e.key)) { put(+e.key); e.preventDefault(); }
       else if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0') { put(0); e.preventDefault(); }

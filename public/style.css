@@ -278,6 +278,13 @@
 
   .result { text-align: center; display: flex; flex-direction: column; align-items: center; gap: var(--space-sm); animation: pop .5s var(--ease-spring); }
   .result .score { font-size: var(--fs-3xl); font-weight: 700; letter-spacing: -0.04em; line-height: 1; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .result .place b { color: var(--text); }
+  .part-sum { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 2px 0 4px; max-width: 520px; }
+  .part-sum > div { min-width: 92px; padding: 8px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
+  .part-sum dt { font-size: var(--fs-xs, .75rem); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .part-sum dd { margin: 2px 0 0; font-weight: 700; font-size: 1.05rem; }
+  .part-sum .bars { display: flex; align-items: flex-end; gap: 3px; height: 34px; }
+  .part-sum .bars i { display: block; width: 8px; border-radius: 3px 3px 0 0; background: linear-gradient(var(--accent), var(--primary)); }
   .result .label { color: var(--muted); font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .12em; }
   .badge { padding: .4em 1em; border-radius: 999px; background: oklch(86% 0.17 92 / 0.15); color: var(--yellow); border: 1px solid oklch(86% 0.17 92 / 0.35); font-weight: 700; font-size: var(--fs-sm); }
   .badge.warn { background: oklch(66% 0.22 18 / 0.15); color: oklch(82% 0.12 18); border-color: oklch(66% 0.22 18 / 0.4); max-width: 42ch; }
@@ -289,14 +296,29 @@
   .reflex.go { background: var(--green); }
   .reflex.early { background: var(--yellow); }
   .reflex.between { background: var(--blue); }
+  .reflex { display: flex; flex-direction: column; gap: clamp(.8rem, 3vh, 1.4rem); justify-content: center; align-items: center; }
+  .reflex .rx-msg { max-width: 24ch; }
+  /* semáforo: 3 luzes numa faixa de vidro; apagadas são só um anel claro, a acesa brilha */
+  .sema { display: flex; gap: 12px; padding: 8px 12px; border-radius: 999px; flex: none;
+    background: oklch(0% 0 0 / .14); box-shadow: inset 0 1px 0 oklch(100% 0 0 / .18); }
+  .sema i { width: clamp(20px, 5vh, 30px); aspect-ratio: 1; border-radius: 50%; background: oklch(100% 0 0 / .1);
+    box-shadow: inset 0 0 0 2px oklch(100% 0 0 / .22); transition: background 80ms, box-shadow 80ms, transform 80ms; }
+  .reflex.wait .r { background: radial-gradient(circle at 35% 30%, #ffd0d4, #ff3b4f 60%); box-shadow: 0 0 0 2px #fff6, 0 0 18px 4px #ff3b4f99; transform: scale(1.08); }
+  .reflex.go .g { background: radial-gradient(circle at 35% 30%, #e0ffe9, #19d36a 60%); box-shadow: 0 0 0 2px #fff8, 0 0 22px 6px #0b8a4299; transform: scale(1.12); }
+  .reflex.early .y { background: radial-gradient(circle at 35% 30%, #fff6cc, #ffb800 60%); box-shadow: 0 0 0 2px #fff6, 0 0 18px 4px #ffb80099; animation: semaBlink .5s steps(2) infinite; }
+  .reflex.between .sema { visibility: hidden; }
+  @keyframes semaBlink { 50% { opacity: .4; } }
   /* Clique */
   .bigbtn { width: min(240px, 70vw, calc(var(--avail) - 70px)); aspect-ratio: 1; border-radius: 50%; border: 0; font: inherit; font-size: var(--fs-lg); font-weight: 700; color: oklch(15% 0.02 275); cursor: pointer; user-select: none;
-    background: radial-gradient(circle at 35% 30%, oklch(82% 0.15 35), var(--accent) 45%, var(--red)); box-shadow: 0 10px 0 oklch(45% 0.16 20), 0 24px 50px oklch(66% 0.22 18 / 0.35); transition: transform 80ms, box-shadow 80ms; }
+    background: radial-gradient(circle at 35% 30%, oklch(84% 0.13 30), oklch(68% 0.21 22) 45%, oklch(58% 0.22 20)); box-shadow: 0 10px 0 oklch(45% 0.16 20), 0 24px 50px oklch(66% 0.22 18 / 0.35); transition: transform 80ms, box-shadow 80ms; }
   .bigbtn:active { transform: translateY(8px); box-shadow: 0 2px 0 oklch(45% 0.16 20), 0 10px 30px oklch(66% 0.22 18 / 0.35); }
   /* Digitação */
   .words { font-size: var(--fs-lg); line-height: 1.8; background: var(--surface-2); padding: var(--space-sm) var(--space-md); border-radius: 14px; width: 100%; min-height: 110px; border: 1px solid var(--border); }
   .words span { padding: 0 .15em; border-radius: 6px; }
   .words .cur { background: oklch(70% 0.19 290 / 0.35); outline: 1px solid var(--primary); }
+  .words .cur.typo { background: oklch(64% 0.21 20 / 0.35); outline-color: var(--red); }
+  .words .cur { font-size: 1.12em; }
+  .txt.typo { border-color: var(--red); }
   .words .ok { color: var(--green); }
   .words .bad { color: var(--red); text-decoration: line-through; }
   input.txt { font: inherit; font-size: var(--fs-lg); padding: .6em 1em; border-radius: 14px; border: 1px solid var(--border-strong); background: oklch(12% 0.02 275 / 0.7); color: var(--text); width: 100%; max-width: 440px; text-align: center; min-height: 44px; transition: border-color var(--duration), box-shadow var(--duration); }
@@ -305,7 +327,14 @@
   @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
   /* Memória */
   .simon { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: min(300px, 80vw, calc(var(--avail) - 100px)); aspect-ratio: 1; }
-  .pad { border: 0; border-radius: 24px; opacity: .3; cursor: pointer; transition: opacity 90ms, transform 90ms; }
+  .pad { position: relative; border: 0; border-radius: 24px; opacity: .38; cursor: pointer; transition: opacity 90ms, transform 90ms, filter 90ms;
+    background-image: radial-gradient(circle at 35% 30%, rgb(255 255 255 / .45), transparent 55%), linear-gradient(160deg, rgb(255 255 255 / .12), rgb(0 0 0 / .35)) !important;
+    box-shadow: inset 0 -8px 0 rgb(0 0 0 / .28), inset 0 2px 0 rgb(255 255 255 / .25), 0 6px 0 rgb(0 0 0 / .35); }
+  .pad kbd { position: absolute; inset: auto 0 10px; margin: auto; width: max-content; font-family: inherit; font-weight: 700; font-size: .8rem; line-height: 1; color: #10131c; background: rgb(255 255 255 / .55); padding: 3px 7px; border-radius: 6px; }
+  .pad:active { transform: translateY(4px); box-shadow: inset 0 -4px 0 rgb(0 0 0 / .28), 0 2px 0 rgb(0 0 0 / .35); }
+  .seq-dots { display: flex; flex-wrap: wrap; justify-content: center; gap: 5px; min-height: 10px; max-width: 300px; }
+  .seq-dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--surface-2); border: 1px solid var(--border-strong); transition: background .15s; }
+  .seq-dots i.on { background: var(--green); border-color: transparent; box-shadow: 0 0 8px var(--green); }
   .pad:nth-child(1) { border-top-left-radius: 50%; } .pad:nth-child(2) { border-top-right-radius: 50%; }
   .pad:nth-child(3) { border-bottom-left-radius: 50%; } .pad:nth-child(4) { border-bottom-right-radius: 50%; }
   .pad.lit { opacity: 1; transform: scale(1.04); box-shadow: 0 0 40px currentColor; }
@@ -321,7 +350,8 @@
   .reflex, .bigbtn, .pad { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
   input.txt.right { border-color: var(--green); box-shadow: 0 0 0 4px oklch(76% 0.18 150 / 0.25); }
   /* Cor Certa (Stroop) */
-  .stroop-word { font-size: var(--fs-3xl); font-weight: 700; letter-spacing: -0.03em; line-height: 1; min-height: 1.1em; user-select: none; }
+  .stroop-word { font-size: var(--fs-3xl); font-weight: 700; letter-spacing: -0.03em; line-height: 1; min-height: 1.1em; user-select: none; padding: .08em .3em; border: 3px solid transparent; border-radius: 16px; animation: pop .22s var(--ease-spring); text-shadow: 0 4px 18px rgb(0 0 0 / .45); }
+  .stroop-word.flip { border-color: var(--text); border-style: dashed; background: rgb(255 255 255 / .06); }
   .choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: min(440px, 100%); }
   .choices .btn { min-height: 56px; font-size: var(--fs-base); }
   .quiz-q { margin: 0; font-size: var(--fs-lg); font-weight: 700; text-align: center; max-width: 30ch; min-height: 2.6em; display: grid; place-items: center; }
@@ -341,7 +371,9 @@
   .schulte { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: min(400px, 100%, calc(var(--avail) - 56px)); }
   .cell { aspect-ratio: 1; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; font-size: var(--fs-lg); font-weight: 700; cursor: pointer; touch-action: manipulation; transition: opacity var(--duration), transform var(--duration-fast); }
   .cell:hover { border-color: var(--border-strong); }
-  .cell.done { opacity: .18; transform: scale(.92); }
+  /* achou: acende verde forte e pula; depois fica verde (não só apagado), que é o que aparece com "reduzir animações" ligado */
+  .cell.done { transform: scale(.94); background: oklch(76% 0.18 150 / .32); border-color: var(--green); color: oklch(92% 0.1 150); box-shadow: inset 0 0 12px oklch(76% 0.18 150 / .35); cursor: default; animation: cellDone .6s ease-out; }
+  @keyframes cellDone { 0%, 45% { opacity: 1; transform: scale(1.1); background: var(--green); border-color: var(--green); color: #10131c; box-shadow: 0 0 20px 4px oklch(80% 0.18 150 / .6); } }
   .cell.miss { border-color: var(--red); animation: shake .25s; }
   .schulte.hidden .cell { color: var(--muted); opacity: .45; cursor: default; }
   .schulte-wrap { position: relative; display: grid; place-items: center; width: 100%; }
@@ -367,17 +399,39 @@
   /* 2048 */
   .g2048 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; padding: 10px; border-radius: 16px; background: var(--surface-2);
     border: 1px solid var(--border); width: min(400px, 100%, calc(var(--avail) - 90px)); aspect-ratio: 1; touch-action: none; user-select: none; }
-  .g2048 .t { border-radius: 10px; display: grid; place-items: center; font-weight: 700; font-size: clamp(1rem, 4.6vw, 1.9rem); background: oklch(100% 0 0 / 0.04); font-variant-numeric: tabular-nums; }
-  .g2048 .t.pop { animation: pop .16s var(--ease-spring); }
-  .g2048 .t.merge { animation: bump .2s var(--ease-spring); }
+  .g2048 { position: relative; }
+  .g2048 .slot { border-radius: 10px; background: oklch(100% 0 0 / 0.04); box-shadow: inset 0 2px 4px oklch(0% 0 0 / .25); }
+  /* peça: posição pela casa (--c, --r) e desliza com transition; o miolo (<i>) é que pulsa ao nascer/juntar */
+  .g2048 .t { position: absolute; top: 10px; left: 10px; width: calc((100% - 50px) / 4); aspect-ratio: 1;
+    transform: translate(calc(var(--c) * (100% + 10px)), calc(var(--r) * (100% + 10px))); transition: transform 105ms ease-out; z-index: 1; }
+  .g2048 .t > i { font-style: normal; display: grid; place-items: center; width: 100%; height: 100%; border-radius: 10px; font-weight: 700;
+    font-size: clamp(1rem, 4.6vw, 1.9rem); font-variant-numeric: tabular-nums;
+    box-shadow: inset 0 -4px 0 oklch(0% 0 0 / .18), inset 0 2px 0 oklch(100% 0 0 / .25), 0 3px 8px oklch(0% 0 0 / .3); }
+  .g2048 .t[data-d="3"] > i { font-size: clamp(.9rem, 4vw, 1.6rem); }
+  .g2048 .t[data-d="4"] > i { font-size: clamp(.8rem, 3.4vw, 1.3rem); }
+  .g2048 .t.pop > i { animation: pop .16s var(--ease-spring); }
+  .g2048 .t.merge { z-index: 2; }
+  .g2048 .t.merge > i { animation: bump .2s var(--ease-spring); }
+  .g2048 .t.max > i { animation: tileGlow 1.6s ease-in-out infinite; }
+  .g2048 .t.max.merge > i { animation: bump .2s var(--ease-spring), tileGlow 1.6s ease-in-out .2s infinite; }
+  @keyframes tileGlow { 50% { box-shadow: inset 0 -4px 0 oklch(0% 0 0 / .18), inset 0 2px 0 oklch(100% 0 0 / .25), 0 0 22px 4px oklch(85% 0.17 85 / .55); } }
   @keyframes bump { 50% { transform: scale(1.14); } }
   /* Campo Minado */
   .mines { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px; width: min(420px, 100%, calc(var(--avail) - 110px)); user-select: none; touch-action: manipulation; }
   .mc { aspect-ratio: 1; border: 0; border-radius: 6px; padding: 0; font: inherit; font-weight: 700; font-size: clamp(.8rem, 3.4vw, 1.2rem); cursor: pointer; color: var(--text);
     background: linear-gradient(160deg, oklch(36% 0.03 275), oklch(28% 0.03 275)); box-shadow: inset 0 -2px 0 oklch(0% 0 0 / .3); -webkit-tap-highlight-color: transparent; }
   .mc:hover { filter: brightness(1.15); }
-  .mc.open { background: oklch(19% 0.02 275); box-shadow: none; cursor: default; }
-  .mc.boom { background: var(--red); }
+  .mc { box-shadow: inset 0 2px 0 oklch(100% 0 0 / .12), inset 0 -3px 0 oklch(0% 0 0 / .35), 0 1px 2px oklch(0% 0 0 / .3); transition: filter 80ms; }
+  .mc:active:not(.open) { box-shadow: inset 0 1px 0 oklch(100% 0 0 / .08), inset 0 -1px 0 oklch(0% 0 0 / .35); }
+  .mc.open { background: oklch(19% 0.02 275); box-shadow: inset 0 2px 4px oklch(0% 0 0 / .45); cursor: default; animation: mcOpen .16s ease-out; }
+  .mc.mine { animation: mcMine .3s var(--d, 0s) var(--ease-spring) both; }
+  .mc.boom { background: radial-gradient(circle, #ffe27a 0 18%, var(--red) 60%); animation: mcBoom .5s ease-out; z-index: 1; position: relative; }
+  .mc .flag { animation: flagDrop .32s var(--ease-spring); color: var(--red); }
+  .mines.shake { animation: shake .35s; }
+  @keyframes mcOpen { from { transform: scale(.82); filter: brightness(1.6); } }
+  @keyframes mcMine { from { transform: scale(.3); opacity: 0; } }
+  @keyframes mcBoom { 0% { transform: scale(1); box-shadow: 0 0 0 0 #ffb347; } 30% { transform: scale(1.35); box-shadow: 0 0 30px 14px oklch(75% 0.2 50 / .8); } 100% { transform: scale(1); box-shadow: 0 0 0 0 transparent; } }
+  @keyframes flagDrop { from { transform: translateY(-120%) rotate(-25deg); opacity: 0; } 60% { opacity: 1; } }
   .mc.n1 { color: var(--blue); } .mc.n2 { color: var(--green); } .mc.n3 { color: var(--red); } .mc.n4 { color: var(--primary); }
   .mc.n5 { color: var(--accent); } .mc.n6 { color: oklch(78% 0.13 200); } .mc.n7, .mc.n8 { color: var(--yellow); }
   /* Anagrama */
@@ -509,7 +563,8 @@
   ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 220ms; }
 
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+    /* dentro do jogo a animação é o próprio feedback (peça caindo, acerto, semáforo), então só corta fora dele */
+    :not(.game *), :not(.game *)::before, :not(.game *)::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   }
 
   /* ================= refino visual: o site todo no mesmo acabamento dos cards ================= */
@@ -862,7 +917,9 @@
   /* Forca */
   .gallows { height: clamp(96px, calc(var(--avail, 520px) - 360px), 170px); width: auto; aspect-ratio: 220 / 190; }
   .gallows path, .gallows circle { fill: none; stroke: currentColor; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
-  .gallows .base { color: var(--muted); } .gallows .body { color: var(--text); } .gallows .body path, .gallows .body circle { stroke-width: 5; animation: fade .25s; }
+  .gallows .base { color: var(--muted); } .gallows .body { color: var(--text); } .gallows .body > path, .gallows .body > circle { animation: fade .25s; }
+  .gallows .body { transform-origin: 150px 20px; } .gallows .body.dead { animation: sway 1.6s ease-in-out infinite; }
+  @keyframes sway { 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); } }
   .wordline { --lw: min(2.2rem, calc((100vw - 96px) / 12 - 4px)); display: flex; flex-wrap: wrap; gap: 8px 18px; justify-content: center; min-height: 2.6rem; position: relative; }
   .wordline .wd { display: flex; gap: 4px; flex-wrap: nowrap; }
   .wordline .lt { width: var(--lw); height: 2.2rem; display: grid; place-items: end center; font-size: min(var(--fs-lg), calc(var(--lw) * .85)); font-weight: 700; border-bottom: 3px solid var(--border-strong); padding-bottom: 2px; }
@@ -877,10 +934,11 @@
   .key.no { background: oklch(40% .1 20 / .5); border-color: var(--red); opacity: .55; }
   .key:disabled { cursor: default; }
   /* Ligue 4 */
-  .c4 { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; padding: 8px; background: oklch(42% .17 262); border-radius: 16px; border: 2px solid oklch(55% .16 262); width: min(100%, 420px, calc((var(--avail, 520px) - 150px) * 7 / 6)); user-select: none; -webkit-user-select: none; }
+  .c4c.ghost { background: var(--red); opacity: .35; }
+  .c4 { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; padding: 8px; background: linear-gradient(160deg, oklch(50% .17 262), oklch(36% .17 262)); border-radius: 16px; border: 2px solid oklch(58% .16 262); box-shadow: inset 0 2px 0 oklch(100% 0 0 / .2), 0 10px 0 oklch(28% .14 262), 0 18px 30px oklch(0% 0 0 / .45); width: min(100%, 420px, calc((var(--avail, 520px) - 150px) * 7 / 6)); user-select: none; -webkit-user-select: none; }
   .c4c { aspect-ratio: 1; border-radius: 50%; border: 0; padding: 0; background: oklch(18% .03 270); box-shadow: inset 0 3px 6px oklch(0% 0 0 / .5); cursor: pointer; touch-action: manipulation; position: relative; }
-  .c4c.you { background: var(--red); box-shadow: inset 0 -4px 6px oklch(0% 0 0 / .25), inset 0 3px 5px oklch(100% 0 0 / .25); }
-  .c4c.cpu { background: var(--yellow); box-shadow: inset 0 -4px 6px oklch(0% 0 0 / .25), inset 0 3px 5px oklch(100% 0 0 / .3); }
+  .c4c.you { background: radial-gradient(circle at 35% 30%, oklch(80% .15 20), var(--red) 55%, oklch(45% .18 20)); box-shadow: inset 0 -4px 6px oklch(0% 0 0 / .25), inset 0 3px 5px oklch(100% 0 0 / .25); }
+  .c4c.cpu { background: radial-gradient(circle at 35% 30%, oklch(97% .1 95), var(--yellow) 55%, oklch(65% .15 80)); box-shadow: inset 0 -4px 6px oklch(0% 0 0 / .25), inset 0 3px 5px oklch(100% 0 0 / .3); }
   .c4c.drop { z-index: 2; animation: c4drop calc(.14s + var(--fall, 1) * .055s) cubic-bezier(.55, 0, 1, .6); }
   @keyframes c4drop { from { transform: translateY(calc(var(--fall, 1) * -112%)); } }
   .c4c.win { animation: c4win .6s ease-in-out infinite alternate; }
@@ -894,13 +952,18 @@
   .tm-t.g, .tm-t.y, .tm-t.x { color: #10131c; border-color: transparent; }
   .tm-t.g { background: var(--green); } .tm-t.y { background: var(--yellow); } .tm-t.x { background: oklch(48% .02 270); color: var(--text); }
   .tm-t.nope { animation: shake .25s; }
+  /* relevo: borda de baixo mais escura e brilho em cima, como peça de verdade */
+  .tm-t { box-shadow: inset 0 -3px 0 oklch(0% 0 0 / .22); }
+  .tm-t.g, .tm-t.y, .tm-t.x { box-shadow: inset 0 -4px 0 oklch(0% 0 0 / .2), inset 0 2px 0 oklch(100% 0 0 / .3), 0 3px 8px oklch(0% 0 0 / .25); }
+  .tm-t.bounce { animation: tmbounce .5s var(--d, 0s) var(--ease-spring) both; }
+  @keyframes tmbounce { 40% { transform: translateY(-14px) scale(1.06); } 70% { transform: translateY(2px); } }
   .tm-kb { display: flex; flex-direction: column; gap: 6px; width: min(100%, 440px); }
   .tm-kb > div { display: flex; gap: 4px; justify-content: center; }
   .tm-k { flex: 1 1 0; max-width: 44px; min-height: 46px; padding: 0; border-radius: 9px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; font-weight: 700; cursor: pointer; touch-action: manipulation; }
   .tm-k.wide { flex: 1.6 1 0; max-width: 66px; }
-  .tm-k:active { transform: scale(.94); }
+  .tm-k { box-shadow: inset 0 -3px 0 oklch(0% 0 0 / .28), inset 0 1px 0 oklch(100% 0 0 / .12); transition: transform 80ms, box-shadow 80ms; }
+  .tm-k:active { transform: translateY(2px); box-shadow: inset 0 -1px 0 oklch(0% 0 0 / .28); }
   .tm-k.g { background: var(--green); color: #10131c; border-color: transparent; } .tm-k.y { background: var(--yellow); color: #10131c; border-color: transparent; } .tm-k.x { opacity: .35; }
-  @media (prefers-reduced-motion: reduce) { .tm-t.flip, .c4c.drop, .c4c.win { animation: none; } }
   .row-btns[hidden], .tm-kb[hidden] { display: none; }
   /* Come-Come: botões de direção numa fileira só (a cruz comia espaço do labirinto, que é alto) */
   @media (pointer: coarse) {
@@ -1083,6 +1146,85 @@
   .strip .smalls .act { height: 100%; }
   @media (max-width: 720px) { .strip .smalls { grid-template-columns: 1fr; } }
   .strip.no-tourney .big { min-height: 118px; }
+
+/* pontos que sobem nos jogos de tela (popPoints) */
+.pop-pts { position: absolute; z-index: 50; pointer-events: none; transform: translate(-50%, 0); font-weight: 700; font-size: 1.4rem; color: var(--green);
+  text-shadow: 0 2px 8px rgb(0 0 0 / .5); animation: popPts .8s cubic-bezier(.2, .7, .3, 1) forwards; }
+.pop-pts.bad { color: var(--red); }
+.pop-pts.gold { color: var(--yellow); font-size: 1.7rem; }
+@keyframes popPts { from { opacity: 0; transform: translate(-50%, 6px) scale(.7); } 20% { opacity: 1; transform: translate(-50%, -8px) scale(1.1); } to { opacity: 0; transform: translate(-50%, -46px) scale(1); } }
+@media (prefers-reduced-motion: reduce) { .pop-pts { animation-duration: .01s; } }
+
+/* Clique Maluco: ondinha a cada clique e barra de cliques por segundo */
+.bigbtn { position: relative; overflow: hidden; }
+.bigbtn .ripple { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px; border-radius: 50%; background: rgb(255 255 255 / .55); pointer-events: none; animation: ripple .45s ease-out forwards; }
+@keyframes ripple { to { transform: scale(9); opacity: 0; } }
+.stat b.bump { display: inline-block; animation: bump .18s ease-out; }
+@keyframes bump { 50% { transform: scale(1.35); } }
+.cps-bar { position: relative; width: min(320px, 80vw); height: 14px; border-radius: 99px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; }
+.cps-bar i { position: absolute; inset: 0 auto 0 0; width: calc(var(--v, 0) * 100%); background: linear-gradient(90deg, var(--green), var(--yellow), var(--red)); transition: width .15s; }
+.cps-bar span { position: relative; display: block; text-align: center; font-size: .7rem; font-weight: 700; line-height: 14px; }
+
+/* Como jogar (1ª partida de cada jogo) e contagem 3, 2, 1 */
+.game { position: relative; }
+.game:has(> .howto) { min-height: min(520px, var(--avail)); }
+.game:has(> .countdown) { min-height: 280px; }
+.howto { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; padding: 12px; border-radius: 18px; background: rgb(10 10 22 / .3); backdrop-filter: blur(4px); animation: fadeIn .2s; }
+.howto-card { width: min(420px, 100%); padding: var(--space-md); border-radius: 22px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  background: linear-gradient(160deg, oklch(30% .08 var(--h)), oklch(20% .04 var(--h))); border: 1px solid oklch(60% .12 var(--h) / .5); box-shadow: 0 20px 60px rgb(0 0 0 / .5); }
+.howto-art { width: 150px; height: 150px; display: grid; place-items: center; }
+.howto-art > .i { width: 84px; height: 84px; color: oklch(80% .14 var(--h)); }
+.howto h3 { margin: 0; font-size: var(--fs-lg); }
+.howto ol { margin: 0; padding: 0; list-style: none; counter-reset: st; text-align: left; display: grid; gap: 8px; width: 100%; }
+.howto li { counter-increment: st; display: flex; gap: 10px; align-items: baseline; }
+.howto li::before { content: counter(st); flex: none; width: 1.6em; height: 1.6em; display: grid; place-items: center; border-radius: 50%; font-weight: 700; font-size: .85em; background: oklch(65% .16 var(--h)); color: #10131c; }
+.howto-keys { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.howto-keys kbd { font-family: inherit; font-weight: 700; font-size: .78rem; line-height: 1; padding: 6px 9px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border-strong); box-shadow: 0 2px 0 rgb(0 0 0 / .35); }
+@keyframes fadeIn { from { opacity: 0; } }
+.countdown { position: absolute; inset: 0; z-index: 20; display: grid; place-items: center; font-size: clamp(4rem, 3rem + 8vw, 8rem); font-weight: 700; pointer-events: none;
+  background: radial-gradient(circle, rgb(10 10 22 / .6), transparent 70%); text-shadow: 0 6px 30px rgb(0 0 0 / .6); }
+.countdown.tick { animation: cdTick .55s cubic-bezier(.2, .8, .3, 1); }
+@keyframes cdTick { from { transform: scale(1.8); opacity: 0; } 30% { transform: scale(1); opacity: 1; } to { transform: scale(.85); opacity: .9; } }
+.daily-tag { display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; padding: 3px 9px; border-radius: 99px; font-size: var(--fs-xs); font-weight: 600;
+  background: oklch(80% .15 85 / .15); color: var(--yellow); border: 1px solid oklch(80% .15 85 / .35); }
+#how { font-weight: 700; font-size: 1.05rem; }
+
+/* Ritmo: ajuste do atraso do som */
+.row-btns.lat{align-items:center;gap:.5rem;margin-top:.5rem}
+.row-btns.lat .hint{margin:0}
+.row-btns.lat .btn{padding:.25rem .8rem;min-width:2.4rem}
+.row-btns.lat b{min-width:4.2rem;text-align:center;font-variant-numeric:tabular-nums}
+
+/* Toupeira: cursor de martelo desenhado (levantado e batendo) */
+.moles { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cg transform='rotate%28-25 16 16%29'%3E%3Crect x='21' y='14' width='6' height='32' rx='3' fill='%238a5a2b' stroke='%234a2e14' stroke-width='1.5'/%3E%3Crect x='22.5' y='16' width='1.8' height='28' rx='.9' fill='%23c58a4f'/%3E%3Crect x='6' y='4' width='34' height='14' rx='4' fill='%236b7190' stroke='%232a2d3d' stroke-width='1.5'/%3E%3Crect x='8' y='6' width='30' height='4' rx='2' fill='%23b8bdd6'/%3E%3Crect x='4' y='3' width='6' height='16' rx='2.5' fill='%234a4f68' stroke='%232a2d3d' stroke-width='1.5'/%3E%3C/g%3E%3C/svg%3E") 10 8, pointer; }
+.moles.swing, .moles.swing .hole { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 48 48'%3E%3Cg transform='rotate%2820 16 16%29'%3E%3Crect x='21' y='14' width='6' height='32' rx='3' fill='%238a5a2b' stroke='%234a2e14' stroke-width='1.5'/%3E%3Crect x='22.5' y='16' width='1.8' height='28' rx='.9' fill='%23c58a4f'/%3E%3Crect x='6' y='4' width='34' height='14' rx='4' fill='%236b7190' stroke='%232a2d3d' stroke-width='1.5'/%3E%3Crect x='8' y='6' width='30' height='4' rx='2' fill='%23b8bdd6'/%3E%3Crect x='4' y='3' width='6' height='16' rx='2.5' fill='%234a4f68' stroke='%232a2d3d' stroke-width='1.5'/%3E%3C/g%3E%3C/svg%3E") 10 14, pointer; }
+.moles .hole { cursor: inherit; }
+
+/* confete e letra voando (jogos de tela) */
+.confetti { position: absolute; z-index: 60; width: 8px; height: 12px; border-radius: 2px; pointer-events: none; animation: confetti .85s cubic-bezier(.2,.7,.4,1) forwards; }
+@keyframes confetti { to { transform: translate(var(--dx), calc(var(--dy) + 90px)) rotate(var(--r)); opacity: 0; } }
+.fly { position: absolute; z-index: 60; display: grid; place-items: center; pointer-events: none; font-weight: 700; font-size: 1.2rem; border-radius: 12px;
+  background: var(--accent, #a98bff); color: #10131c; animation: fly .26s cubic-bezier(.3,.6,.4,1) forwards; }
+@keyframes fly { to { transform: translate(var(--tx), var(--ty)) scale(.45); opacity: .2; } }
+.tiles .tile.enter { animation: tileIn .32s var(--i, 0s) var(--ease-spring) both; }
+.anag-clue { font-size: 1rem; }
+.anag-clue b { color: var(--accent); }
+@keyframes tileIn { from { opacity: 0; transform: translateY(-14px) rotate(-12deg) scale(.6); } }
+
+/* Sudoku: linha/coluna/bloco completo acende em onda */
+.sd-cell.glow { animation: sdGlow .6s var(--d, 0s) ease-out both; }
+@keyframes sdGlow { 30% { background: oklch(78% 0.15 150 / .55); box-shadow: inset 0 0 0 2px oklch(85% 0.16 150); transform: scale(1.06); } }
+
+/* barra de tempo (Quiz) e entrada das perguntas */
+.timebar { width: min(520px, 100%); height: 6px; border-radius: 99px; background: oklch(100% 0 0 / .08); overflow: hidden; }
+.timebar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--green), var(--blue)); transform-origin: left; transition: transform .1s linear; }
+.timebar i.low { background: linear-gradient(90deg, var(--red), var(--yellow)); animation: tbPulse .5s ease-in-out infinite alternate; }
+@keyframes tbPulse { to { opacity: .55; } }
+.qin { animation: qIn .28s var(--ease-spring); }
+@keyframes qIn { from { opacity: 0; transform: translateY(10px) scale(.96); } }
+.choices.quiz { perspective: 700px; }
+.choices.quiz .btn.flip { animation: cardFlip .32s var(--d, 0s) ease-out both; }
+@keyframes cardFlip { from { transform: rotateX(90deg); opacity: .2; } }
 
 /* ================= modo leve (js/perf.js): PC sem placa de vídeo boa ================= */
 /* O fundo animado por baixo do vidro desfocado refazia o desfoque da tela toda a cada quadro (~12 fps num i3 antigo).

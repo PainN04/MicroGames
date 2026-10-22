@@ -5,7 +5,8 @@ GAMES.reflexo = {
     let times = [], timer, startAt, state;
     el.innerHTML = '<div class="hud"><span class="stat">Rodada<b id="rd"></b></span></div><button class="reflex" id="rx"></button>';
     const box = el.querySelector('#rx');
-    const set = (cls, txt) => { box.className = 'reflex ' + cls; box.textContent = txt; };
+    // semáforo desenhado ao lado do texto: vermelho esperando, verde pra clicar, amarelo piscando quando foi cedo
+    const set = (cls, txt) => { box.className = 'reflex ' + cls; box.innerHTML = `<span class="sema" aria-hidden="true"><i class="r"></i><i class="y"></i><i class="g"></i></span><span class="rx-msg">${esc(txt)}</span>`; };
     function wait() {
       state = 'wait';
       el.querySelector('#rd').textContent = `${times.length + 1}/3`;
@@ -32,7 +33,13 @@ GAMES.reflexo = {
       else if (state === 'early') { if (performance.now() >= lockedUntil) wait(); }
       else if (state === 'go') {
         times.push(Math.round(performance.now() - startAt));
-        if (times.length === 3) return done(Math.round(times.reduce((a, b) => a + b) / 3));
+        if (times.length === 3) {
+          // média da galera = média do melhor de cada pessoa no ranking geral
+          const bests = bestPerPlayer('reflexo', {}).map(([, v]) => v);
+          const crowd = bests.length ? Math.round(bests.reduce((a, b) => a + b) / bests.length) : 0;
+          summarize([...times.map((t, k) => [`Rodada ${k + 1}`, t + ' ms']), ['Melhor', Math.min(...times) + ' ms'], ...(crowd ? [['Média da galera', crowd + ' ms']] : [])]);
+          return done(Math.round(times.reduce((a, b) => a + b) / 3));
+        }
         state = 'between'; set('between', `${times.at(-1)} ms — clique pra próxima`);
       } else if (state === 'between') wait();
     };

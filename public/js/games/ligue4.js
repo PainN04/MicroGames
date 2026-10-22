@@ -37,7 +37,12 @@ GAMES.ligue4 = {
       for (let r = 0; r < R; r++) if (g[3][r] === me) s += 3; else if (g[3][r]) s -= 3;
       return s;
     };
+    // a máquina tem um tempo máximo pra pensar (celular fraco não congela a tela): aprofunda aos poucos e, se o tempo
+    // acabar no meio, fica com a melhor jogada da última profundidade que terminou
+    let deadline = Infinity, nodes = 0;
+    const TIMEOUT = {};
     const search = (g, depth, alpha, beta, who, me) => {
+      if (++nodes % 512 === 0 && performance.now() > deadline) throw TIMEOUT;
       const w = winner(g);
       if (w) return (w.who === me ? 1e6 : -1e6) * (depth + 1);
       if (!depth || full(g)) return evalBoard(g, me);
@@ -59,13 +64,21 @@ GAMES.ligue4 = {
       const must = open.find(c => { const g = copy(grid); drop(g, c, CPU); return winner(g); });
       if (must !== undefined) return must;
       if (Math.random() < slip) return open[rand(0, open.length - 1)];
-      let best = [], bestV = -Infinity;
-      for (const c of open) {
-        const g = copy(grid); drop(g, c, CPU);
-        const v = search(g, depth - 1, -Infinity, Infinity, YOU, CPU) + rand(0, 2);
-        if (v > bestV) { bestV = v; best = [c]; } else if (v === bestV) best.push(c);
-      }
-      return best[rand(0, best.length - 1)];
+      let pick = open[0];
+      deadline = performance.now() + 250;
+      try {
+        for (let d = 1; d <= depth; d++) {
+          let best = [], bestV = -Infinity;
+          for (const c of open) {
+            const g = copy(grid); drop(g, c, CPU);
+            const v = search(g, d - 1, -Infinity, Infinity, YOU, CPU) + rand(0, 2);
+            if (v > bestV) { bestV = v; best = [c]; } else if (v === bestV) best.push(c);
+          }
+          pick = best[rand(0, best.length - 1)];
+        }
+      } catch (e) { if (e !== TIMEOUT) throw e; }
+      deadline = Infinity;
+      return pick;
     };
     const copy = g => g.map(col => col.slice());
 
@@ -131,7 +144,15 @@ GAMES.ligue4 = {
       say('Máquina pensando...');
       timers.push(setTimeout(cpuPlay, 450));
     };
-    cells.forEach(cell => cell.onclick = () => play(+cell.dataset.c));
+    cells.forEach(cell => cell.onclick = () => { play(+cell.dataset.c); preview(-1); });
+    // prévia: passando o mouse numa coluna, aparece a peça (meio transparente) onde ela vai cair
+    const preview = c => {
+      cells.forEach(x => x.classList.remove('ghost'));
+      if (c < 0 || busy || over || grid[c][R - 1] !== 0) return;
+      at(c, R - 1 - grid[c].indexOf(0)).classList.add('ghost');
+    };
+    cells.forEach(cell => cell.onpointerenter = e => { if (e.pointerType === 'mouse') preview(+cell.dataset.c); });
+    el.querySelector('#c4').onpointerleave = () => preview(-1);
     el.querySelector('#again').onclick = newRound;
     const onKey = e => { if (/^[1-7]$/.test(e.key)) play(+e.key - 1); else if (e.key === 'Enter' && !el.querySelector('#nx').hidden) newRound(); };
     addEventListener('keydown', onKey);

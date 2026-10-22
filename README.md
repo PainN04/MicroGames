@@ -80,7 +80,7 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados co
 | **Memória** | Repita a sequência de cores, estilo Genius, com um tom por cor. |
 | **Conta Rápida** | Resolva o máximo de contas em 30s. Combo até x4. |
 | **Digitação** | Máximo de palavras certas em 30s. |
-| **Anagrama** | Desembaralhe palavras em 60s. Palavra maior vale mais; pular não custa ponto. |
+| **Anagrama** | Desembaralhe palavras em 60s com uma dica do tema (ex.: BANANA, dica "Fruta"). Palavra maior vale mais; pular não custa ponto. |
 | **Termo** | A palavra do dia: 5 letras, 6 tentativas, igual pra todo mundo. Só vale a primeira partida de cada dia. |
 | **Forca** | Palavras de TI e do escritório; errou 6 letras, acabou. |
 | **Sudoku** | Menor tempo ganha; dica custa +20s. |
@@ -95,15 +95,15 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados co
 | --- | --- |
 | **Cobrinha** 🎨 | Acelera a cada fruta; a dourada vale 5 e a azul encolhe o rabo (−3). Curva antecipada pra responder na hora. |
 | **Voa Voa** 🎨 | Passe entre os canos. Aparecem estrela (+3), escudo (aguenta 1 batida) e relógio (câmera lenta). Depois de 20 pontos os canos se mexem. |
-| **Chuva de Bugs** 🎨 | Desvie dos bugs que caem cada vez mais rápido. |
-| **Blocos** 🎨 | Estilo Tetris. |
-| **Quebra-Tijolos** 🎨 | Rebata a bola e quebre os tijolos. 3 vidas. |
+| **Chuva de Bugs** 🎨 | Desvie dos bugs que caem cada vez mais rápido: bug rápido, em zigue-zague e bugão. O café deixa tudo lento por 3s. |
+| **Blocos** 🎨 | Estilo Tetris, com guardar peça (C), girar pros dois lados e 3 próximas. Linhas seguidas e TETRA seguido valem bônus. |
+| **Quebra-Tijolos** 🎨 | Rebata a bola e quebre os tijolos: 6 desenhos de fase, tijolos de 1 a 3 batidas e itens (raquete grande, 3 bolas, bola lenta). 3 vidas. |
 | **Torre** 🎨 | Solte o bloco na torre; o que passa da borda é cortado e os acertos perfeitos aumentam o bloco. |
-| **Invasores** 🎨 | Desvie dos tiros e destrua as naves. O tiro é automático. 3 vidas. |
-| **Pong** 🎨 | Rebata a bola e passe pela máquina, que acelera a cada ponto. 3 vidas. |
-| **Corredor** 🎨 | Pule cactos e abaixe dos pássaros altos, cada vez mais rápido. |
-| **Come-Come** 🎨 | Coma as bolinhas e fuja dos fantasmas; as grandes deixam eles azuis. 3 vidas e túnel lateral. |
-| **Ritmo** 🎨 | Aperte D F J K no tempo da nota, com música gerada (o BPM sobe de 100 a 150). Bom 50, Ótimo 100, Perfeito 200 (±18 ms do centro). 45s. |
+| **Invasores** 🎨 | Desvie dos tiros e destrua as naves. O tiro é automático; barreiras protegem e a nave-mãe vale bônus. 3 vidas. |
+| **Pong** 🎨 | Rebata a bola e passe pela máquina, que acelera a cada ponto. Raquete andando dá efeito na bola. 3 vidas. |
+| **Corredor** 🎨 | Pule cactos e abaixe dos pássaros altos, cada vez mais rápido. Segurar o pulo vai mais alto; moedas valem +25. |
+| **Come-Come** 🎨 | Coma as bolinhas e fuja dos fantasmas; as grandes deixam eles azuis. 3 labirintos que se revezam, cereja bônus, 3 vidas e túnel lateral. |
+| **Ritmo** 🎨 | Aperte D F J K no tempo da nota, com música gerada (o BPM sobe de 100 a 150). Bom 50, Ótimo 100, Perfeito 200 (±18 ms do centro). Notas compridas e ajuste de atraso do som. 45s. |
 
 <div align="center">
 <img src="docs/img/2048.png" alt="Jogo 2048 com o ranking ao lado" width="420">
@@ -387,11 +387,12 @@ No painel admin dá pra baixar o JSON, importar ou restaurar as partidas de qual
 
 ## 📦 Bibliotecas
 
-Tudo no front vem por CDN, **sem build**.
+Sem build: Phaser, Zdog e Vanilla-Tilt ficam no próprio site (`public/vendor/`, com o jsdelivr de reserva); só o web-vitals vem por CDN.
 
 | Biblioteca | Pra quê |
 | --- | --- |
-| [Phaser 3.90](https://phaser.io) | Os 12 jogos marcados com 🎨. Só baixa quando alguém abre um deles (no menu fica pré-buscado em segundo plano). |
+| [Phaser 3.90](https://phaser.io) | Os 12 jogos marcados com 🎨. Servido de `public/vendor/phaser.min.js` (MIT); se o arquivo local falhar, tenta o jsdelivr. Só baixa quando alguém abre um deles (no menu fica pré-buscado em segundo plano). |
+| Dicionário pt-BR do [LibreOffice](https://github.com/LibreOffice/dictionaries/tree/master/pt_BR) (VERO, MPL 2.0 / LGPL 3) | As palavras de 5 letras aceitas como tentativa no Termo, em `public/data/termo-validas.txt` (gerado com as flexões, sem acento). |
 | [Zdog 1.1](https://zzz.dog) e [Vanilla-Tilt 1.8](https://micku7zu.github.io/vanilla-tilt.js/) | Ilustração 3D e inclinação com brilho dos cards do menu. Carregam depois que o menu aparece e dá pra desligar no botão do topo. |
 | [web-vitals 6](https://github.com/GoogleChrome/web-vitals) | Mede LCP, INP, CLS, FCP e TTFB de quem joga e manda pra `/api/vitals`. Local: aparece no terminal do `server.js`. Vercel: em Logs do projeto (linhas `[web-vitals]`). |
 | [Lucide](https://lucide.dev) | Os ícones usados estão embutidos em `public/js/icons.js`, sem biblioteca nem requisição. |
