@@ -94,7 +94,10 @@ function setSeasonMode(mode) {
 /** Período: { since, until } em ms. Padrão: o modo escolhido (mês atual ou tudo). */
 const currentRange = () => (seasonMode === 'all' ? {} : { since: monthStart() });
 
-function bestPerPlayer(gameId, { since = 0, until = Infinity } = currentRange()) {
+// jogos diários têm ranking à parte, do dia: zera à meia-noite (o seletor Mês/Geral vale só pros jogos principais)
+const mainGames = () => Object.keys(GAMES).filter(id => !GAMES[id].daily);
+const rangeFor = id => (GAMES[id]?.daily ? dayRange() : currentRange());
+function bestPerPlayer(gameId, { since = 0, until = Infinity } = rangeFor(gameId)) {
   const g = GAMES[gameId];
   const best = {};
   for (const s of scores[gameId] || []) {
@@ -106,7 +109,7 @@ function bestPerPlayer(gameId, { since = 0, until = Infinity } = currentRange())
 /** Quem tem mais recordes no período (desempate: mais 2º lugares). [[nome, recordes, vices]] */
 function champions(range = currentRange()) {
   const count = {};
-  for (const id in GAMES) {
+  for (const id of mainGames()) {
     const [first, second] = bestPerPlayer(id, range);
     if (first) (count[first[0]] ||= [0, 0])[0]++;
     if (second) (count[second[0]] ||= [0, 0])[1]++;
@@ -144,7 +147,7 @@ function hallOfFame() {
   return [...months].sort().reverse().map(key => {
     const [y, m] = key.split('-').map(Number);
     const range = { since: new Date(y, m - 1, 1).getTime(), until: new Date(y, m, 1).getTime() };
-    const games = Object.keys(GAMES).map(id => [id, bestPerPlayer(id, range)[0]]).filter(([, top]) => top);
+    const games = mainGames().map(id => [id, bestPerPlayer(id, range)[0]]).filter(([, top]) => top);
     return { key, kings: champions(range), games };
   });
 }
@@ -155,6 +158,15 @@ function monthsWonBy(name) {
     for (const m of hallOfFame()) { const k = m.kings[0]?.[0]; if (k) (monthKingsMemo[k] ||= []).push(m.key); }
   }
   return monthKingsMemo[name] || [];
+}
+/** Ranking de hoje dos jogos diários: soma os pontos de cada pessoa em todos eles. [{ name, pts, games }] */
+function dailyTabStandings(i = dayIndex()) {
+  const tot = {};
+  for (const id of DAILY_TAB) {
+    if (!GAMES[id]) continue;
+    for (const [n, s] of bestPerPlayer(id, dayRange(i))) { const t = (tot[n] ||= { name: n, pts: 0, games: 0 }); t.pts += s; t.games++; }
+  }
+  return Object.values(tot).sort((a, b) => b.pts - a.pts || b.games - a.games || a.name.localeCompare(b.name, 'pt-BR'));
 }
 function better(g, a, b) { return g.better === 'low' ? a < b : a > b; }
 // Retorna 'ok' (salvou), 'queued' (servidor fora, reenvia depois) ou a mensagem de recusa do servidor.

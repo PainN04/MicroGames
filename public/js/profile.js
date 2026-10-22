@@ -8,8 +8,8 @@ function statsFor(name) {
   plays.sort((a, b) => a.date - b.date);
   const games = new Set(plays.map(p => p.id));
   const rankIn = (id, range = {}) => { const i = bestPerPlayer(id, range).findIndex(([n]) => n === name); return i < 0 ? null : i + 1; };
-  const firsts = Object.keys(GAMES).filter(id => rankIn(id) === 1).length;
-  const podiums = Object.keys(GAMES).filter(id => (rankIn(id) || 99) <= 3).length;
+  const firsts = mainGames().filter(id => rankIn(id) === 1).length;
+  const podiums = mainGames().filter(id => (rankIn(id) || 99) <= 3).length;
   const monthsWon = monthsWonBy(name);
   // desafios do dia ganhos (dias já encerrados, desde a primeira partida de todo mundo)
   let dailyWins = 0, dailyRun = 0, dailyStreak = 0;
