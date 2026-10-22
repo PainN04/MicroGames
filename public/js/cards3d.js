@@ -1779,7 +1779,9 @@ const SMALL = matchMedia('(max-width: 560px)');
 SMALL.addEventListener?.('change', () => { if (currentView === 'menu' && document.querySelector('.grid')) renderMenu(); });
 
 // botão de brilho no header: liga/desliga o 3D (fica salvo no navegador). Desligado = emoji parado, sem biblioteca nem animação.
-let fx3dOn = (() => { try { return localStorage.getItem('mg_3d') !== 'off'; } catch { return true; } })();
+// Sem escolha salva, segue o modo leve (js/perf.js): PC fraco começa sem 3D.
+const fx3dPref = () => { try { return localStorage.getItem('mg_3d'); } catch { return null; } };
+let fx3dOn = fx3dPref() ? fx3dPref() !== 'off' : !perf.lite;
 // com o 3D ligado, as bibliotecas já começam a baixar agora (enquanto a página descobre quem está logado),
 // e não só quando o menu é desenhado — as cenas aparecem antes. Falhou? enhanceCards tenta de novo.
 if (fx3dOn) { loadLib(ZDOG_URL).catch(() => {}); loadLib(TILT_URL).catch(() => {}); }
@@ -1788,13 +1790,17 @@ function renderFx3d() {
   b.setAttribute('aria-pressed', fx3dOn);
   b.title = fx3dOn ? 'Animações 3D: ligadas (clique pra desligar se ficar pesado)' : 'Animações 3D: desligadas (clique pra ligar)';
 }
-$('#fx3d').onclick = () => {
-  fx3dOn = !fx3dOn;
-  try { localStorage.setItem('mg_3d', fx3dOn ? 'on' : 'off'); } catch {}
+function setFx3d(on) {
+  fx3dOn = on;
   renderFx3d();
   if (!fx3dOn) { scenes3d = []; io?.disconnect(); visible.clear(); } // o loop para sozinho sem cenas
   if (currentView === 'menu') renderMenu();
+}
+$('#fx3d').onclick = () => {
+  try { localStorage.setItem('mg_3d', fx3dOn ? 'off' : 'on'); } catch {}
+  setFx3d(!fx3dOn);
 };
+addEventListener('mg:perf', () => { if (!fx3dPref() && fx3dOn === perf.lite) setFx3d(!perf.lite); });
 renderFx3d();
 
 /** Chamado depois de desenhar o menu: põe a cena 3D em cada card e liga a inclinação (se o 3D estiver ligado). */
