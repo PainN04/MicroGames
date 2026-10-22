@@ -15,7 +15,7 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 30,
-      "includeFiles": "public/js/{daily,avatars}.js"
+      "includeFiles": "public/{js/daily.js,js/avatars.js,data/termo-validas.txt}"
     }
   },
   "headers": [
