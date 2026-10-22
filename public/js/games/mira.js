@@ -28,8 +28,8 @@ GAMES.mira = {
         this.add.image(0, 0, 'mi_bg').setOrigin(0);
         // alvo com volume: sombra, anéis com borda, brilho; desenhado no dobro da resolução
         mk('mi_tgt', 120, 120, k => {
-          const c = 58;
-          k.fillStyle(0x000000, 0.35).fillCircle(c + 5, c + 7, 48);
+          const c = 60;
+          k.fillStyle(0x000000, 0.35).fillCircle(c + 2, c + 4, 47);
           [[48, red], [41, white], [34, red], [26, white], [18, red], [9, 0xffd34d]].forEach(([r, col], i) => {
             const C = Phaser.Display.Color.ValueToColor(col);
             k.fillStyle(C.clone().darken(25).color).fillCircle(c, c, r);
@@ -44,8 +44,8 @@ GAMES.mira = {
           speed: { min: 80, max: 260 }, lifespan: 420, scale: { start: 1.1, end: 0 }, tint: [red, white], emitting: false,
         });
         const place = () => {
-          target.setPosition(rand(R, W - R), rand(R, H - R)).setScale(0.2);
-          this.tweens.add({ targets: target, scale: 1, duration: 140, ease: 'Back.Out' });
+          target.setPosition(rand(R, W - R), rand(R, H - R)).setScale(0.1);
+          this.tweens.add({ targets: target, scale: 0.5, duration: 140, ease: 'Back.Out' });
         };
         this.input.on('pointerdown', p => {
           if (over) return;
