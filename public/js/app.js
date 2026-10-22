@@ -13,7 +13,7 @@ function recHtml(id) {
   const g = GAMES[id], top = bestPerPlayer(id)[0];
   const fr = top && flair.frames[top[0]]; // nome do recordista: branco, ou na cor da moldura de avatar dele
   return top ? `${icon('trophy')} <b${fr ? ` class="fr-${fr}"` : ''}>${esc(top[0])}</b> · ${fmt(g, top[1])}`
-    : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()}`;
+    : g.daily ? 'Ninguém jogou hoje' : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()}`;
 }
 function kingsHtml() {
   const kings = champions();
@@ -102,6 +102,8 @@ function setMenuTab(tab) {
   try { localStorage.setItem('mg_tab', tab); } catch {}
   main.querySelectorAll('[data-tab]').forEach(b => { const on = b.dataset.tab === tab; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
   main.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== tab; });
+  // Mês/Geral é dos jogos principais; os diários têm o ranking de hoje
+  main.querySelector('.menu-bar')?.classList.toggle('on-daily', tab === 'daily');
 }
 // como está cada jogo diário hoje pra quem está logado (GET /api/diarios)
 let dailyStatus = { day: null, games: {} };
@@ -130,6 +132,20 @@ function renderDailyStatus() {
     head.innerHTML = `<span>${icon('calendar')} Desafios novos em <b>${h}h${String(m).padStart(2, '0')}</b></span>${me ? `<span class="prog"><i style="--p:${feitos / total * 100}%"></i></span><span><b>${feitos}/${total}</b> feitos hoje</span>` : ''}`;
   }
 }
+// ranking à parte dos jogos diários: soma dos pontos de hoje em todos eles, zera à meia-noite
+function dailyRankHtml() {
+  const rows = dailyTabStandings(), total = dailyOrder().length;
+  const [champ] = dailyTabStandings(dayIndex() - 1);
+  const mine = rows.findIndex(r => r.name === player);
+  const list = rows.slice(0, 10);
+  return `<div class="dr-head"><h3>${icon('trophy')} Ranking de hoje</h3><span class="hint">soma dos pontos nos jogos diários · zera à meia-noite</span></div>`
+    + (list.length
+      ? '<ol>' + list.map((r, k) => `<li class="${r.name === player ? 'me' : ''}">${rankBadge(k + 1)}${nameHtml(r.name, { cls: 'name' })}<span class="dr-n">${r.games}/${total}</span><b>${r.pts.toLocaleString('pt-BR')}</b></li>`).join('') + '</ol>'
+        + (mine >= 10 ? `<p class="hint dr-me">Você está em ${mine + 1}º com ${rows[mine].pts.toLocaleString('pt-BR')} pontos</p>` : '')
+      : '<p class="empty">Ninguém jogou hoje ainda. Saia na frente!</p>')
+    + (champ ? `<p class="dr-champ">${icon('crown')} Ontem: ${nameHtml(champ.name)} com <b>${champ.pts.toLocaleString('pt-BR')}</b> pontos</p>` : '');
+}
+function renderDailyRank() { const el = $('#dailyRank'); if (el) el.innerHTML = dailyRankHtml(); }
 const cardHtml = (id, g, i, extra = '') => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
         <span class="icon">${icon(g.icon)}</span>
         <h3>${g.name}</h3>
@@ -147,11 +163,12 @@ function renderMenu() {
         <button role="tab" id="tab-main" data-tab="main" aria-controls="panel-main">${icon('gamepad-2')} Jogos</button>
         <button role="tab" id="tab-daily" data-tab="daily" aria-controls="panel-daily">${icon('calendar')} Jogos diários<span class="tab-dot" id="tabDot" hidden></span></button>
       </div>
-      <span class="hint">Ranking:</span>${seasonSeg()}</div>
+      <span class="hint season-lbl">Ranking:</span>${seasonSeg()}</div>
     <section class="grid" id="panel-main" data-panel="main" role="tabpanel" aria-labelledby="tab-main">` +
     menuOrder().map(([id, g], i) => cardHtml(id, g, i)).join('') + `</section>
     <section id="panel-daily" data-panel="daily" role="tabpanel" aria-labelledby="tab-daily">
       <div class="daily-head glass" id="dailyHead"></div>
+      <div class="daily-rank glass" id="dailyRank"></div>
       <div class="grid daily-grid">` + dailyOrder().map(([id, g], i) => cardHtml(id, g, i, '<span class="ds-slot"></span>')).join('') + `</div>
       <p class="hint daily-note">Uma partida por dia em cada jogo, a mesma pra todo mundo. A resposta muda à meia-noite.</p>
     </section>
@@ -165,6 +182,7 @@ function renderMenu() {
   };
   setMenuTab(menuTab);
   renderDailyStatus();
+  renderDailyRank();
   renderCrown(); renderChamps(); renderStrip();
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
   bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
@@ -189,6 +207,7 @@ function refreshMenu() {
   refreshPickRow();
   applyMeFlair();
   renderDailyStatus();
+  renderDailyRank();
 }
 async function showMenu() {
   stop();
@@ -209,9 +228,9 @@ async function showMenu() {
 
 function boardHtml(id) {
   const g = GAMES[id], rows = bestPerPlayer(id).slice(0, 10);
-  return `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}` + (rows.length
+  return (g.daily ? `<h3>${icon('trophy')} Ranking</h3><p class="hint board-reset">Só de hoje: zera à meia-noite</p>` : `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}`) + (rows.length
     ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${rankBadge(k + 1)}</span>${nameHtml(n, { cls: 'name', extra: ticketStar(n) })}<span class="sc">${fmt(g, s)}</span>${rxButton(id, n)}${rxChips(id, n)}</li>`).join('') + '</ol>'
-    : `<p class="empty">${seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`)
+    : `<p class="empty">${g.daily ? 'Ninguém jogou hoje ainda.' : seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`)
     + (me && !g.daily ? `<button class="btn ghost board-duel" data-duel="${id}">${icon('swords')} Desafiar alguém</button>` : '');
 }
 // desenha o ranking da partida e liga o seletor Mês/Geral
