@@ -1,5 +1,5 @@
 GAMES.anagrama = {
-  name: 'Anagrama', icon: 'spell-check', hue: 60, desc: 'Desembaralhe as palavras em 60s. Digite e Enter (ou clique nas letras). Palavra maior vale mais. Pular não custa ponto; a dica revela uma letra e tira 1 ponto da palavra.',
+  name: 'Anagrama', icon: 'spell-check', hue: 60, desc: 'Desembaralhe as palavras em 60s. Digite e Enter (ou clique nas letras). Palavra maior vale mais. A dica acima das letras diz o tema da palavra. Pular não custa ponto; o botão Letra revela uma letra e tira 1 ponto da palavra.',
   better: 'high', unit: 'pontos',
   start(el, done) {
     // as palavras ficam no servidor (lib/words.js): a página só recebe as letras embaralhadas e manda o palpite
@@ -7,10 +7,11 @@ GAMES.anagrama = {
     const DUR = 60;
     let round = null, pts = 0, solved = 0, t0 = 0, iv, over = false, alive = true, busy = false;
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Palavras<b id="w">0</b></span><span class="stat">Tempo<b id="t">60s</b></span></div>
+      <p class="hint anag-clue" id="clue"></p>
       <div class="tiles" id="tiles"></div>
       <input class="txt" id="in" placeholder="digite a palavra + Enter" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Palavra">
-      <div class="row-btns"><button class="btn ghost" id="clr">${icon('delete')} Apagar</button><button class="btn ghost" id="tip">${icon('lightbulb')} Dica (−1)</button><button class="btn ghost" id="skip">Pular ${icon('skip-forward')}</button></div>`;
-    const inp = el.querySelector('#in'), tilesEl = el.querySelector('#tiles');
+      <div class="row-btns"><button class="btn ghost" id="clr">${icon('delete')} Apagar</button><button class="btn ghost" id="tip">${icon('lightbulb')} Letra (−1)</button><button class="btn ghost" id="skip">Pular ${icon('skip-forward')}</button></div>`;
+    const inp = el.querySelector('#in'), tilesEl = el.querySelector('#tiles'), clueEl = el.querySelector('#clue');
     const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z]/g, '');
     const syncTiles = () => {
       // marca como usadas as letras que já estão digitadas
@@ -21,7 +22,9 @@ GAMES.anagrama = {
         if (k >= 0) typed.splice(k, 1);
       });
     };
-    const showMix = mix => {
+    // a dica (tema da palavra) vem do servidor junto com as letras
+    const showMix = ({ mix, clue }) => {
+      clueEl.innerHTML = clue ? `Dica: <b>${clue}</b>` : '';
       tilesEl.innerHTML = [...mix].map((l, i) => `<button class="tile enter" style="--i:${i * 0.04}s" data-l="${l}">${l}</button>`).join('');
       tilesEl.querySelectorAll('.tile').forEach(t => t.onclick = () => { flyTo(t, inp, t.dataset.l); inp.value += t.dataset.l; syncTiles(); inp.focus(); });
       inp.value = '';
@@ -64,7 +67,7 @@ GAMES.anagrama = {
         popPoints(tilesEl, '+' + r.result.gain); confetti(inp);
         el.querySelector('#p').textContent = pts; el.querySelector('#w').textContent = solved;
         sfx.good();
-        showMix(r.view.mix);
+        showMix(r.view);
       } else {
         beep(160, 120, 'square', 0.03);
         inp.classList.remove('wrong'); void inp.offsetWidth; inp.classList.add('wrong');
@@ -77,12 +80,12 @@ GAMES.anagrama = {
     el.querySelector('#skip').onclick = async () => {
       if (over || busy || !round) return;
       busy = true; beep(300, 50, 'sine', 0.02);
-      try { const r = await call({ action: 'skip' }); if (!over) showMix(r.view.mix); } catch (err) { oops(err); }
+      try { const r = await call({ action: 'skip' }); if (!over) showMix(r.view); } catch (err) { oops(err); }
       busy = false; inp.focus();
     };
     // o tempo começa quando o servidor abre a partida (logo depois da contagem 3, 2, 1)
     api('api/rounds', { method: 'POST', body: { game: 'anagrama', daily: dailySeeded } })
-      .then(r => { if (!alive) return; round = r.id; showMix(r.view.mix); inp.focus(); startClock(); })
+      .then(r => { if (!alive) return; round = r.id; showMix(r.view); inp.focus(); startClock(); })
       .catch(oops);
     return () => { alive = false; over = true; clearInterval(iv); };
   }

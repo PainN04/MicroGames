@@ -334,7 +334,7 @@ function prefetchPhaser() {
 // Cria o jogo dentro de `wrap` (que já reserva o espaço). Retorna a função de limpeza.
 // O tamanho na tela encolhe pra caber na largura E na altura que sobram (placar e dicas continuam visíveis).
 function mountPhaser(wrap, width, height, scene) {
-  let game = null, dead = false;
+  let game = null, dead = false, fpsTimer = 0;
   wrap.style.maxWidth = width + 'px';
   wrap.style.aspectRatio = `${width} / ${height}`;
   wrap.innerHTML = '<p class="hint">Carregando...</p>';
@@ -355,12 +355,16 @@ function mountPhaser(wrap, width, height, scene) {
     if (dead) return;
     wrap.innerHTML = '';
     game = new Phaser.Game({
-      type: Phaser.AUTO, parent: wrap, width, height, backgroundColor: '#1d1f2e', banner: false,
+      // modo leve: canvas 2D. Sem placa de vídeo, o WebGL é desenhado pelo processador e fica bem mais lento que o 2D
+      // (o que se perde é só o tint: partícula e nuvem saem sem a cor por cima)
+      type: perf.lite ? Phaser.CANVAS : Phaser.AUTO, parent: wrap, width, height, backgroundColor: '#1d1f2e', banner: false,
       audio: { noAudio: true },
       // expandParent: false — senão o Phaser às vezes troca a altura da caixa pra 100% e o jogo estoura a tela
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, expandParent: false },
       scene,
     });
+    // depois de esquentar, confere se o jogo está rodando liso; lento = liga o modo leve pros próximos jogos
+    fpsTimer = setTimeout(() => { if (!dead && game.loop) perf.reportFps(game.loop.actualFps); }, 6000);
   }).catch(e => { if (!dead) wrap.innerHTML = `<p class="hint">${icon('triangle-alert')} ${esc(e.message)}</p>`; });
   // Pausa sozinho quando a pessoa troca de aba, de janela ou bloqueia o celular (antes o jogo seguia e ela morria sem ver).
   // Para as cenas (física, tempo e animações da cena congelam) e só volta quando ela clica em Continuar.
@@ -386,7 +390,7 @@ function mountPhaser(wrap, width, height, scene) {
   document.addEventListener('visibilitychange', onHide);
   addEventListener('blur', pause);
   return () => {
-    dead = true; removeEventListener('mg:fit', size);
+    dead = true; clearTimeout(fpsTimer); removeEventListener('mg:fit', size);
     document.removeEventListener('visibilitychange', onHide); removeEventListener('blur', pause);
     game?.destroy(true);
   };

@@ -93,6 +93,7 @@ const ICONS = {
   "worm":"<path d=\"m19 12-1.5 3\"/><path d=\"M19.63 18.81 22 20\"/><path d=\"M6.47 8.23a1.68 1.68 0 0 1 2.44 1.93l-.64 2.08a6.76 6.76 0 0 0 10.16 7.67l.42-.27a1 1 0 1 0-2.73-4.21l-.42.27a1.76 1.76 0 0 1-2.63-1.99l.64-2.08A6.66 6.66 0 0 0 3.94 3.9l-.7.4a1 1 0 1 0 2.55 4.34z\"/>",
   "wrench":"<path d=\"M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z\"/>",
   "x":"<path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/>",
+  "gauge":"<path d=\"m12 14 4-4\"/><path d=\"M3.34 19a10 10 0 1 1 17.32 0\"/>",
   "zap":"<path d=\"M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z\"/>",
 };
 function icon(name, { cls = '', label = '' } = {}) {
@@ -110,6 +111,7 @@ document.querySelectorAll('[data-ic]').forEach(el => { el.outerHTML = icon(el.da
 document.querySelector('#acctBtn .chev')?.insertAdjacentHTML('afterbegin', icon('chevron-down'));
 document.querySelector('#pav')?.insertAdjacentHTML('afterbegin', icon('user'));
 document.querySelector('#fx3d')?.insertAdjacentHTML('afterbegin', icon('sparkles'));
+document.querySelector('#lite')?.insertAdjacentHTML('afterbegin', icon('gauge'));
 
 /** Mesmo ícone como imagem (data URL), pra usar no canvas (Phaser). */
 function iconDataUrl(name, color = '#fff', size = 64, { fill = 'none', stroke = 2 } = {}) {
