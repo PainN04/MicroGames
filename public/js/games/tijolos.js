@@ -52,7 +52,7 @@ GAMES.tijolos = {
         let px = W / 2, target = null, lives = 3, score = 0, level = 1, alive = true, bricks = [], balls = [], drops = [];
         let pw = PW_BASE, wideT = 0, slowT = 0;
         const brickLayer = this.add.layer(), dropLayer = this.add.layer(), ballImgs = [];
-        const paddle = this.add.image(px, PY, 'tj_pad' + PW_BASE);
+        const paddle = this.add.image(px, PY, 'tj_pad' + PW_BASE).setDisplaySize(PW_BASE, PH);
         const trail = this.add.graphics();
         const burst = this.add.particles(0, 0, 'dot', { speed: { min: 60, max: 220 }, lifespan: 420, scale: { start: 1, end: 0 }, emitting: false });
         const msg = this.add.text(W / 2, H / 2 + 40, 'Clique ou Espaço pra lançar', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '20px', color: '#c9cce0' }).setOrigin(0.5);
@@ -87,7 +87,8 @@ GAMES.tijolos = {
           if (slowT > 0) parts.push('lenta ' + Math.ceil(slowT) + 's');
           hud.it.textContent = parts.join(' · ') || '—';
         };
-        const setWidth = w => { pw = w; paddle.setTexture('tj_pad' + w); };
+        // textura é pintada no dobro da resolução: setDisplaySize mantém o desenho do tamanho da hitbox
+        const setWidth = w => { pw = w; paddle.setTexture('tj_pad' + w).setDisplaySize(w, PH); };
         const loseLife = () => {
           lives--;
           hud.v.innerHTML = hearts(lives);
@@ -166,7 +167,7 @@ GAMES.tijolos = {
                   // onde bate na raquete define o ângulo (até 60°)
                   const rel = Phaser.Math.Clamp((ball.x - px) / (pw / 2), -1, 1), sp = Math.hypot(ball.vx, ball.vy), ang = rel * Phaser.Math.DegToRad(60);
                   ball.vx = sp * Math.sin(ang); ball.vy = -sp * Math.cos(ang); ball.y = PY - PH / 2 - R;
-                  this.tweens.add({ targets: paddle, scaleY: 0.7, duration: 60, yoyo: true });
+                  this.tweens.add({ targets: paddle, scaleY: 0.35, duration: 60, yoyo: true, onComplete: () => paddle.setDisplaySize(pw, PH) });
                   beep(330, 40, 'triangle', 0.03);
                 }
                 for (const b of bricks) {
