@@ -54,7 +54,7 @@ Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas e conquis
 
 <br>
 
-## 🕹️ Os 28 jogos
+## 🕹️ Os jogos (27 + 6 diários)
 
 <div align="center">
 <img src="docs/img/jogos.png" alt="Grade de jogos do menu, com cards 3D" width="780">
@@ -81,7 +81,6 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados co
 | **Conta Rápida** | Resolva o máximo de contas em 30s. Combo até x4. |
 | **Digitação** | Máximo de palavras certas em 30s. |
 | **Anagrama** | Desembaralhe palavras em 60s. Palavra maior vale mais; pular não custa ponto. |
-| **Termo** | A palavra do dia: 5 letras, 6 tentativas, igual pra todo mundo. Só vale a primeira partida de cada dia. |
 | **Forca** | Palavras de TI e do escritório; errou 6 letras, acabou. |
 | **Sudoku** | Menor tempo ganha; dica custa +20s. |
 | **Campo Minado** | Abra todas as casas sem mina. O primeiro clique é sempre seguro. |
@@ -113,6 +112,19 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados co
 
 <br>
 
+### 📆 Jogos diários (aba própria no menu)
+
+Uma partida por dia em cada um, o mesmo desafio pra todo mundo. A resposta fica só no servidor (`lib/rounds.js` pro Termo, `lib/diarios.js` pros outros): a página manda cada jogada e recebe o resultado dela, e a pontuação é gravada pelo servidor. Ficam fora do desafio do dia, dos duelos e do torneio.
+
+| Jogo | Como joga |
+| --- | --- |
+| **Termo** | A palavra do dia: 5 letras, 6 tentativas. |
+| **Dueto** | 2 palavras ao mesmo tempo, 7 tentativas. |
+| **Quarteto** | 4 palavras ao mesmo tempo, 9 tentativas. |
+| **Contexto** | Descubra a palavra secreta: cada palpite mostra a posição dele numa lista ordenada pelo sentido. A lista vem de vetores de palavras em português (spaCy `pt_core_news_lg`, gerados por `scripts/build-contexto.py` em `lib/data/`), sem API externa. |
+| **Conexões** | 16 palavras, 4 grupos escondidos (amarelo fácil … roxo jogo de palavras). 4 erros e acabou. Grupos em `lib/conexoes.js`. |
+| **Alvo** | Chegue no número do dia juntando 6 números com + − × ÷. Uma tentativa; vale o resultado mais perto. |
+
 ## 🏆 Competição e social
 
 Quase tudo sai das **partidas** (tabela `scores`): só o que não dá pra deduzir delas ganha tabela própria.
@@ -137,7 +149,7 @@ Quem termina o mês com mais recordes de 1º lugar ganha um **selo fixo**: uma m
 ### 🗓️ Torneio semanal
 - Semana de segunda a domingo, no horário de Brasília. Cada semana sorteia **3 jogos**, iguais pra todo mundo, e a soma das posições vira pontos.
 - Pontos por posição em cada jogo: **10, 7, 5, 4, 3, 2** do 1º ao 6º, e **1 ponto** do 7º em diante.
-- O Termo não entra (só vale 1 partida por dia).
+- Os jogos diários não entram (só vale 1 partida por dia).
 - Os 3 jogos da semana ficam guardados, então não mudam se entrar jogo novo no meio.
 - O primeiro torneio da produção é o da semana de **19/10/2026**. Na versão de teste da Vercel ele já vale na semana atual, pra dar pra ver e testar.
 
@@ -392,6 +404,7 @@ Sem build: Phaser, Zdog e Vanilla-Tilt ficam no próprio site (`public/vendor/`,
 | Biblioteca | Pra quê |
 | --- | --- |
 | [Phaser 3.90](https://phaser.io) | Os 12 jogos marcados com 🎨. Servido de `public/vendor/phaser.min.js` (MIT); se o arquivo local falhar, tenta o jsdelivr. Só baixa quando alguém abre um deles (no menu fica pré-buscado em segundo plano). |
+| Vetores de palavras do [spaCy](https://spacy.io) `pt_core_news_lg` (CC BY-SA 4.0) e lista de frequência [FrequencyWords](https://github.com/hermitdave/FrequencyWords) (CC BY-SA 4.0) | Vocabulário e proximidade de sentido do Contexto, em `lib/data/`. |
 | Dicionário pt-BR do [LibreOffice](https://github.com/LibreOffice/dictionaries/tree/master/pt_BR) (VERO, MPL 2.0 / LGPL 3) | As palavras de 5 letras aceitas como tentativa no Termo, em `public/data/termo-validas.txt` (gerado com as flexões, sem acento). |
 | [Zdog 1.1](https://zzz.dog) e [Vanilla-Tilt 1.8](https://micku7zu.github.io/vanilla-tilt.js/) | Ilustração 3D e inclinação com brilho dos cards do menu. Carregam depois que o menu aparece e dá pra desligar no botão do topo. |
 | [web-vitals 6](https://github.com/GoogleChrome/web-vitals) | Mede LCP, INP, CLS, FCP e TTFB de quem joga e manda pra `/api/vitals`. Local: aparece no terminal do `server.js`. Vercel: em Logs do projeto (linhas `[web-vitals]`). |

@@ -257,7 +257,7 @@ async function duoModal(pre = {}) {
 }
 
 /* ---------- duelos ---------- */
-const duelGames = () => Object.keys(GAMES).filter(id => id !== 'termo');
+const duelGames = () => Object.keys(GAMES).filter(id => !GAMES[id].daily);
 function duelRowHtml(d) {
   const g = GAMES[d.game];
   if (!g) return '';
