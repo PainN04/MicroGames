@@ -54,7 +54,7 @@ Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas e conquis
 
 <br>
 
-## 🕹️ Os jogos (27 + 6 diários)
+## 🕹️ Os jogos (27 + 12 diários)
 
 <div align="center">
 <img src="docs/img/jogos.png" alt="Grade de jogos do menu, com cards 3D" width="780">
@@ -121,9 +121,17 @@ Uma partida por dia em cada um, o mesmo desafio pra todo mundo. A resposta fica 
 | **Termo** | A palavra do dia: 5 letras, 6 tentativas. |
 | **Dueto** | 2 palavras ao mesmo tempo, 7 tentativas. |
 | **Quarteto** | 4 palavras ao mesmo tempo, 9 tentativas. |
+| **Octeto** | 8 palavras ao mesmo tempo, 13 tentativas. |
 | **Contexto** | Descubra a palavra secreta: cada palpite mostra a posição dele numa lista ordenada pelo sentido. A lista vem de vetores de palavras em português (spaCy `pt_core_news_lg`, gerados por `scripts/build-contexto.py` em `lib/data/`), sem API externa. |
 | **Conexões** | 16 palavras, 4 grupos escondidos (amarelo fácil … roxo jogo de palavras). 4 erros e acabou. Grupos em `lib/conexoes.js`. |
 | **Alvo** | Chegue no número do dia juntando 6 números com + − × ÷. Uma tentativa; vale o resultado mais perto. |
+| **Soletra** | Palavras de 4+ letras com as 7 letras da colmeia, sempre com a do meio; a que usa as 7 vale bônus. Encerra quando quiser. Palavras do dicionário do LibreOffice que estão entre as mais usadas (`lib/data/soletra.json`). |
+| **Senha** | Descubra 4 cores (podem repetir) em 8 tentativas: cada palpite diz quantas estão no lugar e quantas em outro lugar. |
+| **Equação** | O Termo com números: a conta do dia (8 símbolos, tipo `12+35=47`) em 6 tentativas; todo palpite tem que ser uma conta certa. |
+| **Bandeira** | De que país é a bandeira? 6 palpites; cada erro diz a distância, a direção e o quanto chegou perto. Continente depois de 2 erros, capital depois de 4. |
+| **Caça-palavras** | 8 palavras de 2 temas num quadro 10×10, em qualquer direção. Mais rápido, mais pontos. |
+
+`scripts/build-diarios.js` gera os dados do Bandeira e do Soletra em `lib/data/` (roda uma vez, fora do app).
 
 ## 🏆 Competição e social
 
@@ -404,6 +412,8 @@ Sem build: Phaser, Zdog e Vanilla-Tilt ficam no próprio site (`public/vendor/`,
 | Biblioteca | Pra quê |
 | --- | --- |
 | [Phaser 3.90](https://phaser.io) | Os 12 jogos marcados com 🎨. Servido de `public/vendor/phaser.min.js` (MIT); se o arquivo local falhar, tenta o jsdelivr. Só baixa quando alguém abre um deles (no menu fica pré-buscado em segundo plano). |
+| [world-countries](https://github.com/mledoze/countries) (ODbL) e [flag-icons](https://github.com/lipis/flag-icons) (MIT) | Países, capitais, coordenadas e bandeiras do Bandeira, em `lib/data/bandeiras.json`. |
+| Dicionário pt-BR do [LibreOffice](https://github.com/LibreOffice/dictionaries) (MPL/LGPL) | Palavras do Soletra, em `lib/data/soletra.json`. |
 | Vetores de palavras do [spaCy](https://spacy.io) `pt_core_news_lg` (CC BY-SA 4.0) e lista de frequência [FrequencyWords](https://github.com/hermitdave/FrequencyWords) (CC BY-SA 4.0) | Vocabulário e proximidade de sentido do Contexto, em `lib/data/`. |
 | Dicionário pt-BR do [LibreOffice](https://github.com/LibreOffice/dictionaries/tree/master/pt_BR) (VERO, MPL 2.0 / LGPL 3) | As palavras de 5 letras aceitas como tentativa no Termo, em `public/data/termo-validas.txt` (gerado com as flexões, sem acento). |
 | [Zdog 1.1](https://zzz.dog) e [Vanilla-Tilt 1.8](https://micku7zu.github.io/vanilla-tilt.js/) | Ilustração 3D e inclinação com brilho dos cards do menu. Carregam depois que o menu aparece e dá pra desligar no botão do topo. |

@@ -499,7 +499,7 @@ test('aba de jogos diários: Termo sai do desafio do dia a partir de 23/10/2026 
   const { scheduledGame, seededShuffle, DAILY_SINCE, DAILY_TAB } = require('../public/js/daily.js');
   const { GAMES } = require('../lib/rules');
   // sorteio de antes da aba (28 jogos, sem os diários novos)
-  const OLD = GAMES.filter(g => !['dueto', 'quarteto', 'contexto', 'conexoes', 'alvo'].includes(g));
+  const OLD = GAMES.filter(g => g === 'termo' || !DAILY_TAB.includes(g));
   assert.equal(OLD.length, 28);
   const oldPick = i => { const r = OLD.filter(id => !(id in DAILY_SINCE) || i >= DAILY_SINCE[id]).sort(); return seededShuffle(r, Math.floor(i / r.length) * 7919 + 13)[i % r.length]; };
   for (let d = 20000; d < 20749; d++) assert.equal(scheduledGame(GAMES, d, {}), oldPick(d), 'dia ' + d);
@@ -1077,4 +1077,160 @@ test('jogos diários: Alvo refaz as contas no servidor e só aceita números que
   assert.ok(r.body.solution, 'no fim mostra um jeito de chegar');
   assert.equal((await lia('/api/diarios/alvo', { method: 'POST', body: { steps: [[a, '+', b]] } })).status, 409, 'uma tentativa por dia');
   assert.equal((await play(lia, 'alvo', 599)).status, 403);
+});
+
+test('jogos diários: Octeto tem 8 quadros e 13 tentativas', async () => {
+  await makeUser('oto', 'Oto', 'player', 'senha-oto-123');
+  const d = require('../lib/diarios');
+  const { today } = require('../lib/flair');
+  const words = d.multiWords('octeto', today()).map(norm);
+  assert.equal(new Set(words).size, 8);
+  const oto = await login('oto', 'senha-oto-123');
+  const st = await oto('/api/diarios/octeto');
+  assert.equal(st.body.boards.length, 8);
+  assert.equal(st.body.rows, 13);
+  assert.ok(!words.some(w => st.text.includes(w)));
+  let last;
+  for (const w of words) last = await oto('/api/diarios/octeto', { method: 'POST', body: { guess: w } });
+  assert.equal(last.body.won, true);
+  assert.ok(last.body.score >= 600 && last.body.score <= 699, '8 tentativas de 13: 600 + bônus');
+  assert.equal(last.body.saved, 'ok');
+});
+
+test('jogos diários: Soletra só aceita palavras da colmeia com a letra do meio e grava ao encerrar', async () => {
+  await makeUser('sol', 'Sol', 'player', 'senha-sol-123');
+  const d = require('../lib/diarios');
+  const { today } = require('../lib/flair');
+  for (let day = today(); day < today() + 30; day++) {
+    const p = d.solPuzzle(day);
+    assert.equal(p.outer.length, 6);
+    assert.ok(p.answers.length >= 15 && p.answers.length <= 60);
+    assert.ok(p.answers.some(a => a.pangram), 'sempre tem uma palavra com as 7 letras');
+    assert.ok(p.answers.every(a => a.k.includes(p.center) && [...a.k].every(c => c === p.center || p.outer.includes(c))));
+  }
+  const p = d.solPuzzle(today());
+  const sol = await login('sol', 'senha-sol-123');
+  const st = await sol('/api/diarios/soletra');
+  assert.equal(st.body.all, null, 'a lista de palavras só aparece no fim');
+  assert.equal(st.body.count, p.answers.length);
+  const bad = p.outer.join('').slice(0, 4);
+  assert.equal((await sol('/api/diarios/soletra', { method: 'POST', body: { word: bad } })).status, 422, 'sem a letra do meio');
+  assert.equal((await sol('/api/diarios/soletra', { method: 'POST', body: { word: 'abc' } })).status, 400, 'mínimo de 4 letras');
+  const [a, b] = p.answers;
+  const r1 = await sol('/api/diarios/soletra', { method: 'POST', body: { word: a.w.toUpperCase() } });
+  assert.equal(r1.status, 200);
+  assert.equal(r1.body.result.points, d.solPoints(a));
+  assert.equal((await sol('/api/diarios/soletra', { method: 'POST', body: { word: a.k } })).body.result.repeat, a.w, 'repetida não conta de novo');
+  await sol('/api/diarios/soletra', { method: 'POST', body: { word: b.k } });
+  const end = await sol('/api/diarios/soletra', { method: 'POST', body: { action: 'end' } });
+  assert.equal(end.body.over, true);
+  assert.equal(end.body.score, d.solPoints(a) + d.solPoints(b));
+  assert.equal(end.body.saved, 'ok');
+  assert.equal(end.body.all.length, p.answers.length, 'no fim mostra todas');
+  assert.equal((await sol('/api/diarios/soletra', { method: 'POST', body: { word: b.k } })).status, 409);
+});
+
+test('jogos diários: Senha conta cores no lugar e fora do lugar', async () => {
+  await makeUser('sen', 'Sen', 'player', 'senha-sen-123');
+  const d = require('../lib/diarios');
+  const { today } = require('../lib/flair');
+  assert.deepEqual(d.senhaEval([0, 0, 1, 2], [0, 1, 0, 3]), { exact: 1, near: 2 });
+  assert.deepEqual(d.senhaEval([5, 5, 5, 5], [5, 1, 2, 3]), { exact: 1, near: 0 }, 'cor repetida não conta duas vezes');
+  const code = d.senhaCode(today());
+  const sen = await login('sen', 'senha-sen-123');
+  const st = await sen('/api/diarios/senha');
+  assert.equal(st.body.code, null);
+  assert.equal((await sen('/api/diarios/senha', { method: 'POST', body: { guess: [0, 1, 9, 2] } })).status, 400);
+  const other = code.map(c => (c + 1) % 6);
+  const g1 = await sen('/api/diarios/senha', { method: 'POST', body: { guess: other } });
+  assert.deepEqual({ exact: g1.body.guesses[0].exact, near: g1.body.guesses[0].near }, d.senhaEval(other, code));
+  const g2 = await sen('/api/diarios/senha', { method: 'POST', body: { guess: code } });
+  assert.equal(g2.body.won, true);
+  assert.ok(g2.body.score >= 700 && g2.body.score <= 799);
+  assert.deepEqual(g2.body.code, code);
+});
+
+test('jogos diários: Equação só aceita conta certa de 8 símbolos', async () => {
+  await makeUser('equ', 'Equ', 'player', 'senha-equ-123');
+  const d = require('../lib/diarios');
+  const { today } = require('../lib/flair');
+  for (let day = today(); day < today() + 60; day++) {
+    const e = d.eqSecret(day);
+    assert.equal(e.length, 8);
+    assert.equal(d.eqInvalid(e), null, e);
+  }
+  assert.equal(d.eqInvalid('9*8-3=69'), null, '× antes de −');
+  assert.match(d.eqInvalid('12+35=48'), /não fecha/);
+  assert.match(d.eqInvalid('01+2=003'), /resultado|não vale/);
+  assert.match(d.eqInvalid('10/4+1=3'), /não vale/, 'divisão quebrada');
+  assert.deepEqual(d.eqEvaluate('13+34=47', '12+35=47'), ['g', 'x', 'g', 'g', 'x', 'g', 'g', 'g']);
+  const ans = d.eqSecret(today());
+  const equ = await login('equ', 'senha-equ-123');
+  const st = await equ('/api/diarios/equacao');
+  assert.equal(st.body.answer, null);
+  assert.ok(!st.text.includes(ans));
+  assert.equal((await equ('/api/diarios/equacao', { method: 'POST', body: { guess: '12+35=48' } })).status, 422);
+  const r = await equ('/api/diarios/equacao', { method: 'POST', body: { guess: ans.replace(/\*/g, '×') } });
+  assert.equal(r.body.won, true);
+  assert.ok(r.body.score >= 600 && r.body.score <= 699);
+});
+
+test('jogos diários: Bandeira manda só o desenho, diz distância e direção e dá dicas', async () => {
+  await makeUser('ban', 'Ban', 'player', 'senha-ban-123');
+  const d = require('../lib/diarios');
+  const { today } = require('../lib/flair');
+  const { list } = d.flagData();
+  const ans = list[d.flagIdx(today())];
+  assert.ok(list.every(c => !/\sid="(?!f\d)/.test(c.svg)), 'sem id com a sigla do país');
+  const ban = await login('ban', 'senha-ban-123');
+  const st = await ban('/api/diarios/bandeira');
+  assert.equal(st.body.answer, null);
+  assert.equal(st.body.continente, null);
+  assert.ok(st.body.svg.startsWith('<svg'));
+  assert.ok(st.body.names.includes(ans.nome), 'a lista de nomes vem pra completar');
+  assert.ok(!st.body.svg.includes(ans.nome));
+  assert.equal((await ban('/api/diarios/bandeira', { method: 'POST', body: { guess: 'Atlântida' } })).status, 422);
+  const wrong = list.filter(c => c !== ans).slice(0, 4);
+  let r;
+  for (const c of wrong.slice(0, 2)) r = await ban('/api/diarios/bandeira', { method: 'POST', body: { guess: c.nome.toUpperCase() } });
+  assert.ok(r.body.guesses[1].km > 0 && ['N', 'NE', 'L', 'SE', 'S', 'SO', 'O', 'NO'].includes(r.body.guesses[1].dir));
+  assert.equal(r.body.continente, ans.continente, 'continente depois de 2 erros');
+  assert.equal(r.body.capital, null);
+  const rep = await ban('/api/diarios/bandeira', { method: 'POST', body: { guess: wrong[0].nome } });
+  assert.equal(rep.body.guesses.length, 2, 'repetido não gasta palpite');
+  const ok = await ban('/api/diarios/bandeira', { method: 'POST', body: { guess: ans.nome.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase() } });
+  assert.equal(ok.body.won, true, 'sem acento também vale');
+  assert.ok(ok.body.score >= 400 && ok.body.score <= 499);
+  assert.equal(ok.body.answer, ans.nome);
+  assert.equal(d.flagData().byKey.get('eua'), list.findIndex(c => c.nome === 'Estados Unidos'), 'apelidos valem');
+});
+
+test('jogos diários: Caça-palavras confere a linha marcada no servidor', async () => {
+  await makeUser('cac', 'Cac', 'player', 'senha-cac-123');
+  const d = require('../lib/diarios');
+  const { today } = require('../lib/flair');
+  for (let day = today(); day < today() + 30; day++) {
+    const p = d.cpPuzzle(day);
+    assert.equal(p.grid.length, 100);
+    assert.equal(p.words.length, 8);
+    p.place.forEach(w => assert.equal(d.cpLine(p.grid, w.from, w.to), w.word));
+  }
+  const p = d.cpPuzzle(today());
+  const cac = await login('cac', 'senha-cac-123');
+  const st = await cac('/api/diarios/cacapalavras');
+  assert.equal(st.body.place, null, 'onde estão só aparece no fim');
+  assert.deepEqual(st.body.words, p.words);
+  assert.equal((await cac('/api/diarios/cacapalavras', { method: 'POST', body: { from: 0, to: 12 } })).status, 422, 'linha torta');
+  let r;
+  for (const [k, w] of p.place.entries()) {
+    // metade marcada de trás pra frente
+    r = await cac('/api/diarios/cacapalavras', { method: 'POST', body: k % 2 ? { from: w.to, to: w.from } : { from: w.from, to: w.to } });
+    assert.equal(r.status, 200);
+  }
+  assert.equal(r.body.won, true);
+  assert.ok(r.body.score >= 100 && r.body.score <= 999);
+  assert.equal(r.body.saved, 'ok');
+  assert.ok(r.body.place);
+  const status = await cac('/api/diarios');
+  assert.equal(status.body.games.cacapalavras.won, true);
 });

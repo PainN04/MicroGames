@@ -7,7 +7,7 @@ const DAILY_SINCE = { sudoku: 20745, pong: 20746, forca: 20746, ligue4: 20746, c
 
 // Jogos da aba "Jogos diários" (uma partida por dia, mesma resposta pra todo mundo): ficam fora do desafio do dia,
 // dos duelos e do torneio. O Termo era do desafio do dia até 22/10/2026; os dias até lá continuam com o mesmo jogo.
-const DAILY_TAB = ['termo', 'dueto', 'quarteto', 'contexto', 'conexoes', 'alvo'];
+const DAILY_TAB = ['termo', 'dueto', 'quarteto', 'octeto', 'contexto', 'conexoes', 'soletra', 'alvo', 'equacao', 'senha', 'bandeira', 'cacapalavras'];
 const DAILY_TAB_SINCE = { termo: 20749 }; // a partir desse dia sai do sorteio (os outros nunca entraram)
 const inDailyTab = (id, i) => DAILY_TAB.includes(id) && i >= (DAILY_TAB_SINCE[id] ?? 0);
 

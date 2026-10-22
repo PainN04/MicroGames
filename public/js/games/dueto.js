@@ -1,9 +1,9 @@
-// Dueto e Quarteto: o Termo com 2 ou 4 palavras ao mesmo tempo. Cada tentativa vale pra todos os quadros; quadro
+// Dueto, Quarteto e Octeto: o Termo com 2, 4 ou 8 palavras ao mesmo tempo. Cada tentativa vale pra todos os quadros; quadro
 // acertado para de receber tentativas. As palavras ficam no servidor (lib/diarios.js): cada tentativa vai pra lá e
 // volta com as cores de cada quadro. O teclado mostra a cor de cada quadro num pedaço da tecla.
 function multiTermo(id, n, rows) {
   return {
-    name: n === 2 ? 'Dueto' : 'Quarteto', icon: id, hue: n === 2 ? 190 : 285, daily: true,
+    name: { 2: 'Dueto', 4: 'Quarteto', 8: 'Octeto' }[n], icon: id, hue: { 2: 190, 4: 285, 8: 25 }[n], daily: true,
     desc: `${n} palavras de 5 letras ao mesmo tempo, ${rows} tentativas, iguais pra todo mundo. Cada palpite vale pra todos os quadros. Uma partida por dia: menos tentativas e mais rápido rende mais pontos.`,
     better: 'high', unit: 'pontos',
     start(el, done) {
@@ -46,8 +46,10 @@ function multiTermo(id, n, rows) {
           if (per.every(p => p === 'x' || p === 'done')) { k.classList.add('x'); return; }
           const c = p => (p === 'g' || p === 'y' || p === 'x' ? COLOR[p] : 'var(--surface-2)');
           k.classList.add('mt-k');
-          k.style.background = n === 2 ? `linear-gradient(to right, ${c(per[0])} 50%, ${c(per[1])} 50%)`
-            : `linear-gradient(to right, ${c(per[0])} 50%, ${c(per[1])} 50%) top / 100% 50% no-repeat, linear-gradient(to right, ${c(per[2])} 50%, ${c(per[3])} 50%) bottom / 100% 50% no-repeat`;
+          // 2 quadros: metade e metade; 4: 2×2; 8: duas faixas de 4
+          const stripe = list => `linear-gradient(to right, ${list.map((p, i) => `${c(p)} ${(i * 100) / list.length}% ${((i + 1) * 100) / list.length}%`).join(', ')})`;
+          k.style.background = n === 2 ? stripe(per)
+            : `${stripe(per.slice(0, n / 2))} top / 100% 50% no-repeat, ${stripe(per.slice(n / 2))} bottom / 100% 50% no-repeat`;
         });
       };
       const showCur = () => {
@@ -67,7 +69,8 @@ function multiTermo(id, n, rows) {
       };
       const shareText = () => {
         const lines = v.boards.map(bd => (bd.solved ? bd.rows.length : 'X'));
-        return `${GAMES[id].name} MicroGame ${v.won ? tries() : 'X'}/${rows}\n` + (n === 2 ? lines.join(' · ') : `${lines[0]} · ${lines[1]}\n${lines[2]} · ${lines[3]}`)
+        const per = n === 8 ? 4 : 2;
+        return `${GAMES[id].name} MicroGame ${v.won ? tries() : 'X'}/${rows}\n` + Array.from({ length: n / per }, (_, r) => lines.slice(r * per, r * per + per).join(' · ')).join('\n')
           + '\n' + v.boards.map(bd => bd.rows.at(-1)?.res.map(c => EMOJI[c]).join('') || '').join(' ');
       };
       const endPanel = () => {
@@ -141,3 +144,4 @@ function multiTermo(id, n, rows) {
 }
 GAMES.dueto = multiTermo('dueto', 2, 7);
 GAMES.quarteto = multiTermo('quarteto', 4, 9);
+GAMES.octeto = multiTermo('octeto', 8, 13);

@@ -35,6 +35,12 @@ const HOWTO = {
   contexto: { steps: ['Chute qualquer palavra', 'O número é a posição dela: quanto menor, mais perto do sentido da secreta', 'Ficou difícil? A dica mostra uma palavra mais perto'], keys: ['Teclado', 'Enter'] },
   conexoes: { steps: ['Ache 4 palavras com algo em comum e envie', 'São 4 grupos; amarelo é o mais fácil, roxo é jogo de palavras', '4 erros e acabou'], keys: ['Clique', 'Toque'] },
   alvo: { steps: ['Toque num número, numa operação e em outro número', 'Os dois viram o resultado; continue até chegar no alvo', 'Vale o resultado mais perto; só uma tentativa por dia'], keys: ['Clique', 'Toque'] },
+  octeto: { steps: ['Adivinhe 8 palavras ao mesmo tempo em 13 tentativas', 'Cada palpite vale pros oito quadros', 'A tecla mostra a cor de cada quadro: 4 em cima, 4 embaixo'], keys: ['Teclado', 'Enter'] },
+  soletra: { steps: ['Forme palavras de 4 letras ou mais com as letras da colmeia', 'Toda palavra usa a letra do meio; pode repetir letra', 'Usou as 7 letras? +7 pontos. Encerre quando quiser'], keys: ['Teclado', 'Toque'] },
+  senha: { steps: ['Monte 4 cores e envie (pode repetir cor)', 'Pino cheio: cor no lugar certo; vazado: cor certa em outro lugar', '8 tentativas pra descobrir a senha'], keys: ['1 a 6', 'Toque'] },
+  equacao: { steps: ['Descubra a conta do dia: 8 símbolos, tipo 12+35=47', 'Todo palpite tem que ser uma conta certa', 'Verde: lugar certo; amarelo: está em outro lugar. × e ÷ antes de + e −'], keys: ['Teclado', 'Enter'] },
+  bandeira: { steps: ['Digite o país da bandeira', 'Errou? Veja a distância, a direção e o quanto chegou perto', 'Com 2 erros aparece o continente; com 4, a capital'], keys: ['Teclado', 'Enter'] },
+  cacapalavras: { steps: ['Arraste da primeira à última letra da palavra', 'Vale horizontal, vertical, diagonal e de trás pra frente', 'Ache as 8 o mais rápido possível'], keys: ['Arrastar', 'Toque'] },
   quiz: { steps: ['Escolha a alternativa certa', 'Acertos seguidos fazem combo até x4', 'Erro tira 1 ponto e mostra a certa'], keys: ['1 2 3 4', 'Clique'] },
 };
 const howtoSeen = id => { try { return localStorage.getItem('mg_howto_' + id) === '1'; } catch { return true; } };
