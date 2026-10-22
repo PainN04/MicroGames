@@ -14,6 +14,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=optional" rel="stylesheet">
+<!-- modo leve (js/perf.js) já no primeiro desenho: sem isso o PC fraco engasga com o fundo animado antes do JS carregar -->
+<script>try{(function(s){var p=s.getItem('mg_perf');if(p==='lite'||(p!=='full'&&s.getItem('mg_perf_auto')==='lite'))document.documentElement.classList.add('lite')})(localStorage)}catch(e){}</script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,6 +26,7 @@
     <span class="pill compact" id="db" title="conectando..."><span class="dot"></span><span id="dbtxt">conectando...</span></span>
     <button class="btn ghost icon-btn" id="mute" aria-label="Desligar som"></button>
     <button class="btn ghost icon-btn" id="fx3d" aria-pressed="true" aria-label="Animações 3D dos cards" title="Animações 3D: ligadas (clique pra desligar se ficar pesado)"></button>
+    <button class="btn ghost icon-btn" id="lite" aria-pressed="false" aria-label="Modo leve" title="Modo leve: desligado"></button>
     <span class="gate-wrap" id="gateWrap" hidden>
       <button class="gate-pill" id="gatePill" aria-haspopup="dialog" aria-expanded="false" aria-controls="gatePop"></button>
       <span class="gate-pop glass" id="gatePop" role="dialog" aria-label="Sua fila no Geiko" hidden></span>
@@ -54,6 +57,7 @@
 <div class="sr-only" role="status" aria-live="polite" id="live"></div>
 
 <script src="js/icons.js"></script>
+<script src="js/perf.js"></script>
 <script src="js/daily.js"></script>
 <script src="js/avatars.js"></script>
 <script src="js/core.js"></script>
