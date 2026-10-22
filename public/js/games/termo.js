@@ -24,7 +24,7 @@ function termoStats(name, today) {
 }
 
 GAMES.termo = {
-  name: 'Termo', icon: 'termo', hue: 150, desc: 'A palavra do dia: 5 letras, 6 tentativas, igual pra todo mundo. Verde = letra certa no lugar certo, amarelo = existe em outro lugar, cinza = não tem. Só vale a primeira partida de cada dia. Acertar rápido e em poucas tentativas rende mais pontos.',
+  name: 'Termo', icon: 'termo', hue: 150, daily: true, desc: 'A palavra do dia: 5 letras, 6 tentativas, igual pra todo mundo. Verde = letra certa no lugar certo, amarelo = existe em outro lugar, cinza = não tem. Só vale a primeira partida de cada dia. Acertar rápido e em poucas tentativas rende mais pontos.',
   better: 'high', unit: 'pontos',
   start(el, done) {
     // a palavra do dia fica no servidor: cada tentativa vai pra lá e volta com as cores (a palavra só aparece no fim)

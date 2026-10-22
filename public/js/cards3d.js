@@ -1752,7 +1752,267 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.45) * 0.35;
     };
   },
+  // Dueto: dois quadros do Termo abertos como um livro; o mesmo palpite vira nos dois, cada um acerta numa linha
+  dueto(Z, illo) {
+    const GUESSES = ['SALTO', 'DUETO', 'MOTOR'], ANSWERS = ['DUETO', 'MOTOR'], S = 12, STEP = S + 1.8;
+    const boards = ANSWERS.map((ans, b) => {
+      const side = b ? 1 : -1;
+      const book = new Z.Anchor({ addTo: illo, translate: { x: side * 37, y: 0 }, rotate: { y: -side * 0.32 } });
+      const last = GUESSES.indexOf(ans);
+      const rows = GUESSES.slice(0, last + 1).map((w, r) => {
+        const cols = termoColors(w, ans);
+        return [...w].map((ch, i) => ({ ...letterTile(Z, book, ch, S, { x: (i - 2) * STEP, y: (r - 1) * (STEP + 1) }), color: TERMO_C[cols[i]], r, i }));
+      });
+      return { rows, last };
+    });
+    return t => {
+      const FLIP = 0.2, ROW = 5 * FLIP + 0.55, T = 3 * ROW + 1.8, k = t % T;
+      boards.forEach(bd => bd.rows.flat().forEach(tl => {
+        const f = (k - tl.r * ROW - tl.i * FLIP) / (FLIP * 1.6);
+        tl.a.rotate.x = f > 0 && f < 1 ? Math.sin(f * Math.PI) * Math.PI / 2 * (f < 0.5 ? 1 : -1) : 0;
+        tl.paint(f >= 0.5 ? tl.color : TILE_OFF);
+        tl.g.visible = k > tl.r * ROW - 0.25 || tl.r === 0;
+        const won = tl.r === bd.last && k > (bd.last + 1) * ROW;
+        tl.a.translate.z = won ? Math.max(0, Math.sin((k - (bd.last + 1) * ROW) * 8 - tl.i * 0.7)) * 7 : 0;
+      }));
+      illo.rotate.x = -0.28;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.3;
+    };
+  },
+  // Quarteto: 4 quadros em 2x2; o 1º palpite vira em todos e depois cada quadro acerta a sua palavra, um por vez
+  quarteto(Z, illo) {
+    const FIRST = 'SALTO', ANSWERS = ['MOTOR', 'DUETO', 'BARCO', 'LEVAR'], S = 10, STEP = S + 1.4;
+    const boards = ANSWERS.map((ans, b) => {
+      const at = new Z.Anchor({ addTo: illo, translate: { x: (b % 2 ? 1 : -1) * 32, y: (b < 2 ? -1 : 1) * 17 } });
+      const rows = [FIRST, ans].map((w, r) => {
+        const cols = termoColors(w, ans);
+        return [...w].map((ch, i) => ({ ...letterTile(Z, at, ch, S, { x: (i - 2) * STEP, y: (r - 0.5) * (STEP + 0.6) }), color: TERMO_C[cols[i]], r, i }));
+      });
+      return { at, rows };
+    });
+    return t => {
+      const FLIP = 0.12, ROW = 5 * FLIP + 0.35, T = ROW * 5 + 1.8, k = t % T;
+      boards.forEach((bd, b) => {
+        // linha 0 vira em todos juntos; a linha 1 (a resposta) de cada quadro vira na vez dele
+        const start = r => (r === 0 ? 0 : ROW * (1 + b));
+        bd.rows.flat().forEach(tl => {
+          const f = (k - start(tl.r) - tl.i * FLIP) / (FLIP * 1.8);
+          tl.a.rotate.x = f > 0 && f < 1 ? Math.sin(f * Math.PI) * Math.PI / 2 * (f < 0.5 ? 1 : -1) : 0;
+          tl.paint(f >= 0.5 ? tl.color : TILE_OFF);
+          tl.g.visible = tl.r === 0 || k > start(1) - 0.2;
+        });
+        const won = k - start(1) - 5 * FLIP;
+        bd.at.translate.z = won > 0 && won < 0.7 ? Math.sin(won / 0.7 * Math.PI) * 9 : 0;
+      });
+      illo.rotate.x = -0.3;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.32;
+    };
+  },
+  // Contexto: palpites entram na lista na posição certa (barra maior = mais perto); o último é o nº 1 e brilha.
+  // Uma lupa passeia por cima
+  contexto(Z, illo) {
+    const RANKS = [842, 97, 2140, 13, 1], N = 13642, W = 74, H = 11, ROWGAP = 14;
+    const tone = r => (r === 1 ? '#3ddc97' : r <= 300 ? '#2fbf80' : r <= 1500 ? '#e8b923' : '#ff6b8a');
+    const rows = RANKS.map((r, k) => {
+      const a = new Z.Anchor({ addTo: illo });
+      // placa larga: desenhada em ordem (placa e depois a frente); ordenando, as laterais cobriam a frente quando a cena gira
+      const g = new Z.Group({ addTo: a });
+      slab(Z, g, W, H, 4, '#262a40');
+      const face = new Z.Group({ addTo: g, translate: { z: 2.4 } });
+      new Z.Rect({ addTo: face, width: W - 2, height: H - 2, stroke: 1.4, fill: true, color: '#262a40' });
+      const len = Math.max(0.12, 1 - Math.log(r) / Math.log(N)) * (W - 24);
+      new Z.Rect({ addTo: face, width: len, height: H - 4, stroke: 1.4, fill: true, color: tone(r), translate: { x: -(W - 2) / 2 + 2 + len / 2, z: 0.2 } });
+      // "palavra" (traço claro) e a posição em display
+      new Z.Shape({ addTo: face, path: [{ x: -W / 2 + 6, y: 0 }, { x: -W / 2 + 6 + 10 + (k % 3) * 4, y: 0 }], stroke: 2, color: '#ffffff', translate: { z: 0.5 } });
+      numberGlyph(Z, face, r, { color: '#ffffff', scale: 0.36, stroke: 1.3, gap: 12, z: 0.5 }).translate.x = W / 2 - 11;
+      return { a, g, r, k, y: 0 };
+    });
+    // lupa: aro com espessura (3 anéis) e cabo
+    const lens = new Z.Anchor({ addTo: illo, translate: { x: 30, y: -40, z: 18 } });
+    [['#8b6cff', -1.2], ['#a98bff', 0], ['#cdb9ff', 1.2]].forEach(([color, z]) => new Z.Ellipse({ addTo: lens, diameter: 22, stroke: 3.4, color, translate: { z } }));
+    new Z.Ellipse({ addTo: lens, diameter: 19, stroke: 0, fill: true, color: 'rgba(200,220,255,0.18)' });
+    new Z.Shape({ addTo: lens, path: [{ x: 8, y: 8 }, { x: 17, y: 17 }], stroke: 5, color: '#5a3fd0' });
+    const sparks = Array.from({ length: 6 }, (_, i) => ({ s: new Z.Shape({ addTo: illo, stroke: 2.6, color: PALETTE[i % PALETTE.length] }), ang: (i / 6) * Z.TAU }));
+    return t => {
+      const STEP = 0.9, T = RANKS.length * STEP + 2.2, k = t % T, shown = Math.min(RANKS.length, Math.floor(k / STEP) + 1);
+      const list = rows.slice(0, shown).sort((a, b) => a.r - b.r);
+      rows.forEach(row => {
+        const pos = list.indexOf(row), on = pos >= 0;
+        const target = on ? (pos - 2) * ROWGAP + 8 : -60;
+        row.y += (target - row.y) * 0.25;
+        const age = (k - row.k * STEP) / 0.35;
+        row.a.translate.set({ y: row.y, z: on && age < 1 ? (1 - smooth(Math.max(0, age))) * 24 : 0 });
+        row.a.scale = on ? 0.6 + 0.4 * smooth(Math.min(1, Math.max(0, age))) : 1;
+        row.g.visible = on;
+      });
+      const won = k - (RANKS.length - 1) * STEP - 0.35;
+      const top = rows[RANKS.length - 1];
+      top.a.translate.z += won > 0 ? Math.max(0, Math.sin(won * 5)) * 5 : 0;
+      sparks.forEach(({ s, ang }) => {
+        const b = Math.min(1, Math.max(0, won) * 1.4);
+        s.visible = won > 0 && b < 1;
+        s.translate.set({ x: Math.cos(ang) * (20 + b * 30), y: top.y + Math.sin(ang) * (6 + b * 14), z: 10 });
+      });
+      lens.translate.x = 30 + Math.sin(t * 1.1) * 8;
+      lens.translate.y = -42 + Math.cos(t * 1.4) * 4;
+      lens.rotate.z = Math.sin(t * 1.1) * 0.25;
+      illo.rotate.x = -0.3;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.3;
+    };
+  },
+  // Conexões: 16 peças embaralhadas; a cada passo, 4 sobem e trocam de lugar até formar a faixa do grupo, na cor
+  // da dificuldade (amarelo, verde, azul, roxo). As peças que estavam no caminho vão pro lugar de onde elas saíram.
+  conexoes(Z, illo) {
+    const S = 15, GAP = 3.2, COLORS = ['#f2c94c', '#3ddc97', '#4dc3ff', '#b78bff'], OFF = '#3a3f5c';
+    const cell = c => ({ x: ((c % 4) - 1.5) * (S + GAP), y: (Math.floor(c / 4) - 1.5) * (S + GAP) });
+    // posição de cada peça (peça i é do grupo floor(i/4)) antes de cada passo
+    const START = [5, 14, 2, 11, 0, 9, 7, 12, 3, 13, 6, 1, 10, 4, 15, 8];
+    const steps = [START.slice()];
+    for (let g = 0; g < 4; g++) {
+      const pos = steps[g].slice();
+      for (let j = 0; j < 4; j++) {
+        const piece = g * 4 + j, want = g * 4 + j, other = pos.indexOf(want);
+        [pos[piece], pos[other]] = [pos[other], pos[piece]];
+      }
+      steps.push(pos);
+    }
+    const tiles = Array.from({ length: 16 }, (_, i) => {
+      const a = new Z.Anchor({ addTo: illo });
+      const g = new Z.Group({ addTo: a, updateSort: true });
+      const box = slab(Z, g, S, S, 5, OFF);
+      const face = new Z.Group({ addTo: g, translate: { z: 2.9 } });
+      const front = new Z.Rect({ addTo: face, width: S - 2, height: S - 2, stroke: 1.6, fill: true, color: OFF });
+      // "palavra": dois tracinhos claros
+      new Z.Shape({ addTo: face, path: [{ x: -4, y: -1.5 }, { x: 4, y: -1.5 }], stroke: 1.8, color: '#e9ebf8', translate: { z: 0.3 } });
+      new Z.Shape({ addTo: face, path: [{ x: -4, y: 2.5 }, { x: 1 + (i % 3), y: 2.5 }], stroke: 1.8, color: '#e9ebf8', translate: { z: 0.3 } });
+      return { a, box, front, g: Math.floor(i / 4), color: OFF };
+    });
+    const paint = (tl, c) => { if (tl.color !== c) { tl.color = c; tl.front.color = c; paintBox(tl.box, c); } };
+    return t => {
+      const STEP = 1.05, T = 4 * STEP + 2, k = t % T, s = Math.min(4, Math.floor(k / STEP)), f = s < 4 ? (k % STEP) / STEP : 1;
+      tiles.forEach((tl, i) => {
+        const from = cell(steps[s][i]), to = cell(steps[Math.min(4, s + 1)][i]);
+        const moving = s < 4 && from.x !== to.x || from.y !== to.y;
+        const m = s < 4 ? smooth(Math.min(1, Math.max(0, (f - 0.25) / 0.55))) : 1;
+        const lift = s < 4 && tl.g === s ? Math.sin(Math.min(1, f / 0.85) * Math.PI) * 10 : 0;
+        tl.a.translate.set({ x: from.x + (to.x - from.x) * m, y: from.y + (to.y - from.y) * m, z: lift + (moving ? Math.sin(m * Math.PI) * 4 : 0) });
+        const solved = tl.g < s || (tl.g === s && f > 0.8);
+        paint(tl, solved ? COLORS[tl.g] : s < 4 && tl.g === s && f < 0.8 ? '#8b6cff' : OFF);
+      });
+      // fim: as faixas pulam em onda e tudo some pra recomeçar
+      const end = k - 4 * STEP;
+      if (end > 0) tiles.forEach((tl, i) => { tl.a.translate.z = Math.max(0, Math.sin(end * 6 - (i % 4) * 0.5 - tl.g * 0.3)) * (end < 1.2 ? 6 : 0); });
+      illo.rotate.x = -0.32;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.32;
+    };
+  },
+  // Alvo: o número do dia no visor; duas contas juntam as peças (75 × 4 = 300, 300 + 50 = 350) e acerta em cheio
+  alvo(Z, illo) {
+    const TARGET = 350, NUMS = [2, 4, 9, 50, 75, 1];
+    const disp = new Z.Anchor({ addTo: illo, translate: { y: -38 } });
+    const dispG = new Z.Group({ addTo: disp }); // em ordem: a placa e depois o visor (ordenando, a lateral cobria o visor)
+    slab(Z, dispG, 62, 26, 6, '#161a2b');
+    const lcd = new Z.Group({ addTo: dispG, translate: { z: 3.4 } });
+    new Z.Rect({ addTo: lcd, width: 60, height: 24, stroke: 1.5, fill: true, color: '#161a2b' });
+    const ring = new Z.Ellipse({ addTo: lcd, diameter: 18, stroke: 1.6, color: '#ff8a5c', translate: { x: -21, z: 0.3 } });
+    new Z.Shape({ addTo: lcd, stroke: 3.2, color: '#ff8a5c', translate: { x: -21, z: 0.4 } });
+    const targetOff = numberGlyph(Z, lcd, TARGET, { color: '#ffb347', scale: 0.62, stroke: 2.2, gap: 12, z: 0.4 });
+    const targetOn = numberGlyph(Z, lcd, TARGET, { color: '#3ddc97', scale: 0.62, stroke: 2.4, gap: 12, z: 0.4 });
+    targetOff.translate.x = targetOn.translate.x = 7;
+    // peça com número: uma versão por valor (o valor muda quando as peças se juntam)
+    const W = v => 9 + String(v).length * 6.5;
+    const piece = (vals, slot, color = '#2b2f45') => {
+      const a = new Z.Anchor({ addTo: illo });
+      const forms = Object.fromEntries(vals.map(v => {
+        const g = new Z.Group({ addTo: a });
+        const c = v === TARGET ? '#3ddc97' : v > 100 ? '#5a4fcf' : color;
+        slab(Z, g, W(v), 15, 5, c);
+        const face = new Z.Group({ addTo: g, translate: { z: 2.9 } });
+        new Z.Rect({ addTo: face, width: W(v) - 2, height: 13, stroke: 1.5, fill: true, color: c });
+        numberGlyph(Z, face, v, { color: v === TARGET ? '#10131c' : '#ffffff', scale: 0.48, stroke: 1.8, gap: 13, z: 0.3 });
+        return [v, g];
+      }));
+      return { a, forms, slot, val: vals[0], show(v) { for (const [k, g] of Object.entries(forms)) g.visible = +k === v; } };
+    };
+    const SLOT = i => ({ x: ((i % 3) - 1) * 27, y: 4 + Math.floor(i / 3) * 21 });
+    const pcs = NUMS.map((v, i) => piece(v === 75 ? [75, 300, 350] : [v], i));
+    // sinal da conta, entre as duas peças
+    const SIGNS = { x: [[[-3.2, -3.2], [3.2, 3.2]], [[3.2, -3.2], [-3.2, 3.2]]], '+': [[[-4, 0], [4, 0]], [[0, -4], [0, 4]]] };
+    const signs = Object.fromEntries(Object.entries(SIGNS).map(([k, l]) => [k, glyph(Z, illo, l, { color: '#ffd34d', stroke: 2.6, scale: 0.9 })]));
+    const sparks = Array.from({ length: 8 }, (_, i) => ({ s: new Z.Shape({ addTo: illo, stroke: 3, color: PALETTE[i % PALETTE.length] }), ang: (i / 8) * Z.TAU }));
+    // contas: [peça que fica, peça que entra, sinal, resultado]
+    const OPS = [[4, 1, 'x', 300], [4, 3, '+', 350]];
+    return t => {
+      const STEP = 1.3, T = OPS.length * STEP + 2.2, k = t % T, s = Math.floor(k / STEP), f = (k % STEP) / STEP;
+      let value75 = 75;
+      const gone = new Set();
+      OPS.forEach(([keep, take, , res], i) => { if (i < s) { value75 = res; gone.add(take); } });
+      pcs.forEach((p, i) => {
+        const home = SLOT(p.slot);
+        let x = home.x, y = home.y, z = 0, on = true;
+        const op = s < OPS.length ? OPS[s] : null;
+        if (gone.has(i)) on = false;
+        if (op && (i === op[0] || i === op[1])) {
+          // as duas sobem, vão pro meio e viram uma só
+          const up = smooth(Math.min(1, f / 0.35)), join = smooth(Math.min(1, Math.max(0, (f - 0.35) / 0.35)));
+          const mid = { x: (SLOT(pcs[op[0]].slot).x + SLOT(pcs[op[1]].slot).x) / 2, y: (SLOT(pcs[op[0]].slot).y + SLOT(pcs[op[1]].slot).y) / 2 };
+          const end = i === op[0] ? home : mid;
+          const tx = mid.x + (i === op[0] ? -8 : 8) * (1 - join), ty = mid.y - 10;
+          if (f < 0.7) { x += (tx - x) * up; y += (ty - y) * up; z = up * 10; }
+          else { const back = smooth((f - 0.7) / 0.3); x = mid.x + (end.x - mid.x) * back; y = ty + (end.y - ty) * back; z = 10 * (1 - back); }
+          if (i === op[1] && f >= 0.7) on = false;
+          if (i === op[0] && f >= 0.7) value75 = op[3];
+        }
+        p.a.translate.set({ x, y, z });
+        p.show(on ? (i === 4 ? value75 : p.val) : null);
+      });
+      const op = s < OPS.length ? OPS[s] : null;
+      Object.entries(signs).forEach(([k2, g]) => {
+        g.visible = !!op && op[2] === k2 && f > 0.2 && f < 0.72;
+        if (g.visible) { const a = SLOT(pcs[op[0]].slot), b = SLOT(pcs[op[1]].slot); g.translate.set({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 - 10, z: 14 }); }
+      });
+      const hit = s >= OPS.length;
+      targetOff.visible = !hit; targetOn.visible = hit;
+      ring.color = hit ? '#3ddc97' : '#ff8a5c';
+      const w = hit ? k - OPS.length * STEP : -1;
+      disp.translate.z = w > 0 ? Math.max(0, Math.sin(w * 6)) * 5 : 0;
+      sparks.forEach(({ s: sp, ang }) => {
+        const b = Math.min(1, Math.max(0, w) * 1.3);
+        sp.visible = w > 0 && b < 1;
+        sp.translate.set({ x: Math.cos(ang) * (16 + b * 34), y: -38 + Math.sin(ang) * (8 + b * 18), z: 10 });
+      });
+      illo.rotate.x = -0.3;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.32;
+    };
+  },
 };
+
+// ---------- peças compartilhadas pelas cenas dos jogos diários ----------
+// cores do Termo: verde no lugar, amarelo se existe em outro lugar (contando repetidas), cinza se não tem
+function termoColors(w, answer) {
+  const res = [...w].map((ch, i) => (ch === answer[i] ? 'v' : null)), left = [...answer].filter((ch, i) => w[i] !== ch);
+  return res.map((r, i) => { if (r) return r; const j = left.indexOf(w[i]); if (j >= 0) { left.splice(j, 1); return 'y'; } return 'g'; });
+}
+const TERMO_C = { g: '#4a4f6e', y: '#e8b923', v: '#2fbf80' }, TILE_OFF = '#20243a';
+// ladrilho de letra que vira mostrando a cor (frente vazia com borda → cor atrás)
+function letterTile(Z, addTo, ch, S, at, { glyphScale = S / 26, stroke = Math.max(1.3, S / 9) } = {}) {
+  const a = new Z.Anchor({ addTo, translate: at });
+  const g = new Z.Group({ addTo: a, updateSort: true });
+  const box = slab(Z, g, S, S, Math.max(3, S / 4), TILE_OFF);
+  const face = new Z.Group({ addTo: g, translate: { z: Math.max(3, S / 4) / 2 + 0.4 } });
+  const front = new Z.Rect({ addTo: face, width: S - 2, height: S - 2, stroke: 1.6, fill: true, color: TILE_OFF });
+  const border = new Z.Rect({ addTo: face, width: S - 3, height: S - 3, stroke: 1, color: '#4a4f6e' });
+  glyph(Z, face, LETTERS[ch], { color: '#ffffff', stroke, scale: glyphScale, z: 0.3 });
+  const paint = c => { if (front.color !== c) { front.color = c; paintBox(box, c); border.visible = c === TILE_OFF; } };
+  return { a, g, paint };
+}
+// número em display de 7 segmentos (vários dígitos lado a lado), num Group pra desenhar como peça só
+function numberGlyph(Z, addTo, n, { color = '#ffffff', scale = 0.5, stroke = 1.6, gap = 11, z = 0.3 } = {}) {
+  const ds = String(n).split('').map(Number), w = (ds.length - 1) * gap * scale;
+  const g = new Z.Group({ addTo, translate: { z } });
+  ds.forEach((d, i) => glyph(Z, g, digitLines(d).map(l => l.map(([x, y]) => [x + (i * gap * scale - w / 2) / scale, y])), { color, stroke, scale }));
+  return g;
+}
 
 /* ---------- montagem e loop ---------- */
 let scenes3d = [], loopOn = false, visible = new Set();
@@ -1812,7 +2072,7 @@ async function enhanceCards() {
   if (!fx3dOn) return;
   try { await Promise.all([loadLib(ZDOG_URL), loadLib(TILT_URL)]); } catch { return; } // sem internet: fica o emoji
   if (run !== enhanceRun || !fx3dOn || !document.querySelector('.grid .card')) return;
-  document.querySelector('.grid').classList.add('has3d');
+  document.querySelectorAll('.grid').forEach(g => g.classList.add('has3d'));
   // tamanho da cena: 190px no computador, 150px no celular
   // (a Zdog grava o tamanho no próprio canvas, então o tamanho do celular sai daqui e não do CSS)
   const size = SMALL.matches ? 150 : 190;
@@ -1844,6 +2104,6 @@ async function enhanceCards() {
   // inclinação 3D com brilho (só com mouse; no celular fica parado)
   if (matchMedia('(hover: hover)').matches) {
     VanillaTilt.init(document.querySelectorAll('.grid .card'), { max: 8, speed: 500, scale: 1.02, glare: true, 'max-glare': 0.18, perspective: 900 });
-    document.querySelector('.grid').classList.add('tilt-on');
+    document.querySelectorAll('.grid').forEach(g => g.classList.add('tilt-on'));
   }
 }

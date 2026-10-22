@@ -5,6 +5,12 @@
 // `picks[dia] = { game }`: o vencedor do desafio de ontem escolhe o jogo de amanhã (vale por cima do sorteio).
 const DAILY_SINCE = { sudoku: 20745, pong: 20746, forca: 20746, ligue4: 20746, corredor: 20746, comecome: 20746, termo: 20746, quiz: 20747 }; // 19/10/2026, 20/10/2026 e 21/10/2026 (número do dia desde 1970)
 
+// Jogos da aba "Jogos diários" (uma partida por dia, mesma resposta pra todo mundo): ficam fora do desafio do dia,
+// dos duelos e do torneio. O Termo era do desafio do dia até 22/10/2026; os dias até lá continuam com o mesmo jogo.
+const DAILY_TAB = ['termo', 'dueto', 'quarteto', 'contexto', 'conexoes', 'alvo'];
+const DAILY_TAB_SINCE = { termo: 20749 }; // a partir desse dia sai do sorteio (os outros nunca entraram)
+const inDailyTab = (id, i) => DAILY_TAB.includes(id) && i >= (DAILY_TAB_SINCE[id] ?? 0);
+
 function seededShuffle(list, seed) {
   const a = [...list];
   let s = seed >>> 0;
@@ -15,9 +21,9 @@ function seededShuffle(list, seed) {
 
 function scheduledGame(ids, i, picks = {}) {
   const chosen = picks[i] && picks[i].game;
-  if (chosen && ids.includes(chosen)) return chosen;
-  const roster = ids.filter(id => !(id in DAILY_SINCE) || i >= DAILY_SINCE[id]).sort();
+  if (chosen && ids.includes(chosen) && !inDailyTab(chosen, i)) return chosen;
+  const roster = ids.filter(id => (!(id in DAILY_SINCE) || i >= DAILY_SINCE[id]) && !inDailyTab(id, i)).sort();
   return seededShuffle(roster, Math.floor(i / roster.length) * 7919 + 13)[i % roster.length];
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { DAILY_SINCE, seededShuffle, scheduledGame };
+if (typeof module !== 'undefined' && module.exports) module.exports = { DAILY_SINCE, DAILY_TAB, inDailyTab, seededShuffle, scheduledGame };

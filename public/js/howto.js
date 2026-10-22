@@ -30,6 +30,11 @@ const HOWTO = {
   corredor: { steps: ['Pule os cactos e os urubus baixos', 'Segure o pulo pra ir mais alto', 'Abaixe pra passar por baixo do bando; pegue moedas'], keys: ['Espaço / ↑', '↓ abaixa', 'Toque'] },
   comecome: { steps: ['Coma todas as bolinhas do labirinto', 'A bola grande deixa os fantasmas azuis: aí você come eles', 'A fruta no meio vale bônus'], keys: ['Setas', 'WASD', 'Deslize'] },
   termo: { steps: ['Adivinhe a palavra do dia em 6 tentativas', 'Verde: letra no lugar certo; amarelo: existe em outro lugar', 'Só vale palavra que existe'], keys: ['Teclado', 'Enter'] },
+  dueto: { steps: ['Adivinhe 2 palavras ao mesmo tempo em 7 tentativas', 'Cada palpite vale pros dois quadros', 'A tecla mostra a cor de cada quadro: esquerda e direita'], keys: ['Teclado', 'Enter'] },
+  quarteto: { steps: ['Adivinhe 4 palavras ao mesmo tempo em 9 tentativas', 'Cada palpite vale pros quatro quadros', 'A tecla mostra a cor de cada quadro em um canto'], keys: ['Teclado', 'Enter'] },
+  contexto: { steps: ['Chute qualquer palavra', 'O número é a posição dela: quanto menor, mais perto do sentido da secreta', 'Ficou difícil? A dica mostra uma palavra mais perto'], keys: ['Teclado', 'Enter'] },
+  conexoes: { steps: ['Ache 4 palavras com algo em comum e envie', 'São 4 grupos; amarelo é o mais fácil, roxo é jogo de palavras', '4 erros e acabou'], keys: ['Clique', 'Toque'] },
+  alvo: { steps: ['Toque num número, numa operação e em outro número', 'Os dois viram o resultado; continue até chegar no alvo', 'Vale o resultado mais perto; só uma tentativa por dia'], keys: ['Clique', 'Toque'] },
   quiz: { steps: ['Escolha a alternativa certa', 'Acertos seguidos fazem combo até x4', 'Erro tira 1 ponto e mostra a certa'], keys: ['1 2 3 4', 'Clique'] },
 };
 const howtoSeen = id => { try { return localStorage.getItem('mg_howto_' + id) === '1'; } catch { return true; } };
