@@ -8,7 +8,8 @@ GAMES.torre = {
     return mountPhaser(el.querySelector('#pw'), W, H, {
       create() {
         dotTexture(this);
-        const color = i => Phaser.Display.Color.HSLToColor(((190 + i * 11) % 360) / 360, 0.62, 0.6).color;
+        // começa quente (coral, laranja, amarelo) pra destacar no céu azul; o azul só chega quando o céu já virou pôr do sol
+        const color = i => Phaser.Display.Color.HSLToColor(((10 + i * 11) % 360) / 360, 0.7, 0.58).color;
         const blocks = [{ x: (W - BASE_W) / 2, w: BASE_W }], falling = [];
         let cur = { x: -BASE_W / 2, w: BASE_W, dir: 1 }, speed = 170, floors = 0, combo = 0, alive = true, cam = 0, camTarget = 0;
         const sky = this.add.graphics(), g = this.add.graphics(), fx = this.add.graphics();
