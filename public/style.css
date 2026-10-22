@@ -1223,3 +1223,21 @@
 .choices.quiz { perspective: 700px; }
 .choices.quiz .btn.flip { animation: cardFlip .32s var(--d, 0s) ease-out both; }
 @keyframes cardFlip { from { transform: rotateX(90deg); opacity: .2; } }
+
+/* ================= modo leve (js/perf.js): PC sem placa de vídeo boa ================= */
+/* O fundo animado por baixo do vidro desfocado refazia o desfoque da tela toda a cada quadro (~12 fps num i3 antigo).
+   Aqui: fundo parado em degradê (sem filter), painéis opacos no lugar do vidro, sombras curtas
+   e nenhuma animação infinita fora do jogo. Dentro do .game nada muda (a animação é o próprio jogo). */
+html.lite {
+  --surface: oklch(21% 0.025 275 / 0.94); --surface-2: oklch(27% 0.03 275 / 0.96);
+  --elev-3: 0 4px 12px oklch(0% 0 0 / 0.3);
+}
+html.lite .backdrop { background:
+  radial-gradient(45vmax 45vmax at 8% 0%, oklch(70% 0.19 290 / .2), transparent 70%),
+  radial-gradient(50vmax 50vmax at 100% 100%, oklch(74% 0.17 35 / .12), transparent 70%); }
+html.lite .backdrop i { display: none; }
+html.lite *, html.lite *::before, html.lite *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+html.lite header { background: oklch(15% 0.02 275 / 0.97); }
+html.lite .modal { background: oklch(10% 0.02 275 / 0.82); }
+html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *)::after { animation-iteration-count: 1 !important; }
+#lite[aria-pressed="true"] { color: var(--green); border-color: oklch(76% 0.18 150 / .45); }

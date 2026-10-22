@@ -3,6 +3,8 @@ GAMES.corredor = {
   better: 'high', unit: 'pontos', phaser: true,
   start(el, done) {
     const W = 480, H = 300, GY = 250, GRAV = 2300, JUMP = -820, ZOOM = 1.5;
+    // texto nítido com o zoom; no canvas 2D (modo leve) o Phaser desenha o texto de alta resolução grande demais, então lá fica 1x
+    const TEXT_RES = perf.lite ? 1 : 2 * ZOOM;
     el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Velocidade<b id="v">1.0x</b></span></div><div class="phaser-wrap" id="pw"></div><p class="hint">Espaço/toque = pular (segure pra ir mais alto) · ↓ ou parte de baixo da tela = abaixar</p>';
     const hud = { p: el.querySelector('#p'), v: el.querySelector('#v') };
     // O mundo continua 480x300; a câmera dá zoom e as texturas são pintadas no dobro da resolução, pra ficar nítido.
@@ -31,7 +33,7 @@ GAMES.corredor = {
         const me = scene.add.image(X, GY, 'cr_idle').setOrigin(0.5, art.footY).setScale(0.5);
         const dust = scene.add.particles(0, 0, 'cr_puff', { speed: { min: 20, max: 70 }, angle: { min: 175, max: 235 }, lifespan: 420, scale: { start: 0.45, end: 0.9 }, alpha: { start: 0.7, end: 0 }, emitting: false });
         const shade = scene.add.rectangle(0, 0, W, H, 0x0d1240).setOrigin(0).setAlpha(0); // escurece tudo à noite
-        const txt = (yy, s, size) => scene.add.text(W / 2, yy, s, { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: size + 'px', fontStyle: 'bold', color: '#fff4e0', stroke: '#2a1f4f', strokeThickness: 5 }).setOrigin(0.5).setResolution(2 * ZOOM);
+        const txt = (yy, s, size) => scene.add.text(W / 2, yy, s, { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: size + 'px', fontStyle: 'bold', color: '#fff4e0', stroke: '#2a1f4f', strokeThickness: 5 }).setOrigin(0.5).setResolution(TEXT_RES);
         const msg = txt(96, 'Toque ou Espaço pra correr', 20);
         scene.tweens.add({ targets: msg, scale: 1.06, yoyo: true, repeat: -1, duration: 650, ease: 'Sine.InOut' });
 
@@ -135,7 +137,7 @@ GAMES.corredor = {
               c.img.setScale(0.42 * Math.abs(Math.cos(c.ph)) + 0.04, 0.42); // gira
               if (Math.abs(c.img.x - X) < 16 && c.img.y > by0 - 8 && c.img.y < by1 + 8) {
                 bonus += 25; c.dead = true; sfx.coin();
-                const t = scene.add.text(c.img.x, c.img.y - 6, '+25', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#ffe27a', stroke: '#5a3a00', strokeThickness: 3 }).setOrigin(0.5).setResolution(2 * ZOOM);
+                const t = scene.add.text(c.img.x, c.img.y - 6, '+25', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '13px', fontStyle: 'bold', color: '#ffe27a', stroke: '#5a3a00', strokeThickness: 3 }).setOrigin(0.5).setResolution(TEXT_RES);
                 scene.tweens.add({ targets: t, y: t.y - 22, alpha: 0, duration: 600, onComplete: () => t.destroy() });
               }
               if (c.img.x < -20) c.dead = true;
