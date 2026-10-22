@@ -1207,6 +1207,8 @@
   background: var(--accent, #a98bff); color: #10131c; animation: fly .26s cubic-bezier(.3,.6,.4,1) forwards; }
 @keyframes fly { to { transform: translate(var(--tx), var(--ty)) scale(.45); opacity: .2; } }
 .tiles .tile.enter { animation: tileIn .32s var(--i, 0s) var(--ease-spring) both; }
+.anag-clue { font-size: 1rem; }
+.anag-clue b { color: var(--accent); }
 @keyframes tileIn { from { opacity: 0; transform: translateY(-14px) rotate(-12deg) scale(.6); } }
 
 /* Sudoku: linha/coluna/bloco completo acende em onda */
