@@ -467,16 +467,11 @@ test('jogos novos: pontuação impossível é recusada, e o Termo só vale uma v
   const bia = await login('bia', 'senha-bia-123');
   assert.equal((await play(bia, 'pong', 5000)).status, 422);
   assert.equal((await play(bia, 'pong', 12)).status, 201);
-  assert.equal((await play(bia, 'forca', 45)).status, 201);
-  assert.equal((await play(bia, 'forca', 99999)).status, 422);
+  assert.equal((await play(bia, 'forca', 45)).status, 403, 'forca é conferida e salva pelo servidor');
   assert.equal((await play(bia, 'ligue4', 37)).status, 201);
   assert.equal((await play(bia, 'corredor', 1800)).status, 201);
   assert.equal((await play(bia, 'comecome', 2400)).status, 201);
-  assert.equal((await play(bia, 'termo', 50)).status, 422, 'abaixo de 100 não existe');
-  assert.equal((await play(bia, 'termo', 450)).status, 201);
-  assert.equal((await play(bia, 'termo', 600)).status, 409, 'segunda tentativa do dia não vale');
-  const ana = await login('ana', 'senha-ana-123');
-  assert.equal((await play(ana, 'termo', 300)).status, 201, 'cada pessoa tem a sua');
+  for (const g of ['termo', 'forca', 'anagrama', 'quiz']) assert.equal((await play(bia, g, 450)).status, 403, `${g}: só o servidor grava`);
   const { GAMES, isBetter } = require('../lib/rules');
   assert.ok(['pong', 'forca', 'ligue4', 'corredor', 'comecome', 'termo'].every(g => GAMES.includes(g)));
   assert.equal(isBetter('termo', 600, 450), true);
@@ -789,14 +784,137 @@ test('duplas: quem toma o 1º lugar avisa o parceiro (menos quando tomou do pró
   const anaId = await idOf('ana'), biaId = await idOf('bia');
   await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
   assert.equal((await dono('/api/admin/duos', { method: 'POST', body: { aId: anaId, bId: biaId, name: 'Recordistas' } })).status, 201);
-  const recs = async c => (await notesOf(c)).filter(n => n.kind === 'duo_record' && n.game === 'quiz');
-  assert.equal((await play(dono, 'quiz', 10)).status, 201, 'primeira partida do jogo: ninguém é avisado');
+  const recs = async c => (await notesOf(c)).filter(n => n.kind === 'duo_record' && n.game === 'torre');
+  assert.equal((await play(dono, 'torre', 10)).status, 201, 'primeira partida do jogo: ninguém é avisado');
   assert.equal((await recs(bia)).length, 0);
-  assert.equal((await play(ana, 'quiz', 20)).status, 201, 'Ana tira o recorde do Paulo');
+  assert.equal((await play(ana, 'torre', 20)).status, 201, 'Ana tira o recorde do Paulo');
   const [n] = await recs(bia);
   assert.ok(n, 'Bia fica sabendo');
   assert.equal(n.by, 'Ana'); assert.equal(n.scope, 'geral'); assert.equal(n.name, 'Recordistas');
-  assert.equal((await play(bia, 'quiz', 30)).status, 201, 'Bia tira o recorde da própria parceira');
+  assert.equal((await play(bia, 'torre', 30)).status, 201, 'Bia tira o recorde da própria parceira');
   assert.equal((await recs(ana)).length, 0, 'Ana recebe só o aviso de recorde tomado');
   await sql`UPDATE duos SET status = ${'ended'} WHERE status = ${'active'}`;
+});
+
+/* ---------- respostas só no servidor (Termo, Forca, Anagrama, Quiz) ---------- */
+
+const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
+const roundState = async id => JSON.parse((await sql`SELECT state FROM game_rounds WHERE id = ${id}`)[0].state);
+const boardOf = async game => ((await client()('/api/scores')).body[game] || []);
+
+test('termo: a palavra fica no servidor, cada tentativa volta com as cores e o acerto é gravado pelo servidor', async () => {
+  await makeUser('eva', 'Eva', 'player', 'senha-eva-123');
+  const { termoSecret } = require('../lib/rounds');
+  const { TERMO_ANSWERS } = require('../lib/words');
+  const { today } = require('../lib/flair');
+  const answer = norm(termoSecret(today()));
+  const other = TERMO_ANSWERS.map(norm).find(w => w !== answer);
+  const eva = await login('eva', 'senha-eva-123');
+  assert.equal((await client()('/api/termo')).status, 401, 'precisa de login');
+  const st = await eva('/api/termo');
+  assert.equal(st.status, 200);
+  assert.equal(st.body.word, null, 'a palavra não vem antes do fim');
+  assert.equal(st.body.guesses.length, 0);
+  assert.equal((await eva('/api/termo/guess', { method: 'POST', body: { guess: 'QQQQQ' } })).status, 422, 'palavra fora da lista');
+  assert.equal((await eva('/api/termo/guess', { method: 'POST', body: { guess: 'AB' } })).status, 400);
+  const g1 = await eva('/api/termo/guess', { method: 'POST', body: { guess: other } });
+  assert.equal(g1.status, 200);
+  assert.equal(g1.body.guesses[0].res.length, 5);
+  assert.equal(g1.body.word, null);
+  assert.equal(g1.body.saved, undefined);
+  // o estado vem do servidor (outro aparelho vê a mesma tentativa)
+  assert.equal((await eva('/api/termo')).body.guesses[0].guess, other);
+  const g2 = await eva('/api/termo/guess', { method: 'POST', body: { guess: answer } });
+  assert.equal(g2.body.won, true);
+  assert.equal(g2.body.saved, 'ok');
+  assert.ok(g2.body.score >= 500 && g2.body.score <= 599, 'acertou na 2ª: 500 + bônus de tempo');
+  assert.equal(norm(g2.body.word), answer, 'no fim a palavra aparece');
+  assert.ok((await boardOf('termo')).some(s => s.name === 'Eva' && s.score === g2.body.score));
+  assert.equal((await eva('/api/termo/guess', { method: 'POST', body: { guess: other } })).status, 409, 'só uma partida por dia');
+  assert.equal((await play(eva, 'termo', 699)).status, 403, 'e não dá pra mandar a pontuação direto');
+});
+
+test('forca: a página só recebe dica e letras descobertas; palavra certa soma, 6 erros acabam e o servidor grava', async () => {
+  await makeUser('fabi', 'Fabi', 'player', 'senha-fabi-123');
+  const { FORCA_WORDS } = require('../lib/words');
+  const fabi = await login('fabi', 'senha-fabi-123');
+  const r = await fabi('/api/rounds', { method: 'POST', body: { game: 'forca' } });
+  assert.equal(r.status, 201);
+  const st = await roundState(r.body.id);
+  const [word] = FORCA_WORDS[st.deck[0]], plain = norm(word);
+  assert.ok(!JSON.stringify(r.body).includes(plain.replace(/[^A-Z]/g, '')), 'a palavra não vai pra página');
+  assert.ok(r.body.view.mask.every(c => c === '' || c === ' ' || c === '-'));
+  // outra pessoa não joga a partida dela
+  const ana = await login('ana', 'senha-ana-123');
+  assert.equal((await ana('/api/rounds/' + r.body.id, { method: 'POST', body: { action: 'letter', letter: 'A' } })).status, 404);
+  const letters = [...new Set(plain.replace(/[^A-Z]/g, ''))];
+  let last;
+  for (const l of letters) last = await fabi('/api/rounds/' + r.body.id, { method: 'POST', body: { action: 'letter', letter: l } });
+  assert.equal(last.body.result.solved, true);
+  assert.equal(last.body.result.word, word);
+  const gain = plain.replace(/[^A-Z]/g, '').length + 6;
+  assert.equal(last.body.view.pts, gain);
+  // erra 6 letras na próxima palavra: acaba e grava
+  const next = norm(FORCA_WORDS[(await roundState(r.body.id)).deck[1]][0]);
+  const misses = [...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'].filter(l => !next.includes(l)).slice(0, 6);
+  for (const l of misses) last = await fabi('/api/rounds/' + r.body.id, { method: 'POST', body: { action: 'letter', letter: l } });
+  assert.equal(last.body.result.lost, true);
+  assert.equal(last.body.final, gain);
+  assert.equal(last.body.saved, 'ok');
+  assert.ok((await boardOf('forca')).some(s => s.name === 'Fabi' && s.score === gain));
+  assert.equal((await fabi('/api/rounds/' + r.body.id, { method: 'POST', body: { action: 'letter', letter: 'Z' } })).status, 409, 'partida acabada não aceita jogada');
+});
+
+test('anagrama: confere no servidor, dica tira ponto, e só fecha (e grava) depois dos 60s', async () => {
+  await makeUser('gil', 'Gil', 'player', 'senha-gil-123');
+  const { ANAGRAMA_WORDS } = require('../lib/words');
+  const gil = await login('gil', 'senha-gil-123');
+  const r = await gil('/api/rounds', { method: 'POST', body: { game: 'anagrama' } });
+  const id = r.body.id, call = body => gil('/api/rounds/' + id, { method: 'POST', body });
+  let st = await roundState(id);
+  const w1 = ANAGRAMA_WORDS[st.deck[0]];
+  assert.notEqual(r.body.view.mix, w1);
+  assert.equal([...r.body.view.mix].sort().join(''), [...w1].sort().join(''));
+  assert.equal((await call({ action: 'answer', guess: 'XYZ' })).body.result.ok, false);
+  assert.equal((await call({ action: 'hint' })).body.result.prefix, w1[0]);
+  const ok = await call({ action: 'answer', guess: w1 });
+  assert.equal(ok.body.result.ok, true);
+  assert.equal(ok.body.result.gain, w1.length - 1, 'a dica tirou 1 ponto');
+  assert.equal((await call({ action: 'finish' })).status, 409, 'ainda tem tempo');
+  st = await roundState(id);
+  st.startedAt -= 64_000;
+  await sql`UPDATE game_rounds SET state = ${JSON.stringify(st)} WHERE id = ${id}`;
+  assert.equal((await call({ action: 'answer', guess: 'ABC' })).status, 409, 'depois do tempo não vale resposta');
+  const fin = await call({ action: 'finish' });
+  assert.equal(fin.body.final, w1.length - 1);
+  assert.equal(fin.body.saved, 'ok');
+  assert.equal((await call({ action: 'finish' })).status, 409, 'fechar de novo não grava duas vezes');
+  assert.equal((await boardOf('anagrama')).filter(s => s.name === 'Gil').length, 1);
+});
+
+test('quiz: a certa só aparece depois da resposta; combo e erro contam no servidor', async () => {
+  await makeUser('hugo', 'Hugo', 'player', 'senha-hugo-123');
+  const { QUIZ } = require('../lib/words');
+  const hugo = await login('hugo', 'senha-hugo-123');
+  const r = await hugo('/api/rounds', { method: 'POST', body: { game: 'quiz', daily: true } });
+  assert.equal(r.status, 201);
+  const id = r.body.id, call = body => hugo('/api/rounds/' + id, { method: 'POST', body });
+  const correctIn = async view => { const st = await roundState(id); return view.opts.indexOf(QUIZ[st.deck[st.pos]][1]); };
+  assert.equal(r.body.view.opts.length, 4);
+  assert.equal('right' in r.body.view, false, 'a página não sabe qual é a certa');
+  const a1 = await call({ action: 'answer', choice: await correctIn(r.body.view) });
+  assert.equal(a1.body.result.ok, true);
+  assert.equal(a1.body.view.pts, 1);
+  const right = await correctIn(a1.body.view);
+  const a2 = await call({ action: 'answer', choice: (right + 1) % 4 });
+  assert.equal(a2.body.result.ok, false);
+  assert.equal(a2.body.result.right, right, 'errou: mostra a certa');
+  assert.equal(a2.body.view.pts, 0);
+  const st = await roundState(id);
+  st.startedAt -= 64_000;
+  await sql`UPDATE game_rounds SET state = ${JSON.stringify(st)} WHERE id = ${id}`;
+  const fin = await call({ action: 'finish' });
+  assert.equal(fin.body.result.rights, 1);
+  assert.equal(fin.body.result.wrongs, 1);
+  assert.equal(fin.body.saved, 'ok');
 });

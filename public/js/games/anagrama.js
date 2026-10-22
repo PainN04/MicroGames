@@ -2,17 +2,10 @@ GAMES.anagrama = {
   name: 'Anagrama', icon: 'spell-check', hue: 60, desc: 'Desembaralhe as palavras em 60s. Digite e Enter (ou clique nas letras). Palavra maior vale mais. Pular não custa ponto; a dica revela uma letra e tira 1 ponto da palavra.',
   better: 'high', unit: 'pontos',
   start(el, done) {
-    const WORDS = ('AMIGO BANANA CABELO CADEIRA CAMISA CANETA CARRO CAVALO CHAVE CINEMA COELHO COMIDA CORAGEM CORRIDA DESENHO DINHEIRO DOMINGO ESCOLA ESPELHO ESTRELA '
-      + 'FAMILIA FESTA FLORESTA FORMIGA FUTEBOL GALINHA GARRAFA GELADO GIRAFA GUITARRA HOSPITAL JANELA JARDIM LARANJA LIVRO MACACO MALETA MANTEIGA MARTELO MOCHILA '
-      + 'MONITOR MORANGO MOTOR NAVIO OVELHA PANELA PAPEL PEPINO PERFUME PIJAMA PIMENTA PINCEL PIPOCA PLANETA PORTA PRAIA PRESENTE PRINCESA QUEIJO SABONETE SAPATO '
-      + 'SEGREDO SORVETE TAPETE TECLADO TELHADO TESOURA TIGRE TOMATE TRABALHO TRATOR VENTO VIAGEM VIOLINO ABACAXI ALFACE ANIMAL BALEIA BARCO BATATA BICICLETA BONECA '
-      + 'CAMELO CEBOLA CENOURA CHOCOLATE CIDADE COLHER CORUJA DENTISTA ELEFANTE ESCADA FOGUETE FRANGO GATINHO GOLFINHO LAGARTO MELANCIA MERCADO MOEDA NUVEM PALAVRA '
-      + 'PEIXE PIRATA PLANTA POLVO QUADRO RAPOSA SALADA SERPENTE SOLDADO TARTARUGA TELEFONE URSO VAMPIRO VASSOURA ZEBRA').split(' ');
-    const sorted = w => [...w].sort().join('');
+    // as palavras ficam no servidor (lib/words.js): a página só recebe as letras embaralhadas e manda o palpite
+    if (needsServer(el)) return;
     const DUR = 60;
-    const deck = shuffled(WORDS);
-    let hints = 0; // letras reveladas na palavra atual: cada uma tira 1 ponto dela (mínimo 1)
-    let word = '', pts = 0, solved = 0, t0 = 0, iv, over = false;
+    let round = null, pts = 0, solved = 0, t0 = 0, iv, over = false, alive = true, busy = false;
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Palavras<b id="w">0</b></span><span class="stat">Tempo<b id="t">60s</b></span></div>
       <div class="tiles" id="tiles"></div>
       <input class="txt" id="in" placeholder="digite a palavra + Enter" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="Palavra">
@@ -28,57 +21,69 @@ GAMES.anagrama = {
         if (k >= 0) typed.splice(k, 1);
       });
     };
-    const next = () => {
-      word = deck.pop() || WORDS[rand(0, WORDS.length - 1)];
-      let mix;
-      do mix = shuffled(word).join(''); while (mix === word);
+    const showMix = mix => {
       tilesEl.innerHTML = [...mix].map((l, i) => `<button class="tile enter" style="--i:${i * 0.04}s" data-l="${l}">${l}</button>`).join('');
-      tilesEl.querySelectorAll('.tile').forEach(t => t.onclick = () => { startClock(); flyTo(t, inp, t.dataset.l); inp.value += t.dataset.l; syncTiles(); inp.focus(); });
-      inp.value = ''; hints = 0;
+      tilesEl.querySelectorAll('.tile').forEach(t => t.onclick = () => { flyTo(t, inp, t.dataset.l); inp.value += t.dataset.l; syncTiles(); inp.focus(); });
+      inp.value = '';
     };
-    // dica: escreve as primeiras letras certas (uma a mais a cada toque)
-    const tip = () => {
-      if (over || hints >= word.length - 1) return;
-      startClock();
-      hints++;
-      inp.value = word.slice(0, hints); syncTiles(); inp.focus();
-      beep(520, 60, 'sine', 0.03);
+    const call = body => api('api/rounds/' + round, { method: 'POST', body });
+    const oops = err => { if (alive && !over) { el.querySelector('#t').textContent = '!'; inp.placeholder = err.message; } };
+    // dica: o servidor manda as primeiras letras certas (uma a mais a cada toque)
+    const tip = async () => {
+      if (over || busy || !round) return;
+      busy = true;
+      try { const { result } = await call({ action: 'hint' }); if (!over) { inp.value = result.prefix; syncTiles(); inp.focus(); beep(520, 60, 'sine', 0.03); } }
+      catch (err) { oops(err); }
+      busy = false;
     };
     const startClock = () => {
       if (t0) return;
       t0 = performance.now();
-      iv = setInterval(() => {
+      iv = setInterval(async () => {
         const left = DUR - (performance.now() - t0) / 1000;
         el.querySelector('#t').textContent = Math.max(0, Math.ceil(left)) + 's';
-        if (left <= 0 && !over) { over = true; clearInterval(iv); inp.disabled = true; done(pts); }
+        if (left <= 0 && !over) {
+          over = true; clearInterval(iv); inp.disabled = true;
+          let saved;
+          try { const r = await call({ action: 'finish' }); pts = r.final; saved = r.saved; } catch (err) { saved = err.message; }
+          if (alive) done(pts, { saved });
+        }
       }, 100);
     };
-    const submit = () => {
-      if (over) return;
+    const submit = async () => {
+      if (over || busy) return;
       const guess = norm(inp.value);
       if (!guess) return;
-      startClock();
-      // vale qualquer palavra da lista com as mesmas letras (ex.: outra ordem válida)
-      if (sorted(guess) === sorted(word) && WORDS.includes(guess)) {
-        const gain = Math.max(1, word.length - hints);
-        pts += gain; solved++;
-        popPoints(tilesEl, '+' + gain); confetti(inp);
+      busy = true;
+      let r;
+      try { r = await call({ action: 'answer', guess }); } catch (err) { busy = false; return oops(err); }
+      busy = false;
+      if (over || !alive) return;
+      if (r.result.ok) {
+        pts = r.view.pts; solved = r.view.solved;
+        popPoints(tilesEl, '+' + r.result.gain); confetti(inp);
         el.querySelector('#p').textContent = pts; el.querySelector('#w').textContent = solved;
         sfx.good();
-        next();
+        showMix(r.view.mix);
       } else {
         beep(160, 120, 'square', 0.03);
         inp.classList.remove('wrong'); void inp.offsetWidth; inp.classList.add('wrong');
       }
     };
-    inp.oninput = () => { startClock(); syncTiles(); };
+    inp.oninput = () => syncTiles();
     inp.onkeydown = e => { if (e.key === 'Enter') submit(); };
     el.querySelector('#clr').onclick = () => { inp.value = ''; syncTiles(); inp.focus(); };
     el.querySelector('#tip').onclick = tip;
-    el.querySelector('#skip').onclick = () => { if (over) return; startClock(); beep(300, 50, 'sine', 0.02); next(); inp.focus(); };
-    next();
-    inp.focus();
-    startClock(); // o tempo começa já (depois da contagem 3, 2, 1)
-    return () => { over = true; clearInterval(iv); };
+    el.querySelector('#skip').onclick = async () => {
+      if (over || busy || !round) return;
+      busy = true; beep(300, 50, 'sine', 0.02);
+      try { const r = await call({ action: 'skip' }); if (!over) showMix(r.view.mix); } catch (err) { oops(err); }
+      busy = false; inp.focus();
+    };
+    // o tempo começa quando o servidor abre a partida (logo depois da contagem 3, 2, 1)
+    api('api/rounds', { method: 'POST', body: { game: 'anagrama', daily: dailySeeded } })
+      .then(r => { if (!alive) return; round = r.id; showMix(r.view.mix); inp.focus(); startClock(); })
+      .catch(oops);
+    return () => { alive = false; over = true; clearInterval(iv); };
   }
 };

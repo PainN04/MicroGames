@@ -18,6 +18,12 @@ let scores = localMode ? readJson('mg_scores', {}) : readJson('mg_cache', {}), o
 function readJson(key, fallback) {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
 }
+// Termo, Forca, Anagrama e Quiz: a resposta fica no servidor (lib/rounds.js), então sem servidor não dá pra jogar.
+function needsServer(el) {
+  if (!localMode) return false;
+  el.innerHTML = '<p class="hint">Esse jogo confere as respostas no servidor. Abra o MicroGame pelo endereço do site (ou npm run local).</p>';
+  return true;
+}
 const localScores = () => readJson('mg_scores', {});
 const pending = () => readJson('mg_pending', []);
 // Lança erro com .rejected = true quando o servidor recusa a pontuação (4xx): não adianta reenviar.
@@ -153,6 +159,8 @@ function monthsWonBy(name) {
 function better(g, a, b) { return g.better === 'low' ? a < b : a > b; }
 // Retorna 'ok' (salvou), 'queued' (servidor fora, reenvia depois) ou a mensagem de recusa do servidor.
 async function saveScore(gameId, score, proof) {
+  // jogos conferidos no servidor (Termo, Forca, Anagrama, Quiz): ele mesmo já gravou; proof.saved = 'ok' ou o motivo da recusa
+  if (proof && typeof proof === 'object' && 'saved' in proof) { await fetchScores(); return proof.saved || 'ok'; }
   const entry = { game: gameId, player, score, proof };
   if (localMode) {
     const all = localScores();
