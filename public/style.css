@@ -371,10 +371,9 @@
   .schulte { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; width: min(400px, 100%, calc(var(--avail) - 56px)); }
   .cell { aspect-ratio: 1; border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font: inherit; font-size: var(--fs-lg); font-weight: 700; cursor: pointer; touch-action: manipulation; transition: opacity var(--duration), transform var(--duration-fast); }
   .cell:hover { border-color: var(--border-strong); }
-  .cell.done { opacity: .18; transform: scale(.92); animation: cellDone .4s ease-out; }
-  /* achou: acende verde, pula e apaga */
-  @keyframes cellDone { 0% { opacity: 1; transform: scale(1); background: var(--green); color: #10131c; box-shadow: 0 0 0 0 var(--green); }
-    35% { opacity: 1; transform: scale(1.12); background: var(--green); color: #10131c; box-shadow: 0 0 18px 4px oklch(80% 0.18 150 / .6); } }
+  /* achou: acende verde forte, pula e fica marcado em verde clarinho */
+  .cell.done { opacity: .45; transform: scale(.92); background: oklch(76% 0.18 150 / .14); border-color: oklch(76% 0.18 150 / .45); color: var(--green); animation: cellDone .6s ease-out; }
+  @keyframes cellDone { 0%, 45% { opacity: 1; transform: scale(1.1); background: var(--green); border-color: var(--green); color: #10131c; box-shadow: 0 0 20px 4px oklch(80% 0.18 150 / .6); } }
   .cell.miss { border-color: var(--red); animation: shake .25s; }
   .schulte.hidden .cell { color: var(--muted); opacity: .45; cursor: default; }
   .schulte-wrap { position: relative; display: grid; place-items: center; width: 100%; }
