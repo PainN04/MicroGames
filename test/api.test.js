@@ -1155,6 +1155,11 @@ test('jogos diários: Soletra aceita plural, conjugação e palavra extra (vale 
   for (const w of ['sopro', 'sopros', 'corpos', 'porcos', 'rosto', 'troco', 'porto', 'protocolos']) {
     assert.ok(d.solWord(hive, w), `${w} vale`);
   }
+  // e a de 23/10: G no meio e O S T A C I em volta (palavra rara, plural e feminino que não aparecem nas legendas)
+  const hive2 = d.solHive('g', [...'ostaci']);
+  for (const w of ['agio', 'agios', 'gaiato', 'gaiatas', 'agitas', 'agitos', 'sagas', 'sigas', 'gagos', 'gasosas', 'castigas']) {
+    assert.ok(d.solWord(hive2, w), `${w} vale`);
+  }
   assert.equal(d.solWord(hive, 'trosp'), null, 'lixo não vale');
   assert.equal(d.solWord(hive, 'porra'), null, 'palavrão não vale');
   assert.equal(d.solWord(d.solHive('x', [...'stcopr']), 'sopro'), null, 'sem a letra do meio não vale');
