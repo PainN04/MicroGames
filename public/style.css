@@ -97,9 +97,8 @@
   /* a marca: controle 3D roxo com os botões coloridos — public/icons/logo.svg (recortado: mais largo que alto) */
   .logo .mark { width: auto; height: 1.4em; flex: none; margin-top: -.08em; transition: transform var(--duration) var(--ease-spring); }
   .logo:hover .mark { transform: rotate(-6deg) scale(1.06); }
-  /* letreiro com volume, como os blocos: "Micro" branco com borda funda roxa, "Game" do amarelo ao coral */
-  .logo .wm { text-shadow: 0 2px 0 #3f2794; }
-  .logo .wm > span { background: linear-gradient(180deg, #ffe07a, #ff8a5c); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 2px 0 #a5402a); }
+  /* "Game" segue o tema escolhido no perfil (--primary/--accent mudam com ele) */
+  .logo .wm > span { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .who { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
   /* largura fixa: o texto muda (conectando → compartilhado) sem empurrar o layout (CLS) */
   .pill { display: inline-flex; align-items: center; gap: .45em; font-size: var(--fs-xs); color: var(--muted); padding: .35em .8em; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); width: 17em; white-space: nowrap; overflow: hidden; }
