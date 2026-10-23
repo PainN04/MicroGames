@@ -78,10 +78,10 @@ GAMES.sudoku = {
     const clock = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
     el.innerHTML = `<div class="hud"><span class="stat">Tempo<b id="t">0:00</b></span><span class="stat">Dicas<b id="h">0</b></span></div>
-      <div class="sd-board" id="bd" role="grid" aria-label="Sudoku"></div>
-      <div class="sd-pad" id="pad">${Array.from({ length: 9 }, (_, i) => `<button class="sd-num" data-n="${i + 1}">${i + 1}</button>`).join('')}</div>
-      <div class="sd-tools"><button class="btn ghost" id="note" aria-pressed="false">${icon('pencil')} Notas: desligado</button>
-        <button class="btn ghost" id="del">${icon('delete')} Apagar</button><button class="btn ghost" id="undo">${icon('rotate-ccw')} Desfazer</button><button class="btn ghost" id="hint">${icon('lightbulb')} Dica (+${HINT_COST}s)</button></div>
+      <div class="sd"><div class="sd-in"><div class="sd-board" id="bd" role="grid" aria-label="Sudoku"></div>
+      <div class="sd-side"><div class="sd-pad" id="pad">${Array.from({ length: 9 }, (_, i) => `<button class="sd-num" data-n="${i + 1}">${i + 1}</button>`).join('')}</div>
+      <div class="sd-tools"><button class="btn ghost" id="note" aria-pressed="false" title="Notas desligadas (N)">${icon('pencil')} Notas</button>
+        <button class="btn ghost" id="del">${icon('delete')} Apagar</button><button class="btn ghost" id="undo">${icon('rotate-ccw')} Desfazer</button><button class="btn ghost" id="hint">${icon('lightbulb')} Dica +${HINT_COST}s</button></div></div></div></div>
       <p class="hint" id="msg">Toque numa casa e escolha o número. Teclado: 1–9, setas, Apagar, N (notas), H (dica), Ctrl+Z (desfazer).</p>`;
     const bd = el.querySelector('#bd'), msg = el.querySelector('#msg');
 
@@ -177,7 +177,7 @@ GAMES.sudoku = {
     el.querySelector('#hint').onclick = hint;
     el.querySelector('#undo').onclick = undo;
     const noteBtn = el.querySelector('#note');
-    const setNotes = on => { noteMode = on; noteBtn.setAttribute('aria-pressed', on); noteBtn.lastChild.textContent = ` Notas: ${on ? 'ligado' : 'desligado'}`; };
+    const setNotes = on => { noteMode = on; noteBtn.setAttribute('aria-pressed', on); noteBtn.title = `Notas ${on ? 'ligadas' : 'desligadas'} (N)`; };
     noteBtn.onclick = () => setNotes(!noteMode);
     const onKey = e => {
       if ((e.ctrlKey || e.metaKey) && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); return undo(); }
