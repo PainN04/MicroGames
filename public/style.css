@@ -94,9 +94,6 @@
   }
   .logo { font: inherit; font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.035em; background: none; border: 0; color: var(--text); cursor: pointer; min-height: 44px; padding: 0;
     display: inline-flex; align-items: center; gap: .32em; }
-  /* a marca: cartucho roxo com o controle na etiqueta — public/icons/logo.svg (recortado: mais alto que largo) */
-  .logo .mark { width: auto; height: 1.6em; flex: none; margin-top: -.08em; transition: transform var(--duration) var(--ease-spring); }
-  .logo:hover .mark { transform: rotate(-6deg) scale(1.06); }
   /* "Game" segue o tema escolhido no perfil (--primary/--accent mudam com ele) */
   .logo .wm > span { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .who { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
@@ -1604,7 +1601,6 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 .kpi .v .i { width: .78em; height: .78em; vertical-align: -.04em; color: var(--yellow); }
 /* celular: a descrição do jogo cortada no topo não ajudava (o "?" mostra o Como jogar inteiro) */
 @media (max-width: 560px) { .stage-head .title p:not(.pbio) { display: none; } .stage-head h2:has(> .i) + p { padding-left: 0; } }
-.login-mark { display: block; width: 125px; height: 90px; margin: 0 auto .2rem; }
 .modal .login-note { font-size: var(--fs-xs); margin: 0; }
 
 /* ---------- telas de jogo: palco com a arte do jogo, placar, Como jogar e resultado ----------
