@@ -590,7 +590,7 @@ function setMe(user) {
 
 function loginModal(msg = '') {
   const { el, close } = modal(`
-    <img class="login-mark" src="icons/logo.svg" alt="" width="110" height="88"><h2>Entrar no MicroGame</h2><p>Use o usuário e a senha que o admin te passou.</p>
+    <img class="login-mark" src="icons/logo.svg?v=5" alt="" width="75" height="96"><h2>Entrar no MicroGame</h2><p>Use o usuário e a senha que o admin te passou.</p>
     <form id="lf">
       <input class="txt" name="username" autocomplete="username" placeholder="usuário" aria-label="Usuário" required>
       <input class="txt" name="password" type="password" autocomplete="current-password" placeholder="senha" aria-label="Senha" required>
