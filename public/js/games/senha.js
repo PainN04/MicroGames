@@ -10,21 +10,32 @@ GAMES.senha = {
     const NAMES = ['vermelho', 'laranja', 'amarelo', 'verde', 'azul', 'roxo'];
     let v = null, cur = [], busy = true, alive = true, saved = 'ok', timers = [];
     el.innerHTML = `<div class="hud"><span class="stat">Tentativa<b id="qn">1/8</b></span></div>
+      <div class="sn-legend" aria-hidden="true"><span><i class="sn-dot ex"></i>Cor certa no lugar certo</span><span><i class="sn-dot nr"></i>Cor certa em outro lugar</span></div>
       <div class="sn-board" id="qb"></div>
+      <p class="sn-note">Os números contam quantas cores acertou, não quais. Cor que não entra em nenhum dos dois não está na senha.</p>
       <p class="hint" id="qmsg" aria-live="polite"></p>
-      <div class="sn-pal" id="qp" role="group" aria-label="Cores">${NAMES.map((n, c) => `<button class="sn-peg c${c}" data-c="${c}" aria-label="${n}"><span>${c + 1}</span></button>`).join('')}</div>
+      <div class="sn-pal" id="qp" role="group" aria-label="Cores">${NAMES.map((n, c) => `<button class="sn-peg k${c}" data-c="${c}" aria-label="${n}"><span>${c + 1}</span></button>`).join('')}</div>
       <div class="row-btns" id="qbtns"><button class="btn ghost" id="qdel">${icon('delete')} Apagar</button><button class="btn" id="qok" disabled>${icon('circle-check')} Enviar</button></div>
       <div class="row-btns" id="qend" hidden></div>`;
     const msg = el.querySelector('#qmsg'), say = t => { msg.textContent = t; };
-    const peg = (c, extra = '') => (c === undefined ? `<i class="sn-peg empty${extra}"></i>` : `<i class="sn-peg c${c}${extra}" title="${NAMES[c]}"><span>${c + 1}</span></i>`);
-    const pins = (exact, near) => `<span class="sn-pins" aria-label="${exact} no lugar, ${near} em outro lugar">${Array.from({ length: v.len }, (_, k) => `<b class="${k < exact ? 'ex' : k < exact + near ? 'nr' : ''}"></b>`).join('')}</span>`;
+    const peg = (c, extra = '') => (c === undefined ? `<i class="sn-peg empty${extra}"></i>` : `<i class="sn-peg k${c}${extra}" title="${NAMES[c]}"><span>${c + 1}</span></i>`);
+    // Placar da linha: quantas cores no lugar certo (verde) e quantas certas em outro lugar (amarelo). Zero fica apagado.
+    const pins = (exact, near) => `<span class="sn-fb" role="img" aria-label="${exact} no lugar certo, ${near} em outro lugar">`
+      + `<span class="sn-cnt ex${exact ? '' : ' zero'}"><i class="sn-dot ex"></i>${exact}</span><span class="sn-cnt nr${near ? '' : ' zero'}"><i class="sn-dot nr"></i>${near}</span></span>`;
+    const feedback = (exact, near) => {
+      if (!exact && !near) return 'Nenhuma dessas cores está na senha.';
+      const parts = [];
+      if (exact) parts.push(`${exact} ${exact > 1 ? 'cores certas' : 'cor certa'} no lugar certo`);
+      if (near) parts.push(`${near} ${near > 1 ? 'cores certas' : 'cor certa'} em outro lugar`);
+      return parts.join(' e ') + '.';
+    };
     const paint = (fresh = -1) => {
       const rows = [];
       for (let r = 0; r < v.rows; r++) {
         const g = v.guesses[r];
         if (g) rows.push(`<div class="sn-row done${r === fresh ? ' pop' : ''}">${g.guess.map(c => peg(c)).join('')}${pins(g.exact, g.near)}</div>`);
-        else if (r === v.guesses.length && !v.over) rows.push(`<div class="sn-row cur">${Array.from({ length: v.len }, (_, k) => `<button class="sn-slot" data-k="${k}" aria-label="posição ${k + 1}">${peg(cur[k])}</button>`).join('')}<span class="sn-pins"></span></div>`);
-        else rows.push(`<div class="sn-row">${Array.from({ length: v.len }, () => peg(undefined)).join('')}<span class="sn-pins"></span></div>`);
+        else if (r === v.guesses.length && !v.over) rows.push(`<div class="sn-row cur">${Array.from({ length: v.len }, (_, k) => `<button class="sn-slot" data-k="${k}" aria-label="posição ${k + 1}">${peg(cur[k])}</button>`).join('')}<span class="sn-fb"></span></div>`);
+        else rows.push(`<div class="sn-row">${Array.from({ length: v.len }, () => peg(undefined)).join('')}<span class="sn-fb"></span></div>`);
       }
       el.querySelector('#qb').innerHTML = rows.join('');
       el.querySelectorAll('.sn-slot').forEach(b => b.onclick = () => { if (busy) return; cur[+b.dataset.k] = undefined; while (cur.length && cur.at(-1) === undefined) cur.pop(); paint(); });
@@ -68,7 +79,7 @@ GAMES.senha = {
       paint(v.guesses.length - 1);
       if (v.won) { sfx.record(); summarize([['Tentativas', `${v.guesses.length}/${v.rows}`]]); busy = true; timers.push(setTimeout(() => alive && done(v.score, { saved }), 900)); }
       else if (v.over) { sfx.bad(); endPanel(); }
-      else { say(`${last.exact} no lugar certo, ${last.near} em outro lugar`); last.exact + last.near ? sfx.good() : beep(200, 80, 'square', 0.02); }
+      else { say(feedback(last.exact, last.near)); last.exact + last.near ? sfx.good() : beep(200, 80, 'square', 0.02); }
     };
     el.querySelector('#qok').onclick = submit;
     const onKey = e => {
