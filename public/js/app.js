@@ -279,7 +279,7 @@ function boardHtml(id) {
   return (g.daily ? `<h3>${icon('trophy')} Ranking</h3><p class="hint board-reset">Só de hoje: zera à meia-noite</p>` : `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}`)
     + (g.boardNote ? `<p class="hint board-note">${g.boardNote}</p>` : '') + (rows.length
     ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${rankBadge(k + 1)}</span>${nameHtml(n, { cls: 'name', extra: ticketStar(n) })}<span class="sc">${fmt(g, s)}</span>${rxButton(id, n)}${rxChips(id, n)}</li>`).join('') + '</ol>'
-    : `<p class="empty">${g.daily ? 'Ninguém jogou hoje ainda.' : seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`)
+    : `<div class="board-empty">${icon('trophy')}<b>${g.daily ? 'Ninguém jogou hoje ainda' : seasonMode === 'all' ? 'Ninguém jogou ainda' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda`}</b><span>Sua partida já entra aqui.</span></div>`)
     + (me && !g.daily ? `<button class="btn ghost board-duel" data-duel="${id}">${icon('swords')} Desafiar alguém</button>` : '');
 }
 // desenha o ranking da partida e liga o seletor Mês/Geral
@@ -302,16 +302,16 @@ function play(id) {
   const g = GAMES[id];
   swap(() => {
     main.innerHTML = `<div class="layout">
-      <section class="stage glass" style="--h:${g.hue}">
+      <section class="stage game-stage glass" style="--h:${g.hue};--art:${stageArt(id, g.hue)}">
         <div class="stage-head">
           <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-          <div class="title"><h2>${icon(g.icon)}${g.name}</h2><p>${g.desc}</p></div>
+          <div class="title"><h2>${icon(g.icon)}${g.name}</h2><p title="${esc(g.desc)}">${firstSentence(g.desc)}</p></div>
           <button class="btn ghost icon-btn" id="how" aria-label="Como jogar" title="Como jogar">?</button>
           ${g.daily ? '' : `<button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>`}
         </div>
         <div class="game" id="game"></div>
       </section>
-      <aside class="board glass" id="board">${boardHtml(id)}</aside>
+      <aside class="board glass" id="board" style="--h:${g.hue}">${boardHtml(id)}</aside>
     </div>`;
     $('#back').onclick = showMenu;
     if (g.daily) setMenuTab('daily'); // voltar ao menu cai na aba dos diários
@@ -331,10 +331,13 @@ function play(id) {
       if (!el.isConnected) return; // saiu da partida (voltou ao menu, trocou de tela) antes de terminar
       // done(null, 'motivo'): partida acabou sem pontuação (ex.: explodiu no Campo Minado) — nada é salvo
       if (score === null) {
-        el.innerHTML = `<div class="result"><span class="label">Fim de jogo</span><span class="score">${icon('bomb', { cls: 'big' })}</span>
-          <span class="hint">${esc(proof || 'Não completou — nada foi salvo.')}</span><button class="btn" id="again">Jogar de novo</button></div>`;
+        el.innerHTML = `<div class="result lost">${resultArt(g, 'bomb')}<h3 class="res-title">Fim de jogo</h3>
+          <p class="hint res-why">${esc(proof || 'Não completou, nada foi salvo.')}</p>
+          <div class="res-actions"><button class="btn" id="again">${icon('rotate-ccw')} Jogar de novo</button><button class="btn ghost" id="resMenu">Menu</button></div></div>`;
         $('#again').onclick = () => play(id);
+        $('#resMenu').onclick = showMenu;
         $('#again').focus();
+        cleanup = mountResultArt(id, el);
         return;
       }
       // compara com o geral e com o mês, independente do que o ranking está mostrando
@@ -361,7 +364,7 @@ function play(id) {
       const summary = partSummary; partSummary = null;
       // o jogo pode mostrar outro número em destaque (Ritmo: a pontuação da música; score = a geral, que vai pro ranking)
       const shown = proof && typeof proof === 'object' ? proof.shown : null;
-      el.innerHTML = `<div class="result">
+      el.innerHTML = `<div class="result">${resultArt(g)}
         <span class="label">${shown ? esc(shown.label) : 'Resultado'}</span>
         <span class="score">${fmt(g, shown ? shown.score : score)}</span>
         ${status === 'login' ? `<span class="badge warn">${icon('key-round')} Você não estava logado — entre pra salvar este resultado.</span><button class="btn" id="loginSave">Entrar e salvar</button>`
@@ -375,14 +378,21 @@ function play(id) {
           : prev ? `<span class="hint">Seu recorde: ${fmt(g, prev[1])}${prevMonth ? ` · em ${month}: ${fmt(g, prevMonth[1])}` : ''}</span>` : ''}
         ${ok ? placeLine(g, id, score) : ''}
         ${summary?.length ? `<dl class="part-sum">${summary.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>` : ''}
-        ${newAch.map(x => `<span class="badge ach-new">${icon(x.icon)} Conquista nova: ${x.name}</span>`).join('')}
-        ${status === 'queued' ? `<span class="badge warn">${icon('triangle-alert')} Servidor fora do ar — resultado guardado, envio automático quando ele voltar</span>` : ''}
-        ${g.daily ? `<button class="btn" id="again">${icon('calendar')} Outros jogos diários</button><span class="hint">Volte amanhã pra um desafio novo.</span>` : '<button class="btn" id="again">Jogar de novo</button>'}
+        ${newAch.length ? `<div class="ach-row"><span class="ach-h">${newAch.length > 1 ? `${newAch.length} conquistas novas` : 'Conquista nova'}</span>
+          <div>${newAch.map(x => `<span class="badge ach-new">${icon(x.icon)} ${x.name}</span>`).join('')}</div></div>` : ''}
+        ${status === 'queued' ? `<span class="badge warn">${icon('triangle-alert')} Servidor fora do ar: resultado guardado, envio automático quando ele voltar</span>` : ''}
+        <div class="res-actions">${g.daily
+          ? `<button class="btn" id="again">${icon('calendar')} Outros jogos diários</button><button class="btn ghost" id="resRank">${icon('trophy')} Ranking de hoje</button>`
+          : `<button class="btn" id="again">${icon('rotate-ccw')} Jogar de novo</button><button class="btn ghost" id="resMenu">Menu</button>`}</div>
+        ${g.daily ? '<span class="hint">Volte amanhã pra um desafio novo.</span>' : ''}
       </div>`;
       announce(`Resultado: ${fmt(g, score)}. ${!ok ? 'Não foi salvo.' : !g.daily && record ? 'Novo recorde!' : ''}`);
       if (g.daily ? todayLead : record || monthChamp || dailyLead) { confetti(); sfx.record(); }
       $('#again').onclick = () => (g.daily ? showMenu() : play(id));
+      $('#resMenu')?.addEventListener('click', showMenu);
+      $('#resRank')?.addEventListener('click', () => rankingsModal('daily'));
       $('#again').focus();
+      cleanup = mountResultArt(id, el);
       $('#loginSave')?.addEventListener('click', () => { setMe(null); loginModal(); });
     };
     // 1ª vez no jogo: "Como jogar"; jogos com tempo: contagem 3, 2, 1; jogo do desafio: sequência igual pra todo mundo
@@ -510,7 +520,7 @@ async function openNotes() {
   const { el, close } = modal(`<h2>${icon('bell')} Avisos</h2>
     ${rows.length ? `<div class="note-list">${rows.map((n, i) => `<button class="note-row${n.unread ? ' new' : ''}" data-i="${i}">
       <span class="ic">${icon(noteIcon(n))}</span><span>${noteHtml(n)}<small class="when">${noteAgo(Date.now() - n.at)}</small></span></button>`).join('')}</div>`
-      : '<p>Nenhum aviso por enquanto. Quando alguém passar um recorde seu, reagir a ele ou te desafiar, aparece aqui.</p>'}
+      : `<div class="empty-state">${icon('bell')}<b>Nenhum aviso por enquanto</b><span>Quando alguém passar um recorde seu, reagir a ele ou te desafiar, aparece aqui.</span></div>`}
     <button class="btn ghost" id="notesClose">Fechar</button>`);
   el.querySelector('#notesClose').onclick = close;
   el.querySelectorAll('.note-row').forEach(b => { b.onclick = () => { close(); noteAct(rows[b.dataset.i]); }; });
@@ -605,7 +615,7 @@ function loginModal(msg = '') {
 
 function passwordModal(forced) {
   const { el, close } = modal(`
-    <h2>${forced ? 'Crie sua senha' : 'Trocar senha'}</h2>
+    <h2>${icon('key-round')} ${forced ? 'Crie sua senha' : 'Trocar senha'}</h2>
     <p>${forced ? 'Primeiro acesso: troque a senha temporária por uma sua.' : 'Mínimo de 8 caracteres.'}</p>
     <form id="pf">
       <input class="txt" name="current" type="password" autocomplete="current-password" placeholder="${forced ? 'senha temporária' : 'senha atual'}" required>
