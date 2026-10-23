@@ -1485,3 +1485,27 @@ test('ritmo: o recorde antigo (música gerada) vira o Treino na primeira migraç
   await ritmo.migrateLegacy();
   assert.deepEqual(await ritmo.bestsOf(uid), { treino: 12345 }, 'roda uma vez só');
 });
+
+test('admin: aba Respostas do dia mostra o gabarito e o que cada um mandou, só pra admin e só até hoje', async () => {
+  const d = require('../lib/diarios');
+  const { today } = require('../lib/flair');
+  const ivo = await login('ivo', 'senha-ivo-123');
+  assert.equal((await ivo('/api/admin/daily-answers')).status, 403, 'jogador não vê');
+  const adm = await login('outroadm', 'senha-adm-123');
+  const r = await adm('/api/admin/daily-answers');
+  assert.equal(r.status, 200);
+  assert.equal(r.body.day, today());
+  assert.equal(r.body.games.length, 13, 'Termo + os 12 diários');
+  const dueto = r.body.games.find(g => g.game === 'dueto');
+  assert.deepEqual(dueto.sections[0].words.map(w => w.w), d.multiWords('dueto', today()));
+  const ivoPlay = dueto.players.find(p => p.name === 'Ivo');
+  assert.equal(ivoPlay.won, true);
+  assert.equal(ivoPlay.sent.length, 3, 'os 3 palpites do Ivo');
+  assert.deepEqual(r.body.games.find(g => g.game === 'senha').pegs, d.senhaCode(today()));
+  assert.ok(r.body.games.every(g => g.sections || g.pegs), 'todo jogo tem resposta');
+  assert.equal((await adm(`/api/admin/daily-answers?day=${today() + 1}`)).status, 400, 'amanhã não');
+  const ontem = await adm(`/api/admin/daily-answers?day=${today() - 1}`);
+  assert.equal(ontem.status, 200);
+  assert.equal(ontem.body.day, today() - 1);
+  assert.ok(ontem.body.games.every(g => !g.players.some(p => p.name === 'Ivo')), 'ontem o Ivo não jogou');
+});
