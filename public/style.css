@@ -1610,7 +1610,7 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 /* ---------- telas de jogo: palco com a arte do jogo, placar, Como jogar e resultado ----------
    A cor de cada jogo (--h) e a arte "peças soltas" (--art, js/stageart.js) dão identidade a cada tela.
    Tudo parado (sem animação nova), então vale igual no modo leve. */
-.game-stage { position: relative; isolation: isolate; overflow: clip; }
+.game-stage { position: relative; isolation: isolate; }
 .game-stage::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
   background: var(--art) right top / 560px 140px no-repeat, radial-gradient(90% 260px at 85% -40px, oklch(55% .15 var(--h) / .22), transparent 70%); }
 /* ladrilho do ícone com a "base" embaixo, como as peças dos cards 3D */
@@ -1631,7 +1631,7 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 }
 
 /* Como jogar */
-.howto-card { position: relative; isolation: isolate; overflow: clip; }
+.howto-card { position: relative; isolation: isolate; }
 .howto-card::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--art) right top / 480px 120px no-repeat; }
 .howto h3 span { color: oklch(86% .12 var(--h)); }
 .howto li::before { box-shadow: 0 2px 0 oklch(38% .12 var(--h)); }
@@ -1708,3 +1708,28 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
   .board .rx-add { opacity: 0; }
   .board li:hover .rx-add, .board li:focus-within .rx-add { opacity: .75; }
 }
+
+/* ---------- celular: administração em cartões, título do jogo numa linha ---------- */
+@media (max-width: 560px) {
+  /* tabelas com botões (contas, recordes, duplas, backups): cada linha vira um cartão; os botões descem pra linha de baixo */
+  .admin .users thead { display: none; }
+  .admin .users, .admin .users tbody { display: block; }
+  .admin .users tr { display: flex; flex-wrap: wrap; align-items: center; gap: .35em .7em; padding: .7em .2em; border-bottom: 1px solid var(--border); }
+  .admin .users td { border: 0; padding: 0 !important; }
+  .admin .users td:has(> .actions) { flex: 1 1 auto; }
+  /* recordes: posição + nome na 1ª linha; valor, partidas e botões na 2ª */
+  .admin .users td:has(> .rank) + td { flex: 1 1 70%; }
+  .admin .users td:has(> .rank) ~ td:nth-child(4)::before { content: 'partidas: '; color: var(--muted); }
+  #usersTable td:has(> .actions) { flex-basis: 100%; }
+  #usersTable .actions { justify-content: flex-start; }
+  #usersTable td:first-child { flex: 1 1 100%; font-weight: 700; }
+  #usersTable td:nth-child(2)::before { content: '@'; color: var(--muted); }
+  #usersTable td:nth-child(3):has(> .hint) { display: none; }
+  /* título do jogo cabe numa linha ao lado dos botões */
+  .game-stage .stage-head h2 { font-size: 1.12rem; white-space: nowrap; }
+  .game-stage .stage-head h2 > .i { width: 1.9em; height: 1.9em; }
+  .daily-tag .dt-more { display: none; }
+}
+
+/* Como jogar ocupa o próprio espaço do jogo (antes era por cima): em tela baixa o cartão empurra o ranking pra baixo em vez de passar por cima dele */
+.howto { position: relative; inset: auto; width: 100%; min-height: min(520px, var(--avail)); }
