@@ -102,7 +102,7 @@ const heroNode = main.querySelector('.hero');
 // atalhos do menu pra uma aba da janela Rankings (o top 3 do desafio e a linha do ranking dos diários)
 main.addEventListener('click', e => { const b = e.target.closest('[data-rank]'); if (b) rankingsModal(b.dataset.rank); });
 // Jogos em destaque aparecem primeiro no menu; o resto segue a ordem do GAMES.
-const FEATURED = ['blocos'];
+const FEATURED = ['blocos', 'sinuca'];
 const menuOrder = () => [...FEATURED, ...Object.keys(GAMES).filter(id => !FEATURED.includes(id) && !GAMES[id].daily)].map(id => [id, GAMES[id]]);
 // aba "Jogos diários": uma partida por dia em cada um, a mesma pra todo mundo (DAILY_TAB em daily.js)
 const dailyOrder = () => DAILY_TAB.filter(id => GAMES[id]).map(id => [id, GAMES[id]]);
