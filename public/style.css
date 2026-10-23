@@ -94,8 +94,8 @@
   }
   .logo { font: inherit; font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.035em; background: none; border: 0; color: var(--text); cursor: pointer; min-height: 44px; padding: 0;
     display: inline-flex; align-items: center; gap: .32em; }
-  /* a marca: quatro blocos 3D (play, estrela, cruz, coração), os vários jogos — public/icons/logo.svg */
-  .logo .mark { width: 1.5em; height: 1.5em; flex: none; margin-top: -.1em; transition: transform var(--duration) var(--ease-spring); }
+  /* a marca: controle 3D roxo com os botões coloridos — public/icons/logo.svg (recortado: mais largo que alto) */
+  .logo .mark { width: auto; height: 1.4em; flex: none; margin-top: -.08em; transition: transform var(--duration) var(--ease-spring); }
   .logo:hover .mark { transform: rotate(-6deg) scale(1.06); }
   /* letreiro com volume, como os blocos: "Micro" branco com borda funda roxa, "Game" do amarelo ao coral */
   .logo .wm { text-shadow: 0 2px 0 #3f2794; }
@@ -1605,5 +1605,5 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 .kpi .v .i { width: .78em; height: .78em; vertical-align: -.04em; color: var(--yellow); }
 /* celular: a descrição do jogo cortada no topo não ajudava (o "?" mostra o Como jogar inteiro) */
 @media (max-width: 560px) { .stage-head .title p:not(.pbio) { display: none; } .stage-head h2:has(> .i) + p { padding-left: 0; } }
-.login-mark { display: block; width: 88px; height: 88px; margin: 0 auto -.1rem; }
+.login-mark { display: block; width: 110px; height: 88px; margin: 0 auto -.1rem; }
 .modal .login-note { font-size: var(--fs-xs); margin: 0; }
