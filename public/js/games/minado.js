@@ -1,12 +1,13 @@
 GAMES.minado = {
-  name: 'Campo Minado', icon: 'bomb', hue: 135, desc: 'Abra todas as casas sem mina. Clique abre; botão direito, toque longo ou o modo marcar marca. Clicar num número com as bandeiras certas em volta abre os vizinhos. O 1º clique é sempre seguro.',
+  name: 'Campo Minado', icon: 'bomb', hue: 135, desc: 'Abra todas as casas sem mina. Clique abre; botão direito, toque longo ou o modo marcar marca. Clicar num número com as bandeiras certas em volta abre os vizinhos. O 1º clique é sempre seguro e o campo sempre dá pra resolver na lógica, sem chute.',
   better: 'low', unit: 's', decimals: 1,
   start(el, done) {
-    const N = 9, MINES = 10;
+    // 12x12 com 28 minas (~19%, perto do nível especialista): no 9x9 com 10 o 1º clique abria quase tudo
+    const N = 12, MINES = 28;
     let mines = null, t0 = 0, iv, over = false, flagMode = false, longPress = null, longFired = false;
     const open = new Set(), flags = new Set();
     el.innerHTML = `<div class="hud"><span class="stat">Minas<b id="m">${MINES}</b></span><span class="stat">Tempo<b id="t">0.0s</b></span></div>
-      <div class="mines" id="mf">${Array.from({ length: N * N }, (_, i) => `<button class="mc" data-i="${i}" aria-label="casa ${i + 1}"></button>`).join('')}</div>
+      <div class="mines" id="mf" style="--n:${N}">${Array.from({ length: N * N }, (_, i) => `<button class="mc" data-i="${i}" aria-label="casa ${i + 1}"></button>`).join('')}</div>
       <button class="btn ghost" id="flag" aria-pressed="false">${icon('flag')} <span>Modo marcar: desligado</span></button>`;
     const cells = [...el.querySelectorAll('.mc')];
     const around = i => {
@@ -19,12 +20,57 @@ GAMES.minado = {
       return out;
     };
     const count = i => around(i).filter(j => mines.has(j)).length;
-    const placeMines = first => {
+    const layMines = first => {
       // o 1º clique e os vizinhos nunca têm mina (abre uma área pra começar)
       const safe = new Set([first, ...around(first)]);
       const pool = cells.map((_, i) => i).filter(i => !safe.has(i));
-      mines = new Set();
-      while (mines.size < MINES) mines.add(pool.splice(rand(0, pool.length - 1), 1)[0]);
+      const m = new Set();
+      while (m.size < MINES) m.add(pool.splice(rand(0, pool.length - 1), 1)[0]);
+      return m;
+    };
+    // resolve o campo só com dedução (casa por casa e comparando pares de números vizinhos);
+    // true se dá pra abrir tudo a partir do 1º clique sem precisar chutar
+    const solvable = (m, first) => {
+      const seen = new Set(), flagged = new Set();
+      const dig = i => {
+        const stack = [i];
+        while (stack.length) {
+          const j = stack.pop();
+          if (seen.has(j)) continue;
+          seen.add(j);
+          if (!around(j).some(k => m.has(k))) stack.push(...around(j));
+        }
+      };
+      dig(first);
+      for (let progress = true; progress && seen.size < N * N - MINES;) {
+        progress = false;
+        const front = [];
+        for (const i of seen) {
+          const near = around(i), unk = near.filter(j => !seen.has(j) && !flagged.has(j));
+          if (unk.length) front.push({ unk, need: near.filter(j => m.has(j)).length - near.filter(j => flagged.has(j)).length });
+        }
+        const apply = (unk, need) => {
+          if (!unk.length) return;
+          if (need === 0) { unk.forEach(dig); progress = true; }
+          else if (need === unk.length) { unk.forEach(j => flagged.add(j)); progress = true; }
+        };
+        for (const { unk, need } of front) apply(unk, need);
+        if (progress) continue;
+        // depois de cada dedução por par os números mudam: volta pro começo
+        pairs: for (const a of front) for (const b of front) {
+          if (a === b || !a.unk.every(j => b.unk.includes(j))) continue;
+          apply(b.unk.filter(j => !a.unk.includes(j)), b.need - a.need);
+          if (progress) break pairs;
+        }
+      }
+      return seen.size === N * N - MINES;
+    };
+    const placeMines = first => {
+      // sorteia até achar um campo sem chute (~1 em 5 é; o limite só evita travar)
+      for (let tries = 0; tries < 300; tries++) {
+        mines = layMines(first);
+        if (solvable(mines, first)) return;
+      }
     };
     const elapsed = () => (performance.now() - t0) / 1000;
     const lose = i => {
