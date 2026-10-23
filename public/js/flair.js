@@ -54,7 +54,7 @@ function applyMeFlair() {
   av.classList.toggle('crowned', !!me && isCrowned(me.name));
 }
 
-// ----- campeões dos últimos dias (mural do menu) -----
+// ----- campeões dos últimos dias (aba "Desafio do dia" da janela Rankings) -----
 const dayLabel = i => new Date(dayStart(i)).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit' }).replace('.', '');
 function champsHtml() {
   const rows = [];
@@ -65,21 +65,8 @@ function champsHtml() {
     rows.push(`<li><span class="d">${dayLabel(dayIndex() - k)}</span><span class="g">${icon(g.icon)} ${g.name}</span><span class="w">${nameHtml(w.name)}</span><b>${fmt(g, w.score)}</b></li>`);
   }
   const streak = crownHolder() ? dailyStreakOf(crownHolder()) : 0;
-  // os 3 mais recentes aparecem; o resto abre em "ver mais"
-  const list = rows.map((r, i) => (i >= 3 ? r.replace('<li>', '<li class="more">') : r)).join('');
-  return rows.length ? `<div class="champs-head${rows.length <= 3 ? ' few' : ''}"><h3>${icon('crown')} Últimos campeões${streak > 1 ? ` <small class="streak">${icon('flame')} ${esc(crownHolder())} · ${streak} seguidas</small>` : ''}</h3>
-    ${rows.length > 1 ? '<button class="link-btn" id="champsMore" aria-expanded="false">ver mais</button>' : ''}</div><ol>${list}</ol>` : '';
-}
-let champsOpen = false;
-/** Desenha os últimos campeões dentro do card do desafio (some se ninguém ganhou ainda). */
-function renderChamps() {
-  const box = $('#champs');
-  if (!box) return;
-  const h = champsHtml();
-  box.innerHTML = h; box.hidden = !h;
-  box.classList.toggle('open', champsOpen);
-  const b = $('#champsMore');
-  if (b) { b.textContent = champsOpen ? 'ver menos' : 'ver mais'; b.setAttribute('aria-expanded', champsOpen); b.onclick = () => { champsOpen = !champsOpen; renderChamps(); }; }
+  return rows.length ? `<div class="champs"><h3>${icon('crown')} Últimos campeões${streak > 1 ? ` <small class="streak">${icon('flame')} ${esc(crownHolder())} · ${streak} seguidas</small>` : ''}</h3>
+    <ol>${rows.join('')}</ol></div>` : '';
 }
 
 // ----- escolher o jogo de amanhã (só quem ganhou ontem) -----
