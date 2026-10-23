@@ -164,21 +164,21 @@ function renderProfile(name) {
     <div class="kpi glass"><div class="l">Conquistas</div><div class="v">${unlocked}/${ACHIEVEMENTS.length}</div></div>
     ${s.trophies || s.duelWins ? `<div class="kpi glass"><div class="l">Torneios e duelos</div><div class="v">${icon('trophy')} ${s.trophies} · ${icon('swords')} ${s.duelWins}</div><span class="d">torneios ganhos · duelos ganhos</span></div>` : ''}
   </div>`;
-  // partidas por semana (últimas 12): 1 série, 1 cor, rótulo só no maior
-  const weekMs = 7 * DAY_MS, now = Date.now();
-  const weeks = Array.from({ length: 12 }, (_, i) => {
-    const end = now - (11 - i) * weekMs, start = end - weekMs;
-    return { start, v: s.plays.filter(p => p.date > start && p.date <= end).length };
+  // partidas por dia (últimos 30, dias sem partida contam como zero): 1 série, 1 cor, rótulo só no maior
+  const today = dayIndex();
+  const days = Array.from({ length: 30 }, (_, i) => {
+    const d = today - 29 + i, start = dayStart(d), end = dayStart(d + 1);
+    return { start, v: s.plays.filter(p => p.date >= start && p.date < end).length };
   });
-  const wmax = Math.max(1, ...weeks.map(w => w.v)), nice = wmax <= 4 ? wmax : Math.ceil(wmax / 4) * 4, top = weeks.findIndex(w => w.v === wmax);
-  const label = w => new Date(w.start + DAY_MS).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-  const chart = `<section class="glass report" style="margin-top:var(--space-md);padding:var(--space-md)"><h2>Partidas por semana</h2>
-    <div class="cols" role="img" aria-label="Partidas por semana nas últimas 12 semanas">
+  const wmax = Math.max(1, ...days.map(w => w.v)), nice = wmax <= 4 ? wmax : Math.ceil(wmax / 4) * 4, top = days.findIndex(w => w.v === wmax);
+  const label = w => new Date(w.start).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  const chart = `<section class="glass report" style="margin-top:var(--space-md);padding:var(--space-md)"><h2>Partidas por dia</h2>
+    <div class="cols" role="img" aria-label="Partidas por dia nos últimos 30 dias">
       ${[nice, nice / 2].map(v => `<div class="grid" style="bottom:${(v / nice) * 100}%"><span>${Number.isInteger(v) ? v : v.toFixed(1)}</span></div>`).join('')}
-      ${weeks.map((w, i) => `<div class="c" tabindex="0" data-tip="semana de ${label(w)}: ${w.v} partida${w.v === 1 ? '' : 's'}">
+      ${days.map((w, i) => `<div class="c" tabindex="0" data-tip="${label(w)}: ${w.v} partida${w.v === 1 ? '' : 's'}">
         <i style="height:${(w.v / nice) * 100}%"></i>${i === top && w.v ? `<b style="bottom:${(w.v / nice) * 100}%">${w.v}</b>` : ''}</div>`).join('')}
     </div>
-    <div class="xlabels">${weeks.map((w, i) => `<span>${i % 3 === 0 || i === 11 ? label(w) : ''}</span>`).join('')}</div>
+    <div class="xlabels">${days.map((w, i) => `<span>${(29 - i) % 7 === 0 ? label(w) : ''}</span>`).join('')}</div>
   </section>`;
   const rows = menuOrder().map(([id, g]) => {
     const mine = s.plays.filter(p => p.id === id);
