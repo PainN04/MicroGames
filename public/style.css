@@ -1393,6 +1393,7 @@
 .sl-found li:not(.hint) { text-transform: capitalize; }
 .sl-found li.pg { background: linear-gradient(180deg, oklch(88% 0.17 95), oklch(78% 0.17 82)); color: #10131c; font-weight: 700; }
 .sl-found li.miss { opacity: .45; background: transparent; border: 1px dashed var(--border-strong); color: var(--text); }
+.sl-found li.ex { background: transparent; border: 1px solid var(--border-strong); font-style: italic; }
 .sl-found li.pop { animation: pop .3s var(--ease-spring); }
 
 /* ---------- Senha ---------- */

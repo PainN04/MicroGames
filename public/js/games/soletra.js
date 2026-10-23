@@ -1,6 +1,7 @@
 // Soletra: forme palavras com as letras da colmeia, sempre usando a do meio (4 letras ou mais, pode repetir letra).
 // As palavras do dia ficam no servidor (lib/diarios.js): cada palavra vai pra lá e volta valendo ou não.
-// A palavra que usa as 7 letras vale bônus. A partida acaba quando você encerra ou acha todas.
+// A palavra que usa as 7 letras vale bônus. A partida acaba quando você encerra ou acha todas as do dia.
+// Palavra menos comum que existe também vale ponto, como extra, mas não conta no total.
 GAMES.soletra = {
   name: 'Soletra', icon: 'soletra', hue: 48, daily: true,
   desc: 'Forme palavras com as 7 letras da colmeia, sempre com a letra do meio. Palavra de 4 letras vale 1 ponto, maior vale uma por letra, e a que usa as 7 letras ganha +7. Encerre quando quiser: uma partida por dia.',
@@ -29,20 +30,20 @@ GAMES.soletra = {
       el.querySelector('#scur').innerHTML = cur ? [...cur].map(c => `<span class="${c === v.center ? 'mid' : outer.includes(c) ? '' : 'bad'}">${c.toUpperCase()}</span>`).join('') : '<span class="ph">digite ou toque nas letras</span>';
     };
     const paint = () => {
-      el.querySelector('#sw').textContent = `${v.found.length}/${v.count}`;
+      el.querySelector('#sw').textContent = `${v.hits}/${v.count}`;
       el.querySelector('#sp').textContent = v.points;
       const r = el.querySelector('#srank');
       r.querySelector('b').textContent = rankOf(v.points);
       r.querySelector('i').style.width = Math.min(100, (v.points / (v.max * 0.7)) * 100) + '%';
-      const list = v.all || v.found.map(f => ({ word: f.word, pangram: f.pangram, found: true }));
+      const list = v.all || v.found.map(f => ({ word: f.word, pangram: f.pangram, found: true, extra: f.extra }));
       el.querySelector('#sfound ul').innerHTML = [...list].sort((a, b) => a.word.localeCompare(b.word, 'pt'))
-        .map(f => `<li class="${f.pangram ? 'pg' : ''}${f.found ? '' : ' miss'}">${esc(f.word)}</li>`).join('') || '<li class="hint">Nenhuma ainda</li>';
+        .map(f => `<li class="${f.pangram ? 'pg' : ''}${f.found ? '' : ' miss'}${f.extra ? ' ex' : ''}"${f.extra ? ' title="Palavra extra: vale ponto, não conta no total"' : ''}>${esc(f.word)}</li>`).join('') || '<li class="hint">Nenhuma ainda</li>';
     };
     const endPanel = () => {
       el.querySelector('#sbtns').hidden = true; el.querySelector('#shive').hidden = true; el.querySelector('#scur').hidden = true;
       const box = el.querySelector('#send');
       box.innerHTML = `<button class="btn ghost" id="shr">${icon('upload')} Copiar resultado</button>`;
-      const share = () => `Soletra MicroGame: ${v.points} pontos (${rankOf(v.points)}), ${v.found.length}/${v.count} palavras`;
+      const share = () => `Soletra MicroGame: ${v.points} pontos (${rankOf(v.points)}), ${v.hits}/${v.count} palavras`;
       box.querySelector('#shr').onclick = async () => { try { await navigator.clipboard.writeText(share()); say('Resultado copiado!'); } catch { say(share()); } };
       say(v.points ? `${v.points} pontos. Veja as que faltaram e volte amanhã!` : 'Nenhuma palavra hoje. Volte amanhã!');
     };
@@ -56,7 +57,7 @@ GAMES.soletra = {
 
     const finish = () => {
       sfx.record();
-      summarize([['Palavras', `${v.found.length}/${v.count}`], ['Nível', rankOf(v.points)]]);
+      summarize([['Palavras', `${v.hits}/${v.count}`], ['Nível', rankOf(v.points)]]);
       timers.push(setTimeout(() => alive && done(v.score, { saved }), 900));
     };
     const send = async body => {
@@ -81,7 +82,7 @@ GAMES.soletra = {
       const r = nv.result || {};
       if (r.repeat) { say(`"${r.repeat}" você já achou`); return; }
       if (r.pangram) { say(`${r.word}: usou as 7 letras! +${r.points}`); sfx.record(); }
-      else { say(`${r.word} +${r.points}`); sfx.good(); }
+      else { say(`${r.word}${r.extra ? ' (extra)' : ''} +${r.points}`); sfx.good(); }
       const li = [...el.querySelectorAll('#sfound li')].find(x => x.textContent === r.word);
       if (li) li.classList.add('pop');
       if (v.over) finish();
