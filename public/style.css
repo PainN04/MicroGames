@@ -1408,7 +1408,9 @@
 .sl-found li:not(.hint) { text-transform: capitalize; }
 .sl-found li.pg { background: linear-gradient(180deg, oklch(88% 0.17 95), oklch(78% 0.17 82)); color: #10131c; font-weight: 700; }
 .sl-found li.miss { opacity: .45; background: transparent; border: 1px dashed var(--border-strong); color: var(--text); }
-.sl-found li.ex { background: transparent; border: 1px solid var(--border-strong); font-style: italic; }
+/* rara que usou as 7 letras continua dourada (fundo transparente deixava o texto escuro invisível) */
+.sl-found li.ex { font-style: italic; }
+.sl-found li.ex:not(.pg) { background: transparent; border: 1px solid var(--border-strong); }
 .sl-key { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 10px 0 0; font-size: var(--fs-xs); color: var(--muted); }
 .sl-key span { display: inline-flex; align-items: center; gap: 5px; }
 .sl-key span[hidden] { display: none; }
