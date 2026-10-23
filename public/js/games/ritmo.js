@@ -91,18 +91,9 @@ GAMES.ritmo = {
         { ms: 120, pts: 50, text: 'Bom', color: '#7cffb0' },
       ];
       const GOOD = JUDGES.at(-1).ms;
-      // atraso do fone/caixa de som (Bluetooth chega a 200 ms): atrasa o desenho das notas e o julgamento junto, pra nota
-      // cruzar a linha quando o som chega no ouvido. A pessoa ajusta durante a partida e fica salvo.
-      let lat = 0; try { lat = +localStorage.getItem('mg_ritmo_lat') || 0; } catch {}
       el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Combo<b id="c">0</b></span><span class="stat">Tempo<b id="t">-</b></span></div>
-        <p class="rt-now">${icon('music')} <b>${esc(song.title)}</b> · ${esc(song.artist)}</p><div class="phaser-wrap" id="pw"></div>
-        <div class="row-btns lat"><span class="hint" title="Se as notas passam da linha antes da batida, aumente; se passam depois, diminua.">Atraso do som</span><button class="btn ghost" id="lm" aria-label="Menos atraso">−</button><b id="lv">${lat} ms</b><button class="btn ghost" id="lp" aria-label="Mais atraso">+</button></div>`;
+        <p class="rt-now">${icon('music')} <b>${esc(song.title)}</b> · ${esc(song.artist)}</p><div class="phaser-wrap" id="pw"></div>`;
       const hud = { p: el.querySelector('#p'), c: el.querySelector('#c'), t: el.querySelector('#t') };
-      // no treino o som nasce junto com o desenho, então lá o atraso só desconta no julgamento (como antes)
-      const late = () => buffer ? 0 : lat;
-      const setLat = v => { lat = Phaser.Math.Clamp(v, -100, 300); el.querySelector('#lv').textContent = lat + ' ms'; try { localStorage.setItem('mg_ritmo_lat', lat); } catch {} };
-      el.querySelector('#lm').onclick = e => { e.currentTarget.blur(); setLat(lat - 10); };
-      el.querySelector('#lp').onclick = e => { e.currentTarget.blur(); setLat(lat + 10); };
       const laneColor = ['--green', '--red', '--yellow', '--blue'].map(hex);
       const TONES = [392, 440, 523, 587];
       const BASS = [110, 87.31, 130.81, 98]; // treino: lá, fá, dó, sol, muda a cada 4 tempos
@@ -136,7 +127,7 @@ GAMES.ritmo = {
 
       stopGame = mountPhaser(el.querySelector('#pw'), W, H, {
         create() {
-          let now = buffer ? songClock() - lat : 0, score = 0, combo = 0, best = 0, over = false, frameAt = performance.now(), nextBeat = 0;
+          let now = buffer ? songClock() : 0, score = 0, combo = 0, best = 0, over = false, frameAt = performance.now(), nextBeat = 0;
           const pressed = [0, 0, 0, 0], flash = [0, 0, 0, 0], down = [false, false, false, false];
           const count = { Perfeito: 0, 'Ótimo': 0, Bom: 0, Perdeu: 0, Segurou: 0 };
           const bg = this.add.graphics(), g = this.add.graphics();
@@ -153,7 +144,7 @@ GAMES.ritmo = {
             if (over) return;
             pressed[lane] = 120; down[lane] = true;
             // tempo exato do aperto, não o do último frame (senão a precisão ficava presa em ~16ms)
-            const at = now + Math.min(performance.now() - frameAt, 50) - late();
+            const at = now + Math.min(performance.now() - frameAt, 50);
             let hit = null;
             for (const n of notes) if (!n.done && n.lane === lane && Math.abs(n.t - at) <= GOOD && (!hit || Math.abs(n.t - at) < Math.abs(hit.t - at))) hit = n;
             if (!hit) {
@@ -204,11 +195,11 @@ GAMES.ritmo = {
           this.events.on('update', (time, delta) => {
             frameAt = performance.now();
             if (!over) {
-              now = buffer ? songClock() - lat : now + Math.min(delta, 50);
+              now = buffer ? songClock() : now + Math.min(delta, 50);
               hud.t.textContent = mmss(Math.max(0, end - Math.max(0, now)));
               while (nextBeat < beats.length && beats[nextBeat].t <= now) playBeat(beats[nextBeat++]);
               for (const n of notes) {
-                if (!n.done && now - late() - n.t > GOOD) {
+                if (!n.done && now - n.t > GOOD) {
                   n.done = true; count.Perdeu++;
                   if (combo) judge('Perdeu', '#ff6b8a', n.lane);
                   breakCombo();
@@ -216,9 +207,9 @@ GAMES.ritmo = {
                 // nota comprida: enquanto segura, pinga pontos; soltou antes, perde o resto; chegou ao fim, bônus
                 if (n.holding) {
                   if (!down[n.lane]) { n.holding = false; n.cut = now; continue; }
-                  const due = Math.min(Math.floor((Math.min(now - late(), n.t + n.len) - n.from) / 100), Math.floor(n.len / 100) + 1);
+                  const due = Math.min(Math.floor((Math.min(now, n.t + n.len) - n.from) / 100), Math.floor(n.len / 100) + 1);
                   for (; n.ticks < due; n.ticks++) addPts(5);
-                  if (now - late() >= n.t + n.len) {
+                  if (now >= n.t + n.len) {
                     n.holding = false; n.cut = n.t + n.len; count.Segurou++;
                     addPts(50); judge('Segurou!', '#ff9ee5', n.lane); flash[n.lane] = 260;
                     beep(TONES[n.lane] * 2, 120, 'triangle', 0.04);
