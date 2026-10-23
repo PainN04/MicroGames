@@ -247,6 +247,33 @@ test('editor de recordes respeita "menor é melhor" e faz backup antes', async (
   assert.equal(after[0].reason, 'antes de editar recordes');
 });
 
+test('zerar: ranking de um jogo inteiro ou todos os pontos de uma conta, com backup antes', async () => {
+  const owner = await login('paulo', 'senha-dono-123');
+  const adm = await login('outroadm', 'senha-adm-123');
+  const ana = await login('ana', 'senha-ana-123');
+  const anaId = await idOf('ana');
+  await play(ana, 'minado', 40);
+  await play(ana, 'snake', 7);
+  await play(owner, 'minado', 50);
+  await play(owner, 'snake', 9);
+  assert.equal((await adm('/api/admin/records/clear', { method: 'POST', body: { game: 'minado' } })).status, 403);
+
+  const g = await owner('/api/admin/records/clear', { method: 'POST', body: { game: 'minado' } });
+  assert.equal(g.status, 200);
+  assert.ok(g.body.removed >= 2);
+  assert.equal((await sql`SELECT count(*) AS n FROM scores WHERE game = 'minado'`)[0].n, 0);
+  assert.ok((await sql`SELECT count(*) AS n FROM scores WHERE game = 'snake'`)[0].n >= 2, 'outros jogos ficam');
+  assert.equal((await owner('/api/admin/backups')).body.backups[0].reason, 'antes de zerar o ranking de minado');
+
+  const u = await owner('/api/admin/records/clear', { method: 'POST', body: { userId: anaId } });
+  assert.equal(u.status, 200);
+  assert.equal((await sql`SELECT count(*) AS n FROM scores WHERE user_id = ${anaId}`)[0].n, 0);
+  assert.equal((await sql`SELECT count(*) AS n FROM users WHERE id = ${anaId}`)[0].n, 1, 'a conta continua');
+  assert.ok((await sql`SELECT count(*) AS n FROM scores WHERE game = 'snake' AND user_id <> ${anaId}`)[0].n >= 1, 'pontos dos outros ficam');
+  assert.equal((await owner('/api/admin/records/clear', { method: 'POST', body: { game: 'nada' } })).status, 400);
+  assert.equal((await owner('/api/admin/records/clear', { method: 'POST', body: { userId: 999999 } })).status, 404);
+});
+
 test('backup: restaurar devolve as partidas e guarda o estado de antes', async () => {
   const owner = await login('paulo', 'senha-dono-123');
   const made = await owner('/api/admin/backups', { method: 'POST', body: {} });
