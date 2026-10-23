@@ -1433,6 +1433,8 @@
 /* ---------- Equação ---------- */
 .tm.eq { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; width: min(100%, 420px, calc((var(--avail, 520px) - 200px) * 8 / 6)); }
 .tm.eq .tm-t { border-radius: 8px; font-size: clamp(1rem, 4.6vw, 1.5rem); }
+.tm.eq .tm-t[role=button] { cursor: pointer; transition: border-color .12s, box-shadow .12s; }
+.tm.eq .tm-t.sel { border-color: var(--primary); box-shadow: inset 0 -3px 0 oklch(0% 0 0 / .22), 0 0 0 2px color-mix(in oklch, var(--primary) 45%, transparent); }
 .eq-kb .tm-k { font-size: 1.1rem; }
 .eq-kb .tm-k.wide { font-size: .85rem; }
 .eq-ans { margin: 0 0 var(--space-xs); text-align: center; }
