@@ -15,7 +15,7 @@ GAMES.pong = {
         const hist = [];
         // ---------- arte ----------
         const art = artKit(this);
-        this.add.image(0, 0, art.backdrop('pg_bg', W, H, '#14183a', '#080a1c', { grid: 28 })).setOrigin(0);
+        this.add.image(0, 0, art.backdrop('pg_bg', W, H, '#14183a', '#080a1c', { grid: 28 })).setOrigin(0).setDisplaySize(W, H);
         const big = this.add.text(W / 2, H / 2, '0', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '150px', fontStyle: 'bold', color: '#ffffff' }).setOrigin(0.5).setAlpha(0.05);
         const padTex = (key, col) => art.tex(key, PW + 16, PH + 16, c => {
           c.shadowColor = col; c.shadowBlur = 10;
@@ -25,7 +25,9 @@ GAMES.pong = {
         padTex('pg_me', '#e8eaf6'); padTex('pg_cpu', '#ff5d73');
         art.tex('pg_ball', R * 2 + 12, R * 2 + 12, c => { c.shadowColor = '#ffd34d'; c.shadowBlur = 8; art.orb(c, R + 6, R + 6, R, '#ffe27a'); });
         const g = this.add.graphics();
-        const meImg = this.add.image(px, PY, 'pg_me'), cpuImg = this.add.image(ax, AY, 'pg_cpu'), ballImg = this.add.image(bx, by, 'pg_ball');
+        // texturas são pintadas no dobro da resolução: setDisplaySize deixa o desenho do tamanho da hitbox
+        const meImg = this.add.image(px, PY, 'pg_me').setDisplaySize(PW + 16, PH + 16), cpuImg = this.add.image(ax, AY, 'pg_cpu').setDisplaySize(PW + 16, PH + 16);
+        const ballImg = this.add.image(bx, by, 'pg_ball').setDisplaySize(R * 2 + 12, R * 2 + 12);
         const burst = this.add.particles(0, 0, 'dot', { speed: { min: 60, max: 180 }, lifespan: 360, scale: { start: 0.9, end: 0 }, emitting: false });
         const msg = this.add.text(W / 2, H / 2 + 60, 'Toque ou Espaço pra começar', { fontFamily: 'Space Grotesk, system-ui, sans-serif', fontSize: '20px', color: '#c9cce0' }).setOrigin(0.5);
         // velocidade de saque cresce com os pontos; cada rebatida na rali acelera mais um pouco
