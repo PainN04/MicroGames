@@ -1894,22 +1894,22 @@ html.lite .acc-menu { background: oklch(20% 0.025 275); }
 .admin .rec-pick { flex: 0 1 280px; }
 .rec-msg:empty { display: none; }
 .rec-list { list-style: none; margin: var(--space-sm) 0 0; padding: 0; display: grid; gap: 6px; }
-.rec { display: grid; grid-template-columns: 2.2em 34px minmax(0, 1fr) 11.5em 6.5em 7.5em; align-items: center; gap: .4em .8em; padding: .5em .7em; border-radius: 14px; border: 1px solid var(--border); background: oklch(100% 0 0 / .025); }
-.rec.by-user { grid-template-columns: 34px minmax(0, 1fr) 11.5em 6.5em 7.5em; }
-.rec.by-user.none { opacity: .7; }
-.rec.add { grid-template-columns: 34px minmax(0, 22em) 11.5em 7.5em; justify-content: space-between; border-style: dashed; background: none; }
-.rec .acc-av .pa, .rec .acc-ini { width: 34px; height: 34px; font-size: .8rem; }
+.rec-list .rec { display: grid; grid-template-columns: 2.2em 34px minmax(0, 1fr) 11.5em 6.5em 7.5em; align-items: center; gap: .4em .8em; padding: .5em .7em; border-radius: 14px; border: 1px solid var(--border); background: oklch(100% 0 0 / .025); }
+.rec-list .rec.by-user { grid-template-columns: 34px minmax(0, 1fr) 11.5em 6.5em 7.5em; }
+.rec-list .rec.by-user.none { opacity: .7; }
+.rec-list .rec.add { grid-template-columns: 34px minmax(0, 22em) 11.5em 7.5em; justify-content: space-between; border-style: dashed; background: none; }
+.rec-list .rec .acc-av .pa, .rec-list .rec .acc-ini { width: 34px; height: 34px; font-size: .8rem; }
 .rec-n { font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; }
 .admin label.rec-field { flex-direction: row; align-items: center; gap: 0; }
 .admin .rec-field input { flex: 1; min-width: 0; }
 .admin .rec-field input { width: auto; border-radius: 10px 0 0 10px; text-align: right; font-variant-numeric: tabular-nums; }
 .rec-field span { align-self: stretch; display: grid; place-items: center; padding: 0 .65em; border: 1px solid var(--border-strong); border-left: 0; border-radius: 0 10px 10px 0; background: oklch(100% 0 0 / .05); font-size: var(--fs-xs); color: var(--muted); }
-.rec .actions { display: flex; gap: 6px; justify-content: flex-end; }
-.rec .actions .btn { min-height: 34px; padding: 0 .8rem; font-size: var(--fs-xs); }
-.rec .actions .icon-btn { width: 34px; padding: 0; }
-.rec .actions .btn.danger:hover { color: oklch(80% .14 18); border-color: oklch(66% .22 18 / .5); }
-.rec.changed { border-color: var(--primary); }
-.rec.changed [data-act="save"] { background: linear-gradient(180deg, var(--primary), oklch(60% .2 290)); color: #fff; border-color: transparent; }
+.rec-list .rec .actions { display: flex; gap: 6px; justify-content: flex-end; }
+.rec-list .rec .actions .btn { min-height: 34px; padding: 0 .8rem; font-size: var(--fs-xs); }
+.rec-list .rec .actions .icon-btn { width: 34px; padding: 0; }
+.rec-list .rec .actions .btn.danger:hover { color: oklch(80% .14 18); border-color: oklch(66% .22 18 / .5); }
+.rec-list .rec.changed { border-color: var(--primary); }
+.rec-list .rec.changed [data-act="save"] { background: linear-gradient(180deg, var(--primary), oklch(60% .2 290)); color: #fff; border-color: transparent; }
 .rec-game { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 10px; color: #fff; background: linear-gradient(160deg, oklch(66% .15 var(--h)), oklch(48% .14 var(--h))); box-shadow: 0 2px 0 oklch(32% .09 var(--h)); }
 .rec-game .i { width: 1.15em; height: 1.15em; }
 .rec-plus { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; border: 1px dashed var(--border-strong); color: var(--muted); font-weight: 700; }
@@ -1924,16 +1924,16 @@ html.lite .acc-menu { background: oklch(20% 0.025 275); }
   .duo-amp { display: none; }
   .acc.duo .actions .btn .t, .acc.on .actions .btn .t { display: none; }
   /* recordes no celular: nome em cima; valor, partidas e botões embaixo */
-  .rec, .rec.by-user { grid-template-columns: auto minmax(0, 1fr) auto; }
-  .rec > .rank { grid-row: 1; }
-  .rec:not(.by-user) .acc-av { display: none; }
-  .rec .rec-field { grid-column: 1 / 3; grid-row: 2; }
-  .rec .rec-n { grid-column: 3; grid-row: 1; text-align: right; }
-  .rec .actions { grid-column: 3; grid-row: 2; }
-  .rec.add { grid-template-columns: auto minmax(0, 1fr); }
-  .rec.add .rec-field { grid-column: 1 / 2; }
-  .rec.add .actions { grid-column: 2; }
-  .rec.add .rec-who { grid-column: 2; grid-row: 1; }
+  .rec-list .rec, .rec-list .rec.by-user { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .rec-list .rec > .rank { grid-row: 1; }
+  .rec-list .rec:not(.by-user) .acc-av { display: none; }
+  .rec-list .rec .rec-field { grid-column: 1 / 3; grid-row: 2; }
+  .rec-list .rec .rec-n { grid-column: 3; grid-row: 1; text-align: right; }
+  .rec-list .rec .actions { grid-column: 3; grid-row: 2; }
+  .rec-list .rec.add { grid-template-columns: auto minmax(0, 1fr); }
+  .rec-list .rec.add .rec-field { grid-column: 1 / 2; }
+  .rec-list .rec.add .actions { grid-column: 2; }
+  .rec-list .rec.add .rec-who { grid-column: 2; grid-row: 1; }
   .admin .rec-field input { width: 100%; min-width: 0; }
   .admin label.rec-field { min-width: 0; }
   .admin .rec-pick { flex: 1 1 100%; }
@@ -1941,10 +1941,10 @@ html.lite .acc-menu { background: oklch(20% 0.025 275); }
 .geiko-test .acc-search { order: 0; flex: 1 1 auto; max-width: 280px; }
 .sit-chips > .hint { text-align: left; }
 @media (max-width: 700px) {
-  .rec.add { display: flex; flex-wrap: wrap; align-items: end; }
-  .rec.add .rec-plus { display: none; }
-  .rec.add .rec-who { flex: 1 1 100%; }
-  .rec.add .rec-field { flex: 1 1 0; }
+  .rec-list .rec.add { display: flex; flex-wrap: wrap; align-items: end; }
+  .rec-list .rec.add .rec-plus { display: none; }
+  .rec-list .rec.add .rec-who { flex: 1 1 100%; }
+  .rec-list .rec.add .rec-field { flex: 1 1 0; }
 }
 @media (max-width: 700px) {
   .duo-av .pa, .duo-av .acc-ini { width: 32px; height: 32px; font-size: .75rem; }
@@ -1953,3 +1953,4 @@ html.lite .acc-menu { background: oklch(20% 0.025 275); }
   .acc.duo .actions { gap: 4px; }
   .acc.duo .actions .btn { width: 32px; min-height: 32px; }
 }
+.rec-list .rec > .rank { justify-self: start; }
