@@ -41,6 +41,7 @@ const HOWTO = {
   equacao: { steps: ['Descubra a conta do dia: 8 símbolos, tipo 12+35=47', 'Todo palpite tem que ser uma conta certa', 'Verde: lugar certo; amarelo: está em outro lugar. × e ÷ antes de + e −'], keys: ['Teclado', 'Enter'] },
   bandeira: { steps: ['Digite o país da bandeira', 'Errou? Veja a distância, a direção e o quanto chegou perto', 'Com 2 erros aparece o continente; com 4, a capital'], keys: ['Teclado', 'Enter'] },
   cacapalavras: { steps: ['Arraste da primeira à última letra da palavra', 'Vale horizontal, vertical, diagonal e de trás pra frente', 'Ache as 8 o mais rápido possível'], keys: ['Arrastar', 'Toque'] },
+  cruzadinha: { steps: ['Toque numa casa e digite: a dica de cima é a da palavra marcada', 'Toque de novo na casa pra trocar entre horizontal e vertical', 'Encheu a grade? Ela é enviada sozinha. Conferir mostra os erros, mas tira 60 pontos'], keys: ['Teclado', 'Tab'] },
   quiz: { steps: ['Escolha a alternativa certa', 'Acertos seguidos fazem combo até x4', 'Erro tira 1 ponto e mostra a certa'], keys: ['1 2 3 4', 'Clique'] },
 };
 const howtoSeen = id => { try { return localStorage.getItem('mg_howto_' + id) === '1'; } catch { return true; } };

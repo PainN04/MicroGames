@@ -1,0 +1,1326 @@
+# Dicas da Cruzadinha (jogo diário). Uma palavra por linha: PALAVRA;dica
+# Palavra sem acento e em maiúsculas (é como vai na grade). Só entram na grade palavras desta lista.
+# Depois de mudar aqui: node scripts/build-cruzadinha.js (gera lib/data/cruzadinha.json)
+SIM;O contrário de não
+NAO;O contrário de sim
+BEM;O contrário de mal
+MAL;O contrário de bem
+SER;Existir
+BOM;Que tem qualidade
+TER;Possuir
+VER;Enxergar
+DIA;Vai do nascer ao pôr do sol
+PAI;Homenageado em agosto
+MAE;Homenageada em maio
+VEZ;Turno, ocasião
+DAR;Entregar de presente
+ANO;Tem 365 dias
+FIM;Término
+MAO;Tem cinco dedos
+MIL;Dez vezes cem
+PAZ;O contrário de guerra
+LUZ;A lâmpada acende
+REI;Senta no trono
+TIO;Irmão do pai ou da mãe
+TIA;Irmã do pai ou da mãe
+DOR;Sente quem se machuca
+VOZ;Som que sai da garganta
+TOM;Altura de uma nota musical
+DEZ;Nota máxima na prova
+SOL;Estrela do nosso sistema
+LEI;Regra aprovada no Congresso
+CEU;Onde ficam as nuvens
+MES;Outubro é um
+LER;O que se faz com um livro
+BAR;Lugar do chope com os amigos
+MAR;Onde quebram as ondas
+MAU;Malvado
+CHA;Bebida de camomila
+SUL;O contrário de norte
+CAO;Cachorro
+SOM;O ouvido capta
+COR;Azul, verde ou amarelo
+PAR;Dupla
+AVO;Vovô ou vovó
+LAR;Casa da família
+RIR;Dar risada
+PAO;Sai quentinho da padaria
+GAS;Vem no botijão da cozinha
+MEL;Feito pelas abelhas
+ATO;Parte de uma peça de teatro
+CEM;Uma centena
+DOM;Talento natural
+SAL;Tempero tirado do mar
+FIO;Linha fina
+ACO;Liga de ferro e carbono
+IRA;Raiva intensa
+KIT;Conjunto de peças que vêm juntas
+REU;Quem é julgado no tribunal
+ALA;Parte da escola de samba
+EGO;O "eu", na psicologia
+CAL;Pó branco para pintar muro
+AVE;Tem penas e bico
+GOL;Grito da torcida
+RUM;Bebida dos piratas
+VEU;Cobre o rosto da noiva
+BAU;Caixa do tesouro
+VIP;Área de convidados especiais
+ELO;Argola de uma corrente
+ECO;Som que volta na montanha
+CRU;Que não foi cozido
+BOI;Puxa o carro de boi
+UVA;Fruta do vinho
+OBA;Expressão de alegria
+ZEN;Calmo, tranquilo
+GIZ;Escreve no quadro-negro
+GEL;Fixa o cabelo
+NOZ;Fruta seca do Natal
+IMA;Atrai metais
+ARO;Círculo da roda da bicicleta
+POP;Música popular, em inglês
+OLA;Cumprimento
+ALO;Falamos ao atender o telefone
+SOB;Embaixo de
+SEM;O contrário de com
+COM;O contrário de sem
+VIR;Chegar
+ALI;Naquele lugar
+AMO;Eu ___ você
+NUA;Sem roupa
+ETC;E assim por diante, abreviado
+SET;Parte de uma partida de vôlei
+CIA;Companhia, abreviado
+SPA;Lugar de massagem e relaxamento
+RIM;Órgão que filtra o sangue
+ABC;O começo do alfabeto
+BIT;Menor unidade da informação
+PSI;Letra grega
+EPA;Interjeição de susto
+ATE;"De 1 ___ 10"
+TEU;Seu, de tu
+TUA;Feminino de teu
+MEU;Pertence a mim
+SEU;Pertence a você
+ERA;Época
+RUA;Tem calçada e asfalto
+LUA;Satélite natural da Terra
+ASA;O pássaro bate para voar
+OVO;A galinha bota
+PIA;Onde se lava a louça
+OCA;Casa indígena
+RIO;Corre para o mar
+IDA;O contrário de volta
+ODE;Poema de exaltação
+ORA;"___ bolas!"
+EMA;Ave grande do cerrado
+AMA;Babá
+SOS;Pedido de socorro
+ROL;Lista
+RAP;Estilo musical falado
+BOA;Cobra grande
+OPA;Interjeição de surpresa
+OCO;Vazio por dentro
+ONU;Organização das Nações Unidas
+EUA;País de Washington, em sigla
+TEA;Chá, em inglês
+LIA;Verbo ler, no passado
+ROA;"Tomara que o rato não ___ o queijo"
+AQUI;Neste lugar
+TUDO;O contrário de nada
+ALGO;Alguma coisa
+HOJE;O dia de agora
+NOME;Como você se chama
+HORA;Tem 60 minutos
+SAIR;O contrário de entrar
+TIPO;Espécie, categoria
+TRES;Lados do triângulo
+AMOR;Sentimento dos namorados
+LADO;O quadrado tem quatro
+LOGO;Símbolo de uma marca
+MEIO;Centro
+MEDO;Sente-se no filme de terror
+AGUA;H₂O
+BOCA;Por onde se come
+ALEM;Mais adiante
+BEBE;Recém-nascido
+CAFE;Bebida preta da manhã
+RUIM;O contrário de bom
+TRAS;O contrário de frente
+CAMA;Móvel para dormir
+PIOR;O contrário de melhor
+FOGO;Sai da fogueira
+SEIS;Metade de uma dúzia
+APOS;Depois de
+REAL;Moeda do Brasil
+FATO;Acontecimento verdadeiro
+ALTO;O contrário de baixo
+FOTO;Imagem da câmera
+LEVE;O contrário de pesado
+MODO;Maneira
+CHAO;Piso
+POVO;População
+SHOW;Apresentação de uma banda
+FOME;Vontade de comer
+LOJA;Lugar de compras
+AREA;Medida em metros quadrados
+FRIO;O contrário de quente
+NAVE;Veículo espacial
+CAIR;Ir ao chão
+TIME;Equipe de futebol
+DURO;O contrário de mole
+DOCE;Sobremesa açucarada
+BASE;Alicerce
+TREM;Anda nos trilhos
+ACAO;Filme de explosões e perseguição
+OITO;Patas da aranha
+BELO;Bonito
+AZUL;Cor do céu sem nuvens
+ARTE;Pintura, música, escultura
+JUIZ;Apita o jogo
+ALVO;Mira-se nele
+GATO;Animal que mia
+GELO;Água congelada
+AMAR;Sentir amor
+CARO;O contrário de barato
+RICO;Tem muito dinheiro
+ANEL;Joia do dedo
+DONO;Proprietário
+TAXI;Carro com taxímetro
+VOAR;O que o avião faz
+AGIR;Tomar uma atitude
+LAGO;Água parada cercada de terra
+ROCK;Estilo musical de guitarra
+JURI;Grupo que decide no tribunal
+COPO;Recipiente de beber
+ANJO;Ser celestial com asas
+UTIL;Que serve para algo
+CABO;Fio grosso
+MAPA;Mostra o caminho
+DATA;Dia, mês e ano
+REDE;Pendurada na varanda para deitar
+SOFA;Móvel da sala de TV
+FILA;Espera-se nela no banco
+BOBO;O ___ da corte
+NOEL;Papai ___
+CURA;Fim da doença
+URSO;Animal que hiberna
+FEIO;O contrário de bonito
+RABO;Cauda
+MINA;Dela se tira ouro
+FASE;Etapa
+BABA;Cuida das crianças
+ODIO;O contrário de amor
+MATO;Vegetação rasteira
+AMEM;Encerra a oração
+MOTO;Veículo de duas rodas a motor
+ATOR;Trabalha no cinema
+CRUZ;Sinal de mais inclinado: um X
+LOBO;Uiva para a lua
+OLEO;Usado para fritar
+FLOR;Rosa, por exemplo
+CAPA;Do livro ou do super-herói
+FACE;Rosto
+PURO;Sem mistura
+OSSO;O cachorro adora roer
+SITE;Página na internet
+ROBO;Máquina que imita gente
+LATA;Embalagem de refrigerante
+POCO;Buraco fundo para tirar água
+RUDE;Grosseiro
+CAOS;Bagunça total
+DANO;Prejuízo
+LEAO;Rei da selva
+LAMA;Barro molhado
+DOZE;Uma dúzia
+GRAU;Unidade de temperatura
+PERU;Ave da ceia de Natal
+AZAR;O contrário de sorte
+MACA;Cama de hospital com rodinhas
+GENE;Unidade da herança genética
+BECO;Rua estreita sem saída
+CRER;Acreditar
+NORA;Esposa do filho
+GADO;Bois e vacas
+META;Objetivo
+DICA;Pista
+NETO;Filho do filho
+CHIP;Peça do celular com a linha
+FIEL;Leal
+FAMA;Sucesso de celebridade
+PATO;Ave que faz quack
+UNIR;Juntar
+LEAL;Fiel
+ERVA;Planta do chá
+VASO;Onde se planta flor em casa
+TACA;Troféu do campeão
+ONZE;Jogadores de um time de futebol
+JAZZ;Gênero musical de Nova Orleans
+CANO;Tubo da água
+NERD;Gosta de computador e ciência
+PNEU;Roda de borracha
+MOLE;O contrário de duro
+MITO;Lenda
+ITEM;Elemento de uma lista
+BOXE;Luta com luvas
+GOLE;Um pouquinho de bebida
+MARE;Sobe e desce no mar
+SUOR;Sai da pele no calor
+SOAR;Emitir som
+BOTA;Calçado de cano alto
+LUVA;Esquenta as mãos
+MENU;Cardápio
+LACO;Nó com alças
+LOTE;Terreno
+BAIA;A de Guanabara é famosa
+FINO;O contrário de grosso
+ROXO;Cor da uva
+MAGO;Merlin, por exemplo
+GALO;Canta de manhã
+DOAR;Dar sem cobrar
+PUNK;Estilo de rock rebelde
+RAIZ;Parte da planta debaixo da terra
+BODE;Macho da cabra
+JADE;Pedra verde
+BONE;Chapéu com aba
+IATE;Barco de luxo
+BALE;Dança com sapatilhas
+BUDA;Fundador do budismo
+ATUM;Peixe de lata
+BLOG;Diário na internet
+CORO;Grupo que canta junto
+FIXO;Que não se move
+ORAR;Rezar
+ADAO;Primeiro homem, na Bíblia
+POLO;Norte ou Sul
+LEME;Dirige o barco
+AUGE;Ponto mais alto
+JIPE;Carro para estrada de terra
+LUAR;Brilho da lua
+BETA;Segunda letra grega
+PEAO;Peça do xadrez
+GIRO;Volta
+RISO;Risada
+FILE;Corte de carne macio
+FURO;Buraco
+NUCA;Parte de trás do pescoço
+SUAR;Transpirar
+GRAO;Semente de feijão
+HINO;Canção nacional
+IOGA;Prática indiana de posturas
+SOJA;Grão do tofu
+FENO;Capim seco para cavalos
+PURE;Batata amassada
+CAPO;Tampa do motor do carro
+DOCA;Onde o navio atraca
+GURU;Mestre espiritual
+CUBO;Forma do dado
+EGUA;Fêmea do cavalo
+ODOR;Cheiro
+BUFE;Mesa de comida à vontade
+MUSA;Inspira o poeta
+COTA;Parcela
+SURF;Esporte nas ondas
+CUME;Topo da montanha
+URNA;Recebe os votos
+CZAR;Imperador russo
+NONO;Depois do oitavo
+ELMO;Capacete medieval
+NILO;Rio do Egito
+CRUA;Não cozida
+PIER;Plataforma sobre a água
+TITA;Gigante da mitologia
+EDEN;Paraíso
+ELFO;Criatura de orelhas pontudas
+FONE;De ouvido, para música
+LISO;Cabelo sem ondas
+OPOR;Ser contra
+RUBI;Pedra preciosa vermelha
+FUNK;Ritmo do baile
+AGIL;Rápido nos movimentos
+OGRO;Shrek é um
+MIAU;Som do gato
+IRIS;Parte colorida do olho
+TATO;Sentido do toque
+TOFU;Queijo de soja
+ASNO;Jumento
+DUTO;Tubo de ar
+MAIO;Mês das noivas
+SIRI;Caranguejo de praia
+GAZE;Tecido do curativo
+CONE;Forma da casquinha
+BEGE;Cor entre o branco e o marrom
+CACO;Pedaço de vidro quebrado
+ROBE;Roupão
+HALO;Auréola
+CHAT;Conversa online
+LODO;Lama do fundo
+PATE;Pasta para passar no pão
+ZETA;Letra grega
+LEOA;Fêmea do leão
+NEON;Gás das placas luminosas
+FREI;Religioso do convento
+RITO;Cerimônia
+BULE;Serve o café
+XALE;Cobre os ombros
+TABU;Assunto proibido
+DOJO;Lugar de treino de judô
+ROER;O rato faz isso
+IDEM;O mesmo
+ONCA;Felino pintado do Pantanal
+GUDE;Bolinha de ___
+CASA;Onde se mora
+MESA;Móvel das refeições
+RATO;Roedor
+SAPO;Anfíbio que coaxa
+VACA;Dá leite
+ROSA;Flor com espinhos
+SALA;Cômodo da TV
+PATA;Pé do animal
+SOPA;Prato quente de colher
+NOVE;Três vezes três
+ALHO;Tempero de dentes
+ARCO;Atira a flecha
+ILHA;Terra cercada de água
+TOCA;Casa do coelho
+DADO;Tem seis faces
+TELA;Do celular ou do pintor
+TETO;Fica em cima da sala
+FOCA;Mamífero marinho que bate palmas
+ALMA;Espírito
+ERRO;Engano
+ISCA;Vai no anzol
+LIMA;Capital do Peru
+RODA;O carro tem quatro
+SACO;Embalagem de papel
+SETA;Flecha
+ROTA;Caminho
+LONA;Tecido do circo
+NOTA;Valor da prova
+MALA;Leva-se na viagem
+CEIA;Jantar de Natal
+DEDO;A mão tem cinco
+SEDE;Vontade de beber água
+REMO;Movimenta a canoa
+TRIO;Grupo de três
+DUAS;Dois, no feminino
+MEIA;Vai no pé
+TEIA;Feita pela aranha
+LIXO;Vai para a lixeira
+SECO;O contrário de molhado
+NEVE;Cai no inverno europeu
+COLA;Gruda o papel
+PELE;Maior órgão do corpo
+POTE;Recipiente com tampa
+SINO;Toca na igreja
+VELA;Assopra-se no bolo
+TACO;Do golfe ou da sinuca
+ONDA;Movimento do mar
+OURO;Medalha do campeão
+RAIO;Cai na tempestade
+NADA;O contrário de tudo
+SAIA;Peça de roupa feminina
+LUTA;Combate
+CIMA;O contrário de baixo
+ANTA;Mamífero de focinho comprido
+ARAR;Preparar a terra com o arado
+ORLA;Beira-mar
+OLHO;Órgão da visão
+ORAL;Prova falada
+AULA;Tem professor e alunos
+MOLA;Peça elástica em espiral
+SELO;Vai na carta
+TATU;Bicho de casca que cava
+COCO;Fruta com água dentro
+PERA;Fruta parecida com a maçã
+CAJU;Fruta da castanha
+BOLO;Tem vela no aniversário
+FERA;Animal selvagem
+ROMA;Capital da Itália
+CUBA;Ilha de Havana
+ASIA;Maior continente
+AGORA;Neste momento
+FAZER;Realizar
+DIZER;Falar
+TEMPO;Passa no relógio
+NOITE;Quando aparecem as estrelas
+FICAR;Permanecer
+CLARO;O contrário de escuro
+FALAR;Dizer
+POUCO;O contrário de muito
+HOMEM;O contrário de mulher
+LUGAR;Local
+MUNDO;Planeta Terra
+SABER;Conhecer
+OUTRO;Diferente deste
+NOSSO;Pertence a nós
+OTIMO;Muito bom
+SERIO;Que não brinca
+FELIZ;Alegre
+GOSTO;Sabor
+PEGAR;Agarrar
+GENTE;Pessoas
+LEGAL;Bacana
+JEITO;Modo
+IRMAO;Filho dos mesmos pais
+QUASE;Por pouco
+FORMA;Molde do bolo
+PERTO;O contrário de longe
+MANHA;Antes do almoço
+LEVAR;Carregar
+OUVIR;Escutar
+RAZAO;O contrário de emoção
+PARAR;O contrário de andar
+CORPO;Cabeça, tronco e membros
+CHEFE;Patrão
+PODER;Ser capaz
+MAMAE;Mãe, com carinho
+LONGE;O contrário de perto
+ONTEM;O dia antes de hoje
+MAIOR;O contrário de menor
+VELHO;O contrário de novo
+FESTA;Comemoração com bolo
+TIRAR;Remover
+COMER;Mastigar e engolir
+FACIL;O contrário de difícil
+CINCO;Dedos de uma mão
+TOMAR;Beber
+FORTE;O contrário de fraco
+VIVER;Estar vivo
+FINAL;Decisão do campeonato
+UNICO;Só um
+MUDAR;Trocar
+PAGAR;Quitar a conta
+ACHAR;Encontrar
+JOVEM;O contrário de velho
+OLHAR;Ver com atenção
+TCHAU;Despedida
+FILME;Assiste-se no cinema
+PEDIR;Solicitar
+LOUCO;Doido
+LIGAR;Telefonar
+JOGAR;Brincar no videogame
+ADEUS;Despedida para sempre
+CASAR;Subir ao altar
+LIVRE;Solto
+SINAL;Semáforo
+ANDAR;Caminhar
+IDADE;Quantos anos você tem
+CRIME;Ato contra a lei
+LOCAL;Lugar
+NATAL;Festa de 25 de dezembro
+RAPAZ;Moço
+CAMPO;Gramado do futebol
+BEBER;Tomar líquido
+ORDEM;Organização
+HOTEL;Hospedagem
+ABRIR;O contrário de fechar
+MONTE;Morro
+BANCO;Assento da praça
+FUNDO;Parte de baixo da piscina
+LUTAR;Combater
+PAPEL;Folha de caderno
+CAPAZ;Apto
+BARCO;Navega no rio
+AVIAO;Voa com turbinas
+TOCAR;Encostar
+BREVE;Curto
+CHAVE;Abre a porta
+POBRE;O contrário de rico
+EPOCA;Período da história
+CHEIO;O contrário de vazio
+FUGIR;Escapar
+LONGO;Comprido
+IGUAL;Idêntico
+BATER;Golpear
+NORTE;O contrário de sul
+GRACA;De ___: sem pagar
+CLUBE;Associação esportiva
+CORTE;Feito com tesoura
+COMUM;Normal
+SERIE;Temporada de episódios
+BANHO;Toma-se no chuveiro
+PRECO;Quanto custa
+NIVEL;Patamar
+RADIO;Toca música em AM ou FM
+BRACO;Vai do ombro à mão
+LIDER;Chefe de um grupo
+CRIAR;Inventar
+SUBIR;O contrário de descer
+HEROI;Salva o dia
+VISAO;Sentido dos olhos
+VIDEO;Filme curto da internet
+PRAIA;Areia e mar
+NAVIO;Barco grande
+LIMPO;O contrário de sujo
+BRAVO;Zangado
+TOTAL;Soma de tudo
+MENOR;O contrário de maior
+VIRAR;Dar a volta
+NARIZ;Órgão do olfato
+VERDE;Cor da grama
+VALOR;Preço
+LEITE;Bebida branca da vaca
+DEVER;Lição de casa
+BRIGA;Discussão feia
+PALCO;Onde o artista se apresenta
+PRETO;Cor do carvão
+PERDA;Prejuízo
+CALOR;O contrário de frio
+MORAR;Residir
+PORCO;Animal do chiqueiro
+FONTE;Água que jorra na praça
+FIRME;Estável
+CASAL;Par de namorados
+OESTE;Onde o sol se põe
+CHUVA;Cai das nuvens
+ACASO;Por ___: sem querer
+BAILE;Festa de dança
+GERAL;Universal
+SANTO;Tem auréola
+AVISO;Comunicado
+HUMOR;Graça, comédia
+CURSO;Aulas sobre um tema
+LICAO;Tarefa da escola
+EXATO;Preciso
+FALSO;O contrário de verdadeiro
+GOLPE;Pancada
+OBVIO;Evidente
+PRATO;Onde se serve a comida
+VINTE;Dez mais dez
+OPCAO;Escolha
+GENIO;Pessoa muito inteligente
+EXAME;Prova
+EXTRA;Adicional
+CHATO;Aborrecido
+FRACO;O contrário de forte
+MEXER;Movimentar
+PIZZA;Comida italiana redonda
+LAVAR;Limpar com água
+MOTOR;Faz o carro andar
+GRAVE;Sério
+MASSA;Macarrão
+MOVER;Mexer
+PLACA;Do carro, com letras e números
+CONTO;História curta
+CRUEL;Malvado
+AREIA;Tem na praia
+SENSO;___ de humor
+COFRE;Guarda dinheiro
+CANAL;Da televisão
+VIRUS;Causa a gripe
+BOTAO;Da camisa
+TRIBO;Grupo indígena
+GORDO;O contrário de magro
+DISCO;Vinil
+SALAO;De beleza
+COPIA;Reprodução
+PULAR;Saltar
+NACAO;País
+CRISE;Momento difícil
+METAL;Ferro, por exemplo
+BURRO;Asno
+MEDIO;Mediano
+NADAR;Mover-se na água
+CURTO;O contrário de longo
+VOTAR;Escolher na eleição
+CLIMA;Tempo, temperatura
+GANHO;Lucro
+MUSEU;Guarda obras de arte
+FEBRE;Temperatura alta do corpo
+UNIAO;Junção
+COLAR;Joia do pescoço
+MORAL;Ética
+PIANO;Instrumento de teclas
+DOIDO;Louco
+COROA;Vai na cabeça do rei
+TUNEL;Passagem subterrânea
+JAPAO;País do sol nascente
+OMBRO;Liga o braço ao tronco
+ATUAL;Do momento
+NOBRE;Aristocrata
+PUXAR;O contrário de empurrar
+MOEDA;Dinheiro de metal
+FRASE;Conjunto de palavras
+TENIS;Esporte de raquete
+CURAR;Tratar doença
+DUPLO;Dobrado
+DENTE;Escova-se depois de comer
+ARROZ;Acompanha o feijão
+ATRIZ;Trabalha na novela
+DRAMA;Gênero de filme triste
+SOLAR;Energia do sol
+SABOR;Gosto
+SUAVE;Leve
+JULHO;Mês das férias de inverno
+DOBRO;Duas vezes
+CIRCO;Tem palhaço e trapezista
+ROCHA;Pedra grande
+IDEAL;Perfeito
+SETOR;Seção
+SELVA;Floresta
+ODIAR;O contrário de amar
+JUNHO;Mês da festa junina
+ABRIL;Mês da mentira, no dia 1º
+DOLAR;Moeda americana
+COURO;Pele do boi
+MARTE;Planeta vermelho
+NOTAR;Perceber
+ALBUM;De figurinhas
+TERMO;Jogo de adivinhar a palavra
+TIGRE;Felino listrado
+LENTO;Devagar
+MILHO;Vira pipoca
+IDOLO;Todo fã tem um
+MARCO;Mês do começo do outono
+ALUNO;Estudante
+METRO;Trem urbano
+DUZIA;Doze
+DIETA;Regime
+RADAR;Detecta velocidade
+TEXTO;Redação
+LUCRO;Ganho
+BACON;Toucinho
+PRACA;Tem banco e coreto
+POEMA;Poesia
+NUVEM;Branca no céu
+BLUSA;Peça de roupa de cima
+SUMIR;Desaparecer
+FORNO;Assa o bolo
+DUELO;Combate entre dois
+OPERA;Teatro cantado
+TONTO;Zonzo
+GREVE;Paralisação de trabalhadores
+AGUIA;Ave de rapina
+DUQUE;Título de nobreza
+LENCO;De papel, para o nariz
+PATIO;Área da escola
+PODRE;Estragado
+BALDE;Leva água
+LIMAO;Fruta da caipirinha
+GESTO;Sinal com a mão
+CABRA;Dá leite e tem chifres
+AUTOR;Escreve o livro
+VAPOR;Água em forma de gás
+NINJA;Guerreiro japonês
+ATUAR;Interpretar
+SOTAO;Cômodo debaixo do telhado
+CAUDA;Rabo
+BONUS;Prêmio extra
+JEANS;Tecido da calça
+PUNHO;Mão fechada
+BALAO;Sobe com ar quente
+VILAO;O mau da história
+GREGO;De Atenas
+BATOM;Pinta os lábios
+CORAL;Grupo de canto
+GIRAR;Rodar
+ALTAR;Onde se casa na igreja
+CEDER;Dar o lugar
+MAGRO;O contrário de gordo
+ERRAR;Enganar-se
+TENSO;Nervoso
+MISSA;Celebração católica
+SABAO;Faz espuma
+JURAR;Prometer
+ANUAL;Uma vez por ano
+BERCO;Cama do bebê
+BICHO;Animal
+PISAR;Pôr o pé
+GUIAR;Conduzir
+PUDIM;Sobremesa de leite condensado
+SEXTO;Depois do quinto
+BRISA;Vento leve
+FAROL;Ilumina os navios
+JAULA;Prende o leão
+ASTRO;Estrela do cinema
+ARENA;Estádio
+SECAR;Tirar a água
+FREIO;Para o carro
+NORMA;Regra
+BRUTO;Sem lapidação
+VAGAO;Parte do trem
+MONGE;Religioso do mosteiro
+NAVAL;Da marinha
+SUSHI;Arroz com peixe cru
+GRADE;Cerca de ferro
+SPRAY;Jato de lata
+AUDIO;Som
+ARMAR;Montar
+POCAO;Bebida mágica
+SITIO;Chácara
+RIVAL;Adversário
+LATIM;Língua dos romanos
+TEDIO;Chatice
+ORGAO;Coração ou fígado
+MEDIR;Usar a régua
+PESAR;Usar a balança
+LUNAR;Da lua
+FRUTO;Nasce da flor
+FOGAO;Cozinha-se nele
+LICOR;Bebida doce
+NEVOA;Neblina
+GERAR;Produzir
+HOBBY;Passatempo
+MOVEL;Mesa ou cadeira
+GANSO;Ave de pescoço longo
+GLOBO;Esfera
+PONEI;Cavalinho
+SKATE;Prancha com rodinhas
+CORVO;Ave preta
+TREZE;Número do azar
+APITO;O juiz sopra
+QUILO;Mil gramas
+PILAR;Coluna
+AFETO;Carinho
+GENRO;Marido da filha
+GALHO;Braço da árvore
+MANTO;Capa longa
+TRENO;Do Papai Noel
+FARAO;Rei do antigo Egito
+CAPUZ;Cobre a cabeça
+TABUA;Madeira plana
+UMIDO;Molhado
+POMBO;Ave das praças
+ESQUI;Esporte na neve
+LAGOA;Lago pequeno
+RAMPA;Plano inclinado
+VOCAL;Da voz
+MUMIA;Enfaixada no sarcófago
+FURAR;Fazer buraco
+TUTOR;Responsável
+VACUO;Sem ar
+NERVO;Leva sinais ao cérebro
+CHALE;Casinha de montanha
+CLONE;Cópia idêntica
+VIGOR;Energia
+BREGA;Cafona
+PENTE;Arruma o cabelo
+POLVO;Tem oito tentáculos
+ZIPER;Fecho da jaqueta
+CISNE;Ave branca do lago
+SAUNA;Banho de vapor
+LABIO;Parte da boca
+IMUNE;Protegido de doença
+TORTO;Não reto
+AVEIA;Cereal do mingau
+GAMBA;Bicho fedido
+CESTO;Para a roupa suja
+BUQUE;A noiva joga
+ASSAR;Cozinhar no forno
+CALDO;Sopa rala
+CERVO;Veado de chifres
+VELOZ;Rápido
+LITRO;Mil mililitros
+RUIVO;De cabelo vermelho
+CANOA;Barco a remo
+POLAR;Urso ___ (do polo)
+BAMBU;Planta do panda
+FENIX;Ave que renasce das cinzas
+DUBLE;Faz as cenas perigosas
+ATOMO;Partícula da matéria
+AMPLO;Espaçoso
+MELAO;Fruta grande de casca amarela
+IDOSO;Da terceira idade
+LOCAO;Creme líquido
+MIRAR;Apontar
+VIRAL;Que se espalha na internet
+DUETO;Música a dois
+FIXAR;Prender
+LAZER;Tempo livre
+ICONE;Símbolo na tela
+PRECE;Oração
+HABIL;Habilidoso
+RIGOR;Severidade
+FUNGO;Cogumelo, por exemplo
+XAMPU;Lava o cabelo
+ANZOL;Gancho do pescador
+MURAL;Quadro de avisos
+CETRO;Bastão do rei
+VESPA;Inseto que pica
+POLEN;Pó das flores
+TRUTA;Peixe de água doce
+BAZAR;Loja de variedades
+BRASA;Carvão aceso
+NINAR;Fazer o bebê dormir
+SABRE;Espada curva
+REMAR;Mover o barco
+COUVE;Verdura da feijoada
+CANIL;Casa de cachorros
+HELIO;Gás do balão
+PRADO;Campo
+PAVOR;Medo grande
+PAVAO;Ave de cauda colorida
+AGUDO;Som fino
+PERSA;Gato de pelo longo
+CUPOM;Vale-desconto
+GRILO;Inseto que cricrila
+AORTA;Artéria principal
+ATLAS;Livro de mapas
+BANJO;Instrumento de cordas do country
+OASIS;Água no deserto
+DENSO;Espesso
+LOTUS;Flor sagrada do Oriente
+LATIR;Ação do cachorro
+BUSTO;Escultura do peito para cima
+AZEDO;Ácido
+CACAU;Fruto do chocolate
+NEVAR;Cair neve
+VOLEI;Esporte de rede
+JEJUM;Ficar sem comer
+BANAL;Comum demais
+POTRO;Cavalo filhote
+LEBRE;Parente do coelho
+LOURO;Folha para o feijão
+TIARA;Enfeite de cabelo
+VETOR;Seta da física
+HURRA;Grito de vitória
+DITAR;Falar para alguém escrever
+FEMUR;Osso da coxa
+GRUTA;Caverna
+LINHO;Tecido fresco
+OMEGA;Última letra grega
+MURRO;Soco
+VERBO;Palavra de ação
+CLORO;Vai na piscina
+PEDAL;Da bicicleta
+AMBAR;Resina fóssil amarela
+POLIR;Lustrar
+LARVA;Antes do casulo
+TRICO;Feito com agulhas
+MUSGO;Verde da pedra úmida
+POMAR;Terreno de árvores frutíferas
+ARPAO;Lança do baleeiro
+GNOMO;Anão do jardim
+SOMAR;Fazer a conta de mais
+BOINA;Chapéu francês
+TOTEM;Poste esculpido
+SUFLE;Prato que cresce no forno
+CACTO;Planta de espinhos do deserto
+CRAVO;Flor; também tempero
+LERDO;Lento
+HORDA;Multidão selvagem
+ARDER;Queimar
+APOLO;Deus grego do sol
+MICRO;Pequeno, como prefixo
+ILESO;Sem ferimento
+BELGA;Da Bélgica
+CARTA;Manda-se pelo correio
+LIVRO;Tem capa e páginas
+PORTA;Abre e fecha na entrada
+TERRA;Nosso planeta
+PEDRA;Rocha
+PRATA;Medalha do segundo lugar
+ROUPA;Veste-se
+TINTA;Pinta a parede
+IDEIA;Pensamento
+FOLHA;Cai da árvore no outono
+CARRO;Tem quatro rodas
+SALTO;Do sapato alto
+CAIXA;Embalagem de papelão
+GARFO;Talher de dentes
+BOLSA;Leva-se no ombro
+TERNO;Paletó e calça
+FERRO;Passa a roupa
+SERRA;Corta madeira
+PEIXE;Vive na água
+TOURO;Animal da tourada
+ZEBRA;Cavalo listrado
+VIOLA;Instrumento caipira
+SAMBA;Ritmo do carnaval
+FORRO;Ritmo nordestino
+TANGO;Dança argentina
+VALSA;Dança dos 15 anos
+PARIS;Capital da França
+CAIRO;Capital do Egito
+CHILE;País da cordilheira dos Andes
+INDIA;País de Nova Délhi
+CHINA;País da Grande Muralha
+EGITO;País das pirâmides
+UNO;Jogo de cartas coloridas
+ANA;Nome de mulher, palíndromo
+RES;Gado
+TAO;Caminho, no taoísmo
+EIS;Aqui está
+OLE;Grito das touradas
+ISO;Norma técnica internacional
+UAU;Expressão de espanto
+GIM;Bebida destilada com zimbro
+LIS;Flor-de-___, símbolo francês
+RAS;Plural de rã
+ARE;Medida de área de 100 m²
+ASAS;O avião tem duas
+AVES;Pássaros
+ELOS;Argolas de corrente
+OCAS;Casas de índios
+UVAS;Cacho de frutas roxas
+OVOS;Dúzia na caixa
+LUAS;Júpiter tem dezenas delas
+RUAS;Vias da cidade
+RIOS;Amazonas e Nilo
+AROS;Rodas da bicicleta sem pneu
+ALAS;Divisões de escola de samba
+ERAS;Períodos geológicos
+ATOS;Partes de uma peça de teatro
+ECOS;Repetições do som na caverna
+EMAS;Aves do cerrado
+AROMA;Cheiro agradável
+AMIGO;Companheiro querido
+AMORA;Fruta vermelha da amoreira
+ANTES;O contrário de depois
+SOLA;Parte de baixo do sapato
+OSSOS;O esqueleto tem 206
+ELITE;Grupo dos melhores
+ETAPA;Fase de uma corrida
+ETICO;Que segue a moral
+ETICA;Estudo da moral
+ENTRE;Convite para passar pela porta
+ESTAR;Ficar, permanecer
+ESTOU;"___ aqui", eu
+ISOLA;Separa dos outros
+ILHAS;Fernando de Noronha tem várias
+NOIVA;Usa véu no casamento
+NOIVO;Espera no altar
+NINHO;Casa do passarinho
+LIRA;Instrumento de cordas grego
+LOIRA;De cabelo dourado
+RALO;Por onde a água escoa
+RAMO;Galho
+RARO;Difícil de achar
+RASO;Pouco fundo
+REINO;Território de um rei
+RENDA;Salário; ou tecido de bilro
+RETA;Linha sem curva
+RIMA;Som igual no fim dos versos
+ROLO;Cilindro de pintar
+RONCO;Barulho de quem dorme
+ROSTO;Face
+RUIDO;Barulho
+SAIDA;Porta para fora
+SALSA;Tempero verde; ou dança
+SEDA;Tecido do bicho-da-seda
+SENA;Mega-___, loteria
+SOLO;Chão; ou apresentação de um só
+SONO;Vontade de dormir
+SORTE;Ter ___, ter boa estrela
+SURDO;Que não ouve; ou tambor do samba
+TALO;Caule de folha
+TELAO;Tela grande do show
+TESE;Trabalho de doutorado
+TIRO;Disparo
+TOLO;Bobo
+TORRE;Peça do xadrez em forma de castelo
+TRONO;Cadeira do rei
+TUBO;Cano
+OSTRA;Molusco que faz pérola
+OTICA;Loja de óculos
+OUSAR;Ter coragem de tentar
+EIXO;Linha em que algo gira
+ELA;Pronome feminino
+ELE;Pronome masculino
+ENTAO;Logo, portanto
+ESTA;"___ casa é minha"
+IOIO;Brinquedo que sobe e desce no fio
+SONAR;Detecta coisas debaixo da água
+TENOR;Voz masculina aguda
+TORTA;Doce de forno; ou não reta
+TRAIR;Ser infiel
+TREVO;Planta de quatro folhas da sorte
+TRIGO;Vira farinha
+TROCA;Permuta
+TURMA;Grupo da escola
+USAR;Utilizar
+VALE;Entre montanhas
+VERAO;Estação mais quente
+ZERO;Nenhum, em número
+ALFA;Primeira letra grega
+ANAO;Um dos sete da Branca de Neve
+ANIS;Erva-doce
+ARAME;Fio de metal da cerca
+ARARA;Ave colorida que fala
+ARIA;Canção solo de ópera
+ASSIM;Deste modo
+ATEU;Não crê em Deus
+AURA;Energia em volta da pessoa
+EMAIL;Correio eletrônico
+NAIPE;Copas ou espadas
+NUNCA;Jamais
+OBRA;Construção; ou criação artística
+ORCA;Baleia assassina
+OVAL;Em forma de ovo
+RETRO;Antigo, da moda passada
+REVER;Ver de novo
+ROLAR;Girar no chão
+RURAL;Do campo
+SEIO;Peito
+SOCIO;Parceiro de negócio
+TAIS;Assim; plural de tal
+TALAO;Bloco de cheques
+TEOR;Conteúdo, quantidade
+TOSSE;Sintoma de gripe
+TRAPO;Pano velho
+AREAS;Regiões, zonas
+ARTES;Belas-___
+SALAS;Cômodos da casa
+SAPOS;Viram príncipes com um beijo
+SERES;Criaturas
+NOTAS;Dinheiro de papel
+RAMOS;Galhos
+RATOS;Roedores
+REDES;Sociais, da internet
+REMOS;Movem a canoa
+ROLOS;Cilindros
+ROTAS;Caminhos
+SELOS;Colecionados por filatelistas
+SINOS;Tocam no Natal
+SOLOS;Terrenos; ou apresentações sozinho
+TELAS;Monitores
+TIROS;Disparos
+TOCAS;Buracos de coelho
+TRENS;Vagões em fila
+ALIAS;Por sinal
+ALTOS;Elevados
+ANOS;Um século tem cem
+ANEIS;Saturno tem
+ANJOS;Seres celestiais
+ARCOS;Atiram flechas
+OLHOS;Janelas da alma
+OUTRA;Mais uma
+LARES;Casas, moradas
+LATAS;Embalagens de metal
+LEOES;Felinos da savana
+LOJAS;Comércio do shopping
+LUTAS;Combates
+RAIOS;Relâmpagos
+RIMAS;Versos que combinam
+ROSAS;Flores do buquê
+ALOE;Babosa, em latim
+ALTA;Maré ___, a cheia
+APOIO;Suporte, ajuda
+ATAR;Amarrar
+ATEAR;___ fogo, incendiar
+ATRAS;O contrário de na frente
+AVELA;Castanha do creme de chocolate
+AVOS;Pais dos pais
+EROS;Deus grego do amor
+ESSE;Pronome: ___ aí
+ESTE;Leste
+ETNIA;Grupo de mesma cultura e origem
+IATES;Barcos de luxo
+INTRO;Começo da música
+IRADO;Muito bravo; ou muito legal
+LANCE;Jogada
+LAPIS;Escreve e apaga
+LASER;Raio de luz concentrada
+LEIS;Normas que o Congresso aprova
+LESTE;Onde o sol nasce
+LETRA;O alfabeto tem 26
+LIDO;Já foi lido
+LINHA;Fio de costura
+LIRIO;Flor branca
+LISA;Sem rugas
+LISTA;Relação de itens
+LOTAR;Encher completamente
+LOTO;Jogo de bingo
+LOUSA;Quadro-negro
+LUTO;Dor pela perda
+NATA;Creme do leite
+NEGAR;Dizer que não
+NETA;Filha do filho
+NOVA;Recente
+NOVO;Que não é velho
+OBESO;Muito acima do peso
+OBRAS;Construções
+ONDAS;O surfista pega
+OUROS;Naipe amarelo do baralho
+OVNI;Disco voador
+RAIA;Peixe achatado; ou faixa da piscina
+RAMAL;Linha telefônica interna
+RATA;Fêmea do rato
+REAIS;Dinheiro do Brasil
+REDOR;Ao ___, em volta
+REGRA;Norma
+RELER;Ler de novo
+RENO;Rio da Alemanha
+REPOR;Colocar de volta
+RESTO;O que sobra
+RETER;Segurar
+RIAL;Moeda do Irã
+RISCO;Perigo; ou traço
+RITMO;Compasso da música
+ROLHA;Tampa da garrafa de vinho
+RONDA;Patrulha
+ROTOR;Parte que gira do motor
+ROUCO;Sem voz depois de gritar
+SAARA;Maior deserto quente
+SABIO;Que sabe muito
+SAGA;Série épica de histórias
+SARAR;Curar
+SAUDE;O que se deseja num brinde
+SELAR;Fechar com selo
+SENAO;Caso contrário
+SERAO;Trabalho fora de hora
+SOLTO;Livre
+SOMA;Adição
+SONSO;Que se faz de bobo
+SORO;Hidrata na veia
+TAL;Fulano de ___
+TAMPA;Fecha o pote
+TARDE;Entre o almoço e a noite
+TECLA;Botão do teclado
+TELHA;Cobre a casa
+TERCO;Um dos três pedaços; ou reza
+TESTA;Parte do rosto acima dos olhos
+TOLOS;Bobos
+TONEL;Barril grande
+TORA;Tronco cortado
+TOSAR;Cortar o pelo
+TRELA;Dar ___, dar atenção
+TRETA;Briga, confusão
+TROTE;Passo do cavalo; ou brincadeira com calouro
+TURNO;Período de trabalho
+UIVO;Som do lobo
+URANO;Sétimo planeta
+USINA;Gera energia
+UTERO;Onde o bebê se forma
+ALIAR;Unir-se
+AMENO;Agradável, suave
+ANAIS;Registros históricos
+ANTRO;Covil
+APTO;Capaz
+ASILO;Casa de repouso; ou refúgio
+ATIRA;Dispara
+ATOL;Ilha de coral em anel
+ATRIO;Saguão
+AUREO;Dourado
+AVARO;Mão de vaca
+EIRA;Sem ___ nem beira
+NASAL;Do nariz
+RALAR;Passar no ralador
+RENAL;Dos rins
+RETAS;Linhas sem curva
+ROSEA;Cor-de-rosa
+RUELA;Rua estreita
+SALTA;Pula
+SANTA;Ceia ___, a do Natal
+SARAU;Noite de poesia e música
+SELA;Assento do cavaleiro
+SENTA;"___ aí!", mande sentar
+SERIA;Não ria, fique ___
+SETE;Dias da semana
+SOLTA;Liberta
+TALAS;Imobilizam o osso quebrado
+TALES;Filósofo grego de Mileto
+TARO;Cartas de adivinhação
+TESTE;Prova
+TIAS;Irmãs dos pais
+TIOS;Irmãos dos pais
+TOLA;Boba
+TORNO;Máquina de oficina
+ACAI;Fruta roxa do Pará
+AEREO;Do ar; correio ___
+AINDA;Até agora
+ALADO;Que tem asas
+ALUNA;Estudante
+AMADO;Querido
+AMIGA;Companheira
+ANDAS;Pernas de pau
+ANEXO;Arquivo junto do e-mail
+ANIMO;Disposição
+APELO;Pedido
+ARMAS;Espadas e revólveres
+ATEIA;Que não crê em Deus
+ATIVO;Que não para
+AULAS;Começam em fevereiro
+ENTES;Seres
+ERETO;Em pé, reto
+ESTES;Pronome plural: ___ aqui
+IDOSA;Senhora de idade
+IMAS;Atraem metal
+INATO;De nascença
+IRMA;Filha dos mesmos pais
+ISSO;Pronome: ___ aí
+LAICO;Não religioso
+LAPSO;Esquecimento rápido
+LASCA;Pedaço lascado
+LATAO;Liga de cobre e zinco
+LAVA;Sai do vulcão
+LEIGO;Que não é especialista
+LEMA;Frase que guia
+LENDA;Saci e Curupira
+LENTE;Do óculos
+LIGA;Junta; ou campeonato
+LIMO;Musgo escorregadio
+LINDO;Bonito
+LOGOS;Marcas
+LORDE;Nobre inglês
+LOTES;Terrenos
+NATO;Inato, de nascença
+NAVES;Espaçonaves
+NOVAS;Boas ___, notícias
+OCASO;Pôr do sol
+OLIVA;Azeitona
+ONDE;Em que lugar
+OSCAR;Prêmio de cinema
+OTITE;Inflamação do ouvido
+RANGO;Comida, na gíria
+RASGO;Corte no pano
+REGAR;Molhar as plantas
+RESTA;Sobra
+REVES;Contratempo
+REZAR;Orar
+RISOS;Gargalhadas
+RODAR;Girar
+ROUBO;Furto
+RUINA;Restos de construção antiga
+RUMOR;Boato
+SADIO;Saudável
+SAGAZ;Esperto
+SALDO;O que sobra na conta
+SALVO;A ___, em segurança
+SARDA;Pinta no rosto
+SEARA;Plantação de cereais
+SEDAS;Tecidos finos
+SEDES;Matrizes de empresas
+SEITA;Grupo religioso fechado
+SELIM;Banco da bicicleta
+SOBRA;Resto
+SOCO;Golpe de punho
+SOLDA;Une metais
+SONDA;Explora o espaço
+SONHO;Acontece dormindo; ou doce de padaria
+SOPRO;Ar soprado
+SUSTO;Medo repentino
+TANTO;Tamanha quantidade
+TEIMA;Insiste
+TEMA;Assunto
+TENDA;Barraca
+TENRO;Macio
+TERNA;Carinhosa
+TIMAO;Grande time
+TINO;Juízo, bom senso
+TIRAS;Faixas; ou quadrinhos
+TONTA;Zonza
+TOPAR;Aceitar
+TOSCO;Grosseiro
+TRAMA;Enredo
+TRATO;Acordo
+TRAVA;Tranca
+TRENA;Fita métrica
+TROCO;O dinheiro que volta
+TROPA;Grupo de soldados
+URSA;Maior, constelação
+UTEIS;Dias ___, de segunda a sexta
+VAIA;Protesto do público
+AMENA;Agradável
+ARIAS;Canções de ópera
+ESTAO;Eles ___ aqui
+IMPAR;Não é par
+LOIRO;Cabelo dourado
+ORION;Constelação das Três Marias
+RIMAR;Fazer rima
+SARNA;Doença de pele do cachorro
+TROIA;Cidade do cavalo de madeira
+ODES;Poemas de exaltação
+OLAS;Ondas de torcida
+OVINO;Da ovelha
+ESSAS;Pronome: ___ aí

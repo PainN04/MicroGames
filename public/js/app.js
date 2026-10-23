@@ -129,8 +129,50 @@ function renderDailyStatus() {
   if (head) {
     const ms = dayStart(dayIndex() + 1) - Date.now(), h = Math.floor(ms / 3_600_000), m = Math.floor(ms / 60_000) % 60;
     const total = dailyOrder().length, feitos = total - left;
-    head.innerHTML = `<span>${icon('calendar')} Desafios novos em <b>${h}h${String(m).padStart(2, '0')}</b></span>${me ? `<span class="prog"><i style="--p:${feitos / total * 100}%"></i></span><span><b>${feitos}/${total}</b> feitos hoje</span>` : ''}`;
+    const streak = me ? dailyTabStreak(me.name) : 0;
+    head.innerHTML = `<span>${icon('calendar')} Desafios novos em <b>${h}h${String(m).padStart(2, '0')}</b></span>${me ? `<span class="prog"><i style="--p:${feitos / total * 100}%"></i></span><span><b>${feitos}/${total}</b> feitos hoje</span>` : ''}`
+      + (streak ? `<span class="dt-streak${dailyStatus.games && Object.keys(dailyStatus.games).length ? '' : ' risk'}" title="Dias seguidos jogando os jogos diários">${icon('flame')} <b>${streak}</b> ${streak === 1 ? 'dia' : 'dias seguidos'}</span>` : '')
+      + (me && feitos ? `<button class="btn ghost dt-share" id="dtShare">${icon('upload')} Compartilhar meu dia</button>` : '');
+    head.querySelector('#dtShare')?.addEventListener('click', shareDailyDay);
   }
+  renderDailyRemind(left);
+}
+/** Resumo do dia nos jogos diários, pra colar no grupo: feitos, pontos, posição, sequência e cada jogo. */
+function dailyShareText() {
+  const games = dailyOrder().map(([id, g]) => [g, dailyStatus.games[id]]).filter(([, st]) => st?.over);
+  const pts = games.reduce((t, [, st]) => t + (st.won ? st.score : 0), 0);
+  const pos = dailyTabStandings().findIndex(r => r.name === me.name) + 1, streak = dailyTabStreak(me.name);
+  const d = new Date();
+  return [`MicroGame · Jogos diários ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`,
+    `${games.length}/${dailyOrder().length} jogos · ${pts.toLocaleString('pt-BR')} pontos${pos ? ` · ${pos}º lugar` : ''}`,
+    ...(streak > 1 ? [`🔥 ${streak} dias seguidos`] : []),
+    '',
+    ...games.map(([g, st]) => (st.won ? `✅ ${g.name} ${st.score}` : `❌ ${g.name}`))].join('\n');
+}
+async function shareDailyDay() {
+  const text = dailyShareText(), b = $('#dtShare');
+  try {
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) await navigator.share({ text });
+    else { await navigator.clipboard.writeText(text); if (b) b.innerHTML = `${icon('circle-check')} Copiado!`; announce('Resumo do dia copiado'); }
+  } catch (err) { if (err?.name !== 'AbortError') modal(`<h2>${icon('upload')} Seu dia</h2><textarea class="dt-share-txt" readonly rows="10">${esc(text)}</textarea>`); }
+}
+// lembrete: à noite (a partir das 18h), se ainda tem jogo diário pra fazer hoje. Some por hoje no X.
+function renderDailyRemind(left) {
+  const bar = $('#dtRemind');
+  if (!bar) return;
+  const key = String(dayIndex());
+  let dismissed = false;
+  try { dismissed = localStorage.getItem('mg_remind') === key; } catch {}
+  const hour = new Date().getHours();
+  if (!me || localMode || dismissed || hour < 18 || !left || !dailyStatus.day) { bar.hidden = true; return; }
+  const ms = dayStart(dayIndex() + 1) - Date.now(), h = Math.floor(ms / 3_600_000), m = Math.floor(ms / 60_000) % 60;
+  const streak = dailyTabStreak(me.name), playedToday = Object.keys(dailyStatus.games).length > 0;
+  bar.hidden = false;
+  bar.innerHTML = `<span class="ic">${icon('hourglass')}</span><span class="tx"><span>${left === dailyOrder().length ? 'Você ainda não jogou os diários hoje' : `Faltam <b>${left}</b> jogo${left > 1 ? 's' : ''} diário${left > 1 ? 's' : ''}`} · o dia vira em <b>${h}h${String(m).padStart(2, '0')}</b></span>
+    ${streak && !playedToday ? `<small>${icon('flame')} Jogue um pra não perder a sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}</small>` : ''}</span>
+    <button class="btn" id="dtGo">Jogar</button><button class="dt-x" id="dtX" aria-label="Fechar lembrete por hoje">${icon('x')}</button>`;
+  bar.querySelector('#dtGo').onclick = () => { setMenuTab('daily'); $('#panel-daily')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  bar.querySelector('#dtX').onclick = () => { try { localStorage.setItem('mg_remind', key); } catch {} bar.hidden = true; };
 }
 // ranking à parte dos jogos diários: soma dos pontos de hoje em todos eles, zera à meia-noite
 function dailyRankHtml() {
@@ -158,6 +200,7 @@ function renderMenu() {
     <button class="crown-bar" id="crownBar" hidden></button>
     <section class="daily glass" id="daily" data-game="${dailyGame()}" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
     <div class="strip" id="strip"${me ? '' : ' hidden'}></div>
+    <div class="dt-remind glass" id="dtRemind" hidden></div>
     <div class="menu-bar">
       <div class="tabs" role="tablist" aria-label="Jogos">
         <button role="tab" id="tab-main" data-tab="main" aria-controls="panel-main">${icon('gamepad-2')} Jogos</button>
@@ -219,7 +262,7 @@ async function showMenu() {
   await Promise.all([fetchScores(), loadSocial(), loadDailyStatus()]);
   // o jogo do dia mudou depois que o servidor respondeu (ex.: o vencedor de ontem escolheu o de hoje): redesenha o menu
   if (currentView === 'menu' && $('#daily') && $('#daily').dataset.game !== dailyGame()) renderMenu();
-  if (currentView === 'menu') { refreshMenu(); maybeCongrats(); }
+  if (currentView === 'menu') { refreshMenu(); maybeCongrats(); maybeDailyTabCongrats(); }
   checkVersion();
   if (me && !me.mustChange) refreshGate();
   await week;
@@ -299,8 +342,10 @@ function play(id) {
       const record = ok && (!prev || better(g, score, prev[1]));
       const monthBest = ok && (!prevMonth || better(g, score, prevMonth[1]));
       const leads = range => { const top = bestPerPlayer(id, range)[0]; return top && top[0] === player && top[1] === score; };
-      const champ = record && leads(ALL);
-      const monthChamp = monthBest && leads(MONTH);
+      // jogo diário: uma partida por dia e ranking só de hoje, então não tem recorde nem mês
+      const todayLead = ok && g.daily && leads(dayRange());
+      const champ = !g.daily && record && leads(ALL);
+      const monthChamp = !g.daily && monthBest && leads(MONTH);
       const dailyLead = ok && id === dailyGame() && leads(dayRange());
       const month = monthName(monthKey(Date.now())).toLowerCase();
       const hasAch = ok ? unlockedFor(player) : hadAch;
@@ -312,6 +357,7 @@ function play(id) {
         <span class="score">${fmt(g, score)}</span>
         ${status === 'login' ? `<span class="badge warn">${icon('key-round')} Você não estava logado — entre pra salvar este resultado.</span><button class="btn" id="loginSave">Entrar e salvar</button>`
           : !ok ? `<span class="badge warn">${icon('bot')} Não valeu: ${esc(status)}. Resultado não foi salvo.</span>`
+          : g.daily ? (todayLead ? `<span class="badge">${icon('crown')} Em 1º hoje!</span>` : '')
           : champ ? `<span class="badge">${icon('crown')} Recorde geral!</span>`
           : monthChamp ? `<span class="badge">${icon('calendar')} Liderando ${month}!</span>`
           : dailyLead ? `<span class="badge">${icon('star')} Liderando o desafio de hoje!</span>`
@@ -324,8 +370,8 @@ function play(id) {
         ${status === 'queued' ? `<span class="badge warn">${icon('triangle-alert')} Servidor fora do ar — resultado guardado, envio automático quando ele voltar</span>` : ''}
         ${g.daily ? `<button class="btn" id="again">${icon('calendar')} Outros jogos diários</button><span class="hint">Volte amanhã pra um desafio novo.</span>` : '<button class="btn" id="again">Jogar de novo</button>'}
       </div>`;
-      announce(`Resultado: ${fmt(g, score)}. ${!ok ? 'Não foi salvo.' : record ? 'Novo recorde!' : ''}`);
-      if (record || monthChamp || dailyLead) { confetti(); sfx.record(); }
+      announce(`Resultado: ${fmt(g, score)}. ${!ok ? 'Não foi salvo.' : !g.daily && record ? 'Novo recorde!' : ''}`);
+      if (g.daily ? todayLead : record || monthChamp || dailyLead) { confetti(); sfx.record(); }
       $('#again').onclick = () => (g.daily ? showMenu() : play(id));
       $('#again').focus();
       $('#loginSave')?.addEventListener('click', () => { setMe(null); loginModal(); });
@@ -335,13 +381,13 @@ function play(id) {
   });
 }
 
-// "Você está em 4º de 12 em outubro · faltam 30 pontos pro 3º" (ranking do mês, melhor partida de cada um)
+// "Você está em 4º de 12 em outubro · faltam 30 pontos pro 3º" (ranking do mês, melhor partida de cada um; jogo diário: só hoje)
 function placeLine(g, id, score) {
-  const list = bestPerPlayer(id, { since: monthStart() });
+  const list = bestPerPlayer(id, g.daily ? dayRange() : { since: monthStart() });
   const pos = list.findIndex(([n]) => n === player);
   if (pos < 0) return '';
   const month = monthName(monthKey(Date.now())).toLowerCase();
-  let txt = `Você está em <b>${pos + 1}º de ${list.length}</b> em ${month}`;
+  let txt = `Você está em <b>${pos + 1}º de ${list.length}</b> ${g.daily ? 'hoje' : `em ${month}`}`;
   if (pos > 0) {
     const [, above] = list[pos - 1], mine = list[pos][1];
     const gap = Math.abs(above - mine);

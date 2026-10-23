@@ -1234,3 +1234,42 @@ test('jogos diários: Caça-palavras confere a linha marcada no servidor', async
   const status = await cac('/api/diarios');
   assert.equal(status.body.games.cacapalavras.won, true);
 });
+
+test('jogos diários: Cruzadinha tem dica pra toda palavra e confere a grade no servidor', async () => {
+  await makeUser('cru', 'Cru', 'player', 'senha-cru-123');
+  const d = require('../lib/diarios');
+  const { today } = require('../lib/flair');
+  const { grids, clues } = require('../lib/data/cruzadinha.json');
+  assert.ok(grids.length >= 200, 'grades pra boa parte do ano');
+  assert.equal(new Set(grids).size, grids.length, 'grades repetidas');
+  for (const g of grids) {
+    assert.match(g, /^[A-Z#]{25}$/);
+    // cada linha e coluna: os trechos de 2+ letras são palavras com dica, sem palavra repetida na grade
+    const words = [];
+    for (let a = 0; a < 5; a++) for (const line of [[0, 1, 2, 3, 4].map(k => g[a * 5 + k]).join(''), [0, 1, 2, 3, 4].map(k => g[k * 5 + a]).join('')])
+      line.split('#').filter(w => w.length > 1).forEach(w => words.push(w));
+    words.forEach(w => assert.ok(clues[w], `sem dica: ${w}`));
+    assert.equal(new Set(words).size, words.length, `palavra repetida em ${g}`);
+  }
+  const p = d.cwPuzzle(today());
+  p.slots.forEach(s => assert.ok(s.clue && s.word.length >= 3));
+  const cru = await login('cru', 'senha-cru-123');
+  const st = await cru('/api/diarios/cruzadinha');
+  assert.equal(st.body.answer, null, 'a resposta só aparece no fim');
+  assert.ok(!JSON.stringify(st.body).includes(p.slots[0].word) || p.slots[0].word.length < 4, 'a página não recebe as palavras');
+  assert.equal(st.body.across.length + st.body.down.length, p.slots.length);
+  const wrongGrid = [...p.grid].map(c => (c === '#' ? '#' : c === 'A' ? 'E' : 'A')).join('');
+  assert.equal((await cru('/api/diarios/cruzadinha', { method: 'POST', body: { letters: wrongGrid.replace(/[A-Z]/, ' ') } })).status, 422, 'grade incompleta');
+  let r = await cru('/api/diarios/cruzadinha', { method: 'POST', body: { action: 'check', letters: wrongGrid } });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.checks, 1);
+  assert.equal(r.body.wrong.length, [...p.grid].filter(c => c !== '#').length, 'conferir marca as casas erradas');
+  r = await cru('/api/diarios/cruzadinha', { method: 'POST', body: { letters: wrongGrid } });
+  assert.equal(r.body.over, false, 'errar não acaba a partida');
+  r = await cru('/api/diarios/cruzadinha', { method: 'POST', body: { letters: p.grid.toLowerCase() } });
+  assert.equal(r.body.won, true);
+  assert.ok(r.body.score >= 100 && r.body.score <= 999 - 60 - 20);
+  assert.equal(r.body.saved, 'ok');
+  assert.equal(r.body.answer, p.grid);
+  assert.equal((await cru('/api/diarios/cruzadinha', { method: 'POST', body: { letters: p.grid } })).status, 409, 'uma partida por dia');
+});

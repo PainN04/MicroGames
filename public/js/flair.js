@@ -6,7 +6,9 @@
 const FRAME_DEFS = [['bronze', 'Bronze', 1], ['silver', 'Prata', 3], ['gold', 'Ouro', 7], ['diamond', 'Diamante', 15]];
 // molduras liberadas por conquista (a mesma lista fica em lib/flair.js, ACH_FRAMES)
 const ACH_FRAME_DEFS = [['fogo', 'Fogo', 'const10'], ['neon', 'Neon', 'maratona'], ['esmeralda', 'Esmeralda', 'podio'],
-  ['arcoiris', 'Arco-íris', 'completo'], ['real', 'Real', 'imperio']];
+  ['arcoiris', 'Arco-íris', 'completo'], ['real', 'Real', 'imperio'],
+  // jogos diários: campeão do Ranking de hoje e sequência de dias jogando
+  ['aurora', 'Aurora', 'campdiario'], ['brasa', 'Brasa', 'diario7']];
 
 /** Quem ganhou o desafio do dia i (e com quanto): { name, score, game } ou null se ninguém jogou. */
 function dailyWinnerOf(i) {
@@ -25,11 +27,13 @@ function dailyStreakOf(name) {
   return n;
 }
 const isCrowned = name => !!name && crownHolder() === name;
+// campeão dos jogos diários de ontem (1º do Ranking de hoje quando o dia acabou): selo ao lado do nome durante o dia
+const isDailyTabChamp = name => !!name && dailyTabChampOf(dayIndex() - 1)?.name === name;
 
 /** Nome clicável (abre o perfil), com a cor da moldura e a coroa de quem ganhou ontem. `extra` entra dentro do link. */
 function nameHtml(n, { cls = '', extra = '' } = {}) {
   const fr = flair.frames[n];
-  return `<a href="#" class="nm ${cls}${fr ? ' fr-' + fr : ''}" data-profile="${esc(n)}">${avatarHtml(flair.avatars?.[n])}${esc(n)}${isCrowned(n) ? ` <span class="crown" title="Ganhou o desafio de ontem">${icon('crown')}</span>` : ''}${monthBadge(n)}${extra}</a>`;
+  return `<a href="#" class="nm ${cls}${fr ? ' fr-' + fr : ''}" data-profile="${esc(n)}">${avatarHtml(flair.avatars?.[n])}${esc(n)}${isCrowned(n) ? ` <span class="crown" title="Ganhou o desafio de ontem">${icon('crown')}</span>` : ''}${isDailyTabChamp(n) ? ` <span class="dt-seal" title="Campeão dos jogos diários de ontem">${icon('calendar')}</span>` : ''}${monthBadge(n)}${extra}</a>`;
 }
 // selo fixo de quem já foi campeão do mês (com quantas vezes, se foi mais de uma)
 function monthBadge(n) {
@@ -117,6 +121,23 @@ function pickModal() {
 }
 
 // ----- parabéns com confete (uma vez por dia, pra quem ganhou ontem) -----
+// campeão dos jogos diários de ontem: parabéns uma vez (no dia seguinte), com confete
+function maybeDailyTabCongrats() {
+  if (localMode || !me || me.mustChange || !isDailyTabChamp(me.name)) return;
+  if (document.querySelector('.modal')) return; // já tem outro aviso aberto (ex.: ganhou o desafio do dia também): fica pra próxima volta ao menu
+  const key = String(dayIndex());
+  try { if (localStorage.getItem('mg_dtcongrats') === key) return; localStorage.setItem('mg_dtcongrats', key); } catch {}
+  const champ = dailyTabChampOf(dayIndex() - 1), wins = dailyTabRecord(me.name).wins;
+  const colors = ['#5ff0ac', '#4dc3ff', '#b79bff', '#ffd34d', '#ff8a5c'];
+  const confetti = Array.from({ length: 36 }, () => `<i style="--x:${rand(0, 100)}%;--d:${(rand(0, 18) / 10 + 1.6).toFixed(1)}s;--l:${(rand(0, 12) / 10).toFixed(1)}s;--c:${colors[rand(0, 4)]};--r:${rand(-40, 40)}deg"></i>`).join('');
+  const { el, close } = modal(`<div class="confetti" aria-hidden="true">${confetti}</div>
+    <h2>${icon('calendar')} Você ganhou os jogos diários de ontem!</h2>
+    <p><b>${champ.pts.toLocaleString('pt-BR')}</b> pontos em ${champ.games} jogo${champ.games > 1 ? 's' : ''}${wins > 1 ? ` · ${wins}ª vez campeão` : ''}.</p>
+    <p>Hoje o selo verde fica ao lado do seu nome, e a moldura Aurora está liberada no seu perfil.</p>
+    <button class="btn" id="dtcOk">Valeu!</button>`);
+  sfx.good?.();
+  el.querySelector('#dtcOk').onclick = close;
+}
 function maybeCongrats() {
   if (localMode || !me || me.mustChange || !isCrowned(me.name)) return;
   const key = String(dayIndex());

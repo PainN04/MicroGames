@@ -2185,6 +2185,34 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.45) * 0.3;
     };
   },
+  // Cruzadinha: grade 5×5 com casas pretas; a linha marcada vai ganhando letras (TERRA), a casa da vez anda,
+  // e no fim a grade inteira fica verde e pula
+  cruzadinha(Z, illo) {
+    const S = 15, BLACK = [0, 1, 23, 24], GIVEN = { 2: 'S', 3: 'O', 4: 'L', 5: 'A', 6: 'M', 7: 'O', 8: 'R', 9: 'A' }, WORD = 'TERRA', ROW = 2;
+    const at = i => ({ x: ((i % 5) - 2) * S, y: (Math.floor(i / 5) - 2) * S });
+    slab(Z, backdrop(Z, illo, 0), S * 5 + 8, S * 5 + 8, 6, '#2b2f45', { translate: { z: -4 } });
+    const board = new Z.Group({ addTo: illo, updateSort: false });
+    const cells = Array.from({ length: 25 }, (_, i) => (BLACK.includes(i) ? null
+      : new Z.Rect({ addTo: board, width: S - 2.5, height: S - 2.5, stroke: 1.5, fill: true, color: '#f4f1e6', translate: { ...at(i), z: 0 } })));
+    // números das dicas: um tracinho no canto (Zdog não tem texto pequeno)
+    [2, 5, 10, 15].forEach(i => new Z.Shape({ addTo: board, path: [{ x: -5, y: -5 }, { x: -3, y: -5 }], stroke: 1.2, color: '#8a8fa8', translate: { ...at(i), z: 0.5 } }));
+    Object.entries(GIVEN).forEach(([i, ch]) => glyph(Z, board, LETTERS[ch], { color: '#2b2f45', stroke: 1.6, scale: 0.6 }).translate.set({ ...at(+i), z: 0.6 }));
+    const typed = [...WORD].map((ch, k) => { const g = glyph(Z, board, LETTERS[ch], { color: '#2b2f45', stroke: 1.6, scale: 0.6 }); g.translate.set({ ...at(ROW * 5 + k), z: 0.6 }); return g; });
+    return t => {
+      const T = 6, k = t % T, n = Math.floor(k / 0.55);
+      const win = k > WORD.length * 0.55 + 0.4;
+      cells.forEach((c, i) => {
+        if (!c) return;
+        const inRow = Math.floor(i / 5) === ROW, cur = inRow && i % 5 === Math.min(n, WORD.length - 1) && !win;
+        c.color = win ? '#5fd39a' : cur ? '#f2c94c' : inRow ? '#f3c6dd' : '#f4f1e6';
+        const w = win ? Math.max(0, Math.sin((k - WORD.length * 0.55 - 0.4 - (i % 5) * 0.08) * 7)) : 0;
+        c.translate.z = (k - WORD.length * 0.55 - 0.4) < 0.6 ? w * 4 : 0;
+      });
+      typed.forEach((g, j) => { g.visible = j < n; g.scale = j === n - 1 ? 1 + Math.max(0, 0.5 - (k - (n - 1) * 0.55) * 1.6) : 1; g.translate.z = 0.6 + (cells[ROW * 5 + j].translate.z || 0); });
+      illo.rotate.x = -0.3;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.3;
+    };
+  },
 };
 
 // ---------- peças compartilhadas pelas cenas dos jogos diários ----------
