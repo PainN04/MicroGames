@@ -94,10 +94,12 @@
   }
   .logo { font: inherit; font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.035em; background: none; border: 0; color: var(--text); cursor: pointer; min-height: 44px; padding: 0;
     display: inline-flex; align-items: center; gap: .32em; }
-  /* a marca: cronômetro com uma folga no aro (o intervalo) e o play dentro — public/icons/logo.svg */
-  .logo .mark { width: 1.45em; height: 1.45em; flex: none; margin-top: -.12em; transition: transform var(--duration) var(--ease-spring); }
-  .logo:hover .mark { transform: rotate(-8deg); }
-  .logo .wm > span { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  /* a marca: quatro blocos 3D (play, estrela, cruz, coração), os vários jogos — public/icons/logo.svg */
+  .logo .mark { width: 1.5em; height: 1.5em; flex: none; margin-top: -.1em; transition: transform var(--duration) var(--ease-spring); }
+  .logo:hover .mark { transform: rotate(-6deg) scale(1.06); }
+  /* letreiro com volume, como os blocos: "Micro" branco com borda funda roxa, "Game" do amarelo ao coral */
+  .logo .wm { text-shadow: 0 2px 0 #3f2794; }
+  .logo .wm > span { background: linear-gradient(180deg, #ffe07a, #ff8a5c); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; filter: drop-shadow(0 2px 0 #a5402a); }
   .who { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
   /* largura fixa: o texto muda (conectando → compartilhado) sem empurrar o layout (CLS) */
   .pill { display: inline-flex; align-items: center; gap: .45em; font-size: var(--fs-xs); color: var(--muted); padding: .35em .8em; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); width: 17em; white-space: nowrap; overflow: hidden; }
@@ -1603,5 +1605,5 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 .kpi .v .i { width: .78em; height: .78em; vertical-align: -.04em; color: var(--yellow); }
 /* celular: a descrição do jogo cortada no topo não ajudava (o "?" mostra o Como jogar inteiro) */
 @media (max-width: 560px) { .stage-head .title p:not(.pbio) { display: none; } .stage-head h2:has(> .i) + p { padding-left: 0; } }
-.login-mark { display: block; width: 64px; height: 64px; margin: 0 auto -.25rem; }
+.login-mark { display: block; width: 88px; height: 88px; margin: 0 auto -.1rem; }
 .modal .login-note { font-size: var(--fs-xs); margin: 0; }
