@@ -738,10 +738,15 @@
   .dbtn:active { background: var(--surface); transform: scale(.94); }
   .dbtn .i { width: 22px; height: 22px; transform: rotate(var(--r)); }
   /* Sudoku */
-  .sd-board, .sd-pad, .sd-tools { width: min(100%, max(260px, min(440px, calc(var(--avail, 640px) - 270px)))); margin-left: auto; margin-right: auto; }
-  .sd-board { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); aspect-ratio: 1; border: 2px solid var(--border-strong); border-radius: 12px; overflow: hidden; background: var(--surface); user-select: none; -webkit-user-select: none; }
-  .sd-cell { display: grid; place-items: center; min-width: 0; padding: 0; border: 0; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); background: transparent;
-    color: oklch(86% 0.11 262); font: inherit; font-size: clamp(1rem, 5vw, 1.55rem); font-weight: 600; cursor: pointer; touch-action: manipulation; }
+  /* Sudoku: a grade cabe na largura E na altura que sobram (--avail). Tela larga: números e botões ao lado da grade,
+     assim a altura vai toda pra grade (com zoom alto a tela fica baixa e larga). Estreita (celular): tudo empilhado. */
+  .sd { width: 100%; container-type: inline-size; }
+  .sd-in { --b: min(100cqi, 440px, max(240px, calc(var(--avail, 640px) - 250px))); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .sd-side { width: var(--b); display: flex; flex-direction: column; gap: 8px; }
+  .sd-board { width: var(--b); container-type: inline-size; display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); grid-template-rows: repeat(9, minmax(0, 1fr)); aspect-ratio: 1;
+    border: 2px solid var(--border-strong); border-radius: 12px; overflow: hidden; background: var(--surface); user-select: none; -webkit-user-select: none; }
+  .sd-cell { display: grid; place-items: center; min-width: 0; min-height: 0; overflow: hidden; padding: 0; border: 0; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); background: transparent;
+    color: oklch(86% 0.11 262); font: inherit; font-size: clamp(.8rem, 7cqi, 1.6rem); line-height: 1; font-weight: 600; cursor: pointer; touch-action: manipulation; }
   .sd-cell.br { border-right: 2px solid var(--border-strong); } .sd-cell.bb { border-bottom: 2px solid var(--border-strong); }
   .sd-cell.given { color: var(--text); font-weight: 700; background: oklch(100% 0 0 / .045); }
   .sd-cell.tip { color: var(--yellow); }
@@ -749,15 +754,25 @@
   .sd-cell.same { background: oklch(70% .13 262 / .3); }
   .sd-cell.sel { background: oklch(70% .15 262 / .5); box-shadow: inset 0 0 0 2px var(--primary); }
   .sd-cell.bad { color: var(--red); background: oklch(66% .22 18 / .2); }
-  .sd-cell .nt { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; height: 100%; padding: 2px; font-size: clamp(.45rem, 1.9vw, .62rem); font-weight: 500; color: var(--muted); line-height: 1; }
+  .sd-cell .nt { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; height: 100%; padding: 1px; font-size: clamp(.4rem, 2.3cqi, .66rem); font-weight: 500; color: var(--muted); line-height: 1; }
   .sd-cell .nt i { font-style: normal; display: grid; place-items: center; }
-  .sd-pad { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 5px; margin-top: 10px; }
+  .sd-pad { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 5px; }
   .sd-num { min-height: 46px; padding: 0; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; font-size: 1.2rem; font-weight: 700; cursor: pointer; touch-action: manipulation; }
   .sd-num:active { background: var(--surface); transform: scale(.95); }
   .sd-num:disabled { opacity: .25; cursor: default; }
-  .sd-tools { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
-  .sd-tools .btn { min-height: 40px; padding: 0 .85rem; font-size: var(--fs-xs); }
-  .sd-tools .btn[aria-pressed="true"] { border-color: var(--primary); color: var(--primary); }
+  .sd-tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .sd-tools .btn { min-height: 40px; min-width: 0; padding: 0 .4rem; gap: .3em; font-size: var(--fs-xs); white-space: nowrap; }
+  .sd-tools .btn[aria-pressed="true"] { border-color: var(--primary); color: var(--text); background: oklch(70% .15 262 / .35); }
+  @container (max-width: 340px) { .sd-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  /* larga: grade à esquerda, teclado 3x3 e botões 2x2 à direita (200px) */
+  @container (min-width: 500px) {
+    .sd-in { --b: min(100cqi - 216px, 460px, max(220px, calc(var(--avail, 640px) - 135px))); flex-direction: row; justify-content: center; align-items: flex-start; gap: 16px; }
+    .sd-side { width: 200px; }
+    .sd-pad { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    /* teclas acompanham a altura da grade: a coluna do lado nunca fica mais alta que ela (com zoom alto, nada some embaixo) */
+    .sd-num { min-height: clamp(38px, calc((var(--b) - 106px) / 3), 56px); font-size: 1.35rem; }
+    .sd-tools { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
 
   /* celular: "Reiniciar" vira só o ícone (senão cobre o título do jogo) */
   @media (max-width: 560px) {
@@ -1433,6 +1448,8 @@
 /* ---------- Equação ---------- */
 .tm.eq { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; width: min(100%, 420px, calc((var(--avail, 520px) - 200px) * 8 / 6)); }
 .tm.eq .tm-t { border-radius: 8px; font-size: clamp(1rem, 4.6vw, 1.5rem); }
+.tm.eq .tm-t[role=button] { cursor: pointer; transition: border-color .12s, box-shadow .12s; }
+.tm.eq .tm-t.sel { border-color: var(--primary); box-shadow: inset 0 -3px 0 oklch(0% 0 0 / .22), 0 0 0 2px color-mix(in oklch, var(--primary) 45%, transparent); }
 .eq-kb .tm-k { font-size: 1.1rem; }
 .eq-kb .tm-k.wide { font-size: .85rem; }
 .eq-ans { margin: 0 0 var(--space-xs); text-align: center; }
