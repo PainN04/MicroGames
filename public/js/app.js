@@ -465,16 +465,16 @@ function noteHtml(n) {
   switch (n.kind) {
     case 'reaction': return `<b>${esc(n.by)}</b> reagiu ${n.emoji} ao seu recorde no ${g.name}<small>${fmt(g, n.score)}</small>`;
     case 'duel_new': return `<b>${esc(n.by)}</b> te desafiou pra um duelo de ${g.name}<small>vale a melhor partida até ${untilText(n.until).replace('até ', '')} · toque pra ver</small>`;
-    case 'duel_end': return `Duelo de ${g.name} contra <b>${esc(n.vs)}</b>: ${{ win: 'você ganhou! 🏆', lose: 'você perdeu', draw: 'empate' }[n.result]}<small>${n.mine != null ? fmt(g, n.mine) : 'sem partida'} × ${n.theirs != null ? fmt(g, n.theirs) : 'sem partida'}</small>`;
+    case 'duel_end': return `Duelo de ${g.name} contra <b>${esc(n.vs)}</b>: ${{ win: 'você ganhou!', lose: 'você perdeu', draw: 'empate' }[n.result]}<small>${n.mine != null ? fmt(g, n.mine) : 'sem partida'} × ${n.theirs != null ? fmt(g, n.theirs) : 'sem partida'}</small>`;
     case 'duel_cancel': return `<b>${esc(n.by)}</b> cancelou o duelo de ${g.name}`;
     case 'duo_invite': return `<b>${esc(n.by)}</b> te chamou pra formar a dupla <b>${esc(n.name)}</b><small>toque pra responder · vale até ${untilText(n.until).replace('até ', '')}</small>`;
-    case 'duo_record': return `<b>${esc(n.by)}</b>, da sua dupla <b>${esc(n.name)}</b>, ${n.scope === 'geral' ? 'bateu o recorde geral' : `assumiu a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`} no ${g.name} 🎉<small>${fmt(g, n.score)} · toque pra jogar também</small>`;
-    case 'duo_admin_new': return `O admin formou a dupla <b>${esc(n.name)}</b> entre você e <b>${esc(n.with)}</b> 🎉`;
-    case 'duo_accept': return `<b>${esc(n.by)}</b> aceitou formar a dupla <b>${esc(n.name)}</b> com você 🎉`;
+    case 'duo_record': return `<b>${esc(n.by)}</b>, da sua dupla <b>${esc(n.name)}</b>, ${n.scope === 'geral' ? 'bateu o recorde geral' : `assumiu a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`} no ${g.name}<small>${fmt(g, n.score)} · toque pra jogar também</small>`;
+    case 'duo_admin_new': return `O admin formou a dupla <b>${esc(n.name)}</b> entre você e <b>${esc(n.with)}</b>`;
+    case 'duo_accept': return `<b>${esc(n.by)}</b> aceitou formar a dupla <b>${esc(n.name)}</b> com você`;
     case 'duo_decline': return `<b>${esc(n.by)}</b> recusou o convite pra dupla ${esc(n.name)}`;
     case 'duo_cancel': return `<b>${esc(n.by)}</b> cancelou o convite pra dupla ${esc(n.name)}`;
     case 'duo_left': return n.by === 'o admin' ? `A dupla <b>${esc(n.name)}</b> foi desfeita pelo admin` : `<b>${esc(n.by)}</b> saiu da dupla ${esc(n.name)}`;
-    case 'tourney': return `Torneio da semana (${dayLabelBR(n.start)} – ${dayLabelBR(n.end - 1)}): você ficou em <b>${n.rank}º</b> com ${n.points} pontos${n.rank === 1 ? ' 🏆' : ''}`;
+    case 'tourney': return `Torneio da semana (${dayLabelBR(n.start)} – ${dayLabelBR(n.end - 1)}): você ficou em <b>${n.rank}º</b> com ${n.points} pontos`;
     default: {
       const where = n.kind === 'geral' ? 'o recorde geral' : `a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`;
       return `<b>${esc(n.by)}</b> tomou ${where} no ${g.name}<small>${fmt(g, n.score)} (o seu era ${fmt(g, n.old)}) · toque pra revidar</small>`;
@@ -580,12 +580,13 @@ function setMe(user) {
 
 function loginModal(msg = '') {
   const { el, close } = modal(`
-    <h2>Entrar</h2><p>Use o usuário e a senha que o admin te passou. Cada conta funciona em um aparelho por vez — entrar aqui desconecta os outros.</p>
+    <img class="login-mark" src="icons/logo.svg" alt="" width="64" height="64"><h2>Entrar no MicroGame</h2><p>Use o usuário e a senha que o admin te passou.</p>
     <form id="lf">
       <input class="txt" name="username" autocomplete="username" placeholder="usuário" aria-label="Usuário" required>
       <input class="txt" name="password" type="password" autocomplete="current-password" placeholder="senha" aria-label="Senha" required>
       <p class="err" id="lerr">${esc(msg)}</p>
       <button class="btn">Entrar</button>
+      <p class="hint login-note">Cada conta funciona em um aparelho por vez: entrar aqui desconecta os outros.</p>
     </form>`, { locked: true });
   el.querySelector('#lf').onsubmit = async e => {
     e.preventDefault();

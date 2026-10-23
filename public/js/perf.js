@@ -5,7 +5,7 @@
 // por segundo — e como os jogos limitam o passo a 50 ms, abaixo de 20 quadros o jogo roda em câmera lenta.
 // Modo leve (classe .lite no <html>, CSS no fim do style.css): fundo parado, sem vidro desfocado, sem animação
 // infinita fora do jogo, cards sem 3D e Phaser desenhando em canvas 2D. A marcação inicial vem do <head>.
-// mg_perf: 'lite' | 'full' (escolha da pessoa no botão) · sem valor = automático (mg_perf_auto guarda o que medimos).
+// mg_perf: 'lite' | 'full' (escolha da pessoa no menu da conta) · sem valor = automático (mg_perf_auto guarda o que medimos).
 const perf = (() => {
   const get = k => { try { return localStorage.getItem(k); } catch { return null; } };
   const put = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
@@ -30,8 +30,8 @@ const perf = (() => {
     document.documentElement.classList.toggle('lite', lite);
     const b = document.querySelector('#lite');
     if (b) {
-      b.setAttribute('aria-pressed', lite);
-      b.title = lite ? 'Modo leve: ligado (efeitos simples pra PC mais fraco). Clique pra desligar' : 'Modo leve: desligado. Clique se o site estiver travando';
+      b.setAttribute('aria-checked', lite);
+      b.title = lite ? 'Ligado: efeitos simples pra PC mais fraco' : 'Desligado. Ligue se o site estiver travando';
     }
     if (changed) dispatchEvent(new Event('mg:perf'));
   }

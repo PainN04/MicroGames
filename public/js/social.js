@@ -69,8 +69,8 @@ function tourneyBodyHtml() {
         ${t.mineRank && t.mineRank > 5 ? `<p class="hint">Você está em ${t.mineRank}º com ${t.mine.points} pts.</p>` : ''}
       </div>
     </div>
-    <p class="hint t-rules">Vale a sua melhor partida da semana em cada jogo. Por jogo: 1º ${t.points[0]} pts, 2º ${t.points[1]}, 3º ${t.points[2]}, 4º ${t.points[3]}, 5º ${t.points[4]}, 6º ${t.points[5]}, depois 1 ponto. Quem somar mais leva o troféu.
-      ${lastTop ? `<br>${icon('crown')} Semana passada: <b>${esc(lastTop.name)}</b> (${lastTop.points} pts).` : ''}</p>`;
+    ${lastTop ? `<p class="hint t-rules">${icon('crown')} Semana passada: <b>${esc(lastTop.name)}</b> (${lastTop.points} pts).</p>` : ''}
+    <details class="duo-how"><summary>Como pontua</summary><p>Vale a sua melhor partida da semana em cada jogo. Por jogo: 1º ${t.points[0]} pts, 2º ${t.points[1]}, 3º ${t.points[2]}, 4º ${t.points[3]}, 5º ${t.points[4]}, 6º ${t.points[5]}, depois 1 ponto. Quem somar mais leva o troféu.</p></details>`;
 }
 async function tourneyModal() {
   if (!me) return loginModal();
@@ -166,7 +166,7 @@ function duosBodyHtml() {
     ${rows.length ? `<ol>${rows.map((r, k) => `<li class="${my.state === 'active' && r.id === my.id ? 'me' : ''}">${rankBadge(k + 1)} <b class="tn">${esc(r.name)}</b> <span class="tp">${r.pts} pts</span>
       <small>${esc(r.aName)} & ${esc(r.bName)} · ${r.firsts} jogo${r.firsts === 1 ? '' : 's'} em 1º · ${r.podiums} pódio${r.podiums === 1 ? '' : 's'}</small></li>`).join('')}</ol>`
       : '<p class="hint" style="text-align:left;margin:0">Ninguém formou dupla ainda. Chame um colega e escolham um nome!</p>'}
-    <p class="hint t-rules">Cada um chama quem quiser e dá o nome que quiser à dupla. Em cada jogo, a dupla só pontua se <b>os dois</b> jogaram (depois de formada, ou desde quando o admin definiu); vale a média das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos. Segue o filtro Mês/Geral do menu.</p>`;
+    <details class="duo-how"><summary>Como funciona</summary><p>Cada um chama quem quiser e dá o nome que quiser à dupla. Em cada jogo, a dupla só pontua se <b>os dois</b> jogaram (depois de formada, ou desde quando o admin definiu); vale a média das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos. Vale o período escolhido em Rankings (mês ou geral).</p></details>`;
 }
 async function duosModal() {
   if (!me) return loginModal();

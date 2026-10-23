@@ -92,8 +92,12 @@
     background: oklch(15% 0.02 275 / 0.6); border-bottom: 1px solid var(--border);
     backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   }
-  .logo { font: inherit; font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.03em; background: none; border: 0; color: var(--text); cursor: pointer; min-height: 44px; padding: 0; }
-  .logo span { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .logo { font: inherit; font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.035em; background: none; border: 0; color: var(--text); cursor: pointer; min-height: 44px; padding: 0;
+    display: inline-flex; align-items: center; gap: .32em; }
+  /* a marca: cronômetro com uma folga no aro (o intervalo) e o play dentro — public/icons/logo.svg */
+  .logo .mark { width: 1.45em; height: 1.45em; flex: none; margin-top: -.12em; transition: transform var(--duration) var(--ease-spring); }
+  .logo:hover .mark { transform: rotate(-8deg); }
+  .logo .wm > span { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .who { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
   /* largura fixa: o texto muda (conectando → compartilhado) sem empurrar o layout (CLS) */
   .pill { display: inline-flex; align-items: center; gap: .45em; font-size: var(--fs-xs); color: var(--muted); padding: .35em .8em; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); width: 17em; white-space: nowrap; overflow: hidden; }
@@ -234,7 +238,6 @@
     .grid .card .rec { padding: .2rem var(--space-sm) .6rem; }
   }
   /* botão de brilho do header: apagado quando o 3D está desligado */
-  #fx3d[aria-pressed="false"] { opacity: .45; filter: grayscale(1); }
   .board .season-seg { margin: 0 0 var(--space-sm); }
   .board .season-seg button { padding: .35em .8em; min-height: 32px; }
   .hall { display: grid; gap: var(--space-xs); }
@@ -285,7 +288,7 @@
   .part-sum dd { margin: 2px 0 0; font-weight: 700; font-size: 1.05rem; }
   .part-sum .bars { display: flex; align-items: flex-end; gap: 3px; height: 34px; }
   .part-sum .bars i { display: block; width: 8px; border-radius: 3px 3px 0 0; background: linear-gradient(var(--accent), var(--primary)); }
-  .result .label { color: var(--muted); font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .12em; }
+  .result .label { color: var(--muted); font-size: var(--fs-sm); }
   .badge { padding: .4em 1em; border-radius: 999px; background: oklch(86% 0.17 92 / 0.15); color: var(--yellow); border: 1px solid oklch(86% 0.17 92 / 0.35); font-weight: 700; font-size: var(--fs-sm); }
   .badge.warn { background: oklch(66% 0.22 18 / 0.15); color: oklch(82% 0.12 18); border-color: oklch(66% 0.22 18 / 0.4); max-width: 42ch; }
   @keyframes pop { from { opacity: 0; transform: scale(.85); } }
@@ -520,7 +523,7 @@
   .seg { display: inline-flex; padding: 4px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); gap: 2px; }
   .seg button { font: inherit; font-size: var(--fs-sm); border: 0; background: none; color: var(--muted); padding: .45em 1em; border-radius: 999px; cursor: pointer; min-height: 36px; }
   .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); font-weight: 700; box-shadow: var(--elev-1); }
-  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); gap: var(--space-sm); }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 148px), 1fr)); gap: var(--space-sm); }
   .kpi { padding: var(--space-sm) var(--space-md); }
   .kpi .l { color: var(--muted); font-size: var(--fs-xs); }
   .kpi .v { font-size: var(--fs-xl); font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1524,8 +1527,6 @@ html.lite *, html.lite *::before, html.lite *::after { backdrop-filter: none !im
 html.lite header { background: oklch(15% 0.02 275 / 0.97); }
 html.lite .modal { background: oklch(10% 0.02 275 / 0.82); }
 html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *)::after { animation-iteration-count: 1 !important; }
-#lite[aria-pressed="true"] { color: var(--green); border-color: oklch(76% 0.18 150 / .45); }
-@media (max-width: 560px) { .daily-rank li:nth-child(n+6):not(.me) { display: none; } }
 /* jogos diários: sequência, compartilhar e lembrete da noite */
 .daily-head .dt-streak { display: inline-flex; align-items: center; gap: .3em; padding: .15em .7em; border-radius: 999px; background: oklch(70% 0.19 45 / .16); color: #ffb36b; }
 .daily-head .dt-streak .i { color: #ff8a3d; }
@@ -1583,3 +1584,24 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
   .rt-cover { width: 44px; height: 44px; }
   .rt-play { display: none; }
 }
+
+/* ---------- revisão geral do front ---------- */
+/* chaves do menu da conta (Animações 3D, Modo leve) */
+.acct-menu .sw { position: relative; margin-left: auto; width: 30px; height: 18px; flex: none; border-radius: 999px; background: oklch(100% 0 0 / .14); transition: background var(--duration-fast) var(--ease); }
+.acct-menu .sw::after { content: ''; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--muted); transition: translate var(--duration-fast) var(--ease), background var(--duration-fast) var(--ease); }
+.acct-menu [aria-checked="true"] .sw { background: oklch(70% 0.19 290 / .7); }
+.acct-menu [aria-checked="true"] .sw::after { translate: 12px 0; background: #fff; }
+.acct-menu { min-width: 220px; }
+
+/* janelas: um título só, no mesmo tamanho em todas, com o ícone no ladrilho (igual aos títulos das seções) */
+.modal h2 { font-size: var(--fs-lg); display: flex; align-items: center; justify-content: center; gap: .45em; line-height: 1.15; }
+.modal .box.wide h2, .modal .box:has(.note-list) h2 { justify-content: flex-start; }
+.modal h2 > .i { width: 1.6em; height: 1.6em; padding: .32em; margin: 0; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); }
+.modal .box:has(.note-list) { text-align: left; }
+.tourney-body .t-head h2, .teams .kings-head h2 { font-size: var(--fs-lg); }
+.result .label { letter-spacing: 0; }
+.kpi .v .i { width: .78em; height: .78em; vertical-align: -.04em; color: var(--yellow); }
+/* celular: a descrição do jogo cortada no topo não ajudava (o "?" mostra o Como jogar inteiro) */
+@media (max-width: 560px) { .stage-head .title p:not(.pbio) { display: none; } .stage-head h2:has(> .i) + p { padding-left: 0; } }
+.login-mark { display: block; width: 64px; height: 64px; margin: 0 auto -.25rem; }
+.modal .login-note { font-size: var(--fs-xs); margin: 0; }
