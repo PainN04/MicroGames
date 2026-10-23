@@ -16,7 +16,7 @@ GAMES.soletra = {
       <div class="sl-hive" id="shive" role="group" aria-label="Letras"></div>
       <p class="hint" id="smsg" aria-live="polite"></p>
       <div class="row-btns" id="sbtns"><button class="btn ghost" id="sdel">${icon('delete')} Apagar</button><button class="btn ghost" id="smix" aria-label="Embaralhar">${icon('refresh-cw')}</button><button class="btn" id="sok">${icon('circle-check')} Enviar</button></div>
-      <details class="sl-found" id="sfound" open><summary>Palavras encontradas</summary><ul></ul></details>
+      <details class="sl-found" id="sfound" open><summary>Palavras encontradas</summary><ul></ul><p class="sl-key" id="skey" aria-label="Legenda"><span><i class="pg">Dourada</i> usou as 7 letras</span><span><i>Comum</i> palavra normal</span><span><i class="ex">Rara</i> vale ponto, fora do total</span><span class="miss-k" hidden><i class="miss">Faltou</i> não achada</span></p></details>
       <div class="row-btns" id="send"><button class="btn ghost" id="sstop">${icon('flag')} Encerrar</button></div>`;
     const msg = el.querySelector('#smsg'), say = t => { msg.textContent = t; };
     const rankOf = pts => { const f = v.max ? pts / v.max : 0; return RANKS.filter(([x]) => f >= x).at(-1)[1]; };
@@ -38,6 +38,7 @@ GAMES.soletra = {
       const list = v.all || v.found.map(f => ({ word: f.word, pangram: f.pangram, found: true, extra: f.extra }));
       el.querySelector('#sfound ul').innerHTML = [...list].sort((a, b) => a.word.localeCompare(b.word, 'pt'))
         .map(f => `<li class="${f.pangram ? 'pg' : ''}${f.found ? '' : ' miss'}${f.extra ? ' ex' : ''}"${f.extra ? ' title="Palavra extra: vale ponto, não conta no total"' : ''}>${esc(f.word)}</li>`).join('') || '<li class="hint">Nenhuma ainda</li>';
+      el.querySelector('#skey .miss-k').hidden = !v.all;
     };
     const endPanel = () => {
       el.querySelector('#sbtns').hidden = true; el.querySelector('#shive').hidden = true; el.querySelector('#scur').hidden = true;
