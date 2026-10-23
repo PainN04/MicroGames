@@ -10,7 +10,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MicroGame">
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0' stop-color='%23a07cff'/><stop offset='1' stop-color='%23ff8a5c'/></linearGradient></defs><rect width='64' height='64' rx='16' fill='url(%23g)'/><path d='M20 22h24a12 12 0 0 1 12 12v4a8 8 0 0 1-14 5l-3-3H25l-3 3a8 8 0 0 1-14-5v-4a12 12 0 0 1 12-12z' fill='%23161625'/><path d='M20 28v10M15 33h10' stroke='%23fff' stroke-width='3.5' stroke-linecap='round'/><circle cx='42' cy='30' r='2.8' fill='%23ffd34d'/><circle cx='47' cy='36' r='2.8' fill='%23ff6b8a'/></svg>">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=optional" rel="stylesheet">
@@ -21,12 +21,10 @@
 <body>
 <div class="backdrop" aria-hidden="true"><i></i><i></i><i></i></div>
 <header>
-  <button class="logo" id="home" aria-label="Voltar ao menu">Micro<span>Game</span></button>
+  <button class="logo" id="home" aria-label="MicroGame: voltar ao menu"><svg class="mark" viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="mgLogo" x1="10" y1="12" x2="54" y2="58" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#a98bff"/><stop offset="1" stop-color="#ff8a5c"/></linearGradient></defs><rect x="25.5" y="3" width="13" height="7" rx="3.5" fill="url(#mgLogo)"/><rect x="29.5" y="8" width="5" height="6" fill="url(#mgLogo)"/><path d="M51.64 27.26A21.5 21.5 0 1 1 38.64 15.55" fill="none" stroke="url(#mgLogo)" stroke-width="7" stroke-linecap="round"/><circle cx="46.4" cy="20" r="3.6" fill="#ffd34d"/><path d="M27.5 27v18l14.5-9z" fill="#ffd34d" stroke="#ffd34d" stroke-width="4.5" stroke-linejoin="round"/></svg><span class="wm">Micro<span>Game</span></span></button>
   <div class="who">
     <span class="pill compact" id="db" title="conectando..."><span class="dot"></span><span id="dbtxt">conectando...</span></span>
     <button class="btn ghost icon-btn" id="mute" aria-label="Desligar som"></button>
-    <button class="btn ghost icon-btn" id="fx3d" aria-pressed="true" aria-label="Animações 3D dos cards" title="Animações 3D: ligadas (clique pra desligar se ficar pesado)"></button>
-    <button class="btn ghost icon-btn" id="lite" aria-pressed="false" aria-label="Modo leve" title="Modo leve: desligado"></button>
     <span class="gate-wrap" id="gateWrap" hidden>
       <button class="gate-pill" id="gatePill" aria-haspopup="dialog" aria-expanded="false" aria-controls="gatePop"></button>
       <span class="gate-pop glass" id="gatePop" role="dialog" aria-label="Sua fila no Geiko" hidden></span>
@@ -40,6 +38,10 @@
         <button role="menuitem" id="mProfile"><span data-ic="user"></span>Meu perfil</button>
         <span class="acct-sep" role="separator" id="sepAdmin" hidden></span>
         <button role="menuitem" id="mAdmin" hidden><span data-ic="settings"></span>Administração</button>
+        <span class="acct-sep" role="separator"></span>
+        <!-- desempenho: ficavam no topo, como dois botões a mais; aqui são chaves (o estado aparece na própria linha) -->
+        <button role="menuitemcheckbox" id="fx3d" aria-checked="true"><span data-ic="sparkles"></span>Animações 3D<span class="sw" aria-hidden="true"></span></button>
+        <button role="menuitemcheckbox" id="lite" aria-checked="false"><span data-ic="gauge"></span>Modo leve<span class="sw" aria-hidden="true"></span></button>
         <span class="acct-sep" role="separator"></span>
         <button role="menuitem" id="mPass"><span data-ic="key-round"></span>Trocar senha</button>
         <button role="menuitem" id="mLogout"><span data-ic="log-out"></span>Sair</button>

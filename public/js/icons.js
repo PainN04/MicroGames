@@ -119,8 +119,6 @@ const rankBadge = pos => `<span class="rank${pos <= 3 ? ' r' + pos : ''}" aria-l
 document.querySelectorAll('[data-ic]').forEach(el => { el.outerHTML = icon(el.dataset.ic); });
 document.querySelector('#acctBtn .chev')?.insertAdjacentHTML('afterbegin', icon('chevron-down'));
 document.querySelector('#pav')?.insertAdjacentHTML('afterbegin', icon('user'));
-document.querySelector('#fx3d')?.insertAdjacentHTML('afterbegin', icon('sparkles'));
-document.querySelector('#lite')?.insertAdjacentHTML('afterbegin', icon('gauge'));
 
 /** Mesmo ícone como imagem (data URL), pra usar no canvas (Phaser). */
 function iconDataUrl(name, color = '#fff', size = 64, { fill = 'none', stroke = 2 } = {}) {

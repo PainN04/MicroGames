@@ -162,7 +162,7 @@ function renderProfile(name) {
     <div class="kpi glass"><div class="l">Desafios do dia ganhos</div><div class="v">${s.dailyWins}</div>${dailyStreakOf(name) > 1 ? `<span class="d">${icon('flame')} ${dailyStreakOf(name)} seguidas agora</span>` : ''}${s.monthsWon.length ? `<span class="d">${icon('calendar')} campeão de ${s.monthsWon.map(k => monthName(k)).join(', ')}</span>` : ''}</div>
     ${s.dtBest || s.dtWins ? `<div class="kpi glass"><div class="l">Jogos diários</div><div class="v">${icon('flame')} ${s.dtNow}<small> ${s.dtNow === 1 ? 'dia' : 'dias'}</small></div><span class="d">recorde: ${s.dtBest} seguido${s.dtBest === 1 ? '' : 's'}${s.dtWins ? ` · campeão ${s.dtWins}×` : ''}</span></div>` : ''}
     <div class="kpi glass"><div class="l">Conquistas</div><div class="v">${unlocked}/${ACHIEVEMENTS.length}</div></div>
-    ${s.trophies || s.duelWins ? `<div class="kpi glass"><div class="l">Torneios e duelos</div><div class="v">${s.trophies}<small> 🏆</small> · ${s.duelWins}<small> ⚔</small></div><span class="d">torneios ganhos · duelos ganhos</span></div>` : ''}
+    ${s.trophies || s.duelWins ? `<div class="kpi glass"><div class="l">Torneios e duelos</div><div class="v">${icon('trophy')} ${s.trophies} · ${icon('swords')} ${s.duelWins}</div><span class="d">torneios ganhos · duelos ganhos</span></div>` : ''}
   </div>`;
   // partidas por semana (últimas 12): 1 série, 1 cor, rótulo só no maior
   const weekMs = 7 * DAY_MS, now = Date.now();
