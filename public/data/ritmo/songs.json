@@ -1,1 +1,47 @@
-[]
+[
+  {
+    "id": "big-rock",
+    "title": "Big Rock",
+    "artist": "Kevin MacLeod",
+    "license": "CC BY 4.0",
+    "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100305",
+    "bpm": 108.1,
+    "durationMs": 150000
+  },
+  {
+    "id": "cool-rock",
+    "title": "Cool Rock",
+    "artist": "Kevin MacLeod",
+    "license": "CC BY 4.0",
+    "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100279",
+    "bpm": 129,
+    "durationMs": 150000
+  },
+  {
+    "id": "neolith",
+    "title": "Neolith",
+    "artist": "Kevin MacLeod",
+    "license": "CC BY 4.0",
+    "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1100140",
+    "bpm": 145,
+    "durationMs": 150000
+  },
+  {
+    "id": "metalmania",
+    "title": "Metalmania",
+    "artist": "Kevin MacLeod",
+    "license": "CC BY 4.0",
+    "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1700023",
+    "bpm": 150,
+    "durationMs": 150000
+  },
+  {
+    "id": "exhilarate",
+    "title": "Exhilarate",
+    "artist": "Kevin MacLeod",
+    "license": "CC BY 4.0",
+    "source": "https://incompetech.com/music/royalty-free/index.html?isrc=USUAN1300028",
+    "bpm": 170,
+    "durationMs": 145476
+  }
+]
