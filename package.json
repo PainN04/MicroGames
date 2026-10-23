@@ -4,6 +4,7 @@
   "private": true,
   "description": "Minigames de navegador com ranking compartilhado",
   "scripts": {
+    "build": "node scripts/build.js",
     "local": "node server.js",
     "admin": "node scripts/create-admin.js",
     "migrate": "node scripts/migrate-to-neon.js",
@@ -13,5 +14,9 @@
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
     "jose": "^6.2.12"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.10",
+    "javascript-obfuscator": "^4.1.1"
   }
 }

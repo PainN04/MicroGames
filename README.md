@@ -44,7 +44,7 @@ Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas e conquis
 | | |
 | --- | --- |
 | 🎯 **28 jogos rápidos** | De 10 segundos a poucos minutos por partida, no computador ou no celular (teclado, mouse, toque, deslize ou botões na tela). |
-| 🏅 **Ranking de verdade** | Por jogo, do mês e geral. O servidor confere cada pontuação (faixa válida em todos os jogos e trava anti-autoclicker) antes de gravar. |
+| 🏅 **Ranking de verdade** | Por jogo, do mês e geral. O servidor confere cada pontuação antes de gravar: nos jogos de arcade a partida é aberta no servidor e vale uma vez só, no relógio dele (`lib/plays.js`); o 2048 é refeito no servidor a partir dos movimentos; mais a faixa válida de cada jogo e a trava anti-autoclicker. |
 | 📅 **Desafio do dia** | Um jogo sorteado por dia, igual pra todo mundo. Quem ganha leva a coroa e escolhe o jogo de amanhã. |
 | ⚔️ **Social** | Reações nos recordes, duelos de 24h, torneio semanal e duplas. |
 | 🎖️ **43 conquistas** | Calculadas na página a partir do histórico de partidas, sem nada extra no banco. |
@@ -290,7 +290,7 @@ Pra mudar a porta, defina `PORT` antes (no PowerShell: `$env:PORT=3000`). O serv
 
 - usa **SQLite** em `microgame.db`, nunca o banco de produção;
 - do `.env.local` só lê o que precisa (chave do Geiko e segredo de sessão). O `DATABASE_URL` de lá é o banco de **produção** e fica de fora de propósito;
-- serve só a pasta `public/`, igual à Vercel: `lib/` e `scripts/` nunca saem.
+- serve a pasta `public/` (os scripts originais, pra testar sem montar): `lib/` e `scripts/` nunca saem. Com `MICROGAME_DIST=1` serve a `dist/` montada pelo `npm run build`, igual à que vai pro ar.
 
 <br>
 
@@ -333,7 +333,8 @@ Ficam no `.env.local` (teste, fora do Git) e no projeto da Vercel (produção e 
 | Comando | O que faz |
 | --- | --- |
 | `npm run local` | Servidor de teste local com SQLite. |
-| `npm test` | Checagem do front + testes da API. |
+| `npm run build` | Monta a `dist/` que a Vercel publica: todos os scripts num arquivo só, dentro de uma função (nada no `window` pra chamar pelo console), ofuscado e minificado, sem source map e sem os arquivos originais. A Vercel roda sozinha no deploy. |
+| `npm test` | Checagem do front, a montagem da `dist/` e os testes da API. |
 | `npm run admin -- <usuario> "<Nome>" [idGeiko]` | Cria ou promove um admin e mostra uma senha temporária. Banco local por padrão; `--producao` usa o da Vercel e `--homolog` o de teste. |
 | `npm run importar -- "<.env do GeikoDashboard>" [--producao]` | Cria uma conta por atendente do GeikoDashboard (só leitura lá), já com o ID do Geiko. As senhas temporárias vão pra um `contas-*.csv` fora do Git. Pula quem já tem conta. |
 | `npm run migrate` | Copia as pontuações do `microgame.db` pro Neon. Roda uma vez só e se recusa se o Neon já tiver pontuações. |
@@ -377,6 +378,7 @@ No painel admin dá pra baixar o JSON, importar ou restaurar as partidas de qual
 │   ├── auth.js            senhas, sessão e contas
 │   ├── geiko.js           bloqueio por fila do Geiko
 │   ├── rules.js           faixas de pontuação válidas e anti-autoclicker
+│   ├── plays.js           partidas de arcade abertas no servidor (uso único, relógio do servidor, 2048 refeito)
 │   ├── social.js          reações, duelos, torneio e duplas
 │   ├── flair.js           prêmios do desafio do dia
 │   ├── backup.js          cópias de segurança no banco
@@ -407,7 +409,7 @@ No painel admin dá pra baixar o JSON, importar ou restaurar as partidas de qual
 
 ## 📦 Bibliotecas
 
-Sem build: Phaser, Zdog e Vanilla-Tilt ficam no próprio site (`public/vendor/`, com o jsdelivr de reserva); só o web-vitals vem por CDN.
+Phaser, Zdog e Vanilla-Tilt ficam no próprio site (`public/vendor/`, com o jsdelivr de reserva); só o web-vitals vem por CDN.
 
 | Biblioteca | Pra quê |
 | --- | --- |
