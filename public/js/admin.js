@@ -2,7 +2,7 @@
 const PRIO_FIELDS = [['URG', 'Urgente'], ['ALT', 'Alta'], ['MED', 'Média'], ['NOR', 'Normal'], ['BAI', 'Baixa'], ['none', 'Sem prioridade']];
 
 // partes do Painel, cada uma numa aba
-const ADMIN_PANES = [['online', 'eye', 'Online'], ['contas', 'user', 'Contas'], ['duplas', 'users', 'Duplas'], ['geiko', 'clock', 'Fila do Geiko']];
+const ADMIN_PANES = [['online', 'eye', 'Online'], ['contas', 'user', 'Contas'], ['duplas', 'users', 'Duplas'], ['geiko', 'clock', 'Fila do Geiko'], ['respostas', 'key-round', 'Respostas do dia']];
 let adminPane = 'online';
 
 function showAdmin() {
@@ -55,8 +55,24 @@ function showAdmin() {
         <form class="geiko-test" id="testForm"><label class="acc-search">${icon('search')}<input name="geikoId" inputmode="numeric" pattern="\\d+" required placeholder="ID do Geiko" aria-label="ID do Geiko"></label><button class="btn ghost">Testar</button></form>
         <div id="testOut" style="margin-top:var(--space-sm)"></div>
       </section>
+      <section class="glass" data-pane="respostas"${adminPane === 'respostas' ? '' : ' hidden'}>
+        <div class="acc-head">
+          <h2>Respostas do dia <span class="hint" id="ansDay"></span></h2>
+          <div class="ans-nav">
+            <button class="btn ghost icon-btn" id="ansPrev" aria-label="Dia anterior">${icon('chevron-left')}</button>
+            <button class="btn ghost" id="ansToday">${icon('calendar')} Hoje</button>
+            <button class="btn ghost icon-btn" id="ansNext" aria-label="Próximo dia">${icon('chevron-right')}</button>
+          </div>
+        </div>
+        <p class="note">A resposta de cada jogo diário e o que cada pessoa mandou. A resposta fica borrada até você tocar nela, pra não estragar o seu jogo.</p>
+        <div class="ans-grid" id="ansList"><p class="hint">Carregando...</p></div>
+      </section>
     </div>`;
     $('#back').onclick = showMenu;
+    $('#ansPrev').onclick = () => loadAnswers(ansDay - 1);
+    $('#ansNext').onclick = () => loadAnswers(ansDay + 1);
+    $('#ansToday').onclick = () => loadAnswers(null);
+    if (adminPane === 'respostas') loadAnswers(ansDay);
     $('#accNew').onclick = () => accountModal();
     $('#accQ').oninput = renderUsers;
     main.querySelectorAll('[data-accf]').forEach(b => b.onclick = () => {
@@ -829,6 +845,40 @@ function setAdminPane(k) {
   adminPane = k;
   main.querySelectorAll('[data-atab]').forEach(x => x.setAttribute('aria-selected', x.dataset.atab === k));
   main.querySelectorAll('[data-pane]').forEach(sec => { sec.hidden = sec.dataset.pane !== k; });
+  if (k === 'respostas') loadAnswers(ansDay);
+}
+
+// ---------- respostas do dia (gabarito dos jogos diários + o que cada um mandou) ----------
+let ansDay = null; // null = hoje
+const ansDate = d => new Date(d * 86_400_000 + 43_200_000).toLocaleDateString('pt-BR', { timeZone: 'UTC', weekday: 'long', day: '2-digit', month: '2-digit' });
+const ansPegs = code => `<span class="ans-pegs">${code.map(c => `<i class="sn-peg k${c}"><span>${c + 1}</span></i>`).join('')}</span>`;
+async function loadAnswers(day) {
+  const box = $('#ansList');
+  if (!box) return;
+  box.style.opacity = 0.5;
+  try {
+    const d = await api('api/admin/daily-answers' + (day == null ? '' : `?day=${day}`));
+    ansDay = d.day === d.today ? null : d.day;
+    $('#ansDay').textContent = d.day === d.today ? `hoje, ${ansDate(d.day)}` : ansDate(d.day);
+    $('#ansNext').disabled = d.day >= d.today;
+    $('#ansToday').disabled = d.day === d.today;
+    box.innerHTML = d.games.map(g => {
+      const name = GAMES[g.game]?.name || g.game, won = g.players.filter(p => p.won).length;
+      const key = `${g.text ? `<p class="ans-text">${esc(g.text)}</p>` : ''}${g.pegs ? ansPegs(g.pegs) : ''}
+        ${(g.sections || []).map(s => `${s.title ? `<h4>${esc(s.title)}</h4>` : ''}<div class="ans-words">${s.words.map(w =>
+          `<span class="chip${w.star ? ' admin' : ''}"${w.clue ? ` title="${esc(w.clue)}"` : ''}>${w.star ? icon('star') : ''}${esc(w.w)}</span>${w.clue ? `<span class="ans-clue">${esc(w.clue)}</span>` : ''}`).join('')}</div>`).join('')}`;
+      const status = p => (p.won ? `<span class="chip ok">${icon('circle-check')} acertou</span>` : p.over ? '<span class="chip bad">não acertou</span>' : '<span class="chip warn">jogando</span>');
+      return `<article class="ans-card">
+        <div class="ans-head">${icon(g.game)}<h3>${esc(name)}</h3><span class="hint">${g.players.length ? `${g.players.length} jogaram · ${won} acertaram` : 'ninguém jogou'}</span></div>
+        <button class="ans-key" aria-label="Mostrar a resposta de ${esc(name)}">${key}</button>
+        ${g.players.length ? `<details><summary>O que cada um mandou</summary><ul class="ans-players">${g.players.map(p => `<li>
+          <div class="ans-who"><b>${esc(p.name)}</b>${status(p)}${p.score ? `<span class="hint">${p.score} pts</span>` : ''}</div>
+          <div class="ans-sent">${p.pegs ? p.pegs.map(ansPegs).join('') : (p.sent || []).map(x => `<span>${esc(String(x))}</span>`).join('') || '<span class="hint">nada ainda</span>'}</div></li>`).join('')}</ul></details>` : ''}
+      </article>`;
+    }).join('');
+    box.querySelectorAll('.ans-key').forEach(b => b.onclick = () => { b.classList.add('open'); b.removeAttribute('aria-label'); });
+  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+  box.style.opacity = 1;
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-atab]');
