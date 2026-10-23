@@ -29,9 +29,9 @@
   ];
 
   // ---------- física ----------
-  const TICK = 1 / 120, VMAX = 1500;
-  const FR_A = 115, FR_B = 0.45;      // atrito: freio fixo + um pouco proporcional à velocidade
-  const E_BALL = 0.95, E_RAIL = 0.76; // quanto sobra da velocidade na batida entre bolas e na tabela
+  const TICK = 1 / 120, VMAX = 1500, VBREAK = 2800; // a saída sai bem mais forte que uma tacada comum
+  const FR_A = 80, FR_B = 0.35;       // atrito: freio fixo + um pouco proporcional à velocidade
+  const E_BALL = 0.98, E_RAIL = 0.82; // quanto sobra da velocidade na batida entre bolas e na tabela
   const nearEdge = b => b.x < R + 2 || b.x > TW - R - 2 || b.y < R + 2 || b.y > TH - R - 2;
 
   function pot(b, ev) {
@@ -49,7 +49,10 @@
     const n = Math.max(1, Math.ceil((vmax * TICK) / (R * 0.4))), h = TICK / n;
     for (let k = 0; k < n; k++) {
       for (const b of balls) if (b.on) { b.x += b.vx * h; b.y += b.vy * h; }
-      // bola com bola (massas iguais)
+      // bola com bola (massas iguais). Junta os pares encostados e resolve as velocidades em
+      // várias passadas antes de separar as posições: assim a força da saída corre pelo
+      // triângulo inteiro em vez de ficar presa nas primeiras bolas
+      const pairs = [];
       for (let i = 0; i < balls.length; i++) {
         const a = balls[i];
         if (!a.on) continue;
@@ -58,19 +61,27 @@
           if (!b.on) continue;
           const dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
           if (d2 >= D * D || d2 === 0) continue;
-          const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, push = (D - d) / 2;
-          a.x -= nx * push; a.y -= ny * push; b.x += nx * push; b.y += ny * push;
+          const d = Math.sqrt(d2);
+          pairs.push([a, b, dx / d, dy / d, (D - d) / 2]);
+        }
+      }
+      for (let it = 0; it < 10 && pairs.length; it++) {
+        let moved = false;
+        for (const [a, b, nx, ny] of pairs) {
           const rel = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
-          if (rel <= 0) continue;
+          if (rel <= 1e-6) continue;
+          moved = true;
           const imp = ((1 + E_BALL) / 2) * rel;
           a.vx -= imp * nx; a.vy -= imp * ny; b.vx += imp * nx; b.vy += imp * ny;
           if (ev.first == null && (a.n === 0 || b.n === 0)) ev.first = a.n === 0 ? b.n : a.n;
           // efeito na branca: no primeiro toque, por cima ela segue em frente, por baixo ela volta (puxada)
           const cue = a.n === 0 ? a : b.n === 0 ? b : null;
           if (cue && cue.sf) { cue.vx += cue.dx * cue.sf * 0.55 * rel; cue.vy += cue.dy * cue.sf * 0.55 * rel; cue.sf = 0; }
-          ev.hits?.push(rel);
+          if (!it) ev.hits?.push(rel);
         }
+        if (!moved) break;
       }
+      for (const [a, b, nx, ny, push] of pairs) { a.x -= nx * push; a.y -= ny * push; b.x += nx * push; b.y += ny * push; }
       // tabelas, bicos e caçapas (só pra bola perto da borda)
       for (const b of balls) {
         if (!b.on || !nearEdge(b)) continue;
@@ -100,14 +111,15 @@
   }
   const copyBalls = balls => balls.map(b => ({ n: b.n, x: b.x, y: b.y, vx: b.vx, vy: b.vy, on: b.on }));
   // dá a tacada na branca: direção, força (0–1) e efeito (sf: +1 por cima, −1 por baixo; ss: lado, −1 a +1)
-  function strike(cue, angle, power, sf = 0, ss = 0) {
+  function strike(cue, angle, power, sf = 0, ss = 0, brk = false) {
+    const v = power * (brk ? VBREAK : VMAX);
     cue.dx = Math.cos(angle); cue.dy = Math.sin(angle);
-    cue.vx = cue.dx * power * VMAX; cue.vy = cue.dy * power * VMAX; cue.sf = sf; cue.ss = ss;
+    cue.vx = cue.dx * v; cue.vy = cue.dy * v; cue.sf = sf; cue.ss = ss;
   }
   // tacada inteira, do toque até tudo parar (a máquina testa as tacadas com isso)
-  function simulate(balls, angle, power, sf = 0, ss = 0) {
+  function simulate(balls, angle, power, sf = 0, ss = 0, brk = false) {
     const bs = copyBalls(balls), cue = bs.find(b => b.n === 0);
-    strike(cue, angle, power, sf, ss);
+    strike(cue, angle, power, sf, ss, brk);
     const ev = { first: null, potted: [] };
     for (let i = 0; i < 20 / TICK && step(bs, ev); i++);
     return { balls: bs, first: ev.first, potted: ev.potted };
@@ -120,7 +132,7 @@
     for (let i = others.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [others[i], others[j]] = [others[j], others[i]]; }
     const solidCorner = others.splice(others.findIndex(n => n < 8), 1)[0], stripeCorner = others.splice(others.findIndex(n => n > 8), 1)[0];
     const balls = [{ n: 0, x: TW / 2, y: HEAD + 50, vx: 0, vy: 0, on: true }];
-    const gap = D + 0.4, rowH = gap * Math.sqrt(3) / 2;
+    const gap = D + 0.6, rowH = gap * Math.sqrt(3) / 2;
     for (let r = 0; r < 5; r++) for (let i = 0; i <= r; i++) {
       let n;
       if (r === 0) n = 1;
@@ -128,7 +140,8 @@
       else if (r === 4 && i === 0) n = rnd() < 0.5 ? solidCorner : stripeCorner;
       else if (r === 4 && i === 4) n = balls.some(b => b.n === solidCorner) ? stripeCorner : solidCorner;
       else n = others.pop();
-      balls.push({ n, x: FOOT.x + (i - r / 2) * gap, y: FOOT.y - r * rowH, vx: 0, vy: 0, on: true });
+      // um tiquinho torto, como triângulo de verdade: cada saída abre de um jeito
+      balls.push({ n, x: FOOT.x + (i - r / 2) * gap + (rnd() - 0.5) * 0.4, y: FOOT.y - r * rowH + (rnd() - 0.5) * 0.4, vx: 0, vy: 0, on: true });
     }
     return balls;
   }
@@ -569,7 +582,7 @@
           // ---------- tacada ----------
           const shoot = (angle, pw, sf = 0, ss = 0) => {
             const cue = ballOf(0);
-            strike(cue, angle, pw, sf, ss);
+            strike(cue, angle, pw, sf, ss, st.isBreak);
             ev = { first: null, potted: [], pockets: [], hits: [], rails: [] };
             before = onTable(balls);
             acc = 0; phase = 'roll'; drag = null; charging = false; inHand = false;

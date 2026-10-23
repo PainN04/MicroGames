@@ -18,8 +18,8 @@ test('sinuca: o triângulo tem as 15 bolas sem encostar, a 8 no meio e lisa e li
   assert.equal(balls.length, 16);
   assert.deepEqual(plain(balls.map(b => b.n).sort((a, b) => a - b)), Array.from({ length: 16 }, (_, i) => i));
   for (const a of balls) for (const b of balls) if (a !== b) assert.ok(Math.hypot(a.x - b.x, a.y - b.y) >= E.D, `${a.n} encosta em ${b.n}`);
-  const eight = balls.find(b => b.n === 8), back = balls.filter(b => Math.abs(b.y - Math.min(...balls.map(q => q.y))) < 0.01).sort((a, b) => a.x - b.x);
-  assert.equal(eight.x, E.FOOT.x);
+  const eight = balls.find(b => b.n === 8), back = balls.filter(b => Math.abs(b.y - Math.min(...balls.map(q => q.y))) < 1).sort((a, b) => a.x - b.x);
+  assert.ok(Math.abs(eight.x - E.FOOT.x) < 0.5);
   assert.equal(back.length, 5);
   assert.deepEqual(plain([back[0], back[4]].map(b => E.type(b.n)).sort()), ['solid', 'stripe']);
 });
@@ -39,9 +39,25 @@ test('sinuca: tacada reta encaçapa, a mesma tacada sempre dá o mesmo resultado
 test('sinuca: bola nenhuma atravessa a tabela, nem na saída mais forte', () => {
   for (let s = 1; s <= 20; s++) {
     const rnd = seeded(s), balls = E.rack(rnd);
-    const r = E.simulate(balls, -Math.PI / 2 + (rnd() - 0.5) * 0.2, 1);
+    const r = E.simulate(balls, -Math.PI / 2 + (rnd() - 0.5) * 0.2, 1, 0, 0, true);
     for (const b of r.balls) if (b.on) assert.ok(b.x >= 0 && b.x <= E.TW && b.y >= 0 && b.y <= E.TH, `bola ${b.n} fora da mesa (${b.x}, ${b.y})`);
   }
+});
+
+test('sinuca: a saída forte espalha as bolas pela mesa', () => {
+  let moved = 0, low = 0, n = 0;
+  for (let s = 1; s <= 20; s++) {
+    const rnd = seeded(s), balls = E.rack(rnd);
+    const r = E.simulate(balls, -Math.PI / 2 + (rnd() - 0.5) * 0.03, 1, 0, 0, true);
+    for (const b of r.balls) {
+      if (!b.n) continue;
+      const o = balls.find(q => q.n === b.n);
+      moved += Math.hypot(b.x - o.x, b.y - o.y); n++;
+      if (b.on && b.y > E.TH / 2) low++;
+    }
+  }
+  assert.ok(moved / n > 110, `as bolas andaram só ${Math.round(moved / n)} em média`);
+  assert.ok(low / n > 0.15, `só ${Math.round((low / n) * 100)}% das bolas passaram do meio da mesa`);
 });
 
 test('sinuca: regras de falta, grupo e bola 8', () => {
