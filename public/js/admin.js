@@ -284,6 +284,11 @@ function renderRecords() {
         <span class="actions"><button class="btn ghost" data-act="save">${r ? 'Salvar' : 'Adicionar'}</button>${r ? del : ''}</span></li>`;
     }).join('');
   }
+  // zerar tudo de uma vez: o ranking do jogo escolhido ou todos os pontos da pessoa escolhida
+  const u = recData.users.find(x => x.id === recState.userId);
+  const wipe = recState.mode === 'game' ? `Zerar o ranking de ${GAMES[recState.game].name}` : u ? `Zerar todos os pontos de ${esc(u.name)}` : '';
+  if (wipe) box.insertAdjacentHTML('beforeend', `<li class="rec-wipe"><button class="btn ghost danger" id="recWipe">${icon('trash-2')} ${wipe}</button></li>`);
+  $('#recWipe') && ($('#recWipe').onclick = clearRecords);
   box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => recordAction(b));
   // valor mexido: o Salvar daquela linha fica em destaque
   box.querySelectorAll('.rec:not(.add) .rec-v').forEach(inp => inp.oninput = () => inp.closest('.rec').classList.toggle('changed', inp.value !== inp.defaultValue));
@@ -308,6 +313,20 @@ async function recordAction(btn) {
       await loadRecords(`${who} — ${g.name}: recorde agora é ${fmt(g, value)}${removed ? ` (${removed} partida(s) melhor(es) removida(s))` : ''}.`);
     }
     fetchScores(); // atualiza o ranking que o resto da página mostra
+  } catch (err) { alert(err.message); }
+}
+
+async function clearRecords() {
+  const byGame = recState.mode === 'game', g = GAMES[recState.game];
+  const u = recData.users.find(x => x.id === recState.userId);
+  const n = recData.records.filter(r => byGame ? r.game === recState.game : r.userId === recState.userId).reduce((a, r) => a + r.count, 0);
+  const what = byGame ? `TODAS as partidas de ${g.name}, de todo mundo` : `TODOS os pontos de ${u.name}, em todos os jogos (a conta continua)`;
+  if (!confirm(`Apagar ${what}? São ${n} partida(s). Antes sai uma cópia na lista de backups, de onde dá pra restaurar.`)) return;
+  try {
+    const { removed } = await api('api/admin/records/clear', { method: 'POST', body: byGame ? { game: recState.game } : { userId: recState.userId } });
+    await loadRecords(`${byGame ? g.name : u.name}: ${removed} partida(s) apagada(s).`);
+    loadBackups();
+    fetchScores();
   } catch (err) { alert(err.message); }
 }
 
