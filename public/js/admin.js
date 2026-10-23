@@ -19,9 +19,13 @@ function showAdmin() {
       </div>
       ${adminTabsHtml(adminPane)}
       <section class="glass" data-pane="online"${adminPane === 'online' ? '' : ' hidden'}>
-        <h2><span class="live-dot"></span>Online agora <span class="hint" id="onCount" style="font-size:var(--fs-sm)"></span></h2>
-        <p class="note">Quem está com o site aberto e visível (atualiza a cada 15s). Quem minimiza ou troca de aba sai da lista em ~1 min.</p>
-        <div id="onlineList"><p class="hint" style="text-align:left">Carregando...</p></div>
+        <div class="acc-head">
+          <h2><span class="live-dot"></span>Online agora <span class="hint" id="onCount"></span></h2>
+          <span class="hint on-auto">${icon('refresh-cw')} atualiza a cada 15s</span>
+        </div>
+        <p class="note">Quem está com o site aberto e visível. Quem minimiza ou troca de aba sai da lista em ~1 min.</p>
+        <ul class="acc-list" id="onlineList"><li class="hint">Carregando...</li></ul>
+        <div id="seenList"></div>
       </section>
       <section class="glass" data-pane="contas"${adminPane === 'contas' ? '' : ' hidden'}>
         <div class="acc-head">
@@ -33,29 +37,22 @@ function showAdmin() {
         <ul class="acc-list" id="usersList"><li class="hint">Carregando...</li></ul>
       </section>
       <section class="glass" data-pane="duplas"${adminPane === 'duplas' ? '' : ' hidden'}>
-        <h2>Duplas</h2>
-        <p class="note">As duplas são formadas pelos próprios jogadores (convite + aceite). Aqui você só modera: renomear um nome inadequado ou desfazer uma dupla.</p>
-        <form class="row" id="duoNew" autocomplete="off">
-          <label>Pessoa 1<select name="aId" required></select></label>
-          <label>Pessoa 2<select name="bId" required></select></label>
-          <label>Nome da dupla<input name="name" maxlength="24" placeholder="ex.: Os Imbatíveis" required></label>
-          <label>As partidas contam desde<select name="since"><option value="all">o começo (todas)</option><option value="month">o início do mês</option><option value="now">agora</option></select></label>
-          <button class="btn">+ Criar dupla</button>
-        </form>
-        <p class="err" id="duoNewErr" style="color:oklch(80% 0.14 18)"></p>
-        <p class="note">A dupla criada aqui já nasce ativa (sem convite). Em "As partidas contam desde" você escolhe se vale tudo que os dois já jogaram, só o mês, ou só daqui pra frente. Só aparecem pessoas que não estão em dupla nem com convite aberto.</p>
-        <div id="duosAdmin"><p class="hint" style="text-align:left">Carregando...</p></div>
+        <div class="acc-head">
+          <h2>Duplas <span class="hint" id="duoCount"></span></h2>
+          <button class="btn" id="duoNew">${icon('users')} Nova dupla</button>
+        </div>
+        <p class="note">Os próprios jogadores formam as duplas (convite + aceite). Aqui você modera: troca um nome inadequado, muda desde quando as partidas contam ou desfaz a dupla.</p>
+        <ul class="acc-list" id="duosAdmin"><li class="hint">Carregando...</li></ul>
       </section>
       <section class="glass" data-pane="geiko"${adminPane === 'geiko' ? '' : ' hidden'}>
         <h2>Regra de bloqueio</h2>
-        <p class="note">Cada ticket aberto do atendente vale um peso. Se a soma passar do limite, os jogos ficam bloqueados.
-          Peso = prioridade × multiplicador (sem interação ou status de espera). Quem não tem ID do Geiko nunca é bloqueado.</p>
+        <p class="note">Cada ticket aberto do atendente vale um peso. Se a soma passar do limite, os jogos ficam bloqueados. Quem não tem ID do Geiko nunca é bloqueado.</p>
         <form id="rulesForm"><p class="hint" style="text-align:left">Carregando...</p></form>
       </section>
       <section class="glass" data-pane="geiko"${adminPane === 'geiko' ? '' : ' hidden'}>
         <h2>Testar ID do Geiko</h2>
         <p class="note">Confere a fila de um atendente com a regra atual (útil pra validar o vínculo antes de criar a conta).</p>
-        <form class="row" id="testForm"><label>ID do Geiko<input name="geikoId" inputmode="numeric" pattern="\\d+" required></label><button class="btn ghost">Testar</button></form>
+        <form class="geiko-test" id="testForm"><label class="acc-search">${icon('search')}<input name="geikoId" inputmode="numeric" pattern="\\d+" required placeholder="ID do Geiko" aria-label="ID do Geiko"></label><button class="btn ghost">Testar</button></form>
         <div id="testOut" style="margin-top:var(--space-sm)"></div>
       </section>
     </div>`;
@@ -81,77 +78,103 @@ function showAdmin() {
 }
 
 // ---------- duplas (moderação) ----------
+const DUO_SINCE = [['all', 'rotate-ccw', 'O começo', 'Tudo que os dois já jogaram'], ['month', 'calendar', 'O início do mês', 'Só as partidas deste mês'], ['now', 'play', 'Agora', 'Só daqui pra frente']];
+const duoSinceField = cur => `<fieldset class="acc-role duo-since"><legend>As partidas contam desde</legend>${DUO_SINCE.map(([v, ic, l, s]) =>
+  `<label><input type="radio" name="since" value="${v}" required${v === cur ? ' checked' : ''}><span>${icon(ic)}<b>${l}</b><small>${s}</small></span></label>`).join('')}</fieldset>`;
+
+/** Janela com um formulário curto da administração: `send(dados)` faz a chamada; se der erro, ele aparece na própria janela. */
+function adminFormModal(title, fields, okLabel, send, { danger = false } = {}) {
+  const { el, close } = modal(`<h2>${title}</h2>
+    <form class="admin acc-form" autocomplete="off">${fields}<p class="err"></p>
+      <div class="acc-actions"><button type="button" class="btn ghost" data-cancel>Cancelar</button><button class="btn${danger ? ' danger' : ''}">${okLabel}</button></div>
+    </form>`, { wide: true });
+  const f = el.querySelector('form'), ok = f.querySelector('button:not([type])');
+  el.querySelector('[data-cancel]').onclick = close;
+  f.querySelector('input:not([type=radio]), select')?.focus();
+  f.onsubmit = async e => {
+    e.preventDefault();
+    ok.disabled = true;
+    try { await send(new FormData(f)); close(); }
+    catch (err) { f.querySelector('.err').textContent = err.message; ok.disabled = false; }
+  };
+  return el;
+}
+
 async function loadAdminDuos() {
   const box = $('#duosAdmin');
   if (!box) return;
   try {
     const [{ duos }, { users }] = await Promise.all([api('api/admin/duos'), api('api/admin/users')]);
-    // formulário de criação: só quem está livre (ativo e fora de qualquer dupla)
+    const byId = new Map(users.map(u => [u.id, u]));
+    // nova dupla: só quem está livre (ativo e fora de qualquer dupla)
     const busy = new Set(duos.flatMap(d => [d.aId, d.bId]));
     const free = users.filter(u => u.active && !busy.has(u.id)).sort((x, y) => x.name.localeCompare(y.name, 'pt-BR'));
-    const opts = '<option value="">Escolha…</option>' + free.map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('');
-    for (const n of ['aId', 'bId']) { const sel = document.querySelector(`#duoNew select[name=${n}]`); if (sel) sel.innerHTML = opts; }
-    const form = $('#duoNew');
-    if (form) form.onsubmit = async e => {
-      e.preventDefault();
-      const f = new FormData(e.target), err = $('#duoNewErr');
-      err.textContent = '';
-      try {
+    const add = $('#duoNew');
+    add.disabled = free.length < 2;
+    add.title = free.length < 2 ? 'Precisa de pelo menos duas pessoas fora de dupla' : '';
+    add.onclick = () => {
+      const opts = '<option value="">Escolha…</option>' + free.map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('');
+      adminFormModal(`${icon('users')} Nova dupla`, `
+        <div class="duo-pair"><label>Pessoa 1<select name="aId" required>${opts}</select></label><span class="duo-amp" aria-hidden="true">&amp;</span><label>Pessoa 2<select name="bId" required>${opts}</select></label></div>
+        <small>Só aparecem pessoas que não estão em dupla nem com convite aberto. A dupla criada aqui já nasce ativa, sem convite.</small>
+        <label>Nome da dupla<input name="name" maxlength="24" placeholder="ex.: Os Imbatíveis" required></label>
+        ${duoSinceField('all')}`, 'Criar dupla', async f => {
         await api('api/admin/duos', { method: 'POST', body: { aId: Number(f.get('aId')), bId: Number(f.get('bId')), name: f.get('name'), since: f.get('since') } });
-        e.target.reset();
         loadAdminDuos();
-      } catch (e2) { err.textContent = e2.message; }
+      });
     };
-    box.innerHTML = duos.length ? `<div class="scroll" style="max-height:none"><table class="tickets users"><thead><tr><th>Dupla</th><th>Pessoas</th><th>Situação</th><th>Conta desde</th><th></th></tr></thead><tbody>${duos.map(d => `<tr data-id="${d.id}">
-        <td>${esc(d.name)}</td><td>${esc(d.a)} & ${esc(d.b)}</td><td>${d.status === 'active' ? 'ativa' : 'convite aberto'}</td>
-        <td>${d.status === 'active' ? (d.since === 0 ? 'o começo' : new Date(d.since).toLocaleDateString('pt-BR')) : '—'}</td>
-        <td><div class="actions"><button class="btn ghost" data-duo="rename">Renomear</button><button class="btn ghost" data-duo="since">Início</button><button class="btn ghost" data-duo="end">Desfazer</button></div></td></tr>`).join('')}</tbody></table></div>`
-      : '<p class="hint" style="text-align:left">Nenhuma dupla ainda.</p>';
-    box.querySelectorAll('[data-duo]').forEach(b => b.onclick = async () => {
-      const row = b.closest('tr'), id = row.dataset.id, d = duos.find(x => String(x.id) === id);
-      try {
-        if (b.dataset.duo === 'since') {
-          const pick = prompt('Desde quando as partidas dos dois contam pra essa dupla?\n\n1 = o começo (todas as partidas)\n2 = o início do mês\n3 = agora (só daqui pra frente)', '1');
-          if (pick == null) return;
-          const mode = { 1: 'all', 2: 'month', 3: 'now' }[String(pick).trim()];
-          if (!mode) return alert('Digite 1, 2 ou 3.');
-          await api(`api/admin/duos/${id}/since`, { method: 'POST', body: { since: mode } });
-        } else if (b.dataset.duo === 'rename') {
-          const name = prompt('Novo nome da dupla:', d.name);
-          if (name == null) return;
-          await api(`api/admin/duos/${id}/rename`, { method: 'POST', body: { name } });
-        } else {
-          if (!confirm(`Desfazer a dupla ${d.name}? Os dois são avisados.`)) return;
-          await api(`api/admin/duos/${id}/end`, { method: 'POST', body: {} });
-        }
-        loadAdminDuos();
-      } catch (err) { alert(err.message); }
+    const active = duos.filter(d => d.status === 'active').length;
+    $('#duoCount').textContent = duos.length ? `${active} ${active === 1 ? 'ativa' : 'ativas'}${duos.length > active ? ` · ${duos.length - active} convite${duos.length - active > 1 ? 's' : ''}` : ''}` : '';
+    const av = (id, name) => avatarHtml(byId.get(id)?.avatar) || accInitials(name);
+    box.innerHTML = duos.map(d => {
+      const on = d.status === 'active';
+      return `<li class="acc duo" data-id="${d.id}">
+        <span class="duo-av">${av(d.aId, d.a)}${av(d.bId, d.b)}</span>
+        <span class="acc-who"><b>${esc(d.name)}</b><small>${esc(d.a)} &amp; ${esc(d.b)}</small></span>
+        <span class="acc-chips">${on ? `<span class="chip ok">Ativa</span><span class="chip">${icon('calendar')} conta desde ${d.since === 0 ? 'o começo' : new Date(d.since).toLocaleDateString('pt-BR')}</span>` : '<span class="chip warn">Convite aberto</span>'}</span>
+        <span class="actions">
+          <button class="btn ghost" data-duo="rename" aria-label="Renomear ${esc(d.name)}">${icon('pencil')}<span class="t">Renomear</span></button>
+          ${on ? `<button class="btn ghost" data-duo="since" aria-label="Mudar desde quando conta">${icon('calendar')}<span class="t">Início</span></button>` : ''}
+          <button class="btn ghost danger" data-duo="end" aria-label="Desfazer ${esc(d.name)}">${icon('x')}<span class="t">Desfazer</span></button>
+        </span></li>`;
+    }).join('') || `<li class="empty-state">${icon('users')}<b>Nenhuma dupla ainda</b><span>Quando alguém aceitar um convite, a dupla aparece aqui.</span></li>`;
+    box.querySelectorAll('[data-duo]').forEach(b => b.onclick = () => {
+      const d = duos.find(x => String(x.id) === b.closest('li').dataset.id), url = `api/admin/duos/${d.id}`;
+      if (b.dataset.duo === 'rename') adminFormModal(`${icon('pencil')} Renomear dupla`,
+        `<label>Novo nome<input name="name" maxlength="24" value="${esc(d.name)}" required></label><small>${esc(d.a)} e ${esc(d.b)} veem o nome novo na hora.</small>`,
+        'Salvar', async f => { await api(`${url}/rename`, { method: 'POST', body: { name: f.get('name') } }); loadAdminDuos(); });
+      else if (b.dataset.duo === 'since') adminFormModal(`${icon('calendar')} Desde quando conta`,
+        `<p>Escolha quais partidas de ${esc(d.a)} e ${esc(d.b)} entram na pontuação de <b>${esc(d.name)}</b>.</p>${duoSinceField(d.since === 0 ? 'all' : '')}`,
+        'Salvar', async f => { await api(`${url}/since`, { method: 'POST', body: { since: f.get('since') } }); loadAdminDuos(); });
+      else adminFormModal(`${icon('x')} Desfazer ${esc(d.name)}?`,
+        `<p>${esc(d.a)} e ${esc(d.b)} deixam de ser dupla e os dois são avisados.</p>`,
+        'Desfazer dupla', async () => { await api(`${url}/end`, { method: 'POST', body: {} }); loadAdminDuos(); }, { danger: true });
     });
-  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+  } catch (err) { box.innerHTML = `<li class="err">${esc(err.message)}</li>`; }
 }
 
 // ---------- quem está online ----------
 const ago = ms => { const s = Math.max(0, Math.round(ms / 1000)); return s < 60 ? `${s}s` : s < 3600 ? `${Math.floor(s / 60)} min` : `${Math.floor(s / 3600)}h${String(Math.floor(s % 3600 / 60)).padStart(2, '0')}`; };
-const viewLabel = v => GAMES[v] ? `${icon('gamepad-2')} jogando <b>${GAMES[v].name}</b>` : v === 'admin' ? `${icon('settings')} no painel admin` : `${icon('house')} no menu`;
+const viewLabel = v => GAMES[v] ? `${icon(GAMES[v].icon)} jogando <b>${GAMES[v].name}</b>` : v === 'admin' ? `${icon('settings')} na administração` : `${icon('house')} no menu`;
 async function loadOnline() {
   const box = $('#onlineList');
   if (!box) return;
   try {
     const { now, online, recent } = await api('api/admin/online');
-    $('#onCount').textContent = `· ${online.length} ${online.length === 1 ? 'pessoa' : 'pessoas'}`;
-    box.innerHTML = (online.length
-      ? `<table class="tickets users"><tbody>${online.map(p => `<tr data-id="${p.id}">
-          <td><b>${esc(p.name)}</b>${p.id === me.id ? ' <span class="tag">• você</span>' : ''}${p.block ? ` <span class="tag" style="color:var(--red)">${icon('lock')} ${untilText(p.block.until)}</span>` : ''}</td>
-          <td>${viewLabel(p.view)} <span class="hint">há ${ago(now - p.since)}</span></td>
-          <td><div class="actions">${p.id === me.id ? '' : p.block ? `<button class="btn ghost" data-act="unblock">${icon('lock-open')} Desbloquear</button>` : `<button class="btn ghost" data-act="block">${icon('lock')} Bloquear</button>`}</div></td>
-        </tr>`).join('')}</tbody></table>`
-      : '<p class="hint" style="text-align:left">Ninguém online agora.</p>')
-      + (recent.length ? `<p class="note" style="margin:var(--space-sm) 0 0">Visto nas últimas 24h: ${recent.map(p =>
-          `${esc(p.name)} <span class="hint">(${new Date(p.lastSeen).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}${GAMES[p.view] ? ', ' + GAMES[p.view].name : ''})</span>`).join(' · ')}</p>` : '');
-    box.querySelectorAll('[data-act]').forEach(b => b.onclick = async () => {
-      await userAction(b.dataset.act, online.find(p => p.id === +b.closest('tr').dataset.id));
-    });
-  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+    const av = p => avatarHtml(p.avatar) || accInitials(p.name);
+    $('#onCount').textContent = `${online.length} ${online.length === 1 ? 'pessoa' : 'pessoas'}`;
+    box.innerHTML = online.map(p => `<li class="acc on" data-id="${p.id}">
+        <span class="acc-av">${av(p)}</span>
+        <span class="acc-who"><b>${esc(p.name)}</b><small class="on-where">${viewLabel(p.view)} · há ${ago(now - p.since)}</small></span>
+        <span class="acc-chips">${p.id === me.id ? '<span class="chip">Você</span>' : ''}${p.block ? `<span class="chip bad">${icon('lock')} Bloqueada ${untilText(p.block.until)}</span>` : ''}</span>
+        <span class="actions">${p.id === me.id ? '' : p.block
+          ? `<button class="btn ghost" data-act="unblock" aria-label="Desbloquear ${esc(p.name)}">${icon('lock-open')}<span class="t">Desbloquear</span></button>`
+          : `<button class="btn ghost" data-act="block" aria-label="Bloquear ${esc(p.name)}">${icon('lock')}<span class="t">Bloquear</span></button>`}</span>
+      </li>`).join('') || `<li class="empty-state">${icon('moon')}<b>Ninguém online agora</b><span>Quem abrir o site aparece aqui em segundos.</span></li>`;
+    $('#seenList').innerHTML = recent.length ? `<h3 class="seen-h">Visto nas últimas 24h <span class="hint">${recent.length}</span></h3>
+      <ul class="seen-list">${recent.map(p => `<li><span class="acc-av">${av(p)}</span><span><b>${esc(p.name)}</b><small>${new Date(p.lastSeen).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}${GAMES[p.view] ? ' · ' + GAMES[p.view].name : ''}</small></span></li>`).join('')}</ul>` : '';
+    box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => userAction(b.dataset.act, online.find(p => p.id === +b.closest('li').dataset.id)));
+  } catch (err) { box.innerHTML = `<li class="err">${esc(err.message)}</li>`; }
 }
 // ---------- editor de recordes (só admin) ----------
 const recState = { mode: 'game', game: FEATURED[0], userId: null };
@@ -171,12 +194,12 @@ function showRecords() {
       </div>
       ${adminTabsHtml('records')}
       <section class="glass">
-        <div class="row" style="margin-bottom:var(--space-sm)">
-          <label>Ver<select id="recMode"><option value="game">Por jogo</option><option value="user">Por pessoa</option></select></label>
-          <label><span id="recPickName">Jogo</span><select id="recPick"></select></label>
-          <span class="hint" id="recMsg"></span>
+        <div class="rec-head">
+          <div class="seg" role="group" aria-label="Ver"><button data-recmode="game">${icon('gamepad-2')} Por jogo</button><button data-recmode="user">${icon('user')} Por pessoa</button></div>
+          <label class="rec-pick"><span id="recPickName">Jogo</span><select id="recPick"></select></label>
         </div>
-        <div id="recTable"><p class="hint" style="text-align:left">Carregando...</p></div>
+        <p class="note rec-msg" id="recMsg" role="status"></p>
+        <ul class="rec-list" id="recTable"><li class="hint">Carregando...</li></ul>
       </section>
       <section class="glass">
         <div class="row" style="justify-content:space-between;margin-bottom:var(--space-sm)">
@@ -203,8 +226,7 @@ function showRecords() {
     };
     loadBackups();
     $('#back').onclick = () => { history.replaceState(null, '', location.pathname); showMenu(); };
-    $('#recMode').value = recState.mode;
-    $('#recMode').onchange = e => { recState.mode = e.target.value; renderRecords(); };
+    main.querySelectorAll('[data-recmode]').forEach(b => b.onclick = () => { recState.mode = b.dataset.recmode; renderRecords(); });
     $('#recPick').onchange = e => { recState.mode === 'game' ? (recState.game = e.target.value) : (recState.userId = +e.target.value); renderRecords(); };
     loadRecords();
   });
@@ -225,9 +247,12 @@ function renderRecords() {
   const box = $('#recTable');
   if (!box) return;
   $('#recMsg').textContent = '';
+  main.querySelectorAll('[data-recmode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.recmode === recState.mode));
   const pick = $('#recPick');
-  const unitOf = id => `<span class="hint">${GAMES[id].unit}</span>`;
-  const valueInput = (v, enabled = true) => `<input type="number" step="any" min="0" class="rec-v" value="${v ?? ''}" ${enabled ? '' : 'disabled'} style="width:8em">`;
+  // campo do valor com a unidade do jogo grudada
+  const valueField = (id, v, enabled = true) => `<label class="rec-field"><input type="number" step="any" min="0" class="rec-v" value="${v ?? ''}" ${enabled ? '' : 'disabled'} aria-label="Recorde (${GAMES[id].unit})"><span>${GAMES[id].unit}</span></label>`;
+  const count = n => `<span class="rec-n">${n ? `${n} ${n === 1 ? 'partida' : 'partidas'}` : '<span class="hint">sem partidas</span>'}</span>`;
+  const del = '<button class="btn ghost icon-btn danger" data-act="del" aria-label="Apagar as partidas">' + icon('trash-2') + '</button>';
   if (recState.mode === 'game') {
     $('#recPickName').textContent = 'Jogo';
     pick.innerHTML = menuOrder().map(([id, g]) => `<option value="${id}" ${id === recState.game ? 'selected' : ''}>${g.name}</option>`).join('');
@@ -235,29 +260,33 @@ function renderRecords() {
     const rows = recData.records.filter(r => r.game === recState.game).sort((a, b) => (better(g, a.best, b.best) ? -1 : 1));
     const have = new Set(rows.map(r => r.userId));
     const free = recData.users.filter(u => !have.has(u.id));
-    box.innerHTML = `<table class="tickets users"><thead><tr><th>#</th><th>Pessoa</th><th>Recorde</th><th>Partidas</th><th></th></tr></thead><tbody>
-      ${rows.map((r, i) => `<tr data-game="${recState.game}" data-user="${r.userId ?? ''}" data-name="${esc(r.name)}">
-        <td>${rankBadge(i + 1)}</td><td>${esc(r.name)}${r.userId == null ? ' <span class="tag">• sem conta</span>' : ''}</td>
-        <td>${valueInput(r.best, r.userId != null)} ${unitOf(recState.game)}</td><td>${r.count}</td>
-        <td><div class="actions">${r.userId != null ? '<button class="btn ghost" data-act="save">Salvar</button>' : ''}<button class="btn ghost" data-act="del">Apagar</button></div></td></tr>`).join('')
-        || '<tr><td colspan="5" class="hint">Ninguém tem recorde nesse jogo ainda.</td></tr>'}
-      </tbody></table>
-      ${free.length ? `<div class="row" style="margin-top:var(--space-sm)" data-game="${recState.game}">
-        <label>Adicionar recorde pra<select class="rec-u">${free.map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('')}</select></label>
-        <label>Valor (${g.unit})${valueInput('')}</label><button class="btn" data-act="add">+ Adicionar</button></div>` : ''}`;
+    const avOf = r => avatarHtml(recData.users.find(u => u.id === r.userId)?.avatar) || accInitials(r.name);
+    box.innerHTML = rows.map((r, i) => `<li class="rec" data-game="${recState.game}" data-user="${r.userId ?? ''}" data-name="${esc(r.name)}">
+        ${rankBadge(i + 1)}<span class="acc-av">${avOf(r)}</span>
+        <span class="acc-who"><b>${esc(r.name)}</b>${r.userId == null ? '<small>sem conta</small>' : ''}</span>
+        ${valueField(recState.game, r.best, r.userId != null)}${count(r.count)}
+        <span class="actions">${r.userId != null ? '<button class="btn ghost" data-act="save">Salvar</button>' : ''}${del}</span></li>`).join('')
+      || `<li class="empty-state">${icon('trophy')}<b>Ninguém tem recorde em ${g.name} ainda</b><span>Adicione um abaixo, se precisar.</span></li>`;
+    if (free.length) box.insertAdjacentHTML('beforeend', `<li class="rec add" data-game="${recState.game}">
+        <span class="rec-plus" aria-hidden="true">+</span>
+        <label class="rec-who">Adicionar recorde pra<select class="rec-u">${free.map(u => `<option value="${u.id}">${esc(u.name)}</option>`).join('')}</select></label>
+        ${valueField(recState.game, '')}<span class="actions"><button class="btn" data-act="add">Adicionar</button></span></li>`);
   } else {
     $('#recPickName').textContent = 'Pessoa';
     pick.innerHTML = recData.users.map(u => `<option value="${u.id}" ${u.id === recState.userId ? 'selected' : ''}>${esc(u.name)}</option>`).join('');
     const mine = new Map(recData.records.filter(r => r.userId === recState.userId).map(r => [r.game, r]));
-    box.innerHTML = `<table class="tickets users"><thead><tr><th>Jogo</th><th>Recorde</th><th>Partidas</th><th></th></tr></thead><tbody>
-      ${menuOrder().map(([id, g]) => {
-        const r = mine.get(id);
-        return `<tr data-game="${id}" data-user="${recState.userId}">
-          <td>${g.name}</td><td>${valueInput(r?.best)} ${unitOf(id)}</td><td>${r ? r.count : '<span class="hint">—</span>'}</td>
-          <td><div class="actions"><button class="btn ghost" data-act="save">${r ? 'Salvar' : '+ Adicionar'}</button>${r ? '<button class="btn ghost" data-act="del">Apagar</button>' : ''}</div></td></tr>`;
-      }).join('')}</tbody></table>`;
+    box.innerHTML = menuOrder().map(([id, g]) => {
+      const r = mine.get(id);
+      return `<li class="rec by-user${r ? '' : ' none'}" data-game="${id}" data-user="${recState.userId}">
+        <span class="rec-game" style="--h:${g.hue}" aria-hidden="true">${icon(g.icon)}</span>
+        <span class="acc-who"><b>${g.name}</b></span>
+        ${valueField(id, r?.best)}${count(r?.count)}
+        <span class="actions"><button class="btn ghost" data-act="save">${r ? 'Salvar' : 'Adicionar'}</button>${r ? del : ''}</span></li>`;
+    }).join('');
   }
   box.querySelectorAll('[data-act]').forEach(b => b.onclick = () => recordAction(b));
+  // valor mexido: o Salvar daquela linha fica em destaque
+  box.querySelectorAll('.rec:not(.add) .rec-v').forEach(inp => inp.oninput = () => inp.closest('.rec').classList.toggle('changed', inp.value !== inp.defaultValue));
 }
 
 async function recordAction(btn) {
@@ -700,39 +729,54 @@ async function userAction(act, u) {
   if (act === 'edit') accountModal(u);
 }
 
+// interruptor (checkbox com role="switch") com título e explicação ao lado
+const ruleSwitch = (name, on, title, desc) => `<label class="sw-row"><span class="sw-txt"><b>${title}</b>${desc ? `<small>${desc}</small>` : ''}</span>
+  <input type="checkbox" role="switch" name="${name}"${on ? ' checked' : ''}><span class="sw" aria-hidden="true"></span></label>`;
+
 async function loadRules() {
   const form = $('#rulesForm');
   if (!form) return;
   try {
     const { rules, situations } = await api('api/admin/rules');
     const sitEntries = Object.entries(situations).sort((a, b) => a[1].localeCompare(b[1]));
+    const num = (name, value, step, extra = '') => `<input type="number" name="${name}" step="${step}" min="0" value="${value}" ${extra}>`;
     form.innerHTML = `
-      <div class="row" style="margin-bottom:var(--space-sm)">
-        <label class="checks"><label><input type="checkbox" name="enabled" ${rules.enabled ? 'checked' : ''}> Bloqueio ligado</label>
-          <label title="Desligado: todo mundo vê só quem mais resolveu; os números de cada um ficam no Relatório"><input type="checkbox" name="weeklyPublic" ${rules.weeklyPublic ? 'checked' : ''}> Mostrar ranking de tickets da semana pra todos</label></label>
-        <label>Bloqueia quando a soma passar de<input type="number" name="limit" step="0.25" min="0" value="${rules.limit}"></label>
+      <div class="set-grid">
+        <div class="set-card">
+          ${ruleSwitch('enabled', rules.enabled, 'Bloqueio por fila', 'Com a soma da fila acima do limite, os jogos ficam bloqueados.')}
+          <label class="set-inline set-dep">Bloqueia quando a soma passar de ${num('limit', rules.limit, 0.25)}</label>
+        </div>
+        <div class="set-card">
+          ${ruleSwitch('fh_enabled', rules.freeHours.enabled, 'Horário livre', 'Nesse horário (Brasília) todo mundo joga, mesmo com ticket aberto. O bloqueio manual continua valendo.')}
+          <div class="set-inline set-dep"><label>Das ${num('fh_from', rules.freeHours.from, 1, 'max="23" aria-label="Livre a partir das (hora)"')}</label><label>às ${num('fh_to', rules.freeHours.to, 1, 'max="23" aria-label="Até as (hora)"')} h</label></div>
+          <label class="chk set-dep"><input type="checkbox" name="fh_weekends"${rules.freeHours.weekends ? ' checked' : ''}> Sábado e domingo o dia todo</label>
+        </div>
+        <div class="set-card wide">
+          <h3>Peso de cada ticket</h3>
+          <p class="note">Peso = prioridade × multiplicador. Ticket com interação do atendente e fora dos status de espera fica só com o peso da prioridade.</p>
+          <div class="prio-grid">${PRIO_FIELDS.map(([k, label]) => `<label class="prio p-${k}"><span>${label}</span>${num('p_' + k, rules.priority[k], 0.25)}</label>`).join('')}</div>
+          <div class="mult-grid">
+            <label class="mult"><span><b>× Sem interação</b><small>O atendente ainda não mexeu no ticket</small></span>${num('noInteractionMult', rules.noInteractionMult, 0.05)}</label>
+            <label class="mult"><span><b>× Status de espera</b><small>O ticket depende de outra pessoa (status marcados abaixo)</small></span>${num('waitingClientMult', rules.waitingClientMult, 0.05)}</label>
+          </div>
+          <p class="weight-ex" id="weightEx" aria-live="polite"></p>
+          <fieldset class="sit-chips"><legend>Status de espera</legend>
+            ${sitEntries.length ? sitEntries.map(([id, name]) => `<label><input type="checkbox" name="sit" value="${id}"${rules.waitingClientSituationIds.includes(+id) ? ' checked' : ''}><span>${icon('circle-check')}${esc(name)}</span></label>`).join('')
+              : '<span class="hint">Não consegui buscar os status no Geiko agora.</span>'}
+          </fieldset>
+        </div>
+        <div class="set-card wide">
+          ${ruleSwitch('weeklyPublic', rules.weeklyPublic, 'Ranking de tickets da semana pra todos', 'Desligado: todo mundo vê só quem mais resolveu; os números de cada um ficam no Relatório.')}
+        </div>
       </div>
-      <p class="note" style="margin-bottom:6px">Horário livre (Brasília) — nesse horário o site libera pra todo mundo, mesmo com ticket aberto. O bloqueio manual continua valendo.</p>
-      <div class="row" style="margin-bottom:var(--space-sm)">
-        <label class="checks"><label><input type="checkbox" name="fh_enabled" ${rules.freeHours.enabled ? 'checked' : ''}> Horário livre ligado</label>
-          <label><input type="checkbox" name="fh_weekends" ${rules.freeHours.weekends ? 'checked' : ''}> Sábado e domingo o dia todo</label></label>
-        <label>Livre a partir das (h)<input type="number" name="fh_from" step="1" min="0" max="23" value="${rules.freeHours.from}"></label>
-        <label>Até as (h)<input type="number" name="fh_to" step="1" min="0" max="23" value="${rules.freeHours.to}"></label>
-      </div>
-      <p class="note" style="margin-bottom:6px">Peso por prioridade</p>
-      <div class="row" style="margin-bottom:var(--space-sm)">
-        ${PRIO_FIELDS.map(([k, label]) => `<label>${label}<input type="number" name="p_${k}" step="0.25" min="0" value="${rules.priority[k]}"></label>`).join('')}
-      </div>
-      <div class="row" style="margin-bottom:var(--space-sm)">
-        <label>× sem interação do atendente<input type="number" name="noInteractionMult" step="0.05" min="0" value="${rules.noInteractionMult}"></label>
-        <label>× status de espera (abaixo)<input type="number" name="waitingClientMult" step="0.05" min="0" value="${rules.waitingClientMult}"></label>
-      </div>
-      <p class="note" style="margin-bottom:6px">Status de espera — ticket com interação nesses status pesa menos (o atendente depende de outra pessoa):</p>
-      <div class="checks" style="margin-bottom:var(--space-sm)">
-        ${sitEntries.length ? sitEntries.map(([id, name]) => `<label><input type="checkbox" name="sit" value="${id}" ${rules.waitingClientSituationIds.includes(+id) ? 'checked' : ''}> ${esc(name)}</label>`).join('')
-          : '<span class="hint">Não consegui buscar os status no Geiko agora.</span>'}
-      </div>
-      <div class="row"><button class="btn">Salvar regra</button><span id="rulesMsg" class="hint"></span></div>`;
+      <div class="save-bar"><span id="rulesMsg" class="hint" role="status"></span><button class="btn">Salvar regra</button></div>`;
+    // exemplo com os números que estão na tela (muda enquanto digita)
+    const showExample = () => {
+      const v = n => Number(form.elements[n].value) || 0, p = v('p_URG'), lim = v('limit');
+      $('#weightEx').innerHTML = `Exemplo, ticket <b>Urgente</b>: com interação pesa <b>${fmtW(p)}</b>, sem interação <b>${fmtW(+(p * v('noInteractionMult')).toFixed(2))}</b>, em espera <b>${fmtW(+(p * v('waitingClientMult')).toFixed(2))}</b>. Limite: <b>${fmtW(lim)}</b>.`;
+    };
+    showExample();
+    form.oninput = () => { showExample(); form.classList.add('dirty'); $('#rulesMsg').textContent = 'Alterações não salvas'; };
     form.onsubmit = async e => {
       e.preventDefault();
       const f = new FormData(form);
@@ -747,14 +791,16 @@ async function loadRules() {
         // sem a lista do Geiko na tela, mantém a que já estava salva
         waitingClientSituationIds: sitEntries.length ? f.getAll('sit').map(Number) : rules.waitingClientSituationIds,
       };
-      try { await api('api/admin/rules', { method: 'PUT', body }); $('#rulesMsg').textContent = 'Regra salva — vale a partir da próxima consulta de cada um.'; refreshGate(true); }
-      catch (err) { $('#rulesMsg').textContent = err.message; }
+      try {
+        await api('api/admin/rules', { method: 'PUT', body });
+        form.classList.remove('dirty');
+        $('#rulesMsg').textContent = 'Regra salva. Vale a partir da próxima consulta de cada um.';
+        refreshGate(true);
+      } catch (err) { $('#rulesMsg').textContent = err.message; }
     };
   } catch (err) { form.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
 }
-
-// abas da administração: Painel, Relatório e Recordes (este só pra conta dona)
-// uma barra só com todas as abas (antes eram duas fileiras iguais: Painel/Relatório/Recordes e, dentro do Painel, mais quatro)
+// uma barra só com todas as abas: as partes do Painel, o Relatório e os Recordes (este só pra conta dona)
 function adminTabsHtml(cur) {
   const tabs = [...ADMIN_PANES, ['report', 'chart-column', 'Relatório'], ['records', 'wrench', 'Recordes']].filter(([k]) => k !== 'records' || me?.canEditRecords);
   return `<nav class="adm-tabs" role="tablist" aria-label="Administração">${tabs.map(([k, ic, l]) =>
