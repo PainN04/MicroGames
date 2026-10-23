@@ -39,7 +39,10 @@ function statsFor(name) {
   const maxInDay = Math.max(0, ...Object.values(perDay));
   const best = id => plays.filter(p => p.id === id).reduce((b, p) => (b === null || better(GAMES[id], p.score, b) ? p.score : b), null);
   const trophies = social?.trophies?.[name] || 0, duelWins = social?.duelWins?.[name] || 0;
-  return { trophies, duelWins, plays, games, rankIn, firsts, podiums, monthsWon, dailyWins, dailyStreak, streak, late, early, lunch, night, weekend, maxInDay, daysPlayed: days.length, best };
+  // jogos diários: dias seguidos jogando e quantas vezes ficou em 1º no ranking do dia
+  const dt = dailyTabRecord(name), dtNow = dailyTabStreak(name);
+  return { trophies, duelWins, plays, games, rankIn, firsts, podiums, monthsWon, dailyWins, dailyStreak, streak, late, early, lunch, night, weekend, maxInDay, daysPlayed: days.length, best,
+    dtNow, dtBest: Math.max(dt.best, dtNow), dtWins: dt.wins };
 }
 
 const ACHIEVEMENTS = [
@@ -72,6 +75,11 @@ const ACHIEVEMENTS = [
   { id: 'bimes', icon: 'calendar', name: 'Bicampeão', desc: 'Foi campeão do mês 2 vezes', test: s => s.monthsWon.length >= 2, progress: s => [s.monthsWon.length, 2] },
   { id: 'const10', icon: 'flame', name: 'Imparável', desc: 'Jogou 10 dias úteis seguidos', test: s => s.streak >= 10, progress: s => [s.streak, 10] },
   { id: 'frequentador', icon: 'house', name: 'Frequentador', desc: 'Jogou em 20 dias diferentes', test: s => s.daysPlayed >= 20, progress: s => [s.daysPlayed, 20] },
+  { id: 'diario3', icon: 'flame', name: 'Pegando o ritmo', desc: 'Jogou os jogos diários 3 dias seguidos', test: s => s.dtBest >= 3, progress: s => [s.dtBest, 3] },
+  { id: 'diario7', icon: 'flame', name: 'Semana cheia', desc: 'Jogou os jogos diários 7 dias seguidos', test: s => s.dtBest >= 7, progress: s => [s.dtBest, 7] },
+  { id: 'diario30', icon: 'flame', name: 'Hábito', desc: 'Jogou os jogos diários 30 dias seguidos', test: s => s.dtBest >= 30, progress: s => [s.dtBest, 30] },
+  { id: 'campdiario', icon: 'calendar', name: 'Campeão dos diários', desc: 'Ficou em 1º no Ranking de hoje dos jogos diários', test: s => s.dtWins >= 1 },
+  { id: 'campdiario5', icon: 'calendar', name: 'Dono dos diários', desc: 'Ficou em 1º no ranking dos jogos diários 5 vezes', test: s => s.dtWins >= 5, progress: s => [s.dtWins, 5] },
   { id: 'fds', icon: 'sparkles', name: 'Sem folga', desc: 'Jogou num fim de semana', test: s => s.weekend },
   { id: 'almoco', icon: 'clock', name: 'Hora do almoço', desc: 'Jogou entre 12h e 14h', test: s => s.lunch },
   { id: 'coruja', icon: 'eye', name: 'Coruja', desc: 'Jogou depois das 22h', test: s => s.night },
@@ -152,6 +160,7 @@ function renderProfile(name) {
     <div class="kpi glass"><div class="l">Partidas</div><div class="v">${s.plays.length}</div><span class="d">desde ${new Date(s.plays[0].date).toLocaleDateString('pt-BR')}</span></div>
     <div class="kpi glass"><div class="l">Recordes gerais</div><div class="v">${s.firsts}</div><span class="d">${s.podiums} no pódio</span></div>
     <div class="kpi glass"><div class="l">Desafios do dia ganhos</div><div class="v">${s.dailyWins}</div>${dailyStreakOf(name) > 1 ? `<span class="d">${icon('flame')} ${dailyStreakOf(name)} seguidas agora</span>` : ''}${s.monthsWon.length ? `<span class="d">${icon('calendar')} campeão de ${s.monthsWon.map(k => monthName(k)).join(', ')}</span>` : ''}</div>
+    ${s.dtBest || s.dtWins ? `<div class="kpi glass"><div class="l">Jogos diários</div><div class="v">${icon('flame')} ${s.dtNow}<small> ${s.dtNow === 1 ? 'dia' : 'dias'}</small></div><span class="d">recorde: ${s.dtBest} seguido${s.dtBest === 1 ? '' : 's'}${s.dtWins ? ` · campeão ${s.dtWins}×` : ''}</span></div>` : ''}
     <div class="kpi glass"><div class="l">Conquistas</div><div class="v">${unlocked}/${ACHIEVEMENTS.length}</div></div>
     ${s.trophies || s.duelWins ? `<div class="kpi glass"><div class="l">Torneios e duelos</div><div class="v">${s.trophies}<small> 🏆</small> · ${s.duelWins}<small> ⚔</small></div><span class="d">torneios ganhos · duelos ganhos</span></div>` : ''}
   </div>`;

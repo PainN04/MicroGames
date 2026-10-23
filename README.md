@@ -130,8 +130,16 @@ Uma partida por dia em cada um, o mesmo desafio pra todo mundo. A resposta fica 
 | **Equação** | O Termo com números: a conta do dia (8 símbolos, tipo `12+35=47`) em 6 tentativas; todo palpite tem que ser uma conta certa. |
 | **Bandeira** | De que país é a bandeira? 6 palpites; cada erro diz a distância, a direção e o quanto chegou perto. Continente depois de 2 erros, capital depois de 4. |
 | **Caça-palavras** | 8 palavras de 2 temas num quadro 10×10, em qualquer direção. Mais rápido, mais pontos. |
+| **Cruzadinha** | Mini palavras cruzadas 5×5 com dicas. A grade cheia é enviada sozinha; conferir marca os erros mas tira 60 pontos. Mais rápido, mais pontos. Grades geradas por `scripts/build-cruzadinha.js` a partir das dicas em `lib/data/cruzadinha-dicas.txt`. |
 
 `scripts/build-diarios.js` gera os dados do Bandeira e do Soletra em `lib/data/` (roda uma vez, fora do app).
+
+Na aba:
+- 🏁 **Ranking de hoje**: soma os pontos de todos os diários do dia e zera à meia-noite (cada diário também tem ranking só do dia). Os diários ficam fora de recordes, campeões do mês e duplas.
+- 👑 **Campeão dos diários**: quem fecha o dia em 1º no Ranking de hoje ganha um selo ao lado do nome no dia seguinte (com confete) e libera a moldura *Aurora*.
+- 🔥 **Sequência**: dias seguidos jogando pelo menos um diário. Aparece na aba (pisca se hoje ainda não jogou) e no perfil, com o recorde; 7 dias liberam a moldura *Brasa*.
+- 📤 **Compartilhar meu dia**: um resumo com os pontos, a posição, a sequência e o que foi jogado (no celular abre o compartilhar do sistema; no PC copia).
+- ⏰ **Lembrete**: a partir das 18h, se ainda falta jogar algum, uma faixa avisa quanto tempo falta pra virar o dia.
 
 ## 🏆 Competição e social
 
@@ -174,7 +182,7 @@ Duas pessoas formam uma dupla com o nome que quiserem. Quem convida escolhe o no
 - Uma faixa no topo do menu mostra quem tem mais recordes de 1º lugar (a coroa), com o 2º e o 3º.
 
 ### 🎖️ Perfil e conquistas
-Clique no nome de qualquer pessoa pra abrir o perfil. São **43 conquistas**, como *Estreia*, *Explorador* (10 jogos diferentes), *Zerou o menu* (todos os 28), *Rei de um jogo*, *Campeão da semana*, *Dobradinha*, *Constância* (5 dias úteis seguidos), *Madrugador*, *Hora do almoço*, *Veterano* (500 partidas) e *Lenda da firma* (1000 partidas). Tudo é calculado na página a partir do ranking (`public/js/profile.js`).
+Clique no nome de qualquer pessoa pra abrir o perfil. São **48 conquistas**, como *Estreia*, *Explorador* (10 jogos diferentes), *Zerou o menu* (todos os 28), *Rei de um jogo*, *Campeão da semana*, *Dobradinha*, *Constância* (5 dias úteis seguidos), *Madrugador*, *Hora do almoço*, *Veterano* (500 partidas) e *Lenda da firma* (1000 partidas). Tudo é calculado na página a partir do ranking (`public/js/profile.js`).
 
 <br>
 
