@@ -2,7 +2,7 @@
 const PRIO_FIELDS = [['URG', 'Urgente'], ['ALT', 'Alta'], ['MED', 'Média'], ['NOR', 'Normal'], ['BAI', 'Baixa'], ['none', 'Sem prioridade']];
 
 // partes do Painel, cada uma numa aba
-const ADMIN_PANES = [['online', 'eye', 'Online'], ['contas', 'users', 'Contas'], ['duplas', 'users', 'Duplas'], ['geiko', 'clock', 'Fila do Geiko']];
+const ADMIN_PANES = [['online', 'eye', 'Online'], ['contas', 'user', 'Contas'], ['duplas', 'users', 'Duplas'], ['geiko', 'clock', 'Fila do Geiko']];
 let adminPane = 'online';
 
 function showAdmin() {
@@ -17,24 +17,20 @@ function showAdmin() {
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
         <div class="title"><h2>${icon('settings')} Administração</h2><p>Contas de quem joga, vínculo com o Geiko e a regra de bloqueio por fila.</p></div>
       </div>
-      ${adminTabsHtml('admin')}
-      <div class="seg view-tabs sub" role="tablist" aria-label="Painel">${ADMIN_PANES.map(([k, ic, l]) => `<button role="tab" data-pane-btn="${k}" aria-selected="${adminPane === k}" aria-pressed="${adminPane === k}">${icon(ic)} ${l}</button>`).join('')}</div>
+      ${adminTabsHtml(adminPane)}
       <section class="glass" data-pane="online"${adminPane === 'online' ? '' : ' hidden'}>
         <h2><span class="live-dot"></span>Online agora <span class="hint" id="onCount" style="font-size:var(--fs-sm)"></span></h2>
         <p class="note">Quem está com o site aberto e visível (atualiza a cada 15s). Quem minimiza ou troca de aba sai da lista em ~1 min.</p>
         <div id="onlineList"><p class="hint" style="text-align:left">Carregando...</p></div>
       </section>
       <section class="glass" data-pane="contas"${adminPane === 'contas' ? '' : ' hidden'}>
-        <h2>Contas</h2>
-        <form class="row" id="newUser" autocomplete="off">
-          <label>Nome (aparece no ranking)<input name="name" maxlength="40" required></label>
-          <label>Usuário (login)<input name="username" maxlength="32" pattern="[A-Za-z0-9._\\-]{3,32}" required></label>
-          <label>ID do Geiko<input name="geikoId" inputmode="numeric" pattern="\\d*" placeholder="vazio = sem fila"></label>
-          <label>Papel<select name="role"><option value="player">Jogador</option><option value="admin">Admin</option></select></label>
-          <button class="btn">+ Criar conta</button>
-        </form>
-        <p class="err" id="nuErr" style="color:oklch(80% 0.14 18)"></p>
-        <div class="scroll" style="max-height:none"><table class="tickets users" id="usersTable"><tbody><tr><td>Carregando...</td></tr></tbody></table></div>
+        <div class="acc-head">
+          <h2>Contas <span class="hint" id="accCount"></span></h2>
+          <label class="acc-search">${icon('search')}<input type="search" id="accQ" placeholder="Buscar conta" aria-label="Buscar conta"></label>
+          <button class="btn" id="accNew">${icon('user-plus')} Nova conta</button>
+        </div>
+        <div class="seg acc-filter" role="group" aria-label="Mostrar">${ACC_FILTERS.map(([k, l]) => `<button data-accf="${k}" aria-pressed="${accFilter === k}">${l}<span class="n" data-accn="${k}"></span></button>`).join('')}</div>
+        <ul class="acc-list" id="usersList"><li class="hint">Carregando...</li></ul>
       </section>
       <section class="glass" data-pane="duplas"${adminPane === 'duplas' ? '' : ' hidden'}>
         <h2>Duplas</h2>
@@ -64,12 +60,13 @@ function showAdmin() {
       </section>
     </div>`;
     $('#back').onclick = showMenu;
-    main.querySelectorAll('[data-pane-btn]').forEach(b => b.onclick = () => {
-      adminPane = b.dataset.paneBtn;
-      main.querySelectorAll('[data-pane-btn]').forEach(x => { x.setAttribute('aria-pressed', x === b); x.setAttribute('aria-selected', x === b); });
-      main.querySelectorAll('[data-pane]').forEach(sec => { sec.hidden = sec.dataset.pane !== adminPane; });
+    $('#accNew').onclick = () => accountModal();
+    $('#accQ').oninput = renderUsers;
+    main.querySelectorAll('[data-accf]').forEach(b => b.onclick = () => {
+      accFilter = b.dataset.accf;
+      main.querySelectorAll('[data-accf]').forEach(x => x.setAttribute('aria-pressed', x === b));
+      renderUsers();
     });
-    $('#newUser').onsubmit = createUser;
     $('#testForm').onsubmit = async e => {
       e.preventDefault();
       const id = new FormData(e.target).get('geikoId');
@@ -353,9 +350,10 @@ function showReport() {
     $('#back').onclick = showMenu;
     loadErrors();
     loadWorkplay();
-    main.querySelectorAll('.seg button').forEach(b => b.onclick = () => {
+    // só os botões de período: '.seg button' pegava também as abas da Administração e travava a troca de aba
+    main.querySelectorAll('[data-days]').forEach(b => b.onclick = () => {
       reportState.days = +b.dataset.days;
-      main.querySelectorAll('.seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+      main.querySelectorAll('[data-days]').forEach(x => x.setAttribute('aria-pressed', x === b));
       loadReport();
     });
     loadReport();
@@ -520,51 +518,138 @@ async function previewHtml(geikoId) {
   } catch (err) { return `<p class="err">${esc(err.message)}</p>`; }
 }
 
-function tempPasswordDialog(name, pass) {
+function tempPasswordDialog(name, pass, username) {
+  // mensagem pronta pra mandar no chat (com o login quando é conta nova)
+  const msg = `Seu acesso ao MicroGame: ${location.origin}${location.pathname}\n${username ? `Usuário: ${username}\n` : ''}Senha temporária: ${pass}\nNo primeiro login você cria a sua senha.`;
   const { el, close } = modal(`
-    <h2>Senha temporária</h2>
+    <h2>${icon('key-round')} Senha temporária</h2>
     <p>Passe pra <b>${esc(name)}</b>. No primeiro login a pessoa cria a própria senha. <b>Ela não aparece de novo.</b></p>
     <div class="secret">${esc(pass)}</div>
-    <button class="btn ghost" id="copyPass">Copiar</button>
+    <textarea class="dt-share-txt" readonly rows="5" aria-label="Mensagem pronta">${esc(msg)}</textarea>
+    <button class="btn ghost" id="copyPass">${icon('copy')} Copiar mensagem</button>
     <button class="btn" id="okPass">Pronto</button>`, { locked: true });
-  el.querySelector('#copyPass').onclick = async e => { await navigator.clipboard?.writeText(pass).catch(() => {}); e.target.textContent = 'Copiado ✓'; };
+  el.querySelector('#copyPass').onclick = async e => { await navigator.clipboard?.writeText(msg).catch(() => {}); e.currentTarget.innerHTML = `${icon('circle-check')} Copiado`; };
   el.querySelector('#okPass').onclick = close;
 }
 
-async function createUser(e) {
-  e.preventDefault();
-  const f = new FormData(e.target);
-  $('#nuErr').textContent = '';
-  try {
-    const { user, tempPassword } = await api('api/admin/users', { method: 'POST', body: Object.fromEntries(f) });
-    e.target.reset();
-    loadUsers();
-    tempPasswordDialog(user.name, tempPassword);
-  } catch (err) { $('#nuErr').textContent = err.message; }
+// ---------- contas ----------
+const ACC_FILTERS = [['all', 'Todas'], ['player', 'Jogadores'], ['admin', 'Admins'], ['blocked', 'Bloqueadas'], ['off', 'Desativadas']];
+let accFilter = 'all', accUsers = [];
+const accMatch = {
+  all: u => u.active, player: u => u.active && u.role === 'player', admin: u => u.active && u.role === 'admin',
+  blocked: u => u.active && !!u.block, off: u => !u.active,
+};
+// "Ana Beatriz Souza" -> "ana.souza" (sem acento, minúsculo): sugestão de login enquanto digita o nome
+function suggestUsername(name) {
+  const p = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim().split(/\s+/).filter(Boolean);
+  return (p.length > 1 ? `${p[0]}.${p[p.length - 1]}` : p[0] || '').slice(0, 32);
+}
+
+/** Janela de criar (sem `u`) ou editar conta: os mesmos campos, com explicação de cada um. */
+function accountModal(u = null) {
+  const self = u && u.id === me.id, role = u?.role || 'player';
+  const { el, close } = modal(`
+    <h2>${icon(u ? 'pencil' : 'user-plus')} ${u ? `Editar ${esc(u.name)}` : 'Nova conta'}</h2>
+    <form id="accForm" class="admin acc-form" autocomplete="off">
+      <label>Nome<input name="name" maxlength="40" value="${esc(u?.name || '')}" required placeholder="ex.: Ana Beatriz"><small>É o que aparece no ranking.</small></label>
+      <label>Usuário<input name="username" maxlength="32" pattern="[A-Za-z0-9._\\-]{3,32}" value="${esc(u?.username || '')}" required placeholder="ex.: ana.beatriz" autocapitalize="off" spellcheck="false"><small>Usado pra entrar. Letras, números, ponto, hífen ou _ (3 a 32).</small></label>
+      <label>ID do Geiko<input name="geikoId" inputmode="numeric" pattern="\\d*" value="${esc(u?.geikoId || '')}" placeholder="opcional"><small>Com o ID, a fila de tickets da pessoa pode bloquear os jogos. Sem ID, nunca bloqueia.</small></label>
+      <fieldset class="acc-role"${self ? ' disabled' : ''}><legend>Papel</legend>
+        <label><input type="radio" name="role" value="player"${role === 'player' ? ' checked' : ''}><span>${icon('gamepad-2')}<b>Jogador</b><small>Joga e aparece no ranking</small></span></label>
+        <label><input type="radio" name="role" value="admin"${role === 'admin' ? ' checked' : ''}><span>${icon('shield')}<b>Admin</b><small>Também abre a Administração</small></span></label>
+      </fieldset>
+      ${self ? '<p class="hint" style="text-align:left">Você não pode mudar o seu próprio papel.</p>' : ''}
+      <p class="err" id="accErr"></p>
+      <div class="acc-actions"><button type="button" class="btn ghost" id="accCancel">Cancelar</button><button class="btn">${u ? 'Salvar' : 'Criar conta'}</button></div>
+      ${u ? '' : '<p class="hint" style="text-align:left">Ao criar, aparece uma senha temporária pra passar pra pessoa. No primeiro login ela cria a própria senha.</p>'}
+    </form>`, { wide: true });
+  const f = el.querySelector('#accForm'), name = f.elements.name, user = f.elements.username;
+  // login sugerido a partir do nome, até a pessoa mexer no campo de usuário
+  let touched = !!u;
+  user.addEventListener('input', () => { touched = true; });
+  name.addEventListener('input', () => { if (!touched) user.value = suggestUsername(name.value); });
+  el.querySelector('#accCancel').onclick = close;
+  name.focus();
+  f.onsubmit = async e => {
+    e.preventDefault();
+    const body = Object.fromEntries(new FormData(f));
+    if (self) delete body.role;
+    const btn = f.querySelector('button:not([type])');
+    btn.disabled = true;
+    try {
+      if (u) {
+        const { user: saved } = await api(`api/admin/users/${u.id}`, { method: 'PATCH', body });
+        if (saved.id === me.id) setMe({ ...me, ...saved });
+        close(); loadUsers();
+      } else {
+        const { user: made, tempPassword } = await api('api/admin/users', { method: 'POST', body });
+        close(); loadUsers();
+        tempPasswordDialog(made.name, tempPassword, made.username);
+      }
+    } catch (err) { el.querySelector('#accErr').textContent = err.message; btn.disabled = false; }
+  };
 }
 
 async function loadUsers() {
-  const table = $('#usersTable');
-  if (!table) return;
+  if (!$('#usersList')) return;
   try {
-    const { users } = await api('api/admin/users');
-    table.innerHTML = `<thead><tr><th>Nome</th><th>Usuário</th><th>ID Geiko</th><th>Papel</th><th></th></tr></thead><tbody>` +
-      users.map(u => `<tr class="${u.active ? '' : 'off'}" data-id="${u.id}">
-        <td>${esc(u.name)}${u.mustChange ? ' <span class="tag" title="Ainda não trocou a senha temporária">• senha temporária</span>' : ''}${u.active ? '' : ' <span class="tag">• desativada</span>'}${u.block ? ` <span class="tag" style="color:var(--red)" title="${esc(u.block.reason || '')}">${icon('lock')} bloqueado ${untilText(u.block.until)}</span>` : ''}</td>
-        <td>${esc(u.username)}</td>
-        <td>${u.geikoId ? esc(u.geikoId) : '<span class="hint">—</span>'}</td>
-        <td><span class="pill-role ${u.role}">${u.role === 'admin' ? 'Admin' : 'Jogador'}</span></td>
-        <td><div class="actions">${u.canEditRecords && u.id !== me.id ? '<span class="hint">conta do dono</span>' : `
-          ${u.id === me.id ? '' : u.block ? `<button class="btn ghost" data-act="unblock">${icon('lock-open')} Desbloquear</button>` : `<button class="btn ghost" data-act="block">${icon('lock')} Bloquear</button>`}
-          ${u.geikoId ? '<button class="btn ghost" data-act="test">Fila</button>' : ''}
-          <button class="btn ghost" data-act="edit">Editar</button>
-          <button class="btn ghost" data-act="reset">Nova senha</button>
-          ${u.id === me.id ? '' : `<button class="btn ghost" data-act="toggle">${u.active ? 'Desativar' : 'Reativar'}</button>`}`}
-        </div></td></tr>`).join('') + '</tbody>';
-    table.querySelectorAll('[data-act]').forEach(b => b.onclick = () => userAction(b.dataset.act, users.find(u => u.id === +b.closest('tr').dataset.id)));
+    ({ users: accUsers } = await api('api/admin/users'));
+    renderUsers();
     loadOnline(); // bloquear/desbloquear também muda a lista de online
-  } catch (err) { table.innerHTML = `<tbody><tr><td class="err">${esc(err.message)}</td></tr></tbody>`; }
+  } catch (err) { $('#usersList').innerHTML = `<li class="err">${esc(err.message)}</li>`; }
 }
+function renderUsers() {
+  const list = $('#usersList');
+  if (!list) return;
+  const q = ($('#accQ')?.value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  const norm = t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  for (const [k] of ACC_FILTERS) { const n = main.querySelector(`[data-accn="${k}"]`); if (n) n.textContent = accUsers.filter(accMatch[k]).length; }
+  $('#accCount').textContent = `${accUsers.filter(x => x.active).length} ativas`;
+  const shown = accUsers.filter(accMatch[accFilter]).filter(x => !q || norm(x.name).includes(q) || norm(x.username).includes(q));
+  list.innerHTML = shown.map(u => {
+    const owner = u.canEditRecords && u.id !== me.id;
+    const chips = [
+      u.role === 'admin' ? `<span class="chip admin">${icon('shield')} Admin</span>` : '',
+      u.id === me.id ? '<span class="chip">Você</span>' : '',
+      u.mustChange ? '<span class="chip warn" title="Ainda não trocou a senha temporária">Senha temporária</span>' : '',
+      u.block ? `<span class="chip bad" title="${esc(u.block.reason || '')}">${icon('lock')} Bloqueada ${untilText(u.block.until)}</span>` : '',
+      !u.active ? '<span class="chip off">Desativada</span>' : '',
+      u.geikoId ? `<span class="chip">Geiko ${esc(u.geikoId)}</span>` : '',
+    ].join('');
+    return `<li class="acc${u.active ? '' : ' off'}" data-id="${u.id}">
+      <span class="acc-av">${avatarHtml(u.avatar) || accInitials(u.name)}</span>
+      <span class="acc-who"><b>${esc(u.name)}</b><small>@${esc(u.username)}</small></span>
+      <span class="acc-chips">${chips}</span>
+      <span class="actions">${owner ? '<span class="hint">conta do dono</span>' : `
+        ${u.id === me.id ? '' : u.block ? `<button class="btn ghost" data-act="unblock" aria-label="Desbloquear ${esc(u.name)}">${icon('lock-open')}<span class="t">Desbloquear</span></button>` : `<button class="btn ghost" data-act="block" aria-label="Bloquear ${esc(u.name)}">${icon('lock')}<span class="t">Bloquear</span></button>`}
+        <button class="btn ghost" data-act="edit" aria-label="Editar ${esc(u.name)}">${icon('pencil')}<span class="t">Editar</span></button>
+        <span class="acc-more"><button class="btn ghost icon-btn" data-more aria-haspopup="menu" aria-expanded="false" aria-label="Mais ações de ${esc(u.name)}">${icon('ellipsis')}</button>
+          <span class="acc-menu glass" role="menu" hidden>
+            ${u.geikoId ? `<button role="menuitem" data-act="test">${icon('clock')} Ver fila no Geiko</button>` : ''}
+            <button role="menuitem" data-act="reset">${icon('key-round')} Gerar nova senha</button>
+            ${u.id === me.id ? '' : `<button role="menuitem" data-act="toggle" class="${u.active ? 'danger' : ''}">${icon(u.active ? 'x' : 'refresh-cw')} ${u.active ? 'Desativar conta' : 'Reativar conta'}</button>`}
+          </span></span>`}
+      </span></li>`;
+  }).join('') || `<li class="empty-state">${icon('search')}<b>Nenhuma conta aqui</b><span>${q ? 'Ninguém com esse nome ou usuário.' : 'Troque o filtro acima.'}</span></li>`;
+  list.querySelectorAll('[data-act]').forEach(b => b.onclick = () => { closeAccMenus(); userAction(b.dataset.act, accUsers.find(u => u.id === +b.closest('li').dataset.id)); });
+  list.querySelectorAll('[data-more]').forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const menu = b.nextElementSibling, open = menu.hidden;
+    closeAccMenus();
+    menu.hidden = !open; b.setAttribute('aria-expanded', open);
+  });
+}
+// sem avatar escolhido: as iniciais num círculo com uma cor tirada do nome
+function accInitials(name) {
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
+  const ini = name.trim().split(/\s+/).map(w => w[0]).filter(Boolean);
+  return `<span class="acc-ini" style="--h:${h}" aria-hidden="true">${esc((ini[0] || '?') + (ini.length > 1 ? ini[ini.length - 1] : '')).toUpperCase()}</span>`;
+}
+function closeAccMenus() {
+  document.querySelectorAll('.acc-menu').forEach(m => { m.hidden = true; m.previousElementSibling?.setAttribute('aria-expanded', 'false'); });
+}
+document.addEventListener('click', e => { if (!e.target.closest('.acc-more')) closeAccMenus(); });
 
 async function userAction(act, u) {
   if (act === 'unblock') {
@@ -612,30 +697,7 @@ async function userAction(act, u) {
     try { await api(`api/admin/users/${u.id}`, { method: 'PATCH', body: { active: !u.active } }); loadUsers(); }
     catch (err) { alert(err.message); }
   }
-  if (act === 'edit') {
-    const { el, close } = modal(`
-      <h2>Editar conta</h2>
-      <form id="ef" class="admin">
-        <label>Nome (aparece no ranking)<input name="name" maxlength="40" value="${esc(u.name)}" required></label>
-        <label>Usuário (login)<input name="username" maxlength="32" value="${esc(u.username)}" required></label>
-        <label>ID do Geiko (vazio = sem fila, nunca bloqueia)<input name="geikoId" inputmode="numeric" value="${esc(u.geikoId || '')}"></label>
-        <label>Papel<select name="role" ${u.id === me.id ? 'disabled' : ''}><option value="player">Jogador</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option></select></label>
-        <p class="err" id="eerr"></p>
-        <button class="btn">Salvar</button>
-        <button type="button" class="btn ghost" id="ecancel">Cancelar</button>
-      </form>`, { wide: true });
-    el.querySelector('#ecancel').onclick = close;
-    el.querySelector('#ef').onsubmit = async e => {
-      e.preventDefault();
-      const body = Object.fromEntries(new FormData(e.target));
-      if (u.id === me.id) delete body.role;
-      try {
-        const { user } = await api(`api/admin/users/${u.id}`, { method: 'PATCH', body });
-        if (user.id === me.id) setMe({ ...me, ...user });
-        close(); loadUsers();
-      } catch (err) { el.querySelector('#eerr').textContent = err.message; }
-    };
-  }
+  if (act === 'edit') accountModal(u);
 }
 
 async function loadRules() {
@@ -692,14 +754,25 @@ async function loadRules() {
 }
 
 // abas da administração: Painel, Relatório e Recordes (este só pra conta dona)
+// uma barra só com todas as abas (antes eram duas fileiras iguais: Painel/Relatório/Recordes e, dentro do Painel, mais quatro)
 function adminTabsHtml(cur) {
-  const tabs = [['admin', 'settings', 'Painel'], ['report', 'chart-column', 'Relatório'], ['records', 'wrench', 'Recordes']].filter(([k]) => k !== 'records' || me?.canEditRecords);
-  return `<div class="seg view-tabs" role="tablist" aria-label="Administração">${tabs.map(([k, ic, l]) =>
-    `<button role="tab" data-atab="${k}" aria-selected="${cur === k}" aria-pressed="${cur === k}">${icon(ic)} ${l}</button>`).join('')}</div>`;
+  const tabs = [...ADMIN_PANES, ['report', 'chart-column', 'Relatório'], ['records', 'wrench', 'Recordes']].filter(([k]) => k !== 'records' || me?.canEditRecords);
+  return `<nav class="adm-tabs" role="tablist" aria-label="Administração">${tabs.map(([k, ic, l]) =>
+    `<button role="tab" data-atab="${k}" aria-selected="${cur === k}">${icon(ic)}<span>${l}</span></button>`).join('')}</nav>`;
+}
+function setAdminPane(k) {
+  adminPane = k;
+  main.querySelectorAll('[data-atab]').forEach(x => x.setAttribute('aria-selected', x.dataset.atab === k));
+  main.querySelectorAll('[data-pane]').forEach(sec => { sec.hidden = sec.dataset.pane !== k; });
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-atab]');
-  if (b && b.getAttribute('aria-pressed') !== 'true') ({ admin: showAdmin, report: showReport, records: showRecords })[b.dataset.atab]?.();
+  if (!b || b.getAttribute('aria-selected') === 'true') return;
+  const k = b.dataset.atab;
+  if (k === 'report') showReport();
+  else if (k === 'records') showRecords();
+  else if (currentView === 'admin') setAdminPane(k);
+  else { adminPane = k; showAdmin(); }
 });
 
 // menu da conta (topo)
