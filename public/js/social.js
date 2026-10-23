@@ -203,7 +203,7 @@ async function duoModal(pre = {}) {
       <form id="duoForm" class="admin"><label>Quem você quer chamar<select name="partner" required><option value="">Escolha…</option>${free.map(p => `<option value="${p.id}"${pre.partner === p.name ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
       <label>Nome da dupla<input name="name" maxlength="24" placeholder="ex.: Os Imbatíveis" required></label><p class="err" id="duoErr"></p>
       <button class="btn">${icon('users')} Chamar pra dupla</button></form>`
-      : '<p>Todo mundo já está em dupla ou com convite aberto. Quando alguém ficar livre, aparece aqui.</p>';
+      : `<div class="empty-state">${icon('users')}<b>Ninguém livre agora</b><span>Todo mundo já está em dupla ou com convite aberto. Quando alguém ficar livre, aparece aqui.</span></div>`;
   }
   const { el, close } = modal(`<h2>${icon('users')} Minha dupla</h2>${body}
     <details class="duo-how"><summary>Como a pontuação funciona</summary><p>Em cada jogo, a dupla só entra no ranking se <b>os dois</b> jogaram depois de formada. A nota é a <b>média</b> das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos, e a soma nos jogos define a classificação (mês ou geral). Partidas de antes da dupla não contam, a não ser que o admin tenha criado a dupla valendo desde antes.</p></details>
@@ -252,7 +252,7 @@ async function duelsModal(pre = {}) {
   const wins = social.duelWins?.[player] || 0;
   const { el, close } = modal(`<h2>${icon('swords')} Duelos</h2>
     <p class="hint" style="text-align:left">Desafie alguém num jogo. Por 24 horas, vale a <b>melhor partida de cada um</b> naquele jogo (só conta jogar depois do desafio). Quem fizer mais leva. ${wins ? `Você já ganhou <b>${wins}</b>.` : ''}</p>
-    <div id="dOpen">${social.duels.open.length ? social.duels.open.map(duelRowHtml).join('') : '<p class="hint" style="text-align:left">Nenhum duelo em andamento.</p>'}</div>
+    <div id="dOpen">${social.duels.open.length ? social.duels.open.map(duelRowHtml).join('') : `<div class="empty-state">${icon('swords')}<b>Nenhum duelo em andamento</b><span>Escolha alguém e um jogo aqui embaixo.</span></div>`}</div>
     <form id="dForm" class="admin duel-form">
       <label>Contra quem<select name="opp" required><option value="">Escolha…</option>${others.map(p => `<option value="${p.id}"${pre.opponent === p.name ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
       <label>Jogo<select name="game">${duelGames().map(id => `<option value="${id}"${id === defGame ? ' selected' : ''}>${esc(GAMES[id].name)}</option>`).join('')}</select></label>

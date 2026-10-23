@@ -52,28 +52,18 @@ function showHowto(id, el, then) {
   const g = GAMES[id], h = HOWTO[id];
   const box = document.createElement('div');
   box.className = 'howto';
-  box.innerHTML = `<div class="howto-card glass" style="--h:${g.hue}" role="dialog" aria-label="Como jogar ${esc(g.name)}">
+  box.innerHTML = `<div class="howto-card glass" style="--h:${g.hue};--art:${stageArt(id, g.hue)}" role="dialog" aria-label="Como jogar ${esc(g.name)}">
       <div class="howto-art">${icon(g.icon)}</div>
-      <h3>Como jogar</h3>
+      <h3>Como jogar <span>${esc(g.name)}</span></h3>
       <ol>${h.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
       <div class="howto-keys">${h.keys.map(k => `<kbd>${esc(k)}</kbd>`).join('')}</div>
       <button class="btn" id="howGo">${icon('play')} Jogar</button>
     </div>`;
   el.append(box);
   // ilustração: a cena 3D do card (se o 3D estiver ligado e a biblioteca já veio)
-  const build = typeof SCENES_3D !== 'undefined' && SCENES_3D[id];
-  let scene = null;
-  if (build && fx3dOn && window.Zdog) {
-    const canvas = Object.assign(document.createElement('canvas'), { className: 'z3d', width: 150, height: 150 });
-    box.querySelector('.howto-art').replaceChildren(canvas);
-    const illo = new Zdog.Illustration({ element: canvas, zoom: 1 });
-    scene = { canvas, illo, update: build(Zdog, illo) };
-    scenes3d.push(scene);
-    io?.observe(canvas);
-    if (!loopOn) { loopOn = true; requestAnimationFrame(loop); }
-  }
+  const un3d = mountScene3d(id, box.querySelector('.howto-art'), 150);
   const close = () => {
-    if (scene) { scenes3d = scenes3d.filter(s => s !== scene); io?.unobserve(scene.canvas); }
+    un3d?.();
     removeEventListener('keydown', onKey);
     box.remove();
   };

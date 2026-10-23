@@ -1607,3 +1607,80 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 @media (max-width: 560px) { .stage-head .title p:not(.pbio) { display: none; } .stage-head h2:has(> .i) + p { padding-left: 0; } }
 .login-mark { display: block; width: 110px; height: 88px; margin: 0 auto -.1rem; }
 .modal .login-note { font-size: var(--fs-xs); margin: 0; }
+
+/* ---------- telas de jogo: palco com a arte do jogo, placar, Como jogar e resultado ----------
+   A cor de cada jogo (--h) e a arte "peças soltas" (--art, js/stageart.js) dão identidade a cada tela.
+   Tudo parado (sem animação nova), então vale igual no modo leve. */
+.game-stage { position: relative; isolation: isolate; overflow: clip; }
+.game-stage::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
+  background: var(--art) right top / 560px 140px no-repeat, radial-gradient(90% 260px at 85% -40px, oklch(55% .15 var(--h) / .22), transparent 70%); }
+/* ladrilho do ícone com a "base" embaixo, como as peças dos cards 3D */
+.game-stage .stage-head h2 > .i { background: linear-gradient(160deg, oklch(66% .16 var(--h)), oklch(48% .15 var(--h))); border-color: oklch(80% .12 var(--h) / .45);
+  color: #fff; box-shadow: 0 3px 0 oklch(32% .1 var(--h)); }
+.game-stage .stage-head p { -webkit-line-clamp: 1; }
+
+/* placar: uma barra só, com divisórias, na cor do jogo (no celular cabe numa linha mesmo com 4 números) */
+.game .hud { display: inline-flex; flex-wrap: nowrap; gap: 0; padding: 4px; border-radius: 16px; max-width: 100%;
+  background: oklch(19% .035 var(--h) / .8); border: 1px solid oklch(72% .1 var(--h) / .22); box-shadow: inset 0 -3px 0 oklch(0% 0 0 / .22); }
+.game .hud .stat { min-width: 4.9em; padding: .28em .95em .36em; border: 0; border-radius: 12px; background: transparent; color: oklch(80% .06 var(--h)); }
+.game .hud .stat + .stat { box-shadow: inset 1px 0 0 oklch(100% 0 0 / .08); }
+.game .hud .stat.combo.hot { box-shadow: inset 0 0 0 1px var(--yellow); }
+@media (max-width: 560px) {
+  .game .hud .stat { min-width: 0; padding: .25em .7em .3em; font-size: .68rem; letter-spacing: .05em; }
+  .game .hud .stat b { font-size: 1.2rem; }
+  .game-stage::before { background-size: 400px 100px, auto; -webkit-mask-image: linear-gradient(to left, #000 30%, transparent 85%); mask-image: linear-gradient(to left, #000 30%, transparent 85%); }
+}
+
+/* Como jogar */
+.howto-card { position: relative; isolation: isolate; overflow: clip; }
+.howto-card::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--art) right top / 480px 120px no-repeat; }
+.howto h3 span { color: oklch(86% .12 var(--h)); }
+.howto li::before { box-shadow: 0 2px 0 oklch(38% .12 var(--h)); }
+.howto-keys kbd { font-size: .8rem; padding: 7px 10px 6px; border-radius: 9px; border: 1px solid oklch(100% 0 0 / .14); border-bottom-width: 1px;
+  background: linear-gradient(oklch(34% .03 var(--h)), oklch(27% .03 var(--h))); box-shadow: 0 3px 0 oklch(14% .02 var(--h)), 0 4px 8px oklch(0% 0 0 / .3); }
+
+/* contagem 3, 2, 1: número com volume, na cor do jogo */
+.countdown { color: oklch(94% .07 var(--h, 290)); text-shadow: 0 .06em 0 oklch(42% .15 var(--h, 290)), 0 .2em .5em oklch(0% 0 0 / .55); }
+
+/* resultado */
+.result { width: min(560px, 100%); margin-inline: auto; gap: 10px; padding-top: 0; }
+.res-art { position: relative; width: 124px; height: 124px; display: grid; place-items: center; margin-bottom: -6px; }
+.res-art::before { content: ''; position: absolute; inset: -12px; z-index: -1; border-radius: 50%; background: radial-gradient(closest-side, oklch(62% .16 var(--h) / .35), transparent); }
+.res-art .z3d { display: block; }
+.res-tile { width: 76px; height: 76px; display: grid; place-items: center; border-radius: 22px; color: #fff;
+  background: linear-gradient(160deg, oklch(72% .15 var(--h)), oklch(50% .16 var(--h))); border: 1px solid oklch(85% .1 var(--h) / .5);
+  box-shadow: 0 6px 0 oklch(34% .12 var(--h)), 0 16px 30px oklch(0% 0 0 / .4); }
+.res-tile .i { width: 40px; height: 40px; stroke-width: 2; }
+.res-art.lost { --h: 18; }
+.result .score { background-image: linear-gradient(135deg, oklch(90% .09 var(--h, 290)), oklch(74% .17 calc(var(--h, 290) + 50))); }
+.result .res-title { margin: 0; font-size: var(--fs-xl); letter-spacing: -0.03em; }
+.result .res-why { max-width: 40ch; }
+.ach-row { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.ach-row .ach-h { font-size: var(--fs-xs); font-weight: 700; color: var(--yellow); }
+.ach-row > div { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.ach-row .badge { padding: .3em .8em; font-size: var(--fs-xs); }
+.res-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 4px; }
+@media (max-width: 560px) {
+  .res-art { width: 104px; height: 104px; }
+  .res-tile { width: 64px; height: 64px; border-radius: 18px; }
+  .res-tile .i { width: 34px; height: 34px; }
+}
+
+/* ranking ao lado do jogo, ainda vazio: um convite em vez de uma frase solta */
+.board .board-empty { display: grid; justify-items: center; gap: 4px; padding: var(--space-sm); border-radius: 14px; text-align: center;
+  border: 1px dashed var(--border-strong); color: var(--muted); font-size: var(--fs-sm); }
+.board .board-empty .i { width: 28px; height: 28px; color: oklch(80% .12 var(--h, 290)); margin-bottom: 2px; }
+.board .board-empty b { color: var(--text); }
+
+/* janelas sem conteúdo ainda (avisos, dupla, duelos): ícone num ladrilho, o que falta e o que fazer */
+.empty-state { display: grid; justify-items: center; gap: 4px; margin: var(--space-xs) 0; padding: var(--space-md) var(--space-sm); border-radius: 16px; text-align: center;
+  border: 1px dashed var(--border-strong); color: var(--muted); font-size: var(--fs-sm); line-height: 1.4; }
+.empty-state > .i { width: 2.4em; height: 2.4em; padding: .55em; margin-bottom: 4px; border-radius: 14px; color: var(--text);
+  background: linear-gradient(160deg, oklch(45% .12 290), oklch(32% .09 290)); box-shadow: 0 3px 0 oklch(22% .06 290); }
+.empty-state b { color: var(--text); font-size: var(--fs-base); }
+.empty-state span { max-width: 36ch; }
+/* listas de escolha com a mesma seta em todo lugar (o padrão do navegador destoava no escuro) */
+.admin select, .title-sel, .showcase-pick select { -webkit-appearance: none; appearance: none; padding-right: 2.2em; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b8b8cc' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right .7em center; background-size: 1em; }
+.admin select option, .title-sel option, .showcase-pick select option { background: #1d1d2e; color: var(--text); }
