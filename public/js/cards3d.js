@@ -2268,7 +2268,7 @@ function loop(now) {
 const SMALL = matchMedia('(max-width: 560px)');
 SMALL.addEventListener?.('change', () => { if (currentView === 'menu' && document.querySelector('.grid')) renderMenu(); });
 
-// botão de brilho no header: liga/desliga o 3D (fica salvo no navegador). Desligado = emoji parado, sem biblioteca nem animação.
+// chave "Animações 3D" no menu da conta: liga/desliga o 3D (fica salvo no navegador). Desligado = emoji parado, sem biblioteca nem animação.
 // Sem escolha salva, segue o modo leve (js/perf.js): PC fraco começa sem 3D.
 const fx3dPref = () => { try { return localStorage.getItem('mg_3d'); } catch { return null; } };
 let fx3dOn = fx3dPref() ? fx3dPref() !== 'off' : !perf.lite;
@@ -2277,8 +2277,8 @@ let fx3dOn = fx3dPref() ? fx3dPref() !== 'off' : !perf.lite;
 if (fx3dOn) { loadLib(ZDOG_URL).catch(() => {}); loadLib(TILT_URL).catch(() => {}); }
 function renderFx3d() {
   const b = $('#fx3d');
-  b.setAttribute('aria-pressed', fx3dOn);
-  b.title = fx3dOn ? 'Animações 3D: ligadas (clique pra desligar se ficar pesado)' : 'Animações 3D: desligadas (clique pra ligar)';
+  b.setAttribute('aria-checked', fx3dOn);
+  b.title = fx3dOn ? 'Ligadas (desligue se ficar pesado)' : 'Desligadas';
 }
 function setFx3d(on) {
   fx3dOn = on;

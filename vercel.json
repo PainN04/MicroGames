@@ -16,7 +16,7 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 30,
-      "includeFiles": "{public/js/daily.js,public/js/avatars.js,public/data/termo-validas.txt,lib/data/*}"
+      "includeFiles": "{public/js/daily.js,public/js/avatars.js,public/data/termo-validas.txt,public/data/ritmo/*.json,lib/data/*}"
     }
   },
   "headers": [

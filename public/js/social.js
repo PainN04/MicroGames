@@ -69,8 +69,8 @@ function tourneyBodyHtml() {
         ${t.mineRank && t.mineRank > 5 ? `<p class="hint">Você está em ${t.mineRank}º com ${t.mine.points} pts.</p>` : ''}
       </div>
     </div>
-    <p class="hint t-rules">Vale a sua melhor partida da semana em cada jogo. Por jogo: 1º ${t.points[0]} pts, 2º ${t.points[1]}, 3º ${t.points[2]}, 4º ${t.points[3]}, 5º ${t.points[4]}, 6º ${t.points[5]}, depois 1 ponto. Quem somar mais leva o troféu.
-      ${lastTop ? `<br>${icon('crown')} Semana passada: <b>${esc(lastTop.name)}</b> (${lastTop.points} pts).` : ''}</p>`;
+    ${lastTop ? `<p class="hint t-rules">${icon('crown')} Semana passada: <b>${esc(lastTop.name)}</b> (${lastTop.points} pts).</p>` : ''}
+    <details class="duo-how"><summary>Como pontua</summary><p>Vale a sua melhor partida da semana em cada jogo. Por jogo: 1º ${t.points[0]} pts, 2º ${t.points[1]}, 3º ${t.points[2]}, 4º ${t.points[3]}, 5º ${t.points[4]}, 6º ${t.points[5]}, depois 1 ponto. Quem somar mais leva o troféu.</p></details>`;
 }
 async function tourneyModal() {
   if (!me) return loginModal();
@@ -80,74 +80,41 @@ async function tourneyModal() {
   el.querySelectorAll('.tgame').forEach(b => b.onclick = () => { close(); play(b.dataset.id); });
 }
 
-/* ---------- painel do menu: torneio e duplas em cartões maiores, duelos e resumo em atalhos pequenos ---------- */
-const miniRows = rows => (rows.length ? `<ol class="mini">${rows.map(r => `<li class="${r.me ? 'me' : ''}">${rankBadge(r.k)}<span class="nm">${esc(r.name)}</span><b>${r.pts}<small> pts</small></b></li>`).join('')}</ol>` : '');
-function tourneyCardHtml() {
-  const t = social?.tourney;
-  if (!social) return `<div class="bh"><span class="ic">${icon('trophy')}</span><b>Torneio</b></div><p class="bs">…</p>`;
-  const top = t.standings.slice(0, 3).map((r, k) => ({ k: k + 1, name: r.name, pts: r.points, me: r.name === player }));
-  const mine = t.mineRank && t.mineRank > 3 ? `você: ${t.mineRank}º · ${t.mine.points} pts` : t.mineRank ? `você está em ${t.mineRank}º` : 'você ainda não pontuou';
-  return `<div class="bh"><span class="ic">${icon('trophy')}</span><b>Torneio</b><small>acaba em ${leftText(t.end - Date.now())}</small></div>
-    <p class="bs">${mine}</p>
-    ${top.length ? miniRows(top) : '<p class="hint mini-empty">Ninguém pontuou ainda — jogue e saia na frente.</p>'}
-    <div class="tg">${t.games.filter(id => GAMES[id]).map(id => `<span class="chip" title="${esc(GAMES[id].name)}">${icon(GAMES[id].icon)}</span>`).join('')}<small>${t.games.filter(id => GAMES[id]).map(id => GAMES[id].name).join(' · ')}</small></div>`;
-}
-function duosCardHtml() {
-  if (!social) return `<div class="bh"><span class="ic">${icon('users')}</span><b>Duplas</b></div><p class="bs">…</p>`;
-  const my = social.myDuo, rows = duoStandings().slice(0, 3).map((r, k) => ({ k: k + 1, name: r.name, pts: r.pts, me: my.state === 'active' && r.id === my.id }));
-  const status = { none: 'chame alguém e formem uma dupla', out: `convite enviado: ${esc(my.name || '')}`, in: 'você recebeu um convite!' }[my.state] || `sua dupla: ${esc(my.name || '')}`;
-  return `<div class="bh"><span class="ic">${icon('users')}</span><b>Duplas</b><small>${seasonMode === 'all' ? 'geral' : seasonLabel().toLowerCase()}</small></div>
-    <p class="bs${my.state === 'in' ? ' hotline' : ''}">${status}</p>
-    ${rows.length ? miniRows(rows) : '<p class="hint mini-empty">Ninguém formou dupla ainda.</p>'}`;
-}
-const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+/* ---------- barra de competição (menu): atalhos sem listas — os rankings ficam todos na janela "Rankings" ---------- */
 function renderStrip() {
   const box = $('#strip');
   if (!box) return;
-  if (!me) { box.hidden = true; return; }
-  box.hidden = false;
   const t = social?.tourney, my = social?.myDuo, open = social?.duels?.open?.length || 0;
-  const pill = (id, ic, label, sub, hot = false) => `<button class="act${hot ? ' hot' : ''}" data-act="${id}"><span class="ic">${icon(ic)}</span><span class="tx"><b>${label}</b><small>${sub}</small></span></button>`;
-  const showTourney = !social || t?.on;
-  box.className = 'strip' + (showTourney ? '' : ' no-tourney');
-  box.innerHTML = (showTourney ? `<div class="big tourney-card" role="button" tabindex="0" data-act="tourney" aria-label="Torneio da semana">${tourneyCardHtml()}</div>` : '')
-    + `<div class="big duos-card${my?.state === 'in' ? ' hot' : ''}" role="button" tabindex="0" data-act="duos" aria-label="Duplas">${duosCardHtml()}</div>`
-    + `<div class="smalls">${pill('duels', 'swords', 'Duelos', !social ? '…' : open ? open + ' em andamento' : 'desafiar alguém', open > 0)}`
-    + `</div>`;
-  const go = { tourney: tourneyModal, duos: duosModal, duels: () => duelsModal() };
-  box.querySelectorAll('[data-act]').forEach(b => {
-    b.onclick = go[b.dataset.act];
-    if (b.getAttribute('role') === 'button') b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go[b.dataset.act](); } };
-  });
-}
-
-/* ---------- faixa da coroa (topo do menu): quem tem mais recordes de 1º lugar ---------- */
-function renderCrown() {
-  const box = $('#crownBar');
-  if (!box) return;
-  // se ninguém tem recorde no período (começo do mês), mostra o geral
-  let list = champions(), label = seasonMode === 'all' ? 'geral' : seasonLabel().toLowerCase();
-  if (!list.length) { list = champions({}); label = 'geral'; }
-  if (!list.length) { box.hidden = true; return; }
-  const [name, wins] = list[0], fr = flair.frames[name];
-  const rest = list.slice(1, 3).map(([n, c], i) => `${i + 2}º ${esc(n)} ${c}`).join(' · ');
+  const btn = (id, ic, label, sub, hot = false) => `<button class="hub-btn${hot ? ' hot' : ''}" data-act="${id}"${id === 'rank' ? ' id="rankBtn"' : ''}><span class="ic">${icon(ic)}</span><span class="tx"><b>${label}</b><small>${sub}</small></span></button>`;
+  // quem lidera o período (se ninguém tem recorde no começo do mês, mostra o geral)
+  let kings = champions(), label = seasonMode === 'all' ? 'no geral' : `em ${seasonLabel().toLowerCase()}`;
+  if (!kings.length) { kings = champions({}); label = 'no geral'; }
+  const lead = kings[0] ? `${esc(kings[0][0])} lidera ${label}` : 'recordes, desafio e diários';
+  let html = btn('rank', 'crown', 'Rankings', lead);
+  if (me) {
+    if (!social || t?.on) html += btn('tourney', 'trophy', 'Torneio', !social ? '…' : `acaba em ${leftText(t.end - Date.now())}${t.mineRank ? ` · você ${t.mineRank}º` : ''}`);
+    html += btn('duos', 'users', 'Duplas', !social ? '…' : { none: 'formar uma dupla', out: 'convite enviado', in: 'você tem um convite!' }[my.state] || esc(my.name || 'sua dupla'), my?.state === 'in');
+    html += btn('duels', 'swords', 'Duelos', !social ? '…' : open ? `${open} em andamento` : 'desafiar alguém', open > 0);
+  }
   box.hidden = false;
-  box.setAttribute('aria-label', `Quem manda: ${name}, com ${wins} recordes. Abrir rankings`);
-  box.innerHTML = `<span class="ic">${icon('crown')}</span><span class="tx"><b${fr ? ` class="fr-${fr}"` : ''}>${esc(name)}</b> manda · ${plural(wins, 'recorde')} <em>${label}</em>
-    ${rest ? `<small>${rest}</small>` : ''}</span><span class="go" aria-hidden="true">›</span>`;
-  box.onclick = () => rankingsModal();
+  box.innerHTML = html;
+  box.style.setProperty('--n', box.children.length);
+  const go = { rank: () => rankingsModal(), tourney: tourneyModal, duos: duosModal, duels: () => duelsModal() };
+  box.querySelectorAll('[data-act]').forEach(b => { b.onclick = go[b.dataset.act]; });
 }
 
-/* ---------- rankings (janela): Quem manda, Hall da fama e destaque dos tickets ---------- */
+/* ---------- rankings (janela): tudo que é placar geral fica aqui, em abas ---------- */
 let rankTab = 'kings';
 function rankingsModal(tab = rankTab) {
   const hall = hallHtml(), week = weekInnerHtml();
-  const tabs = [['kings', 'crown', 'Quem manda'], hall && ['hall', 'landmark', 'Hall da fama'], week && ['week', 'ticket', 'Tickets']].filter(Boolean);
-  const bodyOf = t => t === 'kings' ? `${seasonSeg()}${kingsHtml()}` : t === 'hall' ? hall : `<div class="week">${week}</div>`;
+  const tabs = [['kings', 'crown', 'Recordes'], ['challenge', 'star', 'Desafio do dia'], ['daily', 'calendar', 'Jogos diários'],
+    hall && ['hall', 'landmark', 'Hall da fama'], week && ['week', 'ticket', 'Tickets']].filter(Boolean);
+  const bodyOf = t => t === 'kings' ? `${seasonSeg()}${kingsHtml()}` : t === 'challenge' ? challengeRankHtml() : t === 'daily' ? `<div class="daily-rank">${dailyRankHtml()}</div>`
+    : t === 'hall' ? hall : `<div class="week">${week}</div>`;
   if (!tabs.some(([t]) => t === tab)) tab = 'kings';
   rankTab = tab;
   const { el, close } = modal(`<h2>${icon('crown')} Rankings</h2>
-    ${tabs.length > 1 ? `<div class="seg" role="tablist" aria-label="Rankings">${tabs.map(([t, ic, l]) => `<button role="tab" data-rk="${t}" aria-selected="${tab === t}" aria-pressed="${tab === t}">${icon(ic)} ${l}</button>`).join('')}</div>` : ''}
+    <div class="seg rk-tabs" role="tablist" aria-label="Rankings">${tabs.map(([t, ic, l]) => `<button role="tab" data-rk="${t}" aria-selected="${tab === t}" aria-pressed="${tab === t}">${icon(ic)} ${l}</button>`).join('')}</div>
     <div class="rk-body kings"></div><button class="btn ghost" id="rkClose">Fechar</button>`, { wide: true });
   const body = el.querySelector('.rk-body');
   // troca de aba / de período só refaz o miolo — a janela fica no lugar (recriar faria a animação de entrada piscar)
@@ -199,7 +166,7 @@ function duosBodyHtml() {
     ${rows.length ? `<ol>${rows.map((r, k) => `<li class="${my.state === 'active' && r.id === my.id ? 'me' : ''}">${rankBadge(k + 1)} <b class="tn">${esc(r.name)}</b> <span class="tp">${r.pts} pts</span>
       <small>${esc(r.aName)} & ${esc(r.bName)} · ${r.firsts} jogo${r.firsts === 1 ? '' : 's'} em 1º · ${r.podiums} pódio${r.podiums === 1 ? '' : 's'}</small></li>`).join('')}</ol>`
       : '<p class="hint" style="text-align:left;margin:0">Ninguém formou dupla ainda. Chame um colega e escolham um nome!</p>'}
-    <p class="hint t-rules">Cada um chama quem quiser e dá o nome que quiser à dupla. Em cada jogo, a dupla só pontua se <b>os dois</b> jogaram (depois de formada, ou desde quando o admin definiu); vale a média das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos. Segue o filtro Mês/Geral do menu.</p>`;
+    <details class="duo-how"><summary>Como funciona</summary><p>Cada um chama quem quiser e dá o nome que quiser à dupla. Em cada jogo, a dupla só pontua se <b>os dois</b> jogaram (depois de formada, ou desde quando o admin definiu); vale a média das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos. Vale o período escolhido em Rankings (mês ou geral).</p></details>`;
 }
 async function duosModal() {
   if (!me) return loginModal();
@@ -236,7 +203,7 @@ async function duoModal(pre = {}) {
       <form id="duoForm" class="admin"><label>Quem você quer chamar<select name="partner" required><option value="">Escolha…</option>${free.map(p => `<option value="${p.id}"${pre.partner === p.name ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
       <label>Nome da dupla<input name="name" maxlength="24" placeholder="ex.: Os Imbatíveis" required></label><p class="err" id="duoErr"></p>
       <button class="btn">${icon('users')} Chamar pra dupla</button></form>`
-      : '<p>Todo mundo já está em dupla ou com convite aberto. Quando alguém ficar livre, aparece aqui.</p>';
+      : `<div class="empty-state">${icon('users')}<b>Ninguém livre agora</b><span>Todo mundo já está em dupla ou com convite aberto. Quando alguém ficar livre, aparece aqui.</span></div>`;
   }
   const { el, close } = modal(`<h2>${icon('users')} Minha dupla</h2>${body}
     <details class="duo-how"><summary>Como a pontuação funciona</summary><p>Em cada jogo, a dupla só entra no ranking se <b>os dois</b> jogaram depois de formada. A nota é a <b>média</b> das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos, e a soma nos jogos define a classificação (mês ou geral). Partidas de antes da dupla não contam, a não ser que o admin tenha criado a dupla valendo desde antes.</p></details>
@@ -285,7 +252,7 @@ async function duelsModal(pre = {}) {
   const wins = social.duelWins?.[player] || 0;
   const { el, close } = modal(`<h2>${icon('swords')} Duelos</h2>
     <p class="hint" style="text-align:left">Desafie alguém num jogo. Por 24 horas, vale a <b>melhor partida de cada um</b> naquele jogo (só conta jogar depois do desafio). Quem fizer mais leva. ${wins ? `Você já ganhou <b>${wins}</b>.` : ''}</p>
-    <div id="dOpen">${social.duels.open.length ? social.duels.open.map(duelRowHtml).join('') : '<p class="hint" style="text-align:left">Nenhum duelo em andamento.</p>'}</div>
+    <div id="dOpen">${social.duels.open.length ? social.duels.open.map(duelRowHtml).join('') : `<div class="empty-state">${icon('swords')}<b>Nenhum duelo em andamento</b><span>Escolha alguém e um jogo aqui embaixo.</span></div>`}</div>
     <form id="dForm" class="admin duel-form">
       <label>Contra quem<select name="opp" required><option value="">Escolha…</option>${others.map(p => `<option value="${p.id}"${pre.opponent === p.name ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
       <label>Jogo<select name="game">${duelGames().map(id => `<option value="${id}"${id === defGame ? ' selected' : ''}>${esc(GAMES[id].name)}</option>`).join('')}</select></label>

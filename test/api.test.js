@@ -79,6 +79,12 @@ const play = async (c, game, score, proof) => {
   return c('/api/scores', { method: 'POST', body: { game, score, proof, play: p?.id } });
 };
 
+/** Partida do Ritmo numa música (POST /api/ritmo/score). */
+const ritmoPlay = async (c, track, score, ago) => {
+  const p = await openPlay(c, 'ritmo', ago);
+  return c('/api/ritmo/score', { method: 'POST', body: { track, score, play: p?.id } });
+};
+
 /* ---------- login e sessão ---------- */
 
 test('schema: guarda a versão das tabelas pra instância nova não refazer as migrações', async () => {
@@ -528,8 +534,8 @@ test('combos e itens raros: pontuações maiores agora cabem nos limites, mas co
   assert.equal((await play(bia, 'cores', 2000)).status, 422);
   assert.equal((await play(bia, 'matematica', 150)).status, 201);
   assert.equal((await play(bia, 'matematica', 9000)).status, 422);
-  assert.equal((await play(bia, 'ritmo', 80000)).status, 201, 'Ritmo só com Perfeitos (200 pts) e combo x4 passa de 80 mil');
-  assert.equal((await play(bia, 'ritmo', 150000)).status, 422);
+  assert.equal((await ritmoPlay(bia, 'treino', 80000)).status, 201, 'Ritmo (treino) só com Perfeitos (200 pts) e combo x4 passa de 80 mil');
+  assert.equal((await ritmoPlay(bia, 'treino', 150000)).status, 422);
 });
 
 /* ---------- social e competição ---------- */
@@ -1359,4 +1365,62 @@ test('arcade: freio de partidas abertas por conta', async () => {
   assert.equal((await bia('/api/plays', { method: 'POST', body: { game: 'snake' } })).status, 429);
   await sql`DELETE FROM arcade_plays WHERE id LIKE ${'freio%'}`;
   assert.equal((await bia('/api/plays', { method: 'POST', body: { game: 'snake' } })).status, 201);
+});
+
+/* ---------- Ritmo: músicas, ranking por música e pontuação geral ---------- */
+
+test('ritmo: cada música tem o seu recorde e a pontuação geral é a soma do melhor de cada uma', async () => {
+  const ritmo = require('../lib/ritmo');
+  // duas músicas de 60s com 100 notas cada (teto: 100 × 200 × 4 = 80 mil)
+  const notes = Array.from({ length: 100 }, (_, i) => [1000 + i * 500, i % 4]);
+  for (const id of ['rock-a', 'rock-b']) ritmo.songs().set(id, { id, title: id, artist: 'Teste', durationMs: 60000, max: ritmo.maxScore(notes) });
+  assert.equal(ritmo.maxScore(notes), 80000);
+  assert.equal(ritmo.maxScore([[0, 0, 1000]]), 800 + 11 * 20 + 200, 'nota comprida: pingos e bônus no combo máximo');
+
+  const ana = await login('ana', 'senha-ana-123');
+  const base = (await ana('/api/ritmo')).body.mine;
+  const before = Object.values(base).reduce((a, b) => a + b, 0);
+  assert.equal((await ritmoPlay(ana, 'rock-a', 30000)).status, 201);
+  let r = await ritmoPlay(ana, 'rock-b', 20000);
+  assert.equal(r.status, 201);
+  assert.equal(r.body.total, before + 50000, 'geral = soma das músicas');
+  r = await ritmoPlay(ana, 'rock-a', 10000);
+  assert.equal(r.body.total, before + 50000, 'partida pior não baixa a geral');
+  assert.equal(r.body.prevBest, 30000);
+  r = await ritmoPlay(ana, 'rock-a', 40000);
+  assert.equal(r.body.total, before + 60000, 'recorde novo na música sobe a geral');
+
+  // o ranking do jogo (scores) guarda a geral; o de cada música vem do /api/ritmo
+  const board = (await ana('/api/scores')).body.ritmo.filter(s => s.name === 'Ana');
+  assert.equal(Math.max(...board.map(s => s.score)), before + 60000);
+  const ov = (await ana('/api/ritmo')).body;
+  assert.ok(ov.songs.some(s => s.id === 'treino'), 'o treino (música gerada) continua');
+  assert.equal(ov.boards['rock-a'][0].score, 40000);
+  assert.equal(ov.boards['rock-a'].filter(x => x.name === 'Ana').length, 1, 'uma linha por pessoa: o melhor dela');
+  assert.equal(ov.mine['rock-b'], 20000);
+});
+
+test('ritmo: à prova de F12 — teto da música, música inexistente, partida curta, reuso e envio direto no /api/scores', async () => {
+  const bia = await login('bia', 'senha-bia-123');
+  assert.equal((await ritmoPlay(bia, 'rock-a', 80001)).status, 422, 'acima do teto do mapa de notas');
+  assert.equal((await ritmoPlay(bia, 'rock-a', 1.5)).status, 422, 'pontuação quebrada');
+  assert.equal((await ritmoPlay(bia, 'nao-existe', 100)).status, 422);
+  assert.equal((await ritmoPlay(bia, 'rock-a', 1000, 10_000)).status, 422, 'partida de 10s numa música de 60s');
+  const p = await openPlay(bia, 'ritmo');
+  assert.equal((await bia('/api/ritmo/score', { method: 'POST', body: { track: 'rock-a', score: 100, play: p.id } })).status, 201);
+  assert.equal((await bia('/api/ritmo/score', { method: 'POST', body: { track: 'rock-a', score: 100, play: p.id } })).status, 422, 'partida já usada');
+  assert.equal((await play(bia, 'ritmo', 100)).status, 409, 'a geral não se manda pelo /api/scores');
+  assert.equal((await bia('/api/ritmo/score', { method: 'POST', body: { track: 'rock-a', score: 100 } })).status, 422, 'sem partida aberta');
+});
+
+test('ritmo: o recorde antigo (música gerada) vira o Treino na primeira migração', async () => {
+  const ritmo = require('../lib/ritmo');
+  const uid = (await sql`SELECT id FROM users WHERE username = ${'outroadm'}`)[0].id;
+  await sql`DELETE FROM settings WHERE key = ${'ritmo_tracks_v1'}`;
+  await sql`DELETE FROM ritmo_scores WHERE user_id = ${uid}`;
+  await sql`INSERT INTO scores (game, player, score, created_at, user_id) VALUES (${'ritmo'}, ${'Outro Admin'}, ${12345}, ${Date.now()}, ${uid})`;
+  await ritmo.migrateLegacy();
+  assert.deepEqual(await ritmo.bestsOf(uid), { treino: 12345 });
+  await ritmo.migrateLegacy();
+  assert.deepEqual(await ritmo.bestsOf(uid), { treino: 12345 }, 'roda uma vez só');
 });

@@ -21,7 +21,7 @@ const HOWTO = {
   torre: { steps: ['Solte o bloco em cima da torre', 'O que passa da borda é cortado', 'Acertos perfeitos seguidos aumentam o bloco'], keys: ['Espaço', 'Clique', 'Toque'] },
   invasores: { steps: ['Ande e o tiro sai sozinho', 'Se esconda atrás das barreiras', 'A nave-mãe lá em cima vale bônus'], keys: ['← →', 'A D', 'Arraste'] },
   minado: { steps: ['Abra as casas sem mina; o número diz quantas minas tem em volta', 'Marque as minas com bandeira', 'Clique num número com as bandeiras certas: abre os vizinhos'], keys: ['Clique abre', 'Botão direito marca', 'Toque longo marca'] },
-  ritmo: { steps: ['A música toca; as notas descem nas 4 faixas', 'Aperte quando a nota cruzar a linha', 'Nota comprida: segure até o fim'], keys: ['D F J K', 'Setas', 'Toque'] },
+  ritmo: { steps: ['Escolha uma música; as notas descem nas 4 faixas no ritmo dela', 'Aperte quando a nota cruzar a linha', 'Nota comprida: segure até o fim'], keys: ['D F J K', 'Setas', 'Toque'] },
   anagrama: { steps: ['Desembaralhe as letras e forme a palavra', 'A dica mostra o tema da palavra', 'Palavra maior vale mais', 'Letra (−1) revela uma letra e tira 1 ponto'], keys: ['Teclado', 'Enter', 'Clique nas letras'] },
   sudoku: { steps: ['Complete com 1 a 9 sem repetir na linha, coluna e bloco', 'Use as notas pra anotar candidatos', 'Menor tempo ganha; dica soma +20s'], keys: ['1–9', 'Setas', 'N notas', 'Ctrl+Z'] },
   pong: { steps: ['Rebata a bola com a sua raquete (embaixo)', 'Bater com a raquete andando dá efeito na bola', 'Ponto quando a bola passa pela máquina'], keys: ['Mouse', '← →', 'Espaço'] },
@@ -37,7 +37,7 @@ const HOWTO = {
   alvo: { steps: ['Toque num número, numa operação e em outro número', 'Os dois viram o resultado; continue até chegar no alvo', 'Vale o resultado mais perto; só uma tentativa por dia'], keys: ['Clique', 'Toque'] },
   octeto: { steps: ['Adivinhe 8 palavras ao mesmo tempo em 13 tentativas', 'Cada palpite vale pros oito quadros', 'A tecla mostra a cor de cada quadro: 4 em cima, 4 embaixo'], keys: ['Teclado', 'Enter'] },
   soletra: { steps: ['Forme palavras de 4 letras ou mais com as letras da colmeia', 'Toda palavra usa a letra do meio; pode repetir letra', 'Usou as 7 letras? +7 pontos. Encerre quando quiser'], keys: ['Teclado', 'Toque'] },
-  senha: { steps: ['Monte 4 cores e envie (pode repetir cor)', 'Pino cheio: cor no lugar certo; vazado: cor certa em outro lugar', '8 tentativas pra descobrir a senha'], keys: ['1 a 6', 'Toque'] },
+  senha: { steps: ['Monte 4 cores e envie (pode repetir cor)', 'Verde com check: cores certas no lugar certo; amarelo: cores certas em outro lugar', '8 tentativas pra descobrir a senha'], keys: ['1 a 6', 'Toque'] },
   equacao: { steps: ['Descubra a conta do dia: 8 símbolos, tipo 12+35=47', 'Todo palpite tem que ser uma conta certa', 'Verde: lugar certo; amarelo: está em outro lugar. × e ÷ antes de + e −'], keys: ['Teclado', 'Enter'] },
   bandeira: { steps: ['Digite o país da bandeira', 'Errou? Veja a distância, a direção e o quanto chegou perto', 'Com 2 erros aparece o continente; com 4, a capital'], keys: ['Teclado', 'Enter'] },
   cacapalavras: { steps: ['Arraste da primeira à última letra da palavra', 'Vale horizontal, vertical, diagonal e de trás pra frente', 'Ache as 8 o mais rápido possível'], keys: ['Arrastar', 'Toque'] },
@@ -52,28 +52,18 @@ function showHowto(id, el, then) {
   const g = GAMES[id], h = HOWTO[id];
   const box = document.createElement('div');
   box.className = 'howto';
-  box.innerHTML = `<div class="howto-card glass" style="--h:${g.hue}" role="dialog" aria-label="Como jogar ${esc(g.name)}">
+  box.innerHTML = `<div class="howto-card glass" style="--h:${g.hue};--art:${stageArt(id, g.hue)}" role="dialog" aria-label="Como jogar ${esc(g.name)}">
       <div class="howto-art">${icon(g.icon)}</div>
-      <h3>Como jogar</h3>
+      <h3>Como jogar <span>${esc(g.name)}</span></h3>
       <ol>${h.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
       <div class="howto-keys">${h.keys.map(k => `<kbd>${esc(k)}</kbd>`).join('')}</div>
       <button class="btn" id="howGo">${icon('play')} Jogar</button>
     </div>`;
   el.append(box);
   // ilustração: a cena 3D do card (se o 3D estiver ligado e a biblioteca já veio)
-  const build = typeof SCENES_3D !== 'undefined' && SCENES_3D[id];
-  let scene = null;
-  if (build && fx3dOn && window.Zdog) {
-    const canvas = Object.assign(document.createElement('canvas'), { className: 'z3d', width: 150, height: 150 });
-    box.querySelector('.howto-art').replaceChildren(canvas);
-    const illo = new Zdog.Illustration({ element: canvas, zoom: 1 });
-    scene = { canvas, illo, update: build(Zdog, illo) };
-    scenes3d.push(scene);
-    io?.observe(canvas);
-    if (!loopOn) { loopOn = true; requestAnimationFrame(loop); }
-  }
+  const un3d = mountScene3d(id, box.querySelector('.howto-art'), 150);
   const close = () => {
-    if (scene) { scenes3d = scenes3d.filter(s => s !== scene); io?.unobserve(scene.canvas); }
+    un3d?.();
     removeEventListener('keydown', onKey);
     box.remove();
   };
@@ -130,7 +120,7 @@ function seedDaily(id) {
   dailySeeded = true;
   const tag = document.createElement('span');
   tag.className = 'daily-tag';
-  tag.innerHTML = `${icon('calendar')} Desafio do dia: partida ${n + 1} igual pra todo mundo`;
+  tag.innerHTML = `${icon('calendar')} Desafio do dia<span class="dt-more">: partida ${n + 1} igual pra todo mundo</span>`;
   document.querySelector('.stage-head .title')?.append(tag);
 }
 function unseedDaily() {
