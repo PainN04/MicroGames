@@ -1,10 +1,8 @@
-// Gera os dados do Bandeira e do Soletra (lib/data/bandeiras.json e lib/data/soletra.json). Roda uma vez, fora do app.
+// Gera os dados do Bandeira (lib/data/bandeiras.json). Roda uma vez, fora do app.
 //   node scripts/build-diarios.js <pasta>
 // <pasta> com:
 //   world-countries/countries.json  (npm world-countries, licença ODbL: nomes em português, capital, coordenadas)
 //   flag-icons/4x3/*.svg            (npm flag-icons, MIT: as bandeiras)
-//   pt_BR.dic                       (dicionário do LibreOffice, github.com/LibreOffice/dictionaries, MPL/LGPL)
-//   pt_br_50k.txt                   (frequência de palavras, github.com/hermitdave/FrequencyWords, CC BY-SA 4.0)
 const fs = require('node:fs');
 const path = require('node:path');
 const dir = process.argv[2];
@@ -55,18 +53,4 @@ const flags = countries.map(c => {
 fs.writeFileSync(out('bandeiras.json'), JSON.stringify(flags));
 console.log('bandeiras', flags.length);
 
-/* ---------- Soletra: palavras do dicionário que são comuns ---------- */
-// só a forma de dicionário (sem plural nem conjugação), com 4+ letras, entre as 40 mil mais usadas
-const BLOCK = new Set(('babaca boquete caralho cocô corno escroto estuprar estupro foder imbecil merda mijar otário peidos putaria prostituição '
-  + 'prostituir prostituto safadeza sexos transar vagina vaginal viado vagabundos cocaína drogar suicídio assassinar assassinato assassino '
-  + 'nazismo bastardos cullen curie').split(' '));
-const freq = new Map();
-fs.readFileSync(path.join(dir, 'pt_br_50k.txt'), 'utf8').split('\n').forEach((l, i) => { const w = l.split(' ')[0]; if (w && !freq.has(w)) freq.set(w, i); });
-const words = new Set();
-for (const l of fs.readFileSync(path.join(dir, 'pt_BR.dic'), 'utf8').split('\n').slice(1)) {
-  const w = l.split('/')[0].trim();
-  if (/^[a-záàâãéêíóôõúüç]{4,14}$/.test(w) && freq.get(w) < 40000 && !BLOCK.has(w)) words.add(w);
-}
-const list = [...words].sort((a, b) => freq.get(a) - freq.get(b));
-fs.writeFileSync(out('soletra.json'), JSON.stringify(list));
-console.log('soletra', list.length);
+// As palavras do Soletra saem de scripts/build-soletra.py (com plural e conjugação).
