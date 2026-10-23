@@ -418,7 +418,7 @@
   @keyframes tileGlow { 50% { box-shadow: inset 0 -4px 0 oklch(0% 0 0 / .18), inset 0 2px 0 oklch(100% 0 0 / .25), 0 0 22px 4px oklch(85% 0.17 85 / .55); } }
   @keyframes bump { 50% { transform: scale(1.14); } }
   /* Campo Minado */
-  .mines { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px; width: min(420px, 100%, calc(var(--avail) - 110px)); user-select: none; touch-action: manipulation; }
+  .mines { display: grid; grid-template-columns: repeat(var(--n, 9), minmax(0, 1fr)); gap: 3px; width: min(480px, 100%, calc(var(--avail) - 110px)); user-select: none; touch-action: manipulation; }
   .mc { aspect-ratio: 1; border: 0; border-radius: 6px; padding: 0; font: inherit; font-weight: 700; font-size: clamp(.8rem, 3.4vw, 1.2rem); cursor: pointer; color: var(--text);
     background: linear-gradient(160deg, oklch(36% 0.03 275), oklch(28% 0.03 275)); box-shadow: inset 0 -2px 0 oklch(0% 0 0 / .3); -webkit-tap-highlight-color: transparent; }
   .mc:hover { filter: brightness(1.15); }
