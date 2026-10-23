@@ -1,11 +1,19 @@
 GAMES.blocos = {
-  name: 'Blocos', icon: 'blocks', hue: 255, desc: 'Estilo Tetris. ←→ move, ↑/X gira, Z gira ao contrário, ↓ desce, Espaço solta, C guarda a peça. Linhas seguidas e TETRA seguido valem bônus. No celular: toque gira, arraste move, deslize pra baixo solta, toque na coluna da direita guarda.',
+  name: 'Blocos', icon: 'blocks', hue: 255, desc: 'Estilo Tetris. ←→ move, ↑/X gira, Z gira ao contrário, ↓ desce, Espaço solta, C guarda a peça. Limpar linhas em peças seguidas sobe o multiplicador (x2, x3, até x4); peça que não limpa nada zera. TETRA seguido vale 1,5×. No celular: toque gira, arraste move, deslize pra baixo solta, toque na coluna da direita guarda.',
   better: 'high', unit: 'pontos', phaser: true,
   start(el, done) {
     const COLS = 10, ROWS = 20, S = 26, BW = COLS * S, W = BW + 130, H = ROWS * S;
     const DAS = 170, ARR = 50, LOCK_MS = 450, MAX_LOCK_RESETS = 15, CLEAR_MS = 260;
-    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Linhas<b id="l">0</b></span><span class="stat">Nível<b id="v">1</b></span></div><div class="phaser-wrap" id="pw"></div>';
-    const hud = { p: el.querySelector('#p'), l: el.querySelector('#l'), v: el.querySelector('#v') };
+    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat combo">Combo<b id="cb">x1</b></span><span class="stat">Linhas<b id="l">0</b></span><span class="stat">Nível<b id="v">1</b></span></div><div class="phaser-wrap" id="pw"></div>';
+    const hud = { p: el.querySelector('#p'), l: el.querySelector('#l'), v: el.querySelector('#v'), cb: el.querySelector('#cb') };
+    // multiplicador: cada peça seguida que limpa linha sobe 1 (até x4); a 1ª limpeza da sequência vale x1
+    const COMBO_MAX = 4, multOf = c => Math.min(COMBO_MAX, 1 + c);
+    const showCombo = (c, up) => {
+      const next = multOf(c + 1); // o que vale a PRÓXIMA limpeza
+      hud.cb.textContent = 'x' + next + (c > 0 ? ' · ' + c : '');
+      hud.cb.parentElement.classList.toggle('hot', next > 1);
+      if (up) { hud.cb.classList.remove('up'); void hud.cb.offsetWidth; hud.cb.classList.add('up'); }
+    };
     const SHAPES = {
       I: [[0, 0, 0, 0], [1, 1, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0]],
       O: [[1, 1], [1, 1]],
@@ -94,22 +102,26 @@ GAMES.blocos = {
               burst.setParticleTint(COLORS[grid[y][x]]);
               burst.explode(3, x * S + S / 2, y * S + S / 2);
             }
-            // pontos: base × nível; TETRA logo depois de outro TETRA vale 1,5×; linhas em peças seguidas somam combo
+            // pontos: base × nível × multiplicador; TETRA logo depois de outro TETRA vale 1,5×
             combo++;
-            const tetra = full.length === 4, base = [0, 100, 300, 500, 800][full.length] * level;
-            const gain = Math.round(base * (tetra && b2b ? 1.5 : 1)) + (combo > 0 ? 50 * combo * level : 0);
+            const tetra = full.length === 4, base = [0, 100, 300, 500, 800][full.length] * level, mult = multOf(combo);
+            const gain = Math.round(base * (tetra && b2b ? 1.5 : 1)) * mult;
             score += gain;
             lines += full.length;
             level = Math.floor(lines / 10) + 1;
             if (tetra) { floatText(this, BW / 2, H / 2, b2b ? 'TETRA SEGUIDO!' : 'TETRA!', '#ffd34d'); this.cameras.main.shake(200, 0.008); sfx.record(); }
             else { floatText(this, BW / 2, full[0] * S, `+${full.length} linha${full.length > 1 ? 's' : ''}`, '#7cffb0'); sfx.good(); }
-            if (combo > 0) floatText(this, BW / 2, full[0] * S + 30, `combo ${combo}`, '#c9b3ff');
+            if (mult > 1) floatText(this, BW / 2, full[0] * S + 30, `x${mult} combo`, '#ffd34d');
+            const rising = multOf(combo + 1) > multOf(combo);
+            showCombo(combo, rising);
+            if (rising) [660, 880, 1175].forEach((f, k) => setTimeout(() => beep(f, 90, 'triangle', 0.04), k * 60));
             b2b = tetra;
             // as linhas piscam um instante e só então somem (a pilha desce depois)
             clearing = { rows: full, t: 0 };
             cur = null;
             return;
           }
+          if (combo >= 0) showCombo(-1);
           combo = -1;
           beep(220, 40, 'triangle', 0.03);
           spawn();

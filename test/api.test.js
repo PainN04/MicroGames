@@ -67,7 +67,17 @@ async function login(username, password) {
   assert.equal(r.status, 200, `login de ${username}: ${r.text}`);
   return c;
 }
-const play = (c, game, score, proof) => c('/api/scores', { method: 'POST', body: { game, score, proof } });
+/** Abre a partida no servidor (POST /api/plays) e volta o relógio dela, como se tivesse começado há `ago` ms. */
+async function openPlay(c, game, ago = 30 * 60_000) {
+  const r = await c('/api/plays', { method: 'POST', body: { game } });
+  if (r.status !== 201) return null;
+  await sql`UPDATE arcade_plays SET created_at = created_at - ${ago} WHERE id = ${r.body.id}`;
+  return r.body;
+}
+const play = async (c, game, score, proof) => {
+  const p = await openPlay(c, game);
+  return c('/api/scores', { method: 'POST', body: { game, score, proof, play: p?.id } });
+};
 
 /* ---------- login e sessão ---------- */
 
@@ -1272,4 +1282,81 @@ test('jogos diários: Cruzadinha tem dica pra toda palavra e confere a grade no 
   assert.equal(r.body.saved, 'ok');
   assert.equal(r.body.answer, p.grid);
   assert.equal((await cru('/api/diarios/cruzadinha', { method: 'POST', body: { letters: p.grid } })).status, 409, 'uma partida por dia');
+});
+
+/* ---------- jogos de arcade: partida aberta no servidor (lib/plays.js) ---------- */
+
+test('arcade: todo jogo é conferido no servidor ou precisa de partida aberta', () => {
+  const { GAMES } = require('../lib/rules');
+  const { SERVER_GAMES } = require('../lib/rounds');
+  const { ARCADE } = require('../lib/plays');
+  for (const g of GAMES) assert.ok(SERVER_GAMES.has(g) !== ARCADE.has(g), g);
+});
+
+test('arcade: sem partida, partida de outro jogo, de outra conta ou repetida não salva', async () => {
+  const ana = await login('ana', 'senha-ana-123'), bia = await login('bia', 'senha-bia-123');
+  const send = (c, body) => c('/api/scores', { method: 'POST', body });
+  const r0 = await send(ana, { game: 'snake', score: 10 });
+  assert.equal(r0.status, 422);
+  assert.match(r0.body.error, /não foi aberta/);
+  const p = await openPlay(ana, 'snake');
+  assert.equal((await send(ana, { game: 'tijolos', score: 10, play: p.id })).status, 422, 'partida é de outro jogo');
+  assert.equal((await send(bia, { game: 'snake', score: 10, play: p.id })).status, 422, 'partida é de outra conta');
+  assert.equal((await send(ana, { game: 'snake', score: 10, play: p.id })).status, 201);
+  const again = await send(ana, { game: 'snake', score: 10, play: p.id });
+  assert.equal(again.status, 422, 'mesma partida duas vezes');
+  assert.match(again.body.error, /já usada/);
+  assert.equal((await ana('/api/plays', { method: 'POST', body: { game: 'termo' } })).status, 400, 'Termo é conferido no servidor');
+  assert.equal((await client()('/api/plays', { method: 'POST', body: { game: 'snake' } })).status, 401);
+});
+
+test('arcade: o relógio é o do servidor (não cabe 30s de jogo em 1s nem pontos demais pro tempo)', async () => {
+  const ana = await login('ana', 'senha-ana-123');
+  const send = async (game, score, ago, proof) => {
+    const p = await openPlay(ana, game, ago);
+    return ana('/api/scores', { method: 'POST', body: { game, score, proof, play: p.id } });
+  };
+  assert.equal((await send('matematica', 20, 1000)).status, 422, 'jogo de 30s enviado 1s depois');
+  assert.equal((await send('matematica', 20, 31_000)).status, 201);
+  assert.equal((await send('chuva', 100, 20_000)).status, 422, 'sobreviveu 100s numa partida de 20s');
+  assert.equal((await send('chuva', 18.5, 20_000)).status, 201);
+  assert.equal((await send('snake', 400, 10_000)).status, 422, '400 pontos de Snake em 10s');
+  assert.equal((await send('memoria', 40, 30_000)).status, 422, '40 rodadas de Memória em 30s');
+  assert.equal((await send('reflexo', 200, 1000)).status, 422, '3 rodadas de Reflexo em 1s');
+  assert.equal((await send('reflexo', 200, 9000)).status, 201);
+});
+
+test('arcade: 2048 refaz a partida com a semente do servidor e a pontuação tem que bater', async () => {
+  const { replay2048 } = require('../lib/plays');
+  const ana = await login('ana', 'senha-ana-123');
+  const p = await openPlay(ana, 'g2048', 60_000);
+  let moves = '';
+  for (let k = 0; k < 300; k++) {
+    const d = ['L', 'D', 'R', 'U'].find(x => replay2048(p.seed, moves + x) !== null);
+    if (!d) break;
+    moves += d;
+  }
+  const score = replay2048(p.seed, moves);
+  assert.ok(score > 0);
+  const send = (body) => ana('/api/scores', { method: 'POST', body: { game: 'g2048', ...body } });
+  assert.equal((await send({ score: score + 4, proof: moves, play: p.id })).status, 422, 'pontuação inventada');
+  const p2 = await openPlay(ana, 'g2048', 60_000);
+  assert.equal((await send({ score, proof: 'XYZ', play: p2.id })).status, 422, 'movimentos inválidos');
+  const p3 = await openPlay(ana, 'g2048', 60_000);
+  assert.equal((await send({ score, proof: moves, play: p3.id })).status, 422, 'movimentos de outra semente');
+  // com a semente certa e os movimentos de verdade, vale
+  const p4 = await openPlay(ana, 'g2048', 60_000);
+  let m4 = '';
+  for (let k = 0; k < 200; k++) { const d = ['L', 'D', 'R', 'U'].find(x => replay2048(p4.seed, m4 + x) !== null); if (!d) break; m4 += d; }
+  assert.equal((await send({ score: replay2048(p4.seed, m4), proof: m4, play: p4.id })).status, 201);
+});
+
+test('arcade: freio de partidas abertas por conta', async () => {
+  const bia = await login('bia', 'senha-bia-123');
+  const [{ id }] = await sql`SELECT id FROM users WHERE username = ${'bia'}`;
+  const now = Date.now();
+  for (let k = 0; k < 120; k++) await sql`INSERT INTO arcade_plays (id, user_id, game, created_at, seed, used) VALUES (${'freio' + k}, ${id}, ${'snake'}, ${now}, ${1}, ${false})`;
+  assert.equal((await bia('/api/plays', { method: 'POST', body: { game: 'snake' } })).status, 429);
+  await sql`DELETE FROM arcade_plays WHERE id LIKE ${'freio%'}`;
+  assert.equal((await bia('/api/plays', { method: 'POST', body: { game: 'snake' } })).status, 201);
 });

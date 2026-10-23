@@ -11,10 +11,13 @@ const DAILY_TAB = ['termo', 'dueto', 'quarteto', 'octeto', 'contexto', 'conexoes
 const DAILY_TAB_SINCE = { termo: 20749 }; // a partir desse dia sai do sorteio (os outros nunca entraram)
 const inDailyTab = (id, i) => DAILY_TAB.includes(id) && i >= (DAILY_TAB_SINCE[id] ?? 0);
 
-function seededShuffle(list, seed) {
-  const a = [...list];
+// números "aleatórios" a partir de uma semente (mulberry32): a mesma semente dá a mesma sequência aqui e no servidor
+function seededRandom(seed) {
   let s = seed >>> 0;
-  const next = () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  return () => { s = (s + 0x6d2b79f5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+}
+function seededShuffle(list, seed) {
+  const a = [...list], next = seededRandom(seed);
   for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(next() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
   return a;
 }
@@ -26,4 +29,4 @@ function scheduledGame(ids, i, picks = {}) {
   return seededShuffle(roster, Math.floor(i / roster.length) * 7919 + 13)[i % roster.length];
 }
 
-if (typeof module !== 'undefined' && module.exports) module.exports = { DAILY_SINCE, DAILY_TAB, inDailyTab, seededShuffle, scheduledGame };
+if (typeof module !== 'undefined' && module.exports) module.exports = { DAILY_SINCE, DAILY_TAB, inDailyTab, seededRandom, seededShuffle, scheduledGame };
