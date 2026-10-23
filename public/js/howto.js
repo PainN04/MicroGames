@@ -15,7 +15,7 @@ const HOWTO = {
   cores: { steps: ['Clique na COR da tinta, não na palavra', 'Palavra com moldura: vale o que está ESCRITO', 'Erro tira 1 ponto e zera o combo'], keys: ['1 2 3 4', 'Clique'] },
   numeros: { steps: ['Aperte Começar', 'Clique de 1 a 25, em ordem', 'Clique errado soma +0,5s'], keys: ['Clique', 'Toque'] },
   toupeira: { steps: ['Acerte as toupeiras antes que se escondam', 'Estrela vale 3 e a dourada 5', 'Bomba tira 3 e zera o combo'], keys: ['Clique', 'Teclado numérico'] },
-  blocos: { steps: ['Encaixe as peças e complete linhas', 'Guarde uma peça com C pra usar depois', 'Linhas seguidas e TETRA valem bônus'], keys: ['← →', '↑ / X gira', 'Z gira ao contrário', '↓', 'Espaço solta', 'C guarda'] },
+  blocos: { steps: ['Encaixe as peças e complete linhas', 'Guarde uma peça com C pra usar depois', 'Limpe linhas em peças seguidas: o combo sobe até x4'], keys: ['← →', '↑ / X gira', 'Z gira ao contrário', '↓', 'Espaço solta', 'C guarda'] },
   tijolos: { steps: ['Rebata a bola com a raquete', 'Tijolos escuros pedem mais de uma batida', 'Pegue os itens que caem (raquete grande, 3 bolas, bola lenta)'], keys: ['Mouse', '← →', 'Espaço lança'] },
   g2048: { steps: ['Deslize: todas as peças vão pro mesmo lado', 'Peças iguais se juntam e somam', '3 minutos ou até travar o tabuleiro'], keys: ['Setas', 'WASD', 'Deslize'] },
   torre: { steps: ['Solte o bloco em cima da torre', 'O que passa da borda é cortado', 'Acertos perfeitos seguidos aumentam o bloco'], keys: ['Espaço', 'Clique', 'Toque'] },
