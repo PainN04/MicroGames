@@ -1146,6 +1146,35 @@ test('jogos diários: Soletra só aceita palavras da colmeia com a letra do meio
   assert.equal((await sol('/api/diarios/soletra', { method: 'POST', body: { word: b.k } })).status, 409);
 });
 
+test('jogos diários: Soletra aceita plural, conjugação e palavra extra (vale ponto, não conta no total)', async () => {
+  await makeUser('sol2', 'Sol2', 'player', 'senha-sol2-123');
+  const d = require('../lib/diarios');
+  const { today } = require('../lib/flair');
+  // a colmeia do print do Paulo: R no meio e S T C O P L em volta
+  const hive = d.solHive('r', [...'stcopl']);
+  for (const w of ['sopro', 'sopros', 'corpos', 'porcos', 'rosto', 'troco', 'porto', 'protocolos']) {
+    assert.ok(d.solWord(hive, w), `${w} vale`);
+  }
+  assert.equal(d.solWord(hive, 'trosp'), null, 'lixo não vale');
+  assert.equal(d.solWord(hive, 'porra'), null, 'palavrão não vale');
+  assert.equal(d.solWord(d.solHive('x', [...'stcopr']), 'sopro'), null, 'sem a letra do meio não vale');
+  // acha uma palavra extra na colmeia de hoje e manda
+  const p = d.solPuzzle(today());
+  const letters = new Set([p.center, ...p.outer]);
+  const extra = require('node:fs').readFileSync(require('node:path').join(__dirname, '../lib/data/soletra-extra.txt'), 'utf8').split('\n')
+    .map(w => w.normalize('NFD').replace(/[\u0300-\u036f]/g, '')).find(k => k.length >= 4 && k.includes(p.center) && [...k].every(c => letters.has(c)) && !p.answers.some(a => a.k === k));
+  const sol = await login('sol2', 'senha-sol2-123');
+  if (extra) {
+    const r = await sol('/api/diarios/soletra', { method: 'POST', body: { word: extra } });
+    assert.equal(r.status, 200);
+    assert.equal(r.body.result.extra, true);
+    assert.equal(r.body.hits, 0, 'extra não conta no total');
+    assert.equal(r.body.points, d.solPoints(d.solWord(p, extra)));
+  }
+  const end = await sol('/api/diarios/soletra', { method: 'POST', body: { action: 'end' } });
+  assert.equal(end.body.all.length, p.answers.length + (extra ? 1 : 0), 'no fim mostra as do dia e as extras achadas');
+});
+
 test('jogos diários: Senha conta cores no lugar e fora do lugar', async () => {
   await makeUser('sen', 'Sen', 'player', 'senha-sen-123');
   const d = require('../lib/diarios');
