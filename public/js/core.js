@@ -169,11 +169,20 @@ function dailyTabStandings(i = dayIndex()) {
   return Object.values(tot).sort((a, b) => b.pts - a.pts || b.games - a.games || a.name.localeCompare(b.name, 'pt-BR'));
 }
 function better(g, a, b) { return g.better === 'low' ? a < b : a > b; }
+// Jogos de arcade: a partida é aberta no servidor quando começa (lib/plays.js) e a pontuação só vale com o id dela,
+// uma vez só e no relógio do servidor. Termo, Forca, Anagrama, Quiz e os diários o servidor já confere sozinho.
+const SERVER_SCORED = new Set(['termo', 'forca', 'anagrama', 'quiz']);
+function openPlay(id) {
+  if (localMode || GAMES[id].daily || SERVER_SCORED.has(id)) return Promise.resolve(null);
+  return fetch('api/plays', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ game: id, daily: dailySeeded }) })
+    .then(r => (r.ok ? r.json() : null)).catch(() => null);
+}
 // Retorna 'ok' (salvou), 'queued' (servidor fora, reenvia depois) ou a mensagem de recusa do servidor.
-async function saveScore(gameId, score, proof) {
+// pass = a partida aberta por openPlay (promessa de { id, seed } ou null).
+async function saveScore(gameId, score, proof, pass) {
   // jogos conferidos no servidor (Termo, Forca, Anagrama, Quiz): ele mesmo já gravou; proof.saved = 'ok' ou o motivo da recusa
   if (proof && typeof proof === 'object' && 'saved' in proof) { await fetchScores(); return proof.saved || 'ok'; }
-  const entry = { game: gameId, player, score, proof };
+  const entry = { game: gameId, player, score, proof, play: (await pass)?.id };
   if (localMode) {
     const all = localScores();
     (all[gameId] = all[gameId] || []).push({ name: player, score, date: Date.now() });
@@ -187,7 +196,7 @@ async function saveScore(gameId, score, proof) {
     return 'ok';
   } catch (e) {
     // sem login (sessão expirou, ou página antiga aberta antes do login existir): guarda e salva depois de entrar
-    if (e.status === 401) { unsavedScore = { gameId, score, proof }; return 'login'; }
+    if (e.status === 401) { unsavedScore = { gameId, score, proof, pass }; return 'login'; }
     if (e.rejected) return e.message;
     localStorage.setItem('mg_pending', JSON.stringify([...pending(), entry]));
     // mostra no ranking local enquanto não sobe pro servidor

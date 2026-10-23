@@ -22,7 +22,8 @@ const { ensureSchema } = require('./lib/schema');
 
 const PORT = Number(process.env.PORT) || 8080;
 // Só a pasta public/ é servida (igual à Vercel): o código do servidor (lib/, scripts/) nunca sai.
-const PUBLIC = path.join(__dirname, 'public');
+// MICROGAME_DIST=1 serve a versão montada (npm run build → dist/), igual à que vai pro ar.
+const PUBLIC = path.join(__dirname, process.env.MICROGAME_DIST ? 'dist' : 'public');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8', '.png': 'image/png', '.json': 'application/json; charset=utf-8',
   '.webmanifest': 'application/manifest+json; charset=utf-8' };

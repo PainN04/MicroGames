@@ -13,6 +13,14 @@ function reportVitals() {
   };
   for (const fn of ['onLCP', 'onINP', 'onCLS', 'onFCP', 'onTTFB']) webVitals[fn](record);
 }
+// carregada daqui (e não com onload="..." no index.html): os scripts não deixam nada no window pra o HTML chamar
+if (!localMode) {
+  const wv = document.createElement('script');
+  wv.async = true;
+  wv.src = 'https://cdn.jsdelivr.net/npm/web-vitals@6.2.3/dist/web-vitals.attribution.iife.js';
+  wv.onload = reportVitals;
+  document.head.append(wv);
+}
 addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden' && vitalsQueue.length) {
     navigator.sendBeacon('api/vitals', JSON.stringify(vitalsQueue.splice(0)));

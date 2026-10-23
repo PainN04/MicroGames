@@ -1,10 +1,13 @@
 GAMES.g2048 = {
   name: '2048', icon: 'grid-2x2', hue: 45, desc: 'Deslize (setas, WASD ou o dedo) e junte números iguais. 3 minutos ou até travar.',
   better: 'high', unit: 'pontos',
-  start(el, done) {
+  start(el, done, pass) {
     const N = 4, DUR = 180;
     // peças como objetos com id: assim cada uma desliza da casa antiga pra nova e as que se juntam se encontram no meio
     let tiles = [], nextId = 0, score = 0, t0 = 0, iv, over = false, busy = null;
+    // peças novas saem da semente da partida aberta no servidor, e os movimentos vão junto com a pontuação:
+    // o servidor refaz a partida (lib/plays.js) e só aceita se der a mesma pontuação
+    let rnd = null, moves = '';
     const gridOf = () => { const g = Array(N * N).fill(0); for (const t of tiles) if (!t.gone) g[t.i] = t.v; return g; };
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Maior<b id="m">2</b></span><span class="stat">Tempo<b id="t">3:00</b></span></div>
       <div class="g2048" id="b">${'<div class="slot"></div>'.repeat(N * N)}</div><p class="hint">O tempo começa no primeiro movimento.</p>`;
@@ -20,7 +23,7 @@ GAMES.g2048 = {
       t.el.dataset.d = String(t.v).length;
     };
     const spawn = i => {
-      const t = { id: nextId++, v: Math.random() < 0.9 ? 2 : 4, i, el: document.createElement('div') };
+      const t = { id: nextId++, v: rnd() < 0.9 ? 2 : 4, i, el: document.createElement('div') };
       t.el.className = 't pop'; t.el.innerHTML = '<i></i>';
       place(t); paint(t); board.append(t.el); tiles.push(t);
       return t;
@@ -33,7 +36,7 @@ GAMES.g2048 = {
     const addTile = () => {
       const g = gridOf(), empty = g.map((v, i) => (v ? -1 : i)).filter(i => i >= 0);
       if (!empty.length) return null;
-      return spawn(empty[rand(0, empty.length - 1)]);
+      return spawn(empty[Math.floor(rnd() * empty.length)]);
     };
     const lines = dir => Array.from({ length: N }, (_, a) => Array.from({ length: N }, (_, b) => {
       if (dir === 'L') return a * N + b;
@@ -42,11 +45,11 @@ GAMES.g2048 = {
       return (N - 1 - b) * N + a;
     }));
     const canMove = () => { const g = gridOf(); return g.some((v, i) => !v || (i % N < N - 1 && g[i + 1] === v) || (i < N * (N - 1) && g[i + N] === v)); };
-    const finish = () => { if (over) return; over = true; clearInterval(iv); done(score); };
+    const finish = () => { if (over) return; over = true; clearInterval(iv); done(score, moves); };
     // termina a animação anterior na hora (quem joga rápido não espera o deslize)
     const settle = () => { if (busy) { clearTimeout(busy.timer); busy.fn(); busy = null; } };
     const move = dir => {
-      if (over) return;
+      if (over || !rnd) return;
       settle();
       let moved = false;
       const byPos = new Map(tiles.map(t => [t.i, t])), merges = [];
@@ -64,6 +67,7 @@ GAMES.g2048 = {
         }
       }
       if (!moved) return;
+      moves += dir;
       if (!t0) {
         t0 = performance.now();
         iv = setInterval(() => {
@@ -100,7 +104,12 @@ GAMES.g2048 = {
       move(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'R' : 'L') : (dy > 0 ? 'D' : 'U'));
     };
     window.addEventListener('keydown', onKey);
-    addTile(); addTile(); markMax();
+    // sem servidor (arquivo aberto direto, rede fora): semente qualquer, a partida só não vai pro ranking
+    Promise.resolve(pass).then(p => {
+      if (over) return;
+      rnd = seededRandom(p ? p.seed : (Math.random() * 2 ** 32) >>> 0);
+      addTile(); addTile(); markMax();
+    });
     return () => { over = true; clearInterval(iv); if (busy) clearTimeout(busy.timer); window.removeEventListener('keydown', onKey); };
   }
 };

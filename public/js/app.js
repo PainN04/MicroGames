@@ -276,6 +276,7 @@ function play(id) {
     fitGame();
     const el = $('#game');
     partSummary = null;
+    let pass = null; // partida aberta no servidor (jogos de arcade)
     const onDone = async (score, proof) => {
       stop();
       if (!el.isConnected) return; // saiu da partida (voltou ao menu, trocou de tela) antes de terminar
@@ -293,7 +294,7 @@ function play(id) {
       const prev = mine(ALL), prevMonth = mine(MONTH);
       const hadAch = unlockedFor(player);
       const cheat = g.check?.(score, proof);
-      const status = cheat || await saveScore(id, score, proof);
+      const status = cheat || await saveScore(id, score, proof, pass);
       if (!el.isConnected) return; // trocou de tela enquanto salvava: o resultado já foi enviado, só não há onde mostrar
       const ok = status === 'ok' || status === 'queued';
       const record = ok && (!prev || better(g, score, prev[1]));
@@ -331,7 +332,7 @@ function play(id) {
       $('#loginSave')?.addEventListener('click', () => { setMe(null); loginModal(); });
     };
     // 1ª vez no jogo: "Como jogar"; jogos com tempo: contagem 3, 2, 1; jogo do desafio: sequência igual pra todo mundo
-    prepareGame(id, el, () => { seedDaily(id); cleanup = g.start(el, onDone); });
+    prepareGame(id, el, () => { seedDaily(id); pass = openPlay(id); cleanup = g.start(el, onDone, pass); });
   });
 }
 
@@ -575,9 +576,9 @@ function passwordModal(forced) {
 let unsavedScore = null;
 async function saveUnsaved() {
   if (!unsavedScore || !me || me.mustChange) return;
-  const { gameId, score, proof } = unsavedScore;
+  const { gameId, score, proof, pass } = unsavedScore;
   unsavedScore = null;
-  const status = await saveScore(gameId, score, proof);
+  const status = await saveScore(gameId, score, proof, pass);
   const g = GAMES[gameId];
   modal(`<h2>${status === 'ok' || status === 'queued' ? `${icon('circle-check')} Resultado salvo` : `${icon('triangle-alert')} Não deu pra salvar`}</h2>
     <p>${g.name}: <b>${fmt(g, score)}</b>${status === 'ok' || status === 'queued' ? ' — já está no ranking.' : ' — ' + esc(status)}</p>
