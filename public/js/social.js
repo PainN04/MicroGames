@@ -179,7 +179,7 @@ function bestIn(id, name, since, until = Infinity) {
 function duoStandings(range = currentRange()) {
   const duos = (social?.duos || []).map(d => ({ ...d, pts: 0, podiums: 0, firsts: 0 }));
   if (!duos.length) return [];
-  for (const id in GAMES) {
+  for (const id of mainGames()) {
     const g = GAMES[id], entries = [];
     for (const d of duos) {
       const since = Math.max(range.since || 0, d.since ?? d.formedAt ?? 0);
@@ -257,7 +257,7 @@ async function duoModal(pre = {}) {
 }
 
 /* ---------- duelos ---------- */
-const duelGames = () => Object.keys(GAMES).filter(id => id !== 'termo');
+const duelGames = () => Object.keys(GAMES).filter(id => !GAMES[id].daily);
 function duelRowHtml(d) {
   const g = GAMES[d.game];
   if (!g) return '';
@@ -337,7 +337,7 @@ function recapStats() {
   const bestWeek = {}, count = {};
   for (const p of mine) { count[p.id] = (count[p.id] || 0) + 1; if (!(p.id in bestWeek) || better(GAMES[p.id], p.score, bestWeek[p.id])) bestWeek[p.id] = p.score; }
   const personal = Object.keys(bestWeek).filter(id => !(id in before) || better(GAMES[id], bestWeek[id], before[id])).length;
-  const leading = Object.keys(GAMES).filter(id => bestPerPlayer(id, {})[0]?.[0] === player).length;
+  const leading = mainGames().filter(id => bestPerPlayer(id, {})[0]?.[0] === player).length;
   let dailyWins = 0;
   for (let i = dayIndex(since); i < Math.min(dayIndex(), dayIndex(end)); i++) if (dailyWinnerOf(i)?.name === player) dailyWins++;
   const duelWins = (social?.duels?.recent || []).filter(d => d.result === 'win' && d.endsAt >= since && d.endsAt < end).length;

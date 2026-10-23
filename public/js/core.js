@@ -63,7 +63,7 @@ async function fetchScores() {
       scoresEarly = null;
       scores = await req.scores; online = true;
       try { flair = await req.flair; localStorage.setItem('mg_flair', JSON.stringify(flair)); } catch {} // jogo escolhido e molduras: falhar aqui não derruba o ranking
-      crownMemo = monthKingsMemo = undefined;
+      crownMemo = monthKingsMemo = dailyTabMemo = undefined;
       try { localStorage.setItem('mg_cache', JSON.stringify(scores)); } catch {}
     } catch { online = false; }
   }
@@ -94,7 +94,10 @@ function setSeasonMode(mode) {
 /** Período: { since, until } em ms. Padrão: o modo escolhido (mês atual ou tudo). */
 const currentRange = () => (seasonMode === 'all' ? {} : { since: monthStart() });
 
-function bestPerPlayer(gameId, { since = 0, until = Infinity } = currentRange()) {
+// jogos diários têm ranking à parte, do dia: zera à meia-noite (o seletor Mês/Geral vale só pros jogos principais)
+const mainGames = () => Object.keys(GAMES).filter(id => !GAMES[id].daily);
+const rangeFor = id => (GAMES[id]?.daily ? dayRange() : currentRange());
+function bestPerPlayer(gameId, { since = 0, until = Infinity } = rangeFor(gameId)) {
   const g = GAMES[gameId];
   const best = {};
   for (const s of scores[gameId] || []) {
@@ -106,7 +109,7 @@ function bestPerPlayer(gameId, { since = 0, until = Infinity } = currentRange())
 /** Quem tem mais recordes no período (desempate: mais 2º lugares). [[nome, recordes, vices]] */
 function champions(range = currentRange()) {
   const count = {};
-  for (const id in GAMES) {
+  for (const id of mainGames()) {
     const [first, second] = bestPerPlayer(id, range);
     if (first) (count[first[0]] ||= [0, 0])[0]++;
     if (second) (count[second[0]] ||= [0, 0])[1]++;
@@ -144,7 +147,7 @@ function hallOfFame() {
   return [...months].sort().reverse().map(key => {
     const [y, m] = key.split('-').map(Number);
     const range = { since: new Date(y, m - 1, 1).getTime(), until: new Date(y, m, 1).getTime() };
-    const games = Object.keys(GAMES).map(id => [id, bestPerPlayer(id, range)[0]]).filter(([, top]) => top);
+    const games = mainGames().map(id => [id, bestPerPlayer(id, range)[0]]).filter(([, top]) => top);
     return { key, kings: champions(range), games };
   });
 }
@@ -156,12 +159,73 @@ function monthsWonBy(name) {
   }
   return monthKingsMemo[name] || [];
 }
+// ---------- jogos diários: ranking do dia, sequência e campeão ----------
+// Uma passada só pelas partidas dos jogos diários: dia → nome → { pts, games } (melhor partida de cada jogo).
+// Conta a partir do dia em que a aba nasceu (22/10/2026); antes disso o Termo era desafio do dia.
+const DAILY_TAB_START = 20748;
+let dailyTabMemo; // zerado quando o placar muda (junto com crownMemo)
+function dailyTabIndex() {
+  if (dailyTabMemo) return dailyTabMemo;
+  const best = new Map(); // "dia|jogo|nome" → pontos
+  for (const id of DAILY_TAB) {
+    if (!GAMES[id]) continue;
+    for (const s of scores[id] || []) {
+      const d = dayIndex(s.date);
+      if (d < DAILY_TAB_START) continue;
+      const k = `${d}|${id}|${s.name}`;
+      if (!best.has(k) || s.score > best.get(k)) best.set(k, s.score);
+    }
+  }
+  const byDay = new Map();
+  for (const [k, pts] of best) {
+    const [d, , name] = k.split('|');
+    const day = byDay.get(+d) || byDay.set(+d, new Map()).get(+d);
+    const t = day.get(name) || day.set(name, { name, pts: 0, games: 0 }).get(name);
+    t.pts += pts; t.games++;
+  }
+  return (dailyTabMemo = byDay);
+}
+/** Ranking dos jogos diários num dia: soma os pontos de cada pessoa em todos eles. [{ name, pts, games }] */
+function dailyTabStandings(i = dayIndex()) {
+  return [...(dailyTabIndex().get(i)?.values() || [])].sort((a, b) => b.pts - a.pts || b.games - a.games || a.name.localeCompare(b.name, 'pt-BR'));
+}
+/** Campeão dos jogos diários num dia já encerrado (o 1º do ranking daquele dia). */
+const dailyTabChampOf = i => (i < dayIndex() ? dailyTabStandings(i)[0] || null : null);
+/** Dias seguidos jogando pelo menos um jogo diário. Se ainda não jogou hoje, a sequência de ontem continua valendo. */
+function dailyTabStreak(name) {
+  const idx = dailyTabIndex(), played = i => idx.get(i)?.has(name);
+  let i = dayIndex();
+  if (!played(i)) i--;
+  let n = 0;
+  while (played(i - n)) n++;
+  return n;
+}
+/** Maior sequência e quantos dias foi campeão dos diários: { best, wins } */
+function dailyTabRecord(name) {
+  const idx = dailyTabIndex(), days = [...idx.keys()].sort((a, b) => a - b);
+  let best = 0, run = 0, prev = null, wins = 0;
+  for (const d of days) {
+    if (!idx.get(d).has(name)) continue;
+    run = prev === d - 1 ? run + 1 : 1; prev = d; best = Math.max(best, run);
+  }
+  for (const d of days) if (dailyTabChampOf(d)?.name === name) wins++;
+  return { best, wins };
+}
 function better(g, a, b) { return g.better === 'low' ? a < b : a > b; }
+// Jogos de arcade: a partida é aberta no servidor quando começa (lib/plays.js) e a pontuação só vale com o id dela,
+// uma vez só e no relógio do servidor. Termo, Forca, Anagrama, Quiz e os diários o servidor já confere sozinho.
+const SERVER_SCORED = new Set(['termo', 'forca', 'anagrama', 'quiz']);
+function openPlay(id) {
+  if (localMode || GAMES[id].daily || SERVER_SCORED.has(id)) return Promise.resolve(null);
+  return fetch('api/plays', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ game: id, daily: dailySeeded }) })
+    .then(r => (r.ok ? r.json() : null)).catch(() => null);
+}
 // Retorna 'ok' (salvou), 'queued' (servidor fora, reenvia depois) ou a mensagem de recusa do servidor.
-async function saveScore(gameId, score, proof) {
+// pass = a partida aberta por openPlay (promessa de { id, seed } ou null).
+async function saveScore(gameId, score, proof, pass) {
   // jogos conferidos no servidor (Termo, Forca, Anagrama, Quiz): ele mesmo já gravou; proof.saved = 'ok' ou o motivo da recusa
   if (proof && typeof proof === 'object' && 'saved' in proof) { await fetchScores(); return proof.saved || 'ok'; }
-  const entry = { game: gameId, player, score, proof };
+  const entry = { game: gameId, player, score, proof, play: (await pass)?.id };
   if (localMode) {
     const all = localScores();
     (all[gameId] = all[gameId] || []).push({ name: player, score, date: Date.now() });
@@ -175,7 +239,7 @@ async function saveScore(gameId, score, proof) {
     return 'ok';
   } catch (e) {
     // sem login (sessão expirou, ou página antiga aberta antes do login existir): guarda e salva depois de entrar
-    if (e.status === 401) { unsavedScore = { gameId, score, proof }; return 'login'; }
+    if (e.status === 401) { unsavedScore = { gameId, score, proof, pass }; return 'login'; }
     if (e.rejected) return e.message;
     localStorage.setItem('mg_pending', JSON.stringify([...pending(), entry]));
     // mostra no ranking local enquanto não sobe pro servidor

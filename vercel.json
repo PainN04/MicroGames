@@ -1,5 +1,6 @@
 {
-  "outputDirectory": "public",
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -15,7 +16,7 @@
   "functions": {
     "api/index.js": {
       "maxDuration": 30,
-      "includeFiles": "public/{js/daily.js,js/avatars.js,data/termo-validas.txt}"
+      "includeFiles": "{public/js/daily.js,public/js/avatars.js,public/data/termo-validas.txt,lib/data/*}"
     }
   },
   "headers": [

@@ -44,7 +44,7 @@ Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas e conquis
 | | |
 | --- | --- |
 | 🎯 **28 jogos rápidos** | De 10 segundos a poucos minutos por partida, no computador ou no celular (teclado, mouse, toque, deslize ou botões na tela). |
-| 🏅 **Ranking de verdade** | Por jogo, do mês e geral. O servidor confere cada pontuação (faixa válida em todos os jogos e trava anti-autoclicker) antes de gravar. |
+| 🏅 **Ranking de verdade** | Por jogo, do mês e geral. O servidor confere cada pontuação antes de gravar: nos jogos de arcade a partida é aberta no servidor e vale uma vez só, no relógio dele (`lib/plays.js`); o 2048 é refeito no servidor a partir dos movimentos; mais a faixa válida de cada jogo e a trava anti-autoclicker. |
 | 📅 **Desafio do dia** | Um jogo sorteado por dia, igual pra todo mundo. Quem ganha leva a coroa e escolhe o jogo de amanhã. |
 | ⚔️ **Social** | Reações nos recordes, duelos de 24h, torneio semanal e duplas. |
 | 🎖️ **43 conquistas** | Calculadas na página a partir do histórico de partidas, sem nada extra no banco. |
@@ -54,7 +54,7 @@ Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas e conquis
 
 <br>
 
-## 🕹️ Os 28 jogos
+## 🕹️ Os jogos (27 + 12 diários)
 
 <div align="center">
 <img src="docs/img/jogos.png" alt="Grade de jogos do menu, com cards 3D" width="780">
@@ -81,7 +81,6 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados co
 | **Conta Rápida** | Resolva o máximo de contas em 30s. Combo até x4. |
 | **Digitação** | Máximo de palavras certas em 30s. |
 | **Anagrama** | Desembaralhe palavras em 60s com uma dica do tema (ex.: BANANA, dica "Fruta"). Palavra maior vale mais; pular não custa ponto. |
-| **Termo** | A palavra do dia: 5 letras, 6 tentativas, igual pra todo mundo. Só vale a primeira partida de cada dia. |
 | **Forca** | Palavras de TI e do escritório; errou 6 letras, acabou. |
 | **Sudoku** | Menor tempo ganha; dica custa +20s. |
 | **Campo Minado** | Abra todas as casas sem mina. O primeiro clique é sempre seguro. |
@@ -113,6 +112,35 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados co
 
 <br>
 
+### 📆 Jogos diários (aba própria no menu)
+
+Uma partida por dia em cada um, o mesmo desafio pra todo mundo. A resposta fica só no servidor (`lib/rounds.js` pro Termo, `lib/diarios.js` pros outros): a página manda cada jogada e recebe o resultado dela, e a pontuação é gravada pelo servidor. Ficam fora do desafio do dia, dos duelos e do torneio.
+
+| Jogo | Como joga |
+| --- | --- |
+| **Termo** | A palavra do dia: 5 letras, 6 tentativas. |
+| **Dueto** | 2 palavras ao mesmo tempo, 7 tentativas. |
+| **Quarteto** | 4 palavras ao mesmo tempo, 9 tentativas. |
+| **Octeto** | 8 palavras ao mesmo tempo, 13 tentativas. |
+| **Contexto** | Descubra a palavra secreta: cada palpite mostra a posição dele numa lista ordenada pelo sentido. A lista vem de vetores de palavras em português (spaCy `pt_core_news_lg`, gerados por `scripts/build-contexto.py` em `lib/data/`), sem API externa. |
+| **Conexões** | 16 palavras, 4 grupos escondidos (amarelo fácil … roxo jogo de palavras). 4 erros e acabou. Grupos em `lib/conexoes.js`. |
+| **Alvo** | Chegue no número do dia juntando 6 números com + − × ÷. Uma tentativa; vale o resultado mais perto. |
+| **Soletra** | Palavras de 4+ letras com as 7 letras da colmeia, sempre com a do meio; a que usa as 7 vale bônus. Encerra quando quiser. Palavras do dicionário do LibreOffice que estão entre as mais usadas (`lib/data/soletra.json`). |
+| **Senha** | Descubra 4 cores (podem repetir) em 8 tentativas: cada palpite diz quantas estão no lugar e quantas em outro lugar. |
+| **Equação** | O Termo com números: a conta do dia (8 símbolos, tipo `12+35=47`) em 6 tentativas; todo palpite tem que ser uma conta certa. |
+| **Bandeira** | De que país é a bandeira? 6 palpites; cada erro diz a distância, a direção e o quanto chegou perto. Continente depois de 2 erros, capital depois de 4. |
+| **Caça-palavras** | 8 palavras de 2 temas num quadro 10×10, em qualquer direção. Mais rápido, mais pontos. |
+| **Cruzadinha** | Mini palavras cruzadas 5×5 com dicas. A grade cheia é enviada sozinha; conferir marca os erros mas tira 60 pontos. Mais rápido, mais pontos. Grades geradas por `scripts/build-cruzadinha.js` a partir das dicas em `lib/data/cruzadinha-dicas.txt`. |
+
+`scripts/build-diarios.js` gera os dados do Bandeira e do Soletra em `lib/data/` (roda uma vez, fora do app).
+
+Na aba:
+- 🏁 **Ranking de hoje**: soma os pontos de todos os diários do dia e zera à meia-noite (cada diário também tem ranking só do dia). Os diários ficam fora de recordes, campeões do mês e duplas.
+- 👑 **Campeão dos diários**: quem fecha o dia em 1º no Ranking de hoje ganha um selo ao lado do nome no dia seguinte (com confete) e libera a moldura *Aurora*.
+- 🔥 **Sequência**: dias seguidos jogando pelo menos um diário. Aparece na aba (pisca se hoje ainda não jogou) e no perfil, com o recorde; 7 dias liberam a moldura *Brasa*.
+- 📤 **Compartilhar meu dia**: um resumo com os pontos, a posição, a sequência e o que foi jogado (no celular abre o compartilhar do sistema; no PC copia).
+- ⏰ **Lembrete**: a partir das 18h, se ainda falta jogar algum, uma faixa avisa quanto tempo falta pra virar o dia.
+
 ## 🏆 Competição e social
 
 Quase tudo sai das **partidas** (tabela `scores`): só o que não dá pra deduzir delas ganha tabela própria.
@@ -137,7 +165,7 @@ Quem termina o mês com mais recordes de 1º lugar ganha um **selo fixo**: uma m
 ### 🗓️ Torneio semanal
 - Semana de segunda a domingo, no horário de Brasília. Cada semana sorteia **3 jogos**, iguais pra todo mundo, e a soma das posições vira pontos.
 - Pontos por posição em cada jogo: **10, 7, 5, 4, 3, 2** do 1º ao 6º, e **1 ponto** do 7º em diante.
-- O Termo não entra (só vale 1 partida por dia).
+- Os jogos diários não entram (só vale 1 partida por dia).
 - Os 3 jogos da semana ficam guardados, então não mudam se entrar jogo novo no meio.
 - O primeiro torneio da produção é o da semana de **19/10/2026**. Na versão de teste da Vercel ele já vale na semana atual, pra dar pra ver e testar.
 
@@ -154,7 +182,7 @@ Duas pessoas formam uma dupla com o nome que quiserem. Quem convida escolhe o no
 - Uma faixa no topo do menu mostra quem tem mais recordes de 1º lugar (a coroa), com o 2º e o 3º.
 
 ### 🎖️ Perfil e conquistas
-Clique no nome de qualquer pessoa pra abrir o perfil. São **43 conquistas**, como *Estreia*, *Explorador* (10 jogos diferentes), *Zerou o menu* (todos os 28), *Rei de um jogo*, *Campeão da semana*, *Dobradinha*, *Constância* (5 dias úteis seguidos), *Madrugador*, *Hora do almoço*, *Veterano* (500 partidas) e *Lenda da firma* (1000 partidas). Tudo é calculado na página a partir do ranking (`public/js/profile.js`).
+Clique no nome de qualquer pessoa pra abrir o perfil. São **48 conquistas**, como *Estreia*, *Explorador* (10 jogos diferentes), *Zerou o menu* (todos os 28), *Rei de um jogo*, *Campeão da semana*, *Dobradinha*, *Constância* (5 dias úteis seguidos), *Madrugador*, *Hora do almoço*, *Veterano* (500 partidas) e *Lenda da firma* (1000 partidas). Tudo é calculado na página a partir do ranking (`public/js/profile.js`).
 
 <br>
 
@@ -270,7 +298,7 @@ Pra mudar a porta, defina `PORT` antes (no PowerShell: `$env:PORT=3000`). O serv
 
 - usa **SQLite** em `microgame.db`, nunca o banco de produção;
 - do `.env.local` só lê o que precisa (chave do Geiko e segredo de sessão). O `DATABASE_URL` de lá é o banco de **produção** e fica de fora de propósito;
-- serve só a pasta `public/`, igual à Vercel: `lib/` e `scripts/` nunca saem.
+- serve a pasta `public/` (os scripts originais, pra testar sem montar): `lib/` e `scripts/` nunca saem. Com `MICROGAME_DIST=1` serve a `dist/` montada pelo `npm run build`, igual à que vai pro ar.
 
 <br>
 
@@ -313,7 +341,8 @@ Ficam no `.env.local` (teste, fora do Git) e no projeto da Vercel (produção e 
 | Comando | O que faz |
 | --- | --- |
 | `npm run local` | Servidor de teste local com SQLite. |
-| `npm test` | Checagem do front + testes da API. |
+| `npm run build` | Monta a `dist/` que a Vercel publica: todos os scripts num arquivo só, dentro de uma função (nada no `window` pra chamar pelo console), ofuscado e minificado, sem source map e sem os arquivos originais. A Vercel roda sozinha no deploy. |
+| `npm test` | Checagem do front, a montagem da `dist/` e os testes da API. |
 | `npm run admin -- <usuario> "<Nome>" [idGeiko]` | Cria ou promove um admin e mostra uma senha temporária. Banco local por padrão; `--producao` usa o da Vercel e `--homolog` o de teste. |
 | `npm run importar -- "<.env do GeikoDashboard>" [--producao]` | Cria uma conta por atendente do GeikoDashboard (só leitura lá), já com o ID do Geiko. As senhas temporárias vão pra um `contas-*.csv` fora do Git. Pula quem já tem conta. |
 | `npm run migrate` | Copia as pontuações do `microgame.db` pro Neon. Roda uma vez só e se recusa se o Neon já tiver pontuações. |
@@ -357,6 +386,7 @@ No painel admin dá pra baixar o JSON, importar ou restaurar as partidas de qual
 │   ├── auth.js            senhas, sessão e contas
 │   ├── geiko.js           bloqueio por fila do Geiko
 │   ├── rules.js           faixas de pontuação válidas e anti-autoclicker
+│   ├── plays.js           partidas de arcade abertas no servidor (uso único, relógio do servidor, 2048 refeito)
 │   ├── social.js          reações, duelos, torneio e duplas
 │   ├── flair.js           prêmios do desafio do dia
 │   ├── backup.js          cópias de segurança no banco
@@ -387,11 +417,14 @@ No painel admin dá pra baixar o JSON, importar ou restaurar as partidas de qual
 
 ## 📦 Bibliotecas
 
-Sem build: Phaser, Zdog e Vanilla-Tilt ficam no próprio site (`public/vendor/`, com o jsdelivr de reserva); só o web-vitals vem por CDN.
+Phaser, Zdog e Vanilla-Tilt ficam no próprio site (`public/vendor/`, com o jsdelivr de reserva); só o web-vitals vem por CDN.
 
 | Biblioteca | Pra quê |
 | --- | --- |
 | [Phaser 3.90](https://phaser.io) | Os 12 jogos marcados com 🎨. Servido de `public/vendor/phaser.min.js` (MIT); se o arquivo local falhar, tenta o jsdelivr. Só baixa quando alguém abre um deles (no menu fica pré-buscado em segundo plano). |
+| [world-countries](https://github.com/mledoze/countries) (ODbL) e [flag-icons](https://github.com/lipis/flag-icons) (MIT) | Países, capitais, coordenadas e bandeiras do Bandeira, em `lib/data/bandeiras.json`. |
+| Dicionário pt-BR do [LibreOffice](https://github.com/LibreOffice/dictionaries) (MPL/LGPL) | Palavras do Soletra, em `lib/data/soletra.json`. |
+| Vetores de palavras do [spaCy](https://spacy.io) `pt_core_news_lg` (CC BY-SA 4.0) e lista de frequência [FrequencyWords](https://github.com/hermitdave/FrequencyWords) (CC BY-SA 4.0) | Vocabulário e proximidade de sentido do Contexto, em `lib/data/`. |
 | Dicionário pt-BR do [LibreOffice](https://github.com/LibreOffice/dictionaries/tree/master/pt_BR) (VERO, MPL 2.0 / LGPL 3) | As palavras de 5 letras aceitas como tentativa no Termo, em `public/data/termo-validas.txt` (gerado com as flexões, sem acento). |
 | [Zdog 1.1](https://zzz.dog) e [Vanilla-Tilt 1.8](https://micku7zu.github.io/vanilla-tilt.js/) | Ilustração 3D e inclinação com brilho dos cards do menu. Carregam depois que o menu aparece e dá pra desligar no botão do topo. |
 | [web-vitals 6](https://github.com/GoogleChrome/web-vitals) | Mede LCP, INP, CLS, FCP e TTFB de quem joga e manda pra `/api/vitals`. Local: aparece no terminal do `server.js`. Vercel: em Logs do projeto (linhas `[web-vitals]`). |

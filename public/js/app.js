@@ -13,7 +13,7 @@ function recHtml(id) {
   const g = GAMES[id], top = bestPerPlayer(id)[0];
   const fr = top && flair.frames[top[0]]; // nome do recordista: branco, ou na cor da moldura de avatar dele
   return top ? `${icon('trophy')} <b${fr ? ` class="fr-${fr}"` : ''}>${esc(top[0])}</b> · ${fmt(g, top[1])}`
-    : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()}`;
+    : g.daily ? 'Ninguém jogou hoje' : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()}`;
 }
 function kingsHtml() {
   const kings = champions();
@@ -93,7 +93,106 @@ function bindSeasonSeg(root, onChange) {
 const heroNode = main.querySelector('.hero');
 // Jogos em destaque aparecem primeiro no menu; o resto segue a ordem do GAMES.
 const FEATURED = ['blocos'];
-const menuOrder = () => [...FEATURED, ...Object.keys(GAMES).filter(id => !FEATURED.includes(id))].map(id => [id, GAMES[id]]);
+const menuOrder = () => [...FEATURED, ...Object.keys(GAMES).filter(id => !FEATURED.includes(id) && !GAMES[id].daily)].map(id => [id, GAMES[id]]);
+// aba "Jogos diários": uma partida por dia em cada um, a mesma pra todo mundo (DAILY_TAB em daily.js)
+const dailyOrder = () => DAILY_TAB.filter(id => GAMES[id]).map(id => [id, GAMES[id]]);
+let menuTab = (() => { try { return localStorage.getItem('mg_tab') === 'daily' ? 'daily' : 'main'; } catch { return 'main'; } })();
+function setMenuTab(tab) {
+  menuTab = tab;
+  try { localStorage.setItem('mg_tab', tab); } catch {}
+  main.querySelectorAll('[data-tab]').forEach(b => { const on = b.dataset.tab === tab; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
+  main.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== tab; });
+  // Mês/Geral é dos jogos principais; os diários têm o ranking de hoje
+  main.querySelector('.menu-bar')?.classList.toggle('on-daily', tab === 'daily');
+}
+// como está cada jogo diário hoje pra quem está logado (GET /api/diarios)
+let dailyStatus = { day: null, games: {} };
+async function loadDailyStatus() {
+  if (!me || localMode) return;
+  try { dailyStatus = await api('api/diarios'); } catch {}
+  renderDailyStatus();
+}
+function dailyStatusHtml(id) {
+  const st = dailyStatus.games[id];
+  if (!me) return `<span class="ds">${icon('calendar')} Entre pra jogar</span>`;
+  if (!st) return `<span class="ds new">${icon('play')} Novo hoje</span>`;
+  if (!st.over) return `<span class="ds going">${icon('hourglass')} Em andamento</span>`;
+  return st.won ? `<span class="ds won">${icon('circle-check')} Feito · ${fmt(GAMES[id], st.score)}</span>` : `<span class="ds lost">${icon('x')} Não foi hoje</span>`;
+}
+function renderDailyStatus() {
+  if (currentView !== 'menu') return;
+  for (const [id] of dailyOrder()) { const el = $(`.card[data-id="${id}"] .ds-slot`); if (el) el.innerHTML = dailyStatusHtml(id); }
+  const left = me ? dailyOrder().filter(([id]) => !dailyStatus.games[id]?.over).length : 0;
+  const dot = $('#tabDot');
+  if (dot) { dot.hidden = !left; dot.textContent = left; dot.title = `${left} jogo${left > 1 ? 's' : ''} diário${left > 1 ? 's' : ''} pra jogar hoje`; }
+  const head = $('#dailyHead');
+  if (head) {
+    const ms = dayStart(dayIndex() + 1) - Date.now(), h = Math.floor(ms / 3_600_000), m = Math.floor(ms / 60_000) % 60;
+    const total = dailyOrder().length, feitos = total - left;
+    const streak = me ? dailyTabStreak(me.name) : 0;
+    head.innerHTML = `<span>${icon('calendar')} Desafios novos em <b>${h}h${String(m).padStart(2, '0')}</b></span>${me ? `<span class="prog"><i style="--p:${feitos / total * 100}%"></i></span><span><b>${feitos}/${total}</b> feitos hoje</span>` : ''}`
+      + (streak ? `<span class="dt-streak${dailyStatus.games && Object.keys(dailyStatus.games).length ? '' : ' risk'}" title="Dias seguidos jogando os jogos diários">${icon('flame')} <b>${streak}</b> ${streak === 1 ? 'dia' : 'dias seguidos'}</span>` : '')
+      + (me && feitos ? `<button class="btn ghost dt-share" id="dtShare">${icon('upload')} Compartilhar meu dia</button>` : '');
+    head.querySelector('#dtShare')?.addEventListener('click', shareDailyDay);
+  }
+  renderDailyRemind(left);
+}
+/** Resumo do dia nos jogos diários, pra colar no grupo: feitos, pontos, posição, sequência e cada jogo. */
+function dailyShareText() {
+  const games = dailyOrder().map(([id, g]) => [g, dailyStatus.games[id]]).filter(([, st]) => st?.over);
+  const pts = games.reduce((t, [, st]) => t + (st.won ? st.score : 0), 0);
+  const pos = dailyTabStandings().findIndex(r => r.name === me.name) + 1, streak = dailyTabStreak(me.name);
+  const d = new Date();
+  return [`MicroGame · Jogos diários ${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`,
+    `${games.length}/${dailyOrder().length} jogos · ${pts.toLocaleString('pt-BR')} pontos${pos ? ` · ${pos}º lugar` : ''}`,
+    ...(streak > 1 ? [`🔥 ${streak} dias seguidos`] : []),
+    '',
+    ...games.map(([g, st]) => (st.won ? `✅ ${g.name} ${st.score}` : `❌ ${g.name}`))].join('\n');
+}
+async function shareDailyDay() {
+  const text = dailyShareText(), b = $('#dtShare');
+  try {
+    if (navigator.share && matchMedia('(pointer: coarse)').matches) await navigator.share({ text });
+    else { await navigator.clipboard.writeText(text); if (b) b.innerHTML = `${icon('circle-check')} Copiado!`; announce('Resumo do dia copiado'); }
+  } catch (err) { if (err?.name !== 'AbortError') modal(`<h2>${icon('upload')} Seu dia</h2><textarea class="dt-share-txt" readonly rows="10">${esc(text)}</textarea>`); }
+}
+// lembrete: à noite (a partir das 18h), se ainda tem jogo diário pra fazer hoje. Some por hoje no X.
+function renderDailyRemind(left) {
+  const bar = $('#dtRemind');
+  if (!bar) return;
+  const key = String(dayIndex());
+  let dismissed = false;
+  try { dismissed = localStorage.getItem('mg_remind') === key; } catch {}
+  const hour = new Date().getHours();
+  if (!me || localMode || dismissed || hour < 18 || !left || !dailyStatus.day) { bar.hidden = true; return; }
+  const ms = dayStart(dayIndex() + 1) - Date.now(), h = Math.floor(ms / 3_600_000), m = Math.floor(ms / 60_000) % 60;
+  const streak = dailyTabStreak(me.name), playedToday = Object.keys(dailyStatus.games).length > 0;
+  bar.hidden = false;
+  bar.innerHTML = `<span class="ic">${icon('hourglass')}</span><span class="tx"><span>${left === dailyOrder().length ? 'Você ainda não jogou os diários hoje' : `Faltam <b>${left}</b> jogo${left > 1 ? 's' : ''} diário${left > 1 ? 's' : ''}`} · o dia vira em <b>${h}h${String(m).padStart(2, '0')}</b></span>
+    ${streak && !playedToday ? `<small>${icon('flame')} Jogue um pra não perder a sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}</small>` : ''}</span>
+    <button class="btn" id="dtGo">Jogar</button><button class="dt-x" id="dtX" aria-label="Fechar lembrete por hoje">${icon('x')}</button>`;
+  bar.querySelector('#dtGo').onclick = () => { setMenuTab('daily'); $('#panel-daily')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  bar.querySelector('#dtX').onclick = () => { try { localStorage.setItem('mg_remind', key); } catch {} bar.hidden = true; };
+}
+// ranking à parte dos jogos diários: soma dos pontos de hoje em todos eles, zera à meia-noite
+function dailyRankHtml() {
+  const rows = dailyTabStandings(), total = dailyOrder().length;
+  const [champ] = dailyTabStandings(dayIndex() - 1);
+  const mine = rows.findIndex(r => r.name === player);
+  const list = rows.slice(0, 10);
+  return `<div class="dr-head"><h3>${icon('trophy')} Ranking de hoje</h3><span class="hint">soma dos pontos nos jogos diários · zera à meia-noite</span></div>`
+    + (list.length
+      ? '<ol>' + list.map((r, k) => `<li class="${r.name === player ? 'me' : ''}">${rankBadge(k + 1)}${nameHtml(r.name, { cls: 'name' })}<span class="dr-n">${r.games}/${total}</span><b>${r.pts.toLocaleString('pt-BR')}</b></li>`).join('') + '</ol>'
+        + (mine >= 10 ? `<p class="hint dr-me">Você está em ${mine + 1}º com ${rows[mine].pts.toLocaleString('pt-BR')} pontos</p>` : '')
+      : '<p class="empty">Ninguém jogou hoje ainda. Saia na frente!</p>')
+    + (champ ? `<p class="dr-champ">${icon('crown')} Ontem: ${nameHtml(champ.name)} com <b>${champ.pts.toLocaleString('pt-BR')}</b> pontos</p>` : '');
+}
+function renderDailyRank() { const el = $('#dailyRank'); if (el) el.innerHTML = dailyRankHtml(); }
+const cardHtml = (id, g, i, extra = '') => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
+        <span class="icon">${icon(g.icon)}</span>
+        <h3>${g.name}</h3>
+        <span class="rec">${recHtml(id)}</span>${extra}
+      </button>`;
 function renderMenu() {
   main.classList.remove('game-view');
   main.replaceChildren(heroNode);
@@ -101,14 +200,32 @@ function renderMenu() {
     <button class="crown-bar" id="crownBar" hidden></button>
     <section class="daily glass" id="daily" data-game="${dailyGame()}" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
     <div class="strip" id="strip"${me ? '' : ' hidden'}></div>
-    <div class="menu-bar"><h2>Jogos</h2><span class="hint">Ranking:</span>${seasonSeg()}</div>
-    <section class="grid" aria-label="Jogos">` +
-    menuOrder().map(([id, g], i) => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
-        <span class="icon">${icon(g.icon)}</span>
-        <h3>${g.name}</h3>
-        <span class="rec">${recHtml(id)}</span>
-      </button>`).join('') + `</section>
+    <div class="dt-remind glass" id="dtRemind" hidden></div>
+    <div class="menu-bar">
+      <div class="tabs" role="tablist" aria-label="Jogos">
+        <button role="tab" id="tab-main" data-tab="main" aria-controls="panel-main">${icon('gamepad-2')} Jogos</button>
+        <button role="tab" id="tab-daily" data-tab="daily" aria-controls="panel-daily">${icon('calendar')} Jogos diários<span class="tab-dot" id="tabDot" hidden></span></button>
+      </div>
+      <span class="hint season-lbl">Ranking:</span>${seasonSeg()}</div>
+    <section class="grid" id="panel-main" data-panel="main" role="tabpanel" aria-labelledby="tab-main">` +
+    menuOrder().map(([id, g], i) => cardHtml(id, g, i)).join('') + `</section>
+    <section id="panel-daily" data-panel="daily" role="tabpanel" aria-labelledby="tab-daily">
+      <div class="daily-head glass" id="dailyHead"></div>
+      <div class="daily-rank glass" id="dailyRank"></div>
+      <div class="grid daily-grid">` + dailyOrder().map(([id, g], i) => cardHtml(id, g, i, '<span class="ds-slot"></span>')).join('') + `</div>
+      <p class="hint daily-note">Uma partida por dia em cada jogo, a mesma pra todo mundo. A resposta muda à meia-noite.</p>
+    </section>
 `);
+  main.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { setMenuTab(b.dataset.tab); if (b.dataset.tab === 'daily') loadDailyStatus(); });
+  // setas trocam de aba (padrão de tablist)
+  main.querySelector('.tabs').onkeydown = e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    const next = menuTab === 'main' ? 'daily' : 'main';
+    setMenuTab(next); main.querySelector(`[data-tab="${next}"]`).focus();
+  };
+  setMenuTab(menuTab);
+  renderDailyStatus();
+  renderDailyRank();
   renderCrown(); renderChamps(); renderStrip();
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
   bindSeasonSeg(main.querySelector('.menu-bar'), refreshMenu);
@@ -132,6 +249,8 @@ function refreshMenu() {
   renderChamps();
   refreshPickRow();
   applyMeFlair();
+  renderDailyStatus();
+  renderDailyRank();
 }
 async function showMenu() {
   stop();
@@ -140,10 +259,10 @@ async function showMenu() {
   if (changed) setTimeout(pingSession, 0);
   swap(renderMenu);
   const week = loadWeek(); // tickets da semana (Geiko) em paralelo com o ranking — só aparecem na janela "Rankings"
-  await Promise.all([fetchScores(), loadSocial()]);
+  await Promise.all([fetchScores(), loadSocial(), loadDailyStatus()]);
   // o jogo do dia mudou depois que o servidor respondeu (ex.: o vencedor de ontem escolheu o de hoje): redesenha o menu
   if (currentView === 'menu' && $('#daily') && $('#daily').dataset.game !== dailyGame()) renderMenu();
-  if (currentView === 'menu') { refreshMenu(); maybeCongrats(); }
+  if (currentView === 'menu') { refreshMenu(); maybeCongrats(); maybeDailyTabCongrats(); }
   checkVersion();
   if (me && !me.mustChange) refreshGate();
   await week;
@@ -152,10 +271,10 @@ async function showMenu() {
 
 function boardHtml(id) {
   const g = GAMES[id], rows = bestPerPlayer(id).slice(0, 10);
-  return `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}` + (rows.length
+  return (g.daily ? `<h3>${icon('trophy')} Ranking</h3><p class="hint board-reset">Só de hoje: zera à meia-noite</p>` : `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}`) + (rows.length
     ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${rankBadge(k + 1)}</span>${nameHtml(n, { cls: 'name', extra: ticketStar(n) })}<span class="sc">${fmt(g, s)}</span>${rxButton(id, n)}${rxChips(id, n)}</li>`).join('') + '</ol>'
-    : `<p class="empty">${seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`)
-    + (me ? `<button class="btn ghost board-duel" data-duel="${id}">${icon('swords')} Desafiar alguém</button>` : '');
+    : `<p class="empty">${g.daily ? 'Ninguém jogou hoje ainda.' : seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`)
+    + (me && !g.daily ? `<button class="btn ghost board-duel" data-duel="${id}">${icon('swords')} Desafiar alguém</button>` : '');
 }
 // desenha o ranking da partida e liga o seletor Mês/Geral
 function renderBoard(id) {
@@ -182,14 +301,15 @@ function play(id) {
           <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
           <div class="title"><h2>${icon(g.icon)}${g.name}</h2><p>${g.desc}</p></div>
           <button class="btn ghost icon-btn" id="how" aria-label="Como jogar" title="Como jogar">?</button>
-          <button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>
+          ${g.daily ? '' : `<button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>`}
         </div>
         <div class="game" id="game"></div>
       </section>
       <aside class="board glass" id="board">${boardHtml(id)}</aside>
     </div>`;
     $('#back').onclick = showMenu;
-    $('#restart').onclick = () => play(id);
+    if (g.daily) setMenuTab('daily'); // voltar ao menu cai na aba dos diários
+    else $('#restart').onclick = () => play(id);
     $('#how').onclick = () => { if (!HOWTO[id]) return; stop(); const el = $('#game'); el.innerHTML = ''; cleanup = showHowto(id, el, () => play(id)); };
     renderBoard(id);
     fetchScores().then(() => renderBoard(id));
@@ -199,6 +319,7 @@ function play(id) {
     fitGame();
     const el = $('#game');
     partSummary = null;
+    let pass = null; // partida aberta no servidor (jogos de arcade)
     const onDone = async (score, proof) => {
       stop();
       if (!el.isConnected) return; // saiu da partida (voltou ao menu, trocou de tela) antes de terminar
@@ -216,14 +337,16 @@ function play(id) {
       const prev = mine(ALL), prevMonth = mine(MONTH);
       const hadAch = unlockedFor(player);
       const cheat = g.check?.(score, proof);
-      const status = cheat || await saveScore(id, score, proof);
+      const status = cheat || await saveScore(id, score, proof, pass);
       if (!el.isConnected) return; // trocou de tela enquanto salvava: o resultado já foi enviado, só não há onde mostrar
       const ok = status === 'ok' || status === 'queued';
       const record = ok && (!prev || better(g, score, prev[1]));
       const monthBest = ok && (!prevMonth || better(g, score, prevMonth[1]));
       const leads = range => { const top = bestPerPlayer(id, range)[0]; return top && top[0] === player && top[1] === score; };
-      const champ = record && leads(ALL);
-      const monthChamp = monthBest && leads(MONTH);
+      // jogo diário: uma partida por dia e ranking só de hoje, então não tem recorde nem mês
+      const todayLead = ok && g.daily && leads(dayRange());
+      const champ = !g.daily && record && leads(ALL);
+      const monthChamp = !g.daily && monthBest && leads(MONTH);
       const dailyLead = ok && id === dailyGame() && leads(dayRange());
       const month = monthName(monthKey(Date.now())).toLowerCase();
       const hasAch = ok ? unlockedFor(player) : hadAch;
@@ -235,6 +358,7 @@ function play(id) {
         <span class="score">${fmt(g, score)}</span>
         ${status === 'login' ? `<span class="badge warn">${icon('key-round')} Você não estava logado — entre pra salvar este resultado.</span><button class="btn" id="loginSave">Entrar e salvar</button>`
           : !ok ? `<span class="badge warn">${icon('bot')} Não valeu: ${esc(status)}. Resultado não foi salvo.</span>`
+          : g.daily ? (todayLead ? `<span class="badge">${icon('crown')} Em 1º hoje!</span>` : '')
           : champ ? `<span class="badge">${icon('crown')} Recorde geral!</span>`
           : monthChamp ? `<span class="badge">${icon('calendar')} Liderando ${month}!</span>`
           : dailyLead ? `<span class="badge">${icon('star')} Liderando o desafio de hoje!</span>`
@@ -245,26 +369,26 @@ function play(id) {
         ${summary?.length ? `<dl class="part-sum">${summary.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join('')}</dl>` : ''}
         ${newAch.map(x => `<span class="badge ach-new">${icon(x.icon)} Conquista nova: ${x.name}</span>`).join('')}
         ${status === 'queued' ? `<span class="badge warn">${icon('triangle-alert')} Servidor fora do ar — resultado guardado, envio automático quando ele voltar</span>` : ''}
-        <button class="btn" id="again">Jogar de novo</button>
+        ${g.daily ? `<button class="btn" id="again">${icon('calendar')} Outros jogos diários</button><span class="hint">Volte amanhã pra um desafio novo.</span>` : '<button class="btn" id="again">Jogar de novo</button>'}
       </div>`;
-      announce(`Resultado: ${fmt(g, score)}. ${!ok ? 'Não foi salvo.' : record ? 'Novo recorde!' : ''}`);
-      if (record || monthChamp || dailyLead) { confetti(); sfx.record(); }
-      $('#again').onclick = () => play(id);
+      announce(`Resultado: ${fmt(g, score)}. ${!ok ? 'Não foi salvo.' : !g.daily && record ? 'Novo recorde!' : ''}`);
+      if (g.daily ? todayLead : record || monthChamp || dailyLead) { confetti(); sfx.record(); }
+      $('#again').onclick = () => (g.daily ? showMenu() : play(id));
       $('#again').focus();
       $('#loginSave')?.addEventListener('click', () => { setMe(null); loginModal(); });
     };
     // 1ª vez no jogo: "Como jogar"; jogos com tempo: contagem 3, 2, 1; jogo do desafio: sequência igual pra todo mundo
-    prepareGame(id, el, () => { seedDaily(id); cleanup = g.start(el, onDone); });
+    prepareGame(id, el, () => { seedDaily(id); pass = openPlay(id); cleanup = g.start(el, onDone, pass); });
   });
 }
 
-// "Você está em 4º de 12 em outubro · faltam 30 pontos pro 3º" (ranking do mês, melhor partida de cada um)
+// "Você está em 4º de 12 em outubro · faltam 30 pontos pro 3º" (ranking do mês, melhor partida de cada um; jogo diário: só hoje)
 function placeLine(g, id, score) {
-  const list = bestPerPlayer(id, { since: monthStart() });
+  const list = bestPerPlayer(id, g.daily ? dayRange() : { since: monthStart() });
   const pos = list.findIndex(([n]) => n === player);
   if (pos < 0) return '';
   const month = monthName(monthKey(Date.now())).toLowerCase();
-  let txt = `Você está em <b>${pos + 1}º de ${list.length}</b> em ${month}`;
+  let txt = `Você está em <b>${pos + 1}º de ${list.length}</b> ${g.daily ? 'hoje' : `em ${month}`}`;
   if (pos > 0) {
     const [, above] = list[pos - 1], mine = list[pos][1];
     const gap = Math.abs(above - mine);
@@ -498,9 +622,9 @@ function passwordModal(forced) {
 let unsavedScore = null;
 async function saveUnsaved() {
   if (!unsavedScore || !me || me.mustChange) return;
-  const { gameId, score, proof } = unsavedScore;
+  const { gameId, score, proof, pass } = unsavedScore;
   unsavedScore = null;
-  const status = await saveScore(gameId, score, proof);
+  const status = await saveScore(gameId, score, proof, pass);
   const g = GAMES[gameId];
   modal(`<h2>${status === 'ok' || status === 'queued' ? `${icon('circle-check')} Resultado salvo` : `${icon('triangle-alert')} Não deu pra salvar`}</h2>
     <p>${g.name}: <b>${fmt(g, score)}</b>${status === 'ok' || status === 'queued' ? ' — já está no ranking.' : ' — ' + esc(status)}</p>
