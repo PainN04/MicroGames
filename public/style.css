@@ -1683,3 +1683,28 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23b8b8cc' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right .7em center; background-size: 1em; }
 .admin select option, .title-sel option, .showcase-pick select option { background: #1d1d2e; color: var(--text); }
+
+/* ---------- ranking ao lado do jogo ----------
+   A unidade fica uma vez só no topo da coluna (nas linhas, só o número), o pódio ganha a cor da medalha
+   e quem está fora do top 10 vê a própria linha embaixo. Assim sobra espaço pro nome. */
+@media (min-width: 1100px) { .layout { grid-template-columns: minmax(0, 1fr) 330px; } }
+.bd-cols { display: flex; justify-content: space-between; gap: 8px; padding: 0 calc(.7em + 30px) 4px .7em; font-size: var(--fs-xs); color: var(--muted); }
+.board li { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: .55rem; padding: .5em .4em .5em .6em; }
+.board li > .sc { font-size: var(--fs-sm); text-align: right; min-width: 3ch; }
+.board .name { display: flex; align-items: center; gap: .45em; min-width: 0; border-bottom: 0; }
+.board .name:hover { text-decoration: underline; text-underline-offset: 3px; }
+/* pódio: faixa na cor da medalha à esquerda e um brilho que some pra direita */
+.board li.top { background: linear-gradient(90deg, var(--md) 0%, transparent 75%); box-shadow: inset 3px 0 0 var(--mdl); }
+.board li.t1 { --md: oklch(86% .17 92 / .2); --mdl: #f2b93b; }
+.board li.t2 { --md: oklch(92% .02 260 / .13); --mdl: #b9bfcc; }
+.board li.t3 { --md: oklch(72% .11 55 / .17); --mdl: #c47a45; }
+.board li.t1 > .sc { color: var(--yellow); font-size: var(--fs-base); }
+.board li.t1 .name { font-weight: 700; }
+.board li.me { background: oklch(70% 0.19 290 / 0.18); outline: 1px solid oklch(70% 0.19 290 / 0.45); }
+.board .bd-me { margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border-strong); }
+/* botão de reagir: com mouse, aparece ao passar na linha (no toque fica sempre à mostra) */
+.board .rx-add, .board .rx-gap { width: 24px; height: 24px; }
+@media (hover: hover) {
+  .board .rx-add { opacity: 0; }
+  .board li:hover .rx-add, .board li:focus-within .rx-add { opacity: .75; }
+}
