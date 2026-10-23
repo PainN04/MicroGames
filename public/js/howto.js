@@ -21,7 +21,7 @@ const HOWTO = {
   torre: { steps: ['Solte o bloco em cima da torre', 'O que passa da borda é cortado', 'Acertos perfeitos seguidos aumentam o bloco'], keys: ['Espaço', 'Clique', 'Toque'] },
   invasores: { steps: ['Ande e o tiro sai sozinho', 'Se esconda atrás das barreiras', 'A nave-mãe lá em cima vale bônus'], keys: ['← →', 'A D', 'Arraste'] },
   minado: { steps: ['Abra as casas sem mina; o número diz quantas minas tem em volta', 'Marque as minas com bandeira', 'Clique num número com as bandeiras certas: abre os vizinhos'], keys: ['Clique abre', 'Botão direito marca', 'Toque longo marca'] },
-  ritmo: { steps: ['A música toca; as notas descem nas 4 faixas', 'Aperte quando a nota cruzar a linha', 'Nota comprida: segure até o fim'], keys: ['D F J K', 'Setas', 'Toque'] },
+  ritmo: { steps: ['Escolha uma música; as notas descem nas 4 faixas no ritmo dela', 'Aperte quando a nota cruzar a linha', 'Nota comprida: segure até o fim'], keys: ['D F J K', 'Setas', 'Toque'] },
   anagrama: { steps: ['Desembaralhe as letras e forme a palavra', 'A dica mostra o tema da palavra', 'Palavra maior vale mais', 'Letra (−1) revela uma letra e tira 1 ponto'], keys: ['Teclado', 'Enter', 'Clique nas letras'] },
   sudoku: { steps: ['Complete com 1 a 9 sem repetir na linha, coluna e bloco', 'Use as notas pra anotar candidatos', 'Menor tempo ganha; dica soma +20s'], keys: ['1–9', 'Setas', 'N notas', 'Ctrl+Z'] },
   pong: { steps: ['Rebata a bola com a sua raquete (embaixo)', 'Bater com a raquete andando dá efeito na bola', 'Ponto quando a bola passa pela máquina'], keys: ['Mouse', '← →', 'Espaço'] },

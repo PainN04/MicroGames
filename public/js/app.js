@@ -271,7 +271,8 @@ async function showMenu() {
 
 function boardHtml(id) {
   const g = GAMES[id], rows = bestPerPlayer(id).slice(0, 10);
-  return (g.daily ? `<h3>${icon('trophy')} Ranking</h3><p class="hint board-reset">Só de hoje: zera à meia-noite</p>` : `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}`) + (rows.length
+  return (g.daily ? `<h3>${icon('trophy')} Ranking</h3><p class="hint board-reset">Só de hoje: zera à meia-noite</p>` : `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}`)
+    + (g.boardNote ? `<p class="hint board-note">${g.boardNote}</p>` : '') + (rows.length
     ? '<ol>' + rows.map(([n, s], k) => `<li class="${n === player ? 'me' : ''}"><span class="pos">${rankBadge(k + 1)}</span>${nameHtml(n, { cls: 'name', extra: ticketStar(n) })}<span class="sc">${fmt(g, s)}</span>${rxButton(id, n)}${rxChips(id, n)}</li>`).join('') + '</ol>'
     : `<p class="empty">${g.daily ? 'Ninguém jogou hoje ainda.' : seasonMode === 'all' ? 'Ninguém jogou ainda.' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda.`}</p>`)
     + (me && !g.daily ? `<button class="btn ghost board-duel" data-duel="${id}">${icon('swords')} Desafiar alguém</button>` : '');
@@ -353,9 +354,11 @@ function play(id) {
       const newAch = ACHIEVEMENTS.filter(x => !hadAch.has(x.id) && hasAch.has(x.id));
       renderBoard(id);
       const summary = partSummary; partSummary = null;
+      // o jogo pode mostrar outro número em destaque (Ritmo: a pontuação da música; score = a geral, que vai pro ranking)
+      const shown = proof && typeof proof === 'object' ? proof.shown : null;
       el.innerHTML = `<div class="result">
-        <span class="label">Resultado</span>
-        <span class="score">${fmt(g, score)}</span>
+        <span class="label">${shown ? esc(shown.label) : 'Resultado'}</span>
+        <span class="score">${fmt(g, shown ? shown.score : score)}</span>
         ${status === 'login' ? `<span class="badge warn">${icon('key-round')} Você não estava logado — entre pra salvar este resultado.</span><button class="btn" id="loginSave">Entrar e salvar</button>`
           : !ok ? `<span class="badge warn">${icon('bot')} Não valeu: ${esc(status)}. Resultado não foi salvo.</span>`
           : g.daily ? (todayLead ? `<span class="badge">${icon('crown')} Em 1º hoje!</span>` : '')
