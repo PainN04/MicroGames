@@ -94,9 +94,6 @@
   }
   .logo { font: inherit; font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.035em; background: none; border: 0; color: var(--text); cursor: pointer; min-height: 44px; padding: 0;
     display: inline-flex; align-items: center; gap: .32em; }
-  /* a marca: cartucho roxo com o controle na etiqueta — public/icons/logo.svg (recortado: mais alto que largo) */
-  .logo .mark { width: auto; height: 1.6em; flex: none; margin-top: -.08em; transition: transform var(--duration) var(--ease-spring); }
-  .logo:hover .mark { transform: rotate(-6deg) scale(1.06); }
   /* "Game" segue o tema escolhido no perfil (--primary/--accent mudam com ele) */
   .logo .wm > span { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .who { display: flex; align-items: center; gap: var(--space-xs); flex-wrap: wrap; }
@@ -1604,7 +1601,6 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 .kpi .v .i { width: .78em; height: .78em; vertical-align: -.04em; color: var(--yellow); }
 /* celular: a descrição do jogo cortada no topo não ajudava (o "?" mostra o Como jogar inteiro) */
 @media (max-width: 560px) { .stage-head .title p:not(.pbio) { display: none; } .stage-head h2:has(> .i) + p { padding-left: 0; } }
-.login-mark { display: block; width: 75px; height: 96px; margin: 0 auto .2rem; }
 .modal .login-note { font-size: var(--fs-xs); margin: 0; }
 
 /* ---------- telas de jogo: palco com a arte do jogo, placar, Como jogar e resultado ----------
@@ -1720,11 +1716,6 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
   /* recordes: posição + nome na 1ª linha; valor, partidas e botões na 2ª */
   .admin .users td:has(> .rank) + td { flex: 1 1 70%; }
   .admin .users td:has(> .rank) ~ td:nth-child(4)::before { content: 'partidas: '; color: var(--muted); }
-  #usersTable td:has(> .actions) { flex-basis: 100%; }
-  #usersTable .actions { justify-content: flex-start; }
-  #usersTable td:first-child { flex: 1 1 100%; font-weight: 700; }
-  #usersTable td:nth-child(2)::before { content: '@'; color: var(--muted); }
-  #usersTable td:nth-child(3):has(> .hint) { display: none; }
   /* título do jogo cabe numa linha ao lado dos botões */
   .game-stage .stage-head h2 { font-size: 1.12rem; white-space: nowrap; }
   .game-stage .stage-head h2 > .i { width: 1.9em; height: 1.9em; }
@@ -1733,3 +1724,90 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 
 /* Como jogar ocupa o próprio espaço do jogo (antes era por cima): em tela baixa o cartão empurra o ranking pra baixo em vez de passar por cima dele */
 .howto { position: relative; inset: auto; width: 100%; min-height: min(520px, var(--avail)); }
+
+/* ---------- Administração: uma barra de abas e a lista de contas ---------- */
+.adm-tabs { display: flex; gap: 2px; margin: 0 0 var(--space-sm); padding: 0 2px; border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: none; }
+.adm-tabs::-webkit-scrollbar { display: none; }
+.adm-tabs button { position: relative; flex: none; display: inline-flex; align-items: center; gap: .45em; padding: .7em .95em .8em; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--muted); border-radius: 10px 10px 0 0; transition: color var(--duration-fast), background var(--duration-fast); }
+.adm-tabs button .i { width: 1.05em; height: 1.05em; }
+.adm-tabs button:hover { color: var(--text); background: oklch(100% 0 0 / .04); }
+.adm-tabs button[aria-selected="true"] { color: var(--text); }
+.adm-tabs button[aria-selected="true"]::after { content: ''; position: absolute; left: .6em; right: .6em; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: linear-gradient(90deg, var(--primary), var(--accent)); }
+.adm-tabs button[aria-selected="true"] .i { color: var(--primary); }
+.admin > .adm-tabs { margin-top: calc(var(--space-xs) * -1); }
+
+.acc-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs) var(--space-sm); margin-bottom: var(--space-sm); }
+.acc-head h2 { margin: 0 auto 0 0; display: flex; align-items: baseline; gap: .5em; }
+.acc-head h2 .hint { font-size: var(--fs-sm); font-weight: 500; }
+.acc-search { position: relative; display: flex; align-items: center; flex: 0 1 260px; }
+.acc-search { flex-direction: row !important; }
+.acc-search .i { position: absolute; left: .8em; top: 50%; translate: 0 -50%; color: var(--muted); pointer-events: none; }
+.admin .acc-search input { width: 100%; padding-left: 2.3em; border-radius: 999px; }
+.acc-filter { margin-bottom: var(--space-sm); flex-wrap: wrap; width: fit-content; max-width: 100%; }
+.acc-filter button { font-size: var(--fs-xs); }
+.acc-filter .n { margin-left: .4em; padding: 0 .45em; border-radius: 99px; background: oklch(100% 0 0 / .08); font-variant-numeric: tabular-nums; }
+.acc-filter .n:empty { display: none; }
+
+.acc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.acc { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: .4em .9em; padding: .6em .7em; border-radius: 14px;
+  background: oklch(100% 0 0 / .025); border: 1px solid var(--border); }
+.acc:hover { border-color: var(--border-strong); }
+.acc.off { opacity: .6; }
+.acc-av .pa, .acc-ini { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; }
+.acc-av .pa { background: oklch(62% 0.14 var(--h)); }
+.acc-av .pa img { width: 100%; height: 100%; display: block; }
+.acc-ini { font-weight: 700; font-size: .9rem; color: #fff; background: linear-gradient(160deg, oklch(62% .13 var(--h)), oklch(45% .12 var(--h))); box-shadow: 0 2px 0 oklch(30% .08 var(--h)); }
+.acc-who { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.acc-who b, .acc-who small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.acc-who small { color: var(--muted); font-size: var(--fs-xs); }
+.acc-chips { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.chip { display: inline-flex; align-items: center; gap: .3em; padding: .15em .6em; border-radius: 99px; font-size: .72rem; font-weight: 600; white-space: nowrap;
+  color: var(--muted); background: oklch(100% 0 0 / .05); border: 1px solid var(--border); }
+.chip .i { width: 1em; height: 1em; }
+.chip.admin { color: var(--yellow); border-color: oklch(86% 0.17 92 / .4); background: oklch(86% 0.17 92 / .08); }
+.chip.warn { color: oklch(85% .12 70); border-color: oklch(80% .12 70 / .4); }
+.chip.bad { color: oklch(82% .12 18); border-color: oklch(66% .22 18 / .45); background: oklch(66% .22 18 / .1); }
+.acc .actions { display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+.acc .actions .btn { min-height: 34px; padding: 0 .8rem; font-size: var(--fs-xs); gap: .4em; }
+.acc .actions .icon-btn { width: 34px; padding: 0; }
+.acc-more { position: relative; }
+.acc-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 30; min-width: 210px; padding: 6px; display: flex; flex-direction: column; border-radius: 14px; background: oklch(21% 0.03 275); box-shadow: 0 16px 40px oklch(0% 0 0 / .55); }
+.acc-menu[hidden] { display: none; }
+.acc-menu button { display: flex; align-items: center; gap: .6em; padding: .6em .7em; border: 0; border-radius: 9px; background: none; color: var(--text); font: inherit; font-size: var(--fs-sm); text-align: left; cursor: pointer; }
+.acc-menu button:hover, .acc-menu button:focus-visible { background: oklch(100% 0 0 / .07); }
+.acc-menu button.danger { color: oklch(80% .14 18); }
+html.lite .acc-menu { background: oklch(20% 0.025 275); }
+
+/* janela de criar/editar conta */
+.acc-form { display: flex; flex-direction: column; gap: var(--space-sm); }
+.acc-form small { font-size: var(--fs-xs); color: var(--muted); line-height: 1.35; }
+.acc-role { border: 0; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.acc-role legend { padding: 0; margin-bottom: 4px; font-size: var(--fs-xs); color: var(--muted); }
+.acc-role label { cursor: pointer; }
+.acc-role input { position: absolute; opacity: 0; pointer-events: none; }
+.acc-role span { display: grid; grid-template-columns: auto 1fr; column-gap: .55em; align-items: center; height: 100%; padding: .7em .8em; border-radius: 12px;
+  border: 1px solid var(--border-strong); background: oklch(12% 0.02 275 / .6); color: var(--text); transition: border-color var(--duration-fast), background var(--duration-fast); }
+.acc-role span .i { grid-row: span 2; width: 1.4em; height: 1.4em; color: var(--muted); }
+.acc-role span small { grid-column: 2; }
+.acc-role input:checked + span { border-color: var(--primary); background: oklch(70% 0.19 290 / .14); }
+.acc-role input:checked + span .i { color: var(--primary); }
+.acc-role input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.acc-role:disabled { opacity: .55; }
+.acc-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+@media (max-width: 700px) {
+  .acc { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .acc-chips { grid-column: 2 / -1; grid-row: 2; justify-content: flex-start; }
+  .acc-chips:empty { display: none; }
+  /* celular: os botões ficam só com o ícone, na mesma linha do nome */
+  .acc .actions .btn .t { display: none; }
+  .acc .actions .btn { width: 36px; padding: 0; }
+  .acc-filter { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; width: 100%; }
+  .acc-filter button { flex: none; }
+  .adm-tabs { -webkit-mask-image: linear-gradient(to left, transparent, #000 40px); mask-image: linear-gradient(to left, transparent, #000 40px); }
+  .acc-search { flex: 1 1 100%; order: 3; }
+  .adm-tabs button { padding: .6em .7em .7em; }
+}
+@media (max-width: 420px) { .acc-role { grid-template-columns: 1fr; } }
+.admin section[data-pane="contas"] { overflow: visible; }
