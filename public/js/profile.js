@@ -91,6 +91,7 @@ const ACHIEVEMENTS = [
   { id: 'pong20', icon: 'target', name: 'Parede de Pong', desc: 'Fez 20 pontos no Pong', test: s => (s.best('pong') ?? 0) >= 20, progress: s => [Math.min(20, s.best('pong') ?? 0), 20] },
   { id: 'forca100', icon: 'brain', name: 'Mestre da Forca', desc: 'Fez 100 pontos na Forca', test: s => (s.best('forca') ?? 0) >= 100, progress: s => [Math.min(100, s.best('forca') ?? 0), 100] },
   { id: 'ligue100', icon: 'swords', name: 'Estrategista', desc: 'Fez 100 pontos no Ligue 4', test: s => (s.best('ligue4') ?? 0) >= 100, progress: s => [Math.min(100, s.best('ligue4') ?? 0), 100] },
+  { id: 'sinuca500', icon: 'target', name: 'Taco de ouro', desc: 'Fez 500 pontos na Sinuca', test: s => (s.best('sinuca') ?? 0) >= 500, progress: s => [Math.min(500, s.best('sinuca') ?? 0), 500] },
   { id: 'corre1000', icon: 'zap', name: 'Sem freio', desc: 'Fez 1000 pontos no Corredor', test: s => (s.best('corredor') ?? 0) >= 1000, progress: s => [Math.min(1000, s.best('corredor') ?? 0), 1000] },
   { id: 'come5000', icon: 'ghost', name: 'Comilão', desc: 'Fez 5000 pontos no Come-Come', test: s => (s.best('comecome') ?? 0) >= 5000, progress: s => [Math.min(5000, s.best('comecome') ?? 0), 5000] },
   { id: 'cobra', icon: 'worm', name: 'Cobra criada', desc: '30 pontos na Cobrinha', test: s => (s.best('snake') || 0) >= 30, progress: s => [s.best('snake') || 0, 30] },

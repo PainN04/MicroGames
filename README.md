@@ -102,6 +102,7 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games). Os marcados co
 | **Pong** 🎨 | Rebata a bola e passe pela máquina, que acelera a cada ponto. Raquete andando dá efeito na bola. 3 vidas. |
 | **Corredor** 🎨 | Pule cactos e abaixe dos pássaros altos, cada vez mais rápido. Segurar o pulo vai mais alto; moedas valem +25. |
 | **Come-Come** 🎨 | Coma as bolinhas e fuja dos fantasmas; as grandes deixam eles azuis. 3 labirintos que se revezam, cereja bônus, 3 vidas e túnel lateral. |
+| **Sinuca** 🎨 | Sinuca de 8 bolas contra a máquina, estilo 8 Ball Pool: arraste pra mirar, puxe o taco pra dar força, encaçape lisas ou listradas e depois a 8. Falta dá bola na mão. Cada mesa vencida deixa a máquina melhor (6 níveis). |
 | **Ritmo** 🎨 | Aperte D F J K no tempo da nota, com música gerada (o BPM sobe de 100 a 150). Bom 50, Ótimo 100, Perfeito 200 (±18 ms do centro). Notas compridas e ajuste de atraso do som. 45s. |
 
 <div align="center">

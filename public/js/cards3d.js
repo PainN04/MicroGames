@@ -1382,6 +1382,69 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.45) * 0.3;
     };
   },
+  // mesa de sinuca: o taco recua e bate na branca, ela abre o triângulo, as bolas se espalham e a 1 cai na caçapa
+  sinuca(Z, illo) {
+    const W = 112, H = 64, RAIL = 9;
+    slab(Z, backdrop(Z, illo, 0), W + RAIL * 2, H + RAIL * 2, 9, '#7a4720');
+    const top = backdrop(Z, illo, 1, { sort: false, translate: { z: 4.8 } });
+    new Z.Rect({ addTo: top, width: W + RAIL * 2 - 2, height: H + RAIL * 2 - 2, stroke: 2, fill: true, color: '#8a5428' });
+    new Z.Rect({ addTo: top, width: W + 6, height: H + 6, stroke: 1, fill: true, color: '#0e5a34' }); // borracha
+    new Z.Rect({ addTo: top, width: W, height: H, stroke: 1, fill: true, color: '#1f9a5a' });
+    new Z.Ellipse({ addTo: top, diameter: 40, stroke: 0, fill: true, color: 'rgba(80,220,140,.18)' }); // luz em cima da mesa
+    const POCK = [[-1, -1], [0, -1], [1, -1], [-1, 1], [0, 1], [1, 1]].map(([sx, sy]) => ({ x: sx * (W / 2 + 1), y: sy * (H / 2 + 1) }));
+    for (const p of POCK) new Z.Ellipse({ addTo: top, diameter: 9, stroke: 1.5, fill: true, color: '#0b0b0b', translate: p });
+    for (const s of [-1, 1]) for (const k of [-2, -1, 1, 2]) new Z.Shape({ addTo: top, stroke: 1.6, color: '#f3ead2', translate: { x: (k * W) / 6, y: s * (H / 2 + RAIL / 2 + 1) } });
+    // bolas: esfera (traço grosso) + brilho; a listrada ganha uma faixa branca por cima
+    const R = 4.2, ball = (color, stripe) => {
+      const a = new Z.Anchor({ addTo: illo });
+      const g = new Z.Group({ addTo: a });
+      new Z.Shape({ addTo: g, stroke: R * 2, color: stripe ? '#f6f2e6' : color });
+      if (stripe) new Z.Shape({ addTo: g, path: [{ x: -R * 0.55 }, { x: R * 0.55 }], stroke: R * 1.15, color, translate: { z: R * 0.45 } });
+      new Z.Shape({ addTo: g, stroke: R * 0.7, color: 'rgba(255,255,255,.75)', translate: { x: -R * 0.35, y: -R * 0.35, z: R * 0.8 } });
+      return a;
+    };
+    const RACK = [['#f2b705'], ['#1d4fc4', 1], ['#d9262f'], ['#6b2fb3', 1], ['#141414'], ['#ee7a12', 1], ['#178a46'], ['#7d1b22', 1], ['#1d4fc4'], ['#d9262f', 1]];
+    const AX = 10, rows = [];
+    for (let r = 0, i = 0; r < 4; r++) for (let k = 0; k <= r; k++, i++) rows.push({ x: AX + r * R * 1.75, y: (k - r / 2) * R * 2.05, ...{ c: RACK[i][0], s: RACK[i][1] } });
+    // pra onde cada bola vai depois da batida (a 1, na ponta, vai pra caçapa do meio de cima)
+    const goal = rows.map((b, i) => {
+      if (i === 0) return { x: 0, y: -H / 2 - 1, pot: true };
+      const ang = -1.2 + (i / 9) * 4.6 + (i % 2 ? 0.3 : 0), d = 14 + (i * 7) % 15;
+      return { x: Math.max(-W / 2 + 5, Math.min(W / 2 - 5, b.x + Math.cos(ang) * d)), y: Math.max(-H / 2 + 5, Math.min(H / 2 - 5, b.y + Math.sin(ang) * d)) };
+    });
+    const objs = rows.map(b => ball(b.c, b.s));
+    const cueBall = ball('#f4f1e6');
+    // taco: madeira clara, ponta azul e cabo escuro
+    const cue = new Z.Anchor({ addTo: illo });
+    new Z.Shape({ addTo: cue, path: [{ x: -8 }, { x: -46 }], stroke: 2.6, color: '#e0bf84' });
+    new Z.Shape({ addTo: cue, path: [{ x: -46 }, { x: -78 }], stroke: 3.4, color: '#4a220d' });
+    new Z.Shape({ addTo: cue, path: [{ x: -6 }, { x: -8 }], stroke: 2.4, color: '#3f6fd0' });
+    const ease = k => 1 - (1 - k) ** 3;
+    return t => {
+      const T = 4.2, k = t % T, Z0 = 9.5;
+      // 0–1s: o taco recua e bate; 1–1,35s: a branca vai até o triângulo; depois tudo se espalha
+      const pull = k < 0.8 ? Math.sin((k / 0.8) * Math.PI / 2) * 10 : k < 1 ? 10 - ((k - 0.8) / 0.2) * 12 : -2;
+      const cx0 = -36, hitX = AX - R * 2.1;
+      const cb = k < 1 ? cx0 : k < 1.35 ? cx0 + (hitX - cx0) * ((k - 1) / 0.35) : hitX - 6 * ease(Math.min(1, (k - 1.35) / 1.2));
+      cueBall.translate.set({ x: cb, y: 0, z: Z0 });
+      cue.translate.set({ x: (k < 1 ? cx0 : cx0 - 4 - (k - 1) * 18) - pull, y: 0, z: Z0 + 1.5 });
+      cue.rotate.z = 0.06;
+      cue.visible = k < 2.2;
+      const f = k < 1.35 ? 0 : ease(Math.min(1, (k - 1.35) / 1.4)), fade = k > T - 0.35 ? (T - k) / 0.35 : 1;
+      objs.forEach((o, i) => {
+        const b = rows[i], g = goal[i];
+        o.translate.set({ x: b.x + (g.x - b.x) * f, y: b.y + (g.y - b.y) * f, z: Z0 });
+        // a 1 cai na caçapa: encolhe e afunda
+        const drop = g.pot ? Math.max(0, (f - 0.82) / 0.18) : 0;
+        o.scale = (1 - drop * 0.75) * (k > T - 0.35 ? fade : 1);
+        o.translate.z = Z0 - drop * 6;
+        o.visible = drop < 0.98;
+      });
+      cueBall.scale = k > T - 0.35 ? fade : 1;
+      illo.rotate.x = -0.62;
+      illo.rotate.y = Math.sin(t * 0.4) * 0.22;
+    };
+  },
   // forca de madeira num tablado, boneco balançando na corda e a palavra TELA aparecendo letra por letra
   forca(Z, illo) {
     const wood = '#c98a4b', skin = '#f4e3b5';
