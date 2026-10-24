@@ -2015,3 +2015,20 @@ html.lite .acc-menu { background: oklch(20% 0.025 275); }
   .acc.duo .actions .btn { width: 32px; min-height: 32px; }
 }
 .rec-list .rec > .rank { justify-self: start; }
+
+/* Sinuca: botão do taco no placar e a lista de tacos */
+.game .hud .cue-pick { font-family: inherit; font-weight: inherit; line-height: inherit; cursor: pointer; box-shadow: inset 1px 0 0 oklch(100% 0 0 / .08); }
+.game .hud .cue-pick b { color: oklch(86% .14 85); }
+.game .hud .cue-pick:hover, .game .hud .cue-pick:focus-visible { background: oklch(100% 0 0 / .06); }
+.cue-list { list-style: none; margin: var(--space-sm) 0; padding: 0; display: grid; gap: 8px; text-align: left; }
+.cue-row { display: grid; grid-template-columns: 1fr auto; grid-template-areas: "cue cue" "info act"; align-items: center; gap: 6px 10px;
+  padding: 10px 12px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); }
+.cue-row canvas { grid-area: cue; width: 100%; height: auto; aspect-ratio: 310 / 12; filter: drop-shadow(0 3px 3px oklch(0% 0 0 / .45)); }
+.cue-row > div { grid-area: info; display: grid; line-height: 1.25; }
+.cue-row small { color: var(--muted, oklch(70% .02 260)); font-size: var(--fs-xs); }
+.cue-row .tag, .cue-row .btn { grid-area: act; font-size: var(--fs-xs); }
+.cue-row.on { border-color: oklch(76% .15 152 / .7); background: oklch(30% .06 152 / .35); }
+.cue-row.on .tag { color: oklch(84% .15 152); }
+.cue-row.locked canvas { filter: saturate(.75) brightness(.8) drop-shadow(0 3px 3px oklch(0% 0 0 / .45)); }
+.cue-row.locked .tag { color: var(--muted, oklch(70% .02 260)); }
+.cue-row .btn { padding: .45em 1.1em; min-height: 0; }
