@@ -542,7 +542,7 @@ test('aba de jogos diários: Termo sai do desafio do dia a partir de 23/10/2026 
   const { scheduledGame, seededShuffle, DAILY_SINCE, DAILY_TAB } = require('../public/js/daily.js');
   const { GAMES } = require('../lib/rules');
   // sorteio de antes da aba (28 jogos, sem os diários novos)
-  const OLD = GAMES.filter(g => g === 'termo' || !DAILY_TAB.includes(g));
+  const OLD = GAMES.filter(g => (g === 'termo' || !DAILY_TAB.includes(g)) && !(DAILY_SINCE[g] > 20749)); // jogos lançados depois também não mudam esses dias
   assert.equal(OLD.length, 28);
   const oldPick = i => { const r = OLD.filter(id => !(id in DAILY_SINCE) || i >= DAILY_SINCE[id]).sort(); return seededShuffle(r, Math.floor(i / r.length) * 7919 + 13)[i % r.length]; };
   for (let d = 20000; d < 20749; d++) assert.equal(scheduledGame(GAMES, d, {}), oldPick(d), 'dia ' + d);
@@ -841,6 +841,7 @@ test('duplas: quem toma o 1º lugar avisa o parceiro (menos quando tomou do pró
   await sql`UPDATE duos SET status = ${'ended'} WHERE status IN (${'pending'}, ${'active'})`;
   assert.equal((await dono('/api/admin/duos', { method: 'POST', body: { aId: anaId, bId: biaId, name: 'Recordistas' } })).status, 201);
   const recs = async c => (await notesOf(c)).filter(n => n.kind === 'duo_record' && n.game === 'torre');
+  await sql`DELETE FROM scores WHERE game = ${'torre'}`; // o torneio (sorteado da lista de jogos) pode ter usado a Torre antes
   assert.equal((await play(dono, 'torre', 10)).status, 201, 'primeira partida do jogo: ninguém é avisado');
   assert.equal((await recs(bia)).length, 0);
   assert.equal((await play(ana, 'torre', 20)).status, 201, 'Ana tira o recorde do Paulo');
