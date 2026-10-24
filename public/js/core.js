@@ -397,7 +397,9 @@ function prefetchPhaser() {
 }
 // Cria o jogo dentro de `wrap` (que já reserva o espaço). Retorna a função de limpeza.
 // O tamanho na tela encolhe pra caber na largura E na altura que sobram (placar e dicas continuam visíveis).
-function mountPhaser(wrap, width, height, scene) {
+// res > 1: o canvas tem res× mais pixels que o tamanho do jogo (fica nítido em tela de alta densidade);
+// a cena dá setZoom(res) na câmera e continua desenhando nas coordenadas de sempre
+function mountPhaser(wrap, width, height, scene, { res = 1 } = {}) {
   let game = null, dead = false, fpsTimer = 0;
   wrap.style.maxWidth = width + 'px';
   wrap.style.aspectRatio = `${width} / ${height}`;
@@ -421,7 +423,7 @@ function mountPhaser(wrap, width, height, scene) {
     game = new Phaser.Game({
       // modo leve: canvas 2D. Sem placa de vídeo, o WebGL é desenhado pelo processador e fica bem mais lento que o 2D
       // (o que se perde é só o tint: partícula e nuvem saem sem a cor por cima)
-      type: perf.lite ? Phaser.CANVAS : Phaser.AUTO, parent: wrap, width, height, backgroundColor: '#1d1f2e', banner: false,
+      type: perf.lite ? Phaser.CANVAS : Phaser.AUTO, parent: wrap, width: Math.round(width * res), height: Math.round(height * res), backgroundColor: '#1d1f2e', banner: false,
       audio: { noAudio: true },
       // expandParent: false — senão o Phaser às vezes troca a altura da caixa pra 100% e o jogo estoura a tela
       scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH, expandParent: false },

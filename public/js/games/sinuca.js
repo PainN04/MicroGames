@@ -327,7 +327,7 @@
 
   GAMES.sinuca = {
     name: 'Sinuca', icon: 'sinuca', hue: 152,
-    desc: 'Sinuca de 8 bolas contra a máquina, no estilo 8 Ball Pool. Arraste na mesa pra mirar e puxe o taco (barra da direita) pra dar a força; a bolinha embaixo dá efeito na branca. Encaçape o seu grupo (lisas ou listradas) e depois a 8. Cada mesa vencida deixa a máquina melhor; perdeu, acabou.',
+    desc: 'Sinuca de 8 bolas contra a máquina, no estilo 8 Ball Pool. Arraste na mesa pra mirar e puxe o taco (barra da direita) pra dar a força; toque na bolinha embaixo pra escolher o efeito na branca. Encaçape o seu grupo (lisas ou listradas) e depois a 8. Cada mesa vencida deixa a máquina melhor; perdeu, acabou.',
     better: 'high', unit: 'pontos', phaser: true, engine,
     start(el, done) {
       // No computador a mesa fica deitada (e maior); no celular, em pé. A física é sempre a da mesa em pé:
@@ -336,7 +336,7 @@
       const L = wide
         ? { W: 686, H: 452, Z: 1.35, BAR: { x: 624, y: TY, w: 46, h: TW }, FINE: { x: 16, y: TY + TW + RW + 12, w: TH + RW * 2, h: 30 } }
         : { W: 420, H: 724, Z: 1, BAR: { x: 354, y: TY, w: 46, h: TH }, FINE: { x: 16, y: TY + TH + RW + 12, w: TW + RW * 2, h: 30 } };
-      const { W, H, Z, BAR, FINE } = L, SPIN = { x: BAR.x + BAR.w / 2, y: FINE.y + FINE.h / 2, r: 17 };
+      const { W, H, Z, BAR, FINE } = L, SPIN = { x: BAR.x + BAR.w / 2, y: FINE.y + FINE.h / 2, r: 20 };
       const ROT = wide ? -Math.PI / 2 : 0;
       const toScreen = (x, y) => (wide ? { x: TX + y, y: TY + TW - x } : { x: TX + x, y: TY + y });
       const toLocal = (sx, sy) => (wide ? { x: TW - (sy - TY), y: sx - TX } : { x: sx - TX, y: sy - TY });
@@ -346,10 +346,12 @@
       el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Mesas<b id="w">0</b></span><span class="stat">Máquina<b id="l">Iniciante</b></span></div><div class="phaser-wrap" id="pw"></div>';
       const hud = { p: el.querySelector('#p'), w: el.querySelector('#w'), l: el.querySelector('#l') };
       const FONT = 'Space Grotesk, system-ui, sans-serif';
+      // nitidez: o canvas acompanha a densidade da tela (celular 2–3×), e texturas e textos são feitos nessa escala
+      const Q = Math.min(perf.lite ? 1.5 : 2.5, Math.max(1, window.devicePixelRatio || 1)), ZQ = Z * Q;
       return mountPhaser(el.querySelector('#pw'), Math.round(W * Z), Math.round(H * Z), {
         create() {
-          const scene = this, art = artKit(this);
-          this.cameras.main.setZoom(Z).setOrigin(0, 0);
+          const scene = this, art = artKit(this, Math.max(2, Math.ceil(ZQ * 2) / 2));
+          this.cameras.main.setZoom(ZQ).setOrigin(0, 0);
           let balls, st, phase = 'aim', turn = 'me', level = 0, pts = 0, wins = 0, potsTotal = 0, rackNo = 0;
           let aim = -Math.PI / 2, power = 0, spin = { x: 0, y: 0 }, inHand = false, kitchen = false, drag = null, charging = false;
           let ev = null, before = null, acc = 0, pending = 0, shotsMe = 0, foulsMe = 0, alive = true, lastHit = 0, strikeT = -1, strikePow = 0, strikeAt = null;
@@ -472,14 +474,14 @@
           for (let k = 1; k < 10; k++) ui.lineStyle(1, 0xffffff, 0.08).lineBetween(BAR.x + 8, BAR.y + (BAR.h * k) / 10, BAR.x + BAR.w - 8, BAR.y + (BAR.h * k) / 10);
           const powerFill = this.add.image(BAR.x, BAR.y, 'sn_power').setOrigin(0).setDisplaySize(BAR.w, BAR.h);
           const barCue = this.add.image(BAR.x + BAR.w / 2, BAR.y + 8, 'sn_cue').setOrigin(0, 0.5).setDisplaySize(BAR.h * 0.6, 10).setRotation(Math.PI / 2);
-          const label = (x, y, t, size = 11, color = '#cfe9dc') => this.add.text(x, y, t, { fontFamily: FONT, fontSize: size + 'px', fontStyle: 'bold', color }).setOrigin(0.5).setDepth(2);
+          const label = (x, y, t, size = 11, color = '#cfe9dc') => this.add.text(x, y, t, { fontFamily: FONT, fontSize: size + 'px', fontStyle: 'bold', color, resolution: ZQ }).setOrigin(0.5).setDepth(2);
           label(BAR.x + BAR.w / 2, BAR.y - 12, 'FORÇA', 10, '#8fc9ad');
           const pctText = label(BAR.x + BAR.w / 2, BAR.y + BAR.h + 13, '', 12, '#ffffff');
           const fine = this.add.graphics();
           label(FINE.x + FINE.w / 2, FINE.y + FINE.h + 9, 'ajuste fino da mira', 9, '#6f9c86');
           // efeito: bola branca grande; o ponto vermelho mostra onde o taco bate
           const spinDisc = this.add.graphics();
-          label(SPIN.x, SPIN.y + SPIN.r + 9, 'efeito', 9, '#6f9c86');
+          label(SPIN.x, SPIN.y + SPIN.r + 8, 'efeito', 9, '#8fc9ad');
           const drawSpin = () => {
             spinDisc.clear().fillStyle(0xf4f1e6, 1).fillCircle(SPIN.x, SPIN.y, SPIN.r).fillStyle(0x000000, 0.18).fillCircle(SPIN.x + 2, SPIN.y + 2.5, SPIN.r - 2).fillStyle(0xf4f1e6, 1).fillCircle(SPIN.x - 1, SPIN.y - 1, SPIN.r - 3)
               .lineStyle(1, 0x000000, 0.25).lineBetween(SPIN.x - SPIN.r + 3, SPIN.y, SPIN.x + SPIN.r - 3, SPIN.y).lineBetween(SPIN.x, SPIN.y - SPIN.r + 3, SPIN.x, SPIN.y + SPIN.r - 3)
@@ -502,8 +504,8 @@
             const x = 16 + i * (pw + 8), w = pw;
             const bg = this.add.graphics();
             const dot = this.add.graphics();
-            const name = this.add.text(x + 26, 13, who === 'me' ? 'Você' : 'Máquina', { fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: '#ffffff' });
-            const sub = this.add.text(x + w - 12, 15, '', { fontFamily: FONT, fontSize: '11px', color: '#9fc7b4' }).setOrigin(1, 0);
+            const name = this.add.text(x + 26, 13, who === 'me' ? 'Você' : 'Máquina', { fontFamily: FONT, fontSize: '14px', fontStyle: 'bold', color: '#ffffff', resolution: ZQ });
+            const sub = this.add.text(x + w - 12, 15, '', { fontFamily: FONT, fontSize: '11px', color: '#9fc7b4', resolution: ZQ }).setOrigin(1, 0);
             const gap = Math.min(24, (w - 24) / 8);
             const minis = Array.from({ length: 8 }, (_, k) => {
               const bx = x + 17 + k * gap, by = 46;
@@ -533,6 +535,47 @@
           const btnZone = this.add.zone(0, 44, 180, 44).setInteractive({ useHandCursor: true });
           over.add([ovBg, ovTitle, ovSub, btn, btnText, btnZone]);
           btnZone.on('pointerdown', () => { if (phase === 'between') newRack(); });
+
+          // ---------- painel do efeito: a branca grande no meio da tela, fácil de acertar com o dedo ----------
+          const SP = { x: W / 2, y: H / 2 - 14, r: wide ? 86 : 104 }, CARD = { w: SP.r * 2 + 64, h: SP.r * 2 + 156 };
+          CARD.x = W / 2 - CARD.w / 2; CARD.y = SP.y - SP.r - 62;
+          const BTN = { y: SP.y + SP.r + 26, h: 42, w: (CARD.w - 48 - 10) / 2 };
+          const ZERO = { x: CARD.x + 24, y: BTN.y, w: BTN.w, h: BTN.h }, OK = { x: CARD.x + 24 + BTN.w + 10, y: BTN.y, w: BTN.w, h: BTN.h };
+          art.tex('sn_spinball', 220, 220, c => {
+            art.ell(c, 110, 110, 108, 108); c.fillStyle = art.rad(c, 80, 72, 6, 150, [[0, '#ffffff'], [0.35, '#f4f0e4'], [0.8, '#cfc8b4'], [1, '#8f8874']]); c.fill();
+            art.ell(c, 110, 110, 108, 108); c.lineWidth = 2; c.strokeStyle = 'rgba(0,0,0,.25)'; c.stroke();
+            art.ell(c, 74, 62, 26, 15, -0.6); c.fillStyle = 'rgba(255,255,255,.7)'; c.fill();
+          });
+          const spinPanel = this.add.container(0, 0).setDepth(12).setVisible(false);
+          const spinBg = this.add.graphics()
+            .fillStyle(0x020806, 0.72).fillRect(0, 0, W, H)
+            .fillStyle(0x07130e, 1).fillRoundedRect(CARD.x, CARD.y, CARD.w, CARD.h, 22).lineStyle(1.5, 0x3ddc97, 0.55).strokeRoundedRect(CARD.x, CARD.y, CARD.w, CARD.h, 22)
+            .fillStyle(0x000000, 0.35).fillCircle(SP.x + 5, SP.y + 8, SP.r);
+          const spinBig = this.add.image(SP.x, SP.y, 'sn_spinball').setDisplaySize(SP.r * 2, SP.r * 2);
+          const spinMarks = this.add.graphics().lineStyle(1.5, 0x1d3a2c, 0.35)
+            .lineBetween(SP.x - SP.r + 10, SP.y, SP.x + SP.r - 10, SP.y).lineBetween(SP.x, SP.y - SP.r + 10, SP.x, SP.y + SP.r - 10)
+            .strokeCircle(SP.x, SP.y, SP.r * 0.5);
+          const spinDot = this.add.graphics();
+          const btns = this.add.graphics()
+            .lineStyle(1.5, 0x3ddc97, 0.6).strokeRoundedRect(ZERO.x, ZERO.y, ZERO.w, ZERO.h, 21)
+            .fillStyle(0x2fd486, 1).fillRoundedRect(OK.x, OK.y, OK.w, OK.h, 21);
+          spinPanel.add([spinBg, spinBig, spinMarks, spinDot, btns,
+            label(W / 2, CARD.y + 26, 'Efeito na branca', 16, '#ffffff'),
+            label(SP.x, SP.y - SP.r - 12, 'em cima: a branca segue', 10, '#8fc9ad'),
+            label(SP.x, SP.y + SP.r + 11, 'embaixo: a branca volta', 10, '#8fc9ad'),
+            label(ZERO.x + ZERO.w / 2, ZERO.y + ZERO.h / 2, 'Sem efeito', 14, '#bfe6d2'),
+            label(OK.x + OK.w / 2, OK.y + OK.h / 2, 'Pronto', 15, '#04140c')]);
+          let spinOpen = false;
+          const drawSpinBig = () => {
+            const x = SP.x + spin.x * (SP.r - 16), y = SP.y + spin.y * (SP.r - 16);
+            spinDot.clear().lineStyle(1.5, 0xd64545, 0.5).lineBetween(SP.x, SP.y, x, y)
+              .fillStyle(0x000000, 0.25).fillCircle(x + 1.5, y + 2, 13).fillStyle(0xd64545, 1).fillCircle(x, y, 12).lineStyle(3, 0xffffff, 1).strokeCircle(x, y, 12)
+              .fillStyle(0xffffff, 0.55).fillCircle(x - 4, y - 4, 3.5);
+          };
+          const openSpin = open => {
+            spinOpen = open; spinPanel.setVisible(open); drag = null;
+            if (open) { drawSpinBig(); spinPanel.setAlpha(0); this.tweens.add({ targets: spinPanel, alpha: 1, duration: 140 }); beep(660, 30, 'sine', 0.03); }
+          };
 
           // ---------- mesa nova ----------
           const newRack = () => {
@@ -581,6 +624,7 @@
 
           // ---------- tacada ----------
           const shoot = (angle, pw, sf = 0, ss = 0) => {
+            if (spinOpen) openSpin(false);
             const cue = ballOf(0);
             strike(cue, angle, pw, sf, ss, st.isBreak);
             ev = { first: null, potted: [], pockets: [], hits: [], rails: [] };
@@ -689,11 +733,17 @@
           const world = p => ({ x: p.worldX, y: p.worldY });
           const aimTo = q => { const cue = ballOf(0); if (Math.hypot(q.x - cue.x, q.y - cue.y) > 4) aim = Math.atan2(q.y - cue.y, q.x - cue.x); };
           const canPlace = (x, y) => freeAt(balls, x, y, 0) && (!kitchen || y >= HEAD + R);
-          const setSpin = p => { let x = (p.x - SPIN.x) / (SPIN.r - 5), y = (p.y - SPIN.y) / (SPIN.r - 5); const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; } spin = { x, y }; };
+          const setSpinBig = p => { let x = (p.x - SP.x) / (SP.r - 16), y = (p.y - SP.y) / (SP.r - 16); const l = Math.hypot(x, y); if (l > 1) { x /= l; y /= l; } spin = { x, y }; drawSpinBig(); };
           this.input.on('pointerdown', ptr => {
             const p = world(ptr);
+            if (spinOpen) {
+              if (Math.hypot(p.x - SP.x, p.y - SP.y) < SP.r + 14) { drag = { kind: 'spinBig' }; setSpinBig(p); }
+              else if (inBox(p, ZERO, 4)) { spin = { x: 0, y: 0 }; drawSpinBig(); }
+              else if (inBox(p, OK, 4) || !inBox(p, CARD)) openSpin(false);
+              return;
+            }
             if (phase !== 'aim' || turn !== 'me') return;
-            if (Math.hypot(p.x - SPIN.x, p.y - SPIN.y) < SPIN.r + 8) { drag = { kind: 'spin' }; setSpin(p); return; }
+            if (Math.hypot(p.x - SPIN.x, p.y - SPIN.y) < SPIN.r + 12) { openSpin(true); return; }
             if (inBox(p, BAR, 10)) { drag = { kind: 'power', y0: p.y }; return; }
             if (inBox(p, FINE, 6)) { drag = { kind: 'fine', x: p.x }; return; }
             const q = toLocal(p.x, p.y);
@@ -706,9 +756,9 @@
           this.input.on('pointermove', ptr => {
             if (!drag || phase !== 'aim') return;
             const p = world(ptr);
+            if (drag.kind === 'spinBig') { setSpinBig(p); return; }
             if (drag.kind === 'power') power = Phaser.Math.Clamp((p.y - drag.y0) / (BAR.h * 0.75), 0, 1);
             else if (drag.kind === 'fine') { aim += (p.x - drag.x) * 0.0022; drag.x = p.x; }
-            else if (drag.kind === 'spin') setSpin(p);
             else if (drag.kind === 'aim') aimTo(toLocal(p.x, p.y));
             else if (drag.kind === 'cue') {
               const q = toLocal(p.x, p.y), cue = ballOf(0);
@@ -844,7 +894,7 @@
 
           newRack();
         },
-      });
+      }, { res: Q });
     },
   };
 })();
