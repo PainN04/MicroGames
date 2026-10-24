@@ -95,3 +95,11 @@ test('sinuca: a máquina encaçapa tacada fácil e, com bola na mão, põe a bra
   const p = E.plan(balls, { groups: { me: 'solid', cpu: 'stripe' }, inHand: true }, 2, seeded(3));
   assert.ok(p.place && E.freeAt(balls.filter(b => b.n), p.place.x, p.place.y), 'lugar livre');
 });
+
+test('sinuca: tacos destravam por partidas, pontos somados ou recorde', () => {
+  const { CUES, cueOpen } = ctx.GAMES.sinuca.cues;
+  const open = st => CUES.filter(q => cueOpen(q, st)).map(q => q.id);
+  assert.deepEqual(plain(open({ plays: 0, total: 0, best: 0 })), ['classico']);
+  assert.deepEqual(plain(open({ plays: 3, total: 900, best: 400 })), ['classico', 'ebano']);
+  assert.deepEqual(plain(open({ plays: 9, total: 4200, best: 1600 })), ['classico', 'ebano', 'neon', 'carbono', 'fogo', 'ouro']);
+});

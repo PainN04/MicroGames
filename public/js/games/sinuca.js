@@ -325,10 +325,64 @@
     const k = o.N[0] * o.P[0] + o.N[1] * o.P[1] + o.N[2] * o.P[2], nn = o.N.map((v, i) => v - k * o.P[i]), ln = Math.hypot(...nn); o.N = nn.map(v => v / ln);
   }
 
+  // ---------- tacos (skins) ----------
+  // Cada taco é pintado no canvas (ponta, virola, haste, anel, antebraço com detalhes, empunhadura e base).
+  // Destrava jogando: partidas, pontos somados ou recorde numa partida, contados no ranking da Sinuca.
+  const CUES = [
+    { id: 'classico', name: 'Clássico', need: null },
+    { id: 'ebano', name: 'Ébano', need: { plays: 3 }, tip: '#3f6fd0', shaft: ['#ece0c8', '#bd9e72'], ring: '#e8ecf2', fore: '#121214', inlay: '#dfe5ee', wrap: '#2a2a30', ring2: '#c9ced8', butt: '#0b0b0d' },
+    { id: 'neon', name: 'Neon', need: { total: 1000 }, tip: '#43e8ff', shaft: ['#2d2856', '#151330'], glow: '#43e8ff', ring: '#ff4fd8', fore: '#120f24', inlay: '#ff4fd8', wrap: '#0d0b1a', wrapLine: 'rgba(67,232,255,.55)', ring2: '#43e8ff', butt: '#08070f' },
+    { id: 'carbono', name: 'Carbono', need: { best: 500 }, tip: '#e23b3b', shaft: ['#555b64', '#2a2d33'], ring: '#e23b3b', fore: '#1d1f23', weave: '#30343b', inlay: '#e23b3b', wrap: '#15161a', ring2: '#e23b3b', butt: '#0c0d0f' },
+    { id: 'fogo', name: 'Fogo', need: { total: 4000 }, tip: '#d42a10', shaft: ['#f3dfb2', '#d4a865'], ring: '#ffd34d', fore: '#2a0d06', flames: true, inlay: null, wrap: '#3a0f08', wrapLine: 'rgba(255,140,40,.4)', ring2: '#ff6a1a', butt: '#1a0804' },
+    { id: 'ouro', name: 'Ouro', need: { best: 1500 }, tip: '#1a1a1a', shaft: ['#fff3c8', '#e0b44a'], ring: '#1a1a1a', fore: ['#a8760a', '#ffe08a', '#c8961e'], inlay: '#1a1a1a', wrap: '#2b2210', wrapLine: 'rgba(255,215,120,.4)', ring2: '#ffd76a', butt: '#1a1408' },
+  ];
+  const CLASSIC = { tip: '#3f6fd0', shaft: ['#f3dfb2', '#d4a865'], ring: '#d5d9e0', fore: '#4a1f0b', inlay: '#ecd9a6', wrap: '#1b1b1f', ring2: '#5a2a10', butt: '#111' };
+  function paintCue(c, LC, id) {
+    const S = { ...CLASSIC, ...CUES.find(q => q.id === id) }, mid = 6, half = x => 2.3 + (x / LC) * 3;
+    const lin = (x0, x1, stops, vertical) => { const g = vertical ? c.createLinearGradient(0, x0, 0, x1) : c.createLinearGradient(x0, 0, x1, 0); stops.forEach((col, i) => g.addColorStop(i / (stops.length - 1), col)); return g; };
+    const band = (a, b, col) => { c.fillStyle = col; c.fillRect(a, 0, b - a, 12); };
+    c.save(); c.beginPath(); c.moveTo(0, mid - half(0)); c.lineTo(LC - 2, mid - half(LC)); c.quadraticCurveTo(LC, mid, LC - 2, mid + half(LC)); c.lineTo(0, mid + half(0)); c.closePath(); c.clip();
+    band(0, 3, S.tip); band(3, 10, '#f3efe4');
+    c.fillStyle = lin(10, 180, S.shaft); c.fillRect(10, 0, 170, 12);
+    if (S.glow) { c.shadowColor = S.glow; c.shadowBlur = 4; c.strokeStyle = S.glow; c.lineWidth = 1.1; c.beginPath(); c.moveTo(12, mid); c.lineTo(178, mid); c.stroke(); c.shadowBlur = 0; }
+    band(180, 184, S.ring);
+    c.fillStyle = Array.isArray(S.fore) ? lin(184, 240, S.fore) : S.fore; c.fillRect(184, 0, 56, 12);
+    if (S.weave) { c.fillStyle = S.weave; for (let x = 184, i = 0; x < 240; x += 3, i++) for (let y = (i % 2) * 3; y < 12; y += 6) c.fillRect(x, y, 3, 3); }
+    if (S.flames) {
+      // labaredas saindo da empunhadura em direção à ponta
+      c.fillStyle = lin(186, 240, ['#ffe27a', '#ff8a1a', '#d42a10']);
+      [[0.5, 4, 192], [3.5, 8.5, 184], [8, 11.5, 194], [2, 6, 206], [6, 10, 202]].forEach(([y0, y1, tip], k) => {
+        c.beginPath(); c.moveTo(240, y0); c.quadraticCurveTo(222, y0 - 1.5, tip, (y0 + y1) / 2 + (k % 2 ? 1.2 : -1.2)); c.quadraticCurveTo(224, y1 + 1, 240, y1); c.closePath(); c.fill();
+      });
+    }
+    if (S.inlay) { c.fillStyle = S.inlay; for (let k = 0; k < 4; k++) { const x = 190 + k * 12; c.beginPath(); c.moveTo(x, mid); c.lineTo(x + 6, mid - 3.4); c.lineTo(x + 12, mid); c.lineTo(x + 6, mid + 3.4); c.closePath(); c.fill(); } }
+    band(240, 290, S.wrap);
+    c.strokeStyle = S.wrapLine || 'rgba(255,255,255,.13)'; c.lineWidth = 0.8; for (let x = 242; x < 290; x += 3) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x + 2, 12); c.stroke(); }
+    band(290, 306, S.ring2); band(306, LC, S.butt);
+    c.fillStyle = lin(mid - 5, mid + 5, ['rgba(255,255,255,.5)', 'rgba(255,255,255,0)', 'rgba(255,255,255,0)', 'rgba(0,0,0,.5)'], true); c.fillRect(0, 0, LC, 12);
+    c.restore();
+  }
+  // partidas, pontos somados e recorde de quem está jogando (do ranking); extra = a partida que acabou de terminar
+  function cueStats(extra = null) {
+    const mine = (typeof scores === 'object' && scores.sinuca || []).filter(s => s.name === player).map(s => s.score);
+    if (extra != null) mine.push(extra);
+    return { plays: mine.length, total: mine.reduce((a, b) => a + b, 0), best: mine.length ? Math.max(...mine) : 0 };
+  }
+  const NEED = { plays: 'Jogue %d partidas', total: 'Some %d pontos na Sinuca', best: 'Faça %d pontos numa partida' };
+  const cueOpen = (q, s) => !q.need || Object.entries(q.need).every(([k, v]) => s[k] >= v);
+  const cueGoal = q => { const [k, v] = Object.entries(q.need)[0]; return NEED[k].replace('%d', v.toLocaleString('pt-BR')); };
+  const cueLeft = (q, s) => { const [k, v] = Object.entries(q.need)[0]; return `${Math.min(s[k], v).toLocaleString('pt-BR')} / ${v.toLocaleString('pt-BR')}`; };
+  function chosenCue() {
+    let id = 'classico';
+    try { id = localStorage.getItem('mg_sn_cue') || id; } catch {}
+    const q = CUES.find(c => c.id === id);
+    return q && cueOpen(q, cueStats()) ? id : 'classico';
+  }
+
   GAMES.sinuca = {
     name: 'Sinuca', icon: 'sinuca', hue: 152,
     desc: 'Sinuca de 8 bolas contra a máquina, no estilo 8 Ball Pool. Arraste na mesa pra mirar e puxe o taco (barra da direita) pra dar a força; toque na bolinha embaixo pra escolher o efeito na branca. Encaçape o seu grupo (lisas ou listradas) e depois a 8. Cada mesa vencida deixa a máquina melhor; perdeu, acabou.',
-    better: 'high', unit: 'pontos', phaser: true, engine,
+    better: 'high', unit: 'pontos', phaser: true, engine, cues: { CUES, cueOpen },
     start(el, done) {
       // No computador a mesa fica deitada (e maior); no celular, em pé. A física é sempre a da mesa em pé:
       // deitada, o container da mesa só gira 90° e as contas de tela passam por toScreen/toLocal.
@@ -343,11 +397,44 @@
       const vecLocal = (sx, sy) => (wide ? [-sy, sx] : [sx, sy]); // direção na tela → direção na mesa
       const LIGHT = vecLocal(-0.36, -0.42), SHADOW = vecLocal(2.6, 3.6);
       const center = toScreen(TW / 2, TH / 2);
-      el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Mesas<b id="w">0</b></span><span class="stat">Máquina<b id="l">Iniciante</b></span></div><div class="phaser-wrap" id="pw"></div>';
-      const hud = { p: el.querySelector('#p'), w: el.querySelector('#w'), l: el.querySelector('#l') };
+      el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Mesas<b id="w">0</b></span><span class="stat">Máquina<b id="l">Iniciante</b></span><button type="button" class="stat cue-pick" id="cueBtn">Taco<b id="cueName"></b></button></div><div class="phaser-wrap" id="pw"></div>';
+      const hud = { p: el.querySelector('#p'), w: el.querySelector('#w'), l: el.querySelector('#l'), cue: el.querySelector('#cueName') };
+      let applyCue = null, picking = false;
+      hud.cue.textContent = CUES.find(q => q.id === chosenCue()).name;
+      el.querySelector('#cueBtn').onclick = () => pickCue();
+
       const FONT = 'Space Grotesk, system-ui, sans-serif';
       // nitidez: o canvas acompanha a densidade da tela (celular 2–3×), e texturas e textos são feitos nessa escala
       const Q = Math.min(perf.lite ? 1.5 : 2.5, Math.max(1, window.devicePixelRatio || 1)), ZQ = Z * Q;
+      // escolher o taco: lista com a prévia de cada um; os trancados mostram quanto falta
+      const pickCue = () => {
+        const st = cueStats(), cur = chosenCue();
+        const rows = CUES.map(q => {
+          const open = cueOpen(q, st);
+          return `<li class="cue-row${open ? '' : ' locked'}${q.id === cur ? ' on' : ''}">
+            <canvas data-cue="${q.id}" aria-hidden="true"></canvas>
+            <div><b>${q.name}</b><small>${q.need ? cueGoal(q) : 'Taco da casa'}</small></div>
+            ${q.id === cur ? `<span class="tag">${icon('circle-check')} Em uso</span>` : open ? `<button type="button" class="btn small" data-use="${q.id}">Usar</button>` : `<span class="tag">${icon('lock')} ${cueLeft(q, st)}</span>`}
+          </li>`;
+        }).join('');
+        picking = true;
+        const m = modal(`<h2>${icon('sinuca')} Tacos</h2><p class="muted">Jogue e faça pontos na Sinuca pra destravar tacos novos.</p><ul class="cue-list">${rows}</ul><button type="button" class="btn ghost" data-close>Fechar</button>`);
+        m.el.querySelectorAll('canvas[data-cue]').forEach(cv => {
+          const k = Math.min(3, window.devicePixelRatio || 1) * 2, LCp = 310;
+          cv.width = LCp * k; cv.height = 12 * k;
+          const c = cv.getContext('2d'); c.scale(k, k); paintCue(c, LCp, cv.dataset.cue);
+        });
+        const off = new MutationObserver(() => { if (!m.el.isConnected) { picking = false; off.disconnect(); } });
+        off.observe(document.body, { childList: true });
+        m.el.addEventListener('click', e => {
+          const use = e.target.closest('[data-use]');
+          if (use) {
+            try { localStorage.setItem('mg_sn_cue', use.dataset.use); } catch {}
+            hud.cue.textContent = CUES.find(q => q.id === use.dataset.use).name;
+            applyCue?.(use.dataset.use); m.close(); picking = false; off.disconnect();
+          } else if (e.target.closest('[data-close]')) { m.close(); picking = false; off.disconnect(); }
+        });
+      };
       return mountPhaser(el.querySelector('#pw'), Math.round(W * Z), Math.round(H * Z), {
         create() {
           const scene = this, art = artKit(this, Math.max(2, Math.ceil(ZQ * 2) / 2));
@@ -447,21 +534,9 @@
 
           // taco: ponta azul de giz, anel branco, madeira clara, junta de metal, cabo escuro com losangos e empunhadura
           const LC = 310;
-          art.tex('sn_cue', LC, 12, c => {
-            const half = x => 2.3 + (x / LC) * 3, mid = 6;
-            c.save(); c.beginPath(); c.moveTo(0, mid - half(0)); c.lineTo(LC - 2, mid - half(LC)); c.quadraticCurveTo(LC, mid, LC - 2, mid + half(LC)); c.lineTo(0, mid + half(0)); c.closePath(); c.clip();
-            const band = (a, b, col) => { c.fillStyle = col; c.fillRect(a, 0, b - a, 12); };
-            band(0, 3, '#3f6fd0'); band(3, 10, '#f3efe4');
-            c.fillStyle = art.lin(c, 10, 0, 180, 0, [[0, '#f3dfb2'], [1, '#d4a865']]); c.fillRect(10, 0, 170, 12);
-            band(180, 184, '#d5d9e0'); band(184, 240, '#4a1f0b');
-            c.fillStyle = '#ecd9a6';
-            for (let k = 0; k < 4; k++) { const x = 190 + k * 12; c.beginPath(); c.moveTo(x, mid); c.lineTo(x + 6, mid - 3.4); c.lineTo(x + 12, mid); c.lineTo(x + 6, mid + 3.4); c.closePath(); c.fill(); }
-            band(240, 290, '#1b1b1f');
-            c.strokeStyle = 'rgba(255,255,255,.13)'; c.lineWidth = 0.8; for (let x = 242; x < 290; x += 3) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x + 2, 12); c.stroke(); }
-            band(290, 306, '#5a2a10'); band(306, LC, '#111');
-            c.fillStyle = art.lin(c, 0, mid - 5, 0, mid + 5, [[0, 'rgba(255,255,255,.5)'], [0.42, 'rgba(255,255,255,0)'], [1, 'rgba(0,0,0,.5)']]); c.fillRect(0, 0, LC, 12);
-            c.restore();
-          });
+          let cueId = chosenCue();
+          const cueKey = id => art.tex('sn_cue_' + id, LC, 12, c => paintCue(c, LC, id));
+          cueKey(cueId);
           art.tex('sn_power', BAR.w, BAR.h, c => {
             art.rr(c, 0, 0, BAR.w, BAR.h, 14); c.fillStyle = art.lin(c, 0, 0, 0, BAR.h, [[0, '#2fe08a'], [0.55, '#ffd34d'], [1, '#ff4d5e']]); c.fill();
             art.rr(c, 3, 3, BAR.w * 0.32, BAR.h - 6, 10); c.fillStyle = 'rgba(255,255,255,.22)'; c.fill();
@@ -473,7 +548,7 @@
           box(BAR.x, BAR.y, BAR.w, BAR.h, 14);
           for (let k = 1; k < 10; k++) ui.lineStyle(1, 0xffffff, 0.08).lineBetween(BAR.x + 8, BAR.y + (BAR.h * k) / 10, BAR.x + BAR.w - 8, BAR.y + (BAR.h * k) / 10);
           const powerFill = this.add.image(BAR.x, BAR.y, 'sn_power').setOrigin(0).setDisplaySize(BAR.w, BAR.h);
-          const barCue = this.add.image(BAR.x + BAR.w / 2, BAR.y + 8, 'sn_cue').setOrigin(0, 0.5).setDisplaySize(BAR.h * 0.6, 10).setRotation(Math.PI / 2);
+          const barCue = this.add.image(BAR.x + BAR.w / 2, BAR.y + 8, 'sn_cue_' + cueId).setOrigin(0, 0.5).setDisplaySize(BAR.h * 0.6, 10).setRotation(Math.PI / 2);
           const label = (x, y, t, size = 11, color = '#cfe9dc') => this.add.text(x, y, t, { fontFamily: FONT, fontSize: size + 'px', fontStyle: 'bold', color, resolution: ZQ }).setOrigin(0.5).setDepth(2);
           label(BAR.x + BAR.w / 2, BAR.y - 12, 'FORÇA', 10, '#8fc9ad');
           const pctText = label(BAR.x + BAR.w / 2, BAR.y + BAR.h + 13, '', 12, '#ffffff');
@@ -492,8 +567,13 @@
           // ---------- mesa: bolas, mira e taco ficam dentro do container (giram junto) ----------
           const shadowLayer = this.add.container(0, 0), ballLayer = this.add.container(0, 0);
           const aimG = this.add.graphics(), cueShadow = this.add.graphics(), handRing = this.add.graphics();
-          const cueImg = this.add.image(0, 0, 'sn_cue').setOrigin(0, 0.5).setDisplaySize(LC, 12);
+          const cueImg = this.add.image(0, 0, 'sn_cue_' + cueId).setOrigin(0, 0.5).setDisplaySize(LC, 12);
           table.add([shadowLayer, ballLayer, handRing, aimG, cueShadow, cueImg]);
+          applyCue = id => {
+            if (!scene.sys?.isActive()) return;
+            cueId = id; cueKey(id);
+            cueImg.setTexture('sn_cue_' + id).setDisplaySize(LC, 12); barCue.setTexture('sn_cue_' + id).setDisplaySize(BAR.h * 0.6, 10);
+          };
           // a barra, o ajuste fino e o efeito ficam por cima do taco (ele passa por baixo deles)
           [ui, powerFill, barCue, pctText, fine, spinDisc].forEach(o => o.setDepth(2));
           const sprites = [];
@@ -605,6 +685,28 @@
 
           const ballOf = n => balls.find(b => b.n === n);
           let sunk = { me: [], cpu: [] }; // bolas que cada um encaçapou nesta mesa
+          // ---------- tempo da tacada: 30 s por vez; acabou = falta e bola na mão da máquina ----------
+          const SHOT_T = 30;
+          let clock = SHOT_T, wasMine = false, lastTick = 0;
+          const timerG = this.add.graphics().setDepth(1);
+          const timeText = this.add.text(0, 0, '', { fontFamily: FONT, fontSize: '11px', fontStyle: 'bold', color: '#ffffff', resolution: ZQ }).setOrigin(1, 0.5).setDepth(1);
+          const drawTimer = () => {
+            timerG.clear(); timeText.setText('');
+            const p = panels[0], mine = phase === 'aim' && turn === 'me';
+            p.sub.setAlpha(mine && clock <= 10 ? 0 : 1);
+            if (!mine) return;
+            const f = Math.max(0, clock / SHOT_T), col = f > 0.5 ? 0x3ddc97 : f > 0.2 ? 0xffd34d : 0xff5d5d;
+            const x = p.x + 10, w = p.w - 20, y = 57;
+            timerG.fillStyle(0x000000, 0.4).fillRoundedRect(x, y, w, 3.5, 1.75).fillStyle(col, 1).fillRoundedRect(x, y, Math.max(3.5, w * f), 3.5, 1.75);
+            if (clock <= 10) timeText.setPosition(p.x + p.w - 12, 21).setText(Math.ceil(clock) + 's').setColor(f > 0.2 ? '#ffd34d' : '#ff8a8a');
+          };
+          const timeUp = () => {
+            if (spinOpen) openSpin(false);
+            drag = null; charging = false; power = 0; foulsMe++;
+            say('Acabou o tempo! Bola na mão da máquina', '#ff8a8a', 2200); sfx.bad(); buzz([30, 40, 30]);
+            turn = 'cpu'; inHand = !st.isBreak; kitchen = false;
+            renderPanels(); cpuTurn();
+          };
           const renderPanels = () => {
             const set = onTable(balls);
             for (const p of panels) {
@@ -694,7 +796,10 @@
             } else {
               alive = false;
               ovTitle.setText('A máquina venceu').setColor('#ff8a8a');
-              ovSub.setText((reason ? (turn === 'me' ? `Você: ${reason.toLowerCase()}` : `Máquina: ${reason.toLowerCase()}`) + '\n' : '') + 'Fim de jogo');
+              // tacos que esta partida destravou
+              const was = cueStats(), now = cueStats(pts), fresh = CUES.filter(q => q.need && !cueOpen(q, was) && cueOpen(q, now));
+              ovSub.setText((reason ? (turn === 'me' ? `Você: ${reason.toLowerCase()}` : `Máquina: ${reason.toLowerCase()}`) + '\n' : '') + (fresh.length ? `Taco novo: ${fresh.map(q => q.name).join(', ')}!` : 'Fim de jogo'));
+              if (fresh.length) ovSub.setColor('#ffd34d');
               btn.setVisible(false); btnText.setVisible(false); btnZone.disableInteractive();
               over.setVisible(true);
               sfx.bad();
@@ -869,6 +974,15 @@
 
           this.events.on('update', (time, delta) => {
             const dt = Math.min(delta, 50) / 1000;
+            const mine = phase === 'aim' && turn === 'me' && alive;
+            if (mine && !wasMine) clock = SHOT_T;
+            wasMine = mine;
+            if (mine && !picking) {
+              clock -= dt;
+              if (clock <= 5 && Math.ceil(clock) !== lastTick) { lastTick = Math.ceil(clock); if (lastTick > 0) beep(880, 50, 'square', 0.025); }
+              if (clock <= 0) timeUp();
+            }
+            drawTimer();
             if (phase === 'aim' && turn === 'me') {
               const dir = (keys.RIGHT.isDown || keys.D.isDown) - (keys.LEFT.isDown || keys.A.isDown);
               if (dir) aim += dir * (keys.SHIFT.isDown ? 0.08 : 0.9) * dt;
