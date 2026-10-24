@@ -1404,10 +1404,19 @@ const SCENES_3D = {
     new Z.Shape({ addTo: deck, path: [{ x: -170, y: PY - 6 }, { x: PX - 14, y: PY - 6 }], stroke: 1.2, color: '#2fb56d', translate: { z: 6.2 } });
     new Z.Shape({ addTo: deck, path: [{ x: PX + 6, y: PY + 14 }, { x: PX + 6, y: 200 }], stroke: 1.2, color: '#2fb56d', translate: { z: 6.2 } });
     new Z.Shape({ addTo: deck, path: [{ x: -170, y: PY - 22 }, { x: PX + 22, y: PY - 22 }, { x: PX + 22, y: 220 }], closed: false, stroke: 1, color: '#9c5a2c', translate: { z: 9.2 } });
+    // veios da madeira nas tabelas
+    for (const [o, c] of [[-26, 'rgba(50,20,6,.35)'], [-17, 'rgba(255,200,140,.12)'], [-11, 'rgba(50,20,6,.3)']]) {
+      new Z.Shape({ addTo: deck, path: [{ x: -170, y: PY + o + 3 }, { x: PX + o + 6, y: PY + o + 3 }], stroke: 0.7, color: c, translate: { z: 9.15 } });
+      new Z.Shape({ addTo: deck, path: [{ x: PX - o - 3, y: PY - o + 2 }, { x: PX - o - 3, y: 220 }], stroke: 0.7, color: c, translate: { z: 9.15 } });
+    }
     for (const k of [0, 1, 2]) {
       new Z.Rect({ addTo: deck, width: 3, height: 3, stroke: 0.6, fill: true, color: '#f1e3c0', rotate: { z: Z.TAU / 8 }, translate: { x: PX - 42 - k * 46, y: PY - 14, z: 9.2 } });
       new Z.Rect({ addTo: deck, width: 3, height: 3, stroke: 0.6, fill: true, color: '#f1e3c0', rotate: { z: Z.TAU / 8 }, translate: { x: PX + 14, y: PY + 42 + k * 46, z: 9.2 } });
     }
+    // giz azul em cima da tabela, com a boca gasta
+    const chalk = backdrop(Z, illo, 2.5, { translate: { x: -24, y: PY - 15, z: 12.5 }, rotate: { z: 0.35 } });
+    slab(Z, chalk, 9, 9, 7, '#2d6fd6');
+    new Z.Rect({ addTo: chalk, width: 5.4, height: 5.4, stroke: 0.8, fill: true, color: '#173f86', translate: { z: 3.6 } });
     // caçapa: couro em volta e o buraco escurecendo pro fundo
     const pocket = backdrop(Z, illo, 3, { sort: false, translate: { x: PX, y: PY, z: 0.3 } });
     new Z.Ellipse({ addTo: pocket, diameter: 33, stroke: 0, fill: true, color: '#2a1408' });
@@ -1436,7 +1445,7 @@ const SCENES_3D = {
         if (num === 8) {
           new Z.Ellipse({ addTo: disc, diameter: 3, stroke: 1.15, color: ink, translate: { y: -1.75 } });
           new Z.Ellipse({ addTo: disc, diameter: 3.6, stroke: 1.15, color: ink, translate: { y: 1.55 } });
-        } else [...String(num)].forEach((d, i, all) => glyph(Z, disc, digitLines(+d).map(l => l.map(([x, y]) => [x + (i - (all.length - 1) / 2) * 7 - (d === '1' ? 4 : 0), y])), { color: ink, stroke: 1.1, scale: 0.28 }));
+        } else [...String(num)].forEach((d, i, all) => glyph(Z, disc, (d === '1' ? [[[-2.5, -4.5], [0.5, -7], [0.5, 7]]] : digitLines(+d)).map(l => l.map(([x, y]) => [x + (i - (all.length - 1) / 2) * 8, y])), { color: ink, stroke: 1.2, scale: 0.3 }));
       }
       new Z.Shape({ addTo: g, stroke: R * 0.95, color: 'rgba(255,255,255,.16)', translate: { x: -R * 0.36, y: -R * 0.42 } });
       new Z.Shape({ addTo: g, stroke: R * 0.42, color: 'rgba(255,255,255,.92)', translate: { x: -R * 0.42, y: -R * 0.5 } });
