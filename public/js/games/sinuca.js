@@ -580,6 +580,7 @@
           // ---------- mesa nova ----------
           const newRack = () => {
             rackNo++;
+            sunk = { me: [], cpu: [] };
             balls = rack();
             st = { groups: { me: null, cpu: null }, isBreak: true };
             turn = 'me'; inHand = true; kitchen = true; shotsMe = 0; foulsMe = 0; power = 0; aim = -Math.PI / 2; spin = { x: 0, y: 0 };
@@ -603,6 +604,7 @@
           };
 
           const ballOf = n => balls.find(b => b.n === n);
+          let sunk = { me: [], cpu: [] }; // bolas que cada um encaçapou nesta mesa
           const renderPanels = () => {
             const set = onTable(balls);
             for (const p of panels) {
@@ -611,12 +613,14 @@
                 .lineStyle(active ? 2 : 1, active ? 0x3ddc97 : 0x24493a, active ? 1 : 0.8).strokeRoundedRect(p.x, 6, p.w, 56, 14);
               p.dot.clear().fillStyle(active ? 0x3ddc97 : 0x2a4a3c, 1).fillCircle(p.x + 15, 21, 4.5);
               p.sub.setText(p.who === 'cpu' ? LEVELS[level][0] + (g ? ' · ' + GROUP_NAME[g] : '') : g ? GROUP_NAME[g] : 'Mesa aberta');
-              const nums = g ? (g === 'solid' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15]) : [];
+              // mesa aberta: mostra as bolas que cada um já encaçapou (a saída inclusive);
+              // com grupo: as 7 do grupo, apagadas as que já caíram
+              const nums = g ? (g === 'solid' ? [1, 2, 3, 4, 5, 6, 7] : [9, 10, 11, 12, 13, 14, 15]) : sunk[p.who].slice(0, 7);
               p.minis.forEach((m, k) => {
                 const n = k < 7 ? nums[k] : 8;
                 const show = n !== undefined && (k < 7 || (g && !leftOf(set, g)));
                 m.img.setVisible(show);
-                if (show) m.img.setTexture('sn_m' + n).setDisplaySize(16, 16).setAlpha(set.has(n) ? 1 : 0.18);
+                if (show) m.img.setTexture('sn_m' + n).setDisplaySize(16, 16).setAlpha(!g || set.has(n) ? 1 : 0.18);
                 m.slot.setVisible(k < 7);
               });
             }
@@ -651,6 +655,7 @@
           };
           const endShot = () => {
             const who = turn, res = judge(st, who, ev, before);
+            sunk[who].push(...ev.potted.filter(n => n && n !== 8));
             st.isBreak = false;
             if (res.assign) { st.groups = res.assign; say(who === 'me' ? `Você ficou com as ${GROUP_NAME[res.assign.me].toLowerCase()}` : `A máquina ficou com as ${GROUP_NAME[res.assign.cpu].toLowerCase()}`, '#ffd34d'); }
             if (who === 'me' && res.scored.length) {
