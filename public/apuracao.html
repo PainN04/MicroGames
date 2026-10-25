@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apuração Eleições 2026</title>
+<meta name="description" content="Apuração das urnas em tempo real, Brasil e por estado, com dados oficiais do TSE.">
+<style>
+  :root {
+    --bg: #f5f6f8; --card: #ffffff; --ink: #14171f; --muted: #5d6475; --line: #e3e6ec;
+    --accent: #2457d6; --good: #138a4a; --bar: #e9ecf2; --chip: #eef1f7;
+    --c1: #d6262b; --c2: #2457d6; --c3: #138a4a; --c4: #b7791f; --c5: #7c3aed; --c6: #0e7490;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1218; --card: #171b23; --ink: #eef1f6; --muted: #9aa3b5; --line: #262c38;
+      --accent: #6e9bff; --good: #3ccf7f; --bar: #232a36; --chip: #212734;
+      --c1: #ff5a5f; --c2: #6e9bff; --c3: #3ccf7f; --c4: #f0b350; --c5: #a78bfa; --c6: #38bdf8;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1218; --card: #171b23; --ink: #eef1f6; --muted: #9aa3b5; --line: #262c38;
+    --accent: #6e9bff; --good: #3ccf7f; --bar: #232a36; --chip: #212734;
+    --c1: #ff5a5f; --c2: #6e9bff; --c3: #3ccf7f; --c4: #f0b350; --c5: #a78bfa; --c6: #38bdf8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 16px; }
+  header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  h1 { font-size: 22px; margin: 0; letter-spacing: -.01em; }
+  .live { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #e11d48; animation: pulse 1.4s infinite; }
+  .dot.off { background: var(--muted); animation: none; }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .3 } }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+  .seg { display: inline-flex; background: var(--chip); border-radius: 10px; padding: 3px; }
+  .seg button { border: 0; background: none; color: var(--muted); font: inherit; font-weight: 600; padding: 7px 12px; border-radius: 8px; cursor: pointer; }
+  .seg button.on { background: var(--card); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  select { font: inherit; font-weight: 600; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; margin-bottom: 14px; }
+  .progress-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .big { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .pbar { height: 10px; background: var(--bar); border-radius: 99px; overflow: hidden; margin: 8px 0 4px; }
+  .pbar > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .6s; }
+  .status { display: inline-block; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 99px; background: var(--chip); color: var(--muted); }
+  .status.done { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+  .cands { display: grid; gap: 14px; margin-top: 6px; }
+  .cand { display: grid; grid-template-columns: 56px 1fr auto; gap: 12px; align-items: center; }
+  .ph { width: 56px; height: 56px; border-radius: 50%; overflow: hidden; background: var(--chip); display: grid; place-items: center; font-weight: 800; color: var(--muted); border: 3px solid var(--cc); }
+  .ph img { width: 100%; height: 100%; object-fit: cover; }
+  .nm { font-weight: 700; font-size: 16px; }
+  .nm small { font-weight: 600; color: var(--muted); font-size: 12px; margin-left: 4px; }
+  .cbar { height: 8px; background: var(--bar); border-radius: 99px; overflow: hidden; margin-top: 6px; }
+  .cbar > i { display: block; height: 100%; background: var(--cc); transition: width .6s; }
+  .pct { text-align: right; font-variant-numeric: tabular-nums; }
+  .pct b { font-size: 24px; display: block; }
+  .elected { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 800; color: #fff; background: var(--good); padding: 2px 7px; border-radius: 99px; vertical-align: 2px; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .stat { background: var(--chip); border-radius: 10px; padding: 10px 12px; }
+  .stat b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+  h2 { font-size: 16px; margin: 0 0 10px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+  .uf { text-align: left; font: inherit; color: inherit; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 10px; cursor: pointer; border-left: 5px solid var(--cc, var(--line)); }
+  .uf:hover { border-color: var(--accent); }
+  .uf.sel { outline: 2px solid var(--accent); }
+  .uf .t { display: flex; justify-content: space-between; font-weight: 800; }
+  .uf .l { font-size: 13px; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .uf .pbar { height: 5px; margin: 6px 0 0; }
+  .uf.na { opacity: .5; cursor: default; }
+  .err { color: #c2410c; font-size: 14px; }
+  footer { font-size: 12px; color: var(--muted); text-align: center; padding: 10px 0 24px; }
+  footer a { color: var(--accent); }
+  @media (max-width: 520px) {
+    .big { font-size: 28px; }
+    .cand { grid-template-columns: 46px 1fr auto; gap: 10px; }
+    .ph { width: 46px; height: 46px; }
+    .pct b { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🗳️ Apuração 2026</h1>
+    <span class="live"><span class="dot" id="dot"></span><span id="clock">carregando…</span></span>
+  </header>
+
+  <div class="controls">
+    <div class="seg" id="turno">
+      <button data-v="1">1º turno</button>
+      <button data-v="2" class="on">2º turno</button>
+    </div>
+    <div class="seg" id="cargo">
+      <button data-v="1" class="on">Presidente</button>
+      <button data-v="3">Governador</button>
+    </div>
+    <select id="uf" aria-label="Estado"></select>
+  </div>
+
+  <section class="card" id="main">
+    <div class="muted">Carregando dados do TSE…</div>
+  </section>
+
+  <section class="card">
+    <h2 id="gridTitle">Por estado</h2>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <footer>
+    Dados oficiais do <a href="https://resultados.tse.jus.br/" target="_blank" rel="noopener">TSE</a>, atualizados sozinhos a cada 30 s (estados a cada 60 s).
+  </footer>
+</div>
+
+<script>
+(() => {
+  const BASE = 'https://resultados.tse.jus.br/oficial/ele2026/';
+  // códigos das eleições de 2026 (comum/config/ele-c.json): federal 6257/6258, estadual 6259/6260
+  const ELEICAO = { 1: { 1: 6257, 2: 6258 }, 3: { 1: 6259, 2: 6260 } };
+  const UFS = [['ac','Acre'],['al','Alagoas'],['ap','Amapá'],['am','Amazonas'],['ba','Bahia'],['ce','Ceará'],['df','Distrito Federal'],
+    ['es','Espírito Santo'],['go','Goiás'],['ma','Maranhão'],['mt','Mato Grosso'],['ms','Mato Grosso do Sul'],['mg','Minas Gerais'],
+    ['pa','Pará'],['pb','Paraíba'],['pr','Paraná'],['pe','Pernambuco'],['pi','Piauí'],['rj','Rio de Janeiro'],['rn','Rio Grande do Norte'],
+    ['rs','Rio Grande do Sul'],['ro','Rondônia'],['rr','Roraima'],['sc','Santa Catarina'],['sp','São Paulo'],['se','Sergipe'],['to','Tocantins']];
+  const UF_NAME = Object.fromEntries(UFS);
+  const COLORS = ['--c1','--c2','--c3','--c4','--c5','--c6'];
+
+  const st = { turno: 2, cargo: 1, uf: 'br' };
+  const colorOf = {}; // número do candidato -> cor, fixa entre telas
+  const $ = id => document.getElementById(id);
+  const num = s => Number(String(s ?? '0').replace(',', '.')) || 0;
+  const fmt = n => Number(n).toLocaleString('pt-BR');
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+  function url(uf) {
+    const e = ELEICAO[st.cargo][st.turno];
+    return `${BASE}${e}/dados/${uf}/${uf}-c${String(st.cargo).padStart(4,'0')}-e${String(e).padStart(6,'0')}-u.json`;
+  }
+  async function load(uf) {
+    const r = await fetch(url(uf), { cache: 'no-cache' });
+    if (r.status === 404 || r.status === 403) return null;
+    if (!r.ok) throw new Error(r.status === 429 ? 'O TSE pediu pra ir mais devagar; tentando de novo já já.' : `TSE respondeu ${r.status}`);
+    return r.json();
+  }
+  function candidates(d) {
+    const out = [];
+    for (const c of d.carg || []) for (const a of c.agr || []) for (const p of a.par || []) for (const k of p.cand || [])
+      out.push({ n: k.n, sq: k.sqcand, nome: k.nmu || k.nm, partido: p.sg, votos: num(k.vap), pct: num(k.pvapn || k.pvap), eleito: k.e === 's', st: k.st });
+    out.sort((a, b) => b.votos - a.votos || a.nome.localeCompare(b.nome));
+    out.forEach((c, i) => { if (!colorOf[c.n]) colorOf[c.n] = COLORS[Object.keys(colorOf).length % COLORS.length]; });
+    return out;
+  }
+  const cc = n => `var(${colorOf[n] || '--muted'})`;
+  const initials = s => s.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('');
+  const photo = (c, uf) => `${BASE}${ELEICAO[st.cargo][st.turno]}/fotos/${uf}/${c.sq}.jpeg`;
+
+  function renderMain(d) {
+    const main = $('main');
+    const lugar = st.uf === 'br' ? 'Brasil' : UF_NAME[st.uf];
+    const cargo = st.cargo === 1 ? 'Presidente' : 'Governador';
+    if (!d) {
+      main.innerHTML = `<div class="progress-head"><div><b>${cargo} · ${esc(lugar)}</b></div></div>
+        <p class="muted">${st.cargo === 3 && st.uf === 'br' ? 'Escolha um estado para ver a disputa de governador.'
+          : st.cargo === 3 && st.turno === 2 ? 'Este estado não tem 2º turno para governador.' : 'Ainda não há dados publicados pelo TSE.'}</p>`;
+      return;
+    }
+    const s = d.s || {}, e = d.e || {}, v = d.v || {};
+    const pst = num(s.pstn || s.pst);
+    const done = d.tf === 's';
+    const cands = candidates(d);
+    const status = done ? '<span class="status done">Totalização finalizada</span>'
+      : d.md === 'e' ? '<span class="status done">Matematicamente definido</span>' : '<span class="status">Em andamento</span>';
+    main.innerHTML = `
+      <div class="progress-head">
+        <div><b>${cargo} · ${esc(lugar)}</b> ${status}</div>
+        <span class="muted">Atualizado pelo TSE às ${esc(d.ht || d.hg)} de ${esc(d.dt || d.dg)}</span>
+      </div>
+      <div class="progress-head" style="margin-top:6px">
+        <div><span class="big">${pst.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</span> <span class="muted">das seções apuradas</span></div>
+        <span class="muted">${fmt(num(s.st))} de ${fmt(num(s.ts))} seções</span>
+      </div>
+      <div class="pbar"><i style="width:${pst}%"></i></div>
+      <div class="cands" style="margin-top:16px">
+        ${cands.map(c => `
+          <div class="cand" style="--cc:${cc(c.n)}">
+            <div class="ph"><img alt="" loading="lazy" src="${photo(c, st.uf)}" onerror="this.replaceWith(document.createTextNode('${esc(initials(c.nome))}'))"></div>
+            <div>
+              <div class="nm">${esc(c.nome)}<small>${esc(c.partido)} · ${esc(c.n)}</small>${c.eleito ? '<span class="elected">ELEITO</span>' : ''}</div>
+              <div class="cbar"><i style="width:${c.pct}%"></i></div>
+            </div>
+            <div class="pct"><b>${c.pct.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%</b><span class="muted">${fmt(c.votos)} votos</span></div>
+          </div>`).join('')}
+      </div>
+      <div class="stats" style="margin-top:16px">
+        <div class="stat"><span class="muted">Votos válidos</span><b>${fmt(num(v.vv))}</b></div>
+        <div class="stat"><span class="muted">Brancos</span><b>${fmt(num(v.vb))}</b><span class="muted">${esc(v.pvb)}%</span></div>
+        <div class="stat"><span class="muted">Nulos</span><b>${fmt(num(v.tvn))}</b><span class="muted">${esc(v.ptvn)}%</span></div>
+        <div class="stat"><span class="muted">Comparecimento</span><b>${fmt(num(e.c))}</b><span class="muted">${esc(e.pc)}%</span></div>
+        <div class="stat"><span class="muted">Abstenção</span><b>${fmt(num(e.a))}</b><span class="muted">${esc(e.pa)}%</span></div>
+        <div class="stat"><span class="muted">Eleitorado</span><b>${fmt(num(e.te))}</b></div>
+      </div>`;
+  }
+
+  // ---- grade dos estados ----
+  const gridData = {};
+  function renderGrid() {
+    $('gridTitle').textContent = st.cargo === 1 ? 'Presidente por estado (clique para abrir)' : 'Governador por estado (clique para abrir)';
+    $('grid').innerHTML = UFS.map(([uf, nome]) => {
+      const g = gridData[uf];
+      if (g === undefined) return `<div class="uf na"><div class="t"><span>${uf.toUpperCase()}</span><span>…</span></div><div class="l muted">${nome}</div></div>`;
+      if (g === null) return `<div class="uf na"><div class="t"><span>${uf.toUpperCase()}</span></div><div class="l muted">${st.cargo === 3 && st.turno === 2 ? 'Sem 2º turno' : 'Sem dados'}</div></div>`;
+      const lead = g.cands[0];
+      const pst = num(g.d.s?.pstn || g.d.s?.pst);
+      return `<button class="uf${st.uf === uf ? ' sel' : ''}" data-uf="${uf}" style="--cc:${lead ? cc(lead.n) : 'var(--line)'}">
+        <div class="t"><span>${uf.toUpperCase()}</span><span>${lead ? lead.pct.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%' : ''}</span></div>
+        <div class="l">${lead ? esc(lead.nome) : '—'}</div>
+        <div class="pbar"><i style="width:${pst}%"></i></div>
+        <div class="muted">${pst.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}% apurado</div>
+      </button>`;
+    }).join('');
+  }
+  let gridToken = 0;
+  async function refreshGrid() {
+    const token = ++gridToken;
+    const queue = UFS.map(u => u[0]);
+    // poucas requisições por vez para não levar bloqueio do TSE
+    const worker = async () => {
+      while (queue.length && token === gridToken) {
+        const uf = queue.shift();
+        try { const d = await load(uf); if (token !== gridToken) return; gridData[uf] = d ? { d, cands: candidates(d) } : null; }
+        catch { /* mantém o valor anterior */ }
+        renderGrid();
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+  }
+
+  // ---- ciclo principal ----
+  let mainToken = 0, nextAt = 0;
+  async function refreshMain() {
+    const token = ++mainToken;
+    try {
+      const d = await load(st.uf);
+      if (token !== mainToken) return;
+      renderMain(d);
+      $('dot').classList.toggle('off', !!(d && d.tf === 's'));
+    } catch (err) {
+      if (token !== mainToken) return;
+      const msg = document.createElement('p');
+      msg.className = 'err';
+      msg.textContent = err.message || 'Falha ao buscar os dados do TSE.';
+      $('main').querySelector('.err')?.remove();
+      $('main').appendChild(msg);
+    }
+    nextAt = Date.now() + 30000;
+  }
+
+  function resetAll() {
+    for (const k in gridData) delete gridData[k];
+    renderGrid();
+    $('main').innerHTML = '<div class="muted">Carregando dados do TSE…</div>';
+    refreshMain(); refreshGrid();
+  }
+
+  // controles
+  $('uf').innerHTML = '<option value="br">Brasil (todos)</option>' + UFS.map(([v, n]) => `<option value="${v}">${n}</option>`).join('');
+  function seg(id, key) {
+    $(id).addEventListener('click', ev => {
+      const b = ev.target.closest('button'); if (!b) return;
+      st[key] = Number(b.dataset.v);
+      [...$(id).children].forEach(x => x.classList.toggle('on', x === b));
+      if (key === 'cargo' && st.cargo === 3 && st.uf === 'br') { st.uf = 'sp'; $('uf').value = 'sp'; }
+      if (key === 'cargo' && st.cargo === 1) { /* Brasil volta a ter sentido, mas mantém o estado escolhido */ }
+      saveHash(); resetAll();
+    });
+  }
+  seg('turno', 'turno'); seg('cargo', 'cargo');
+  $('uf').addEventListener('change', () => { st.uf = $('uf').value; saveHash(); refreshMain(); renderGrid(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  $('grid').addEventListener('click', ev => {
+    const b = ev.target.closest('button[data-uf]'); if (!b) return;
+    st.uf = b.dataset.uf; $('uf').value = st.uf; saveHash(); refreshMain(); renderGrid();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  // link compartilhável: #t2-c1-sp
+  function saveHash() { history.replaceState(null, '', `#t${st.turno}-c${st.cargo}-${st.uf}`); }
+  const m = location.hash.match(/^#t([12])-c([13])-([a-z]{2})$/);
+  if (m && (m[3] === 'br' || UF_NAME[m[3]])) { st.turno = +m[1]; st.cargo = +m[2]; st.uf = m[3]; }
+  [...$('turno').children].forEach(x => x.classList.toggle('on', +x.dataset.v === st.turno));
+  [...$('cargo').children].forEach(x => x.classList.toggle('on', +x.dataset.v === st.cargo));
+  $('uf').value = st.uf;
+
+  resetAll();
+  setInterval(refreshGrid, 60000);
+  setInterval(() => {
+    const left = Math.max(0, Math.ceil((nextAt - Date.now()) / 1000));
+    $('clock').textContent = nextAt ? `ao vivo · próxima atualização em ${left}s` : 'carregando…';
+    if (nextAt && left === 0 && !document.hidden) { nextAt = 0; refreshMain(); }
+  }, 1000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) { refreshMain(); refreshGrid(); } });
+})();
+</script>
+</body>
+</html>
