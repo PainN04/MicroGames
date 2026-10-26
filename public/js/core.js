@@ -398,8 +398,9 @@ function prefetchPhaser() {
 // Cria o jogo dentro de `wrap` (que já reserva o espaço). Retorna a função de limpeza.
 // O tamanho na tela encolhe pra caber na largura E na altura que sobram (placar e dicas continuam visíveis).
 // res > 1: o canvas tem res× mais pixels que o tamanho do jogo (fica nítido em tela de alta densidade);
-// a cena dá setZoom(res) na câmera e continua desenhando nas coordenadas de sempre
-function mountPhaser(wrap, width, height, scene, { res = 1 } = {}) {
+// a cena dá setZoom(res) na câmera e continua desenhando nas coordenadas de sempre.
+// tall: o jogo usa a altura da janela inteira (não só o que sobra abaixo do título) e a página rola até ele
+function mountPhaser(wrap, width, height, scene, { res = 1, tall = false } = {}) {
   let game = null, dead = false, fpsTimer = 0;
   wrap.style.maxWidth = width + 'px';
   wrap.style.aspectRatio = `${width} / ${height}`;
@@ -408,7 +409,7 @@ function mountPhaser(wrap, width, height, scene, { res = 1 } = {}) {
     const box = wrap.parentElement, cs = getComputedStyle(box);
     const gap = parseFloat(cs.rowGap) || 0;
     const others = [...box.children].filter(c => c !== wrap).reduce((sum, c) => sum + c.offsetHeight + gap, 0);
-    const maxH = (parseFloat(cs.getPropertyValue('--avail')) || height) - others;
+    const maxH = (tall ? innerHeight - (document.querySelector('body > header')?.offsetHeight || 0) - 40 : parseFloat(cs.getPropertyValue('--avail')) || height) - others;
     const scale = Math.max(0.35, Math.min(1, box.clientWidth / width, maxH / height));
     // !important: nada (CSS do layout, Phaser) pode esticar a caixa além do tamanho calculado
     wrap.style.setProperty('width', Math.floor(width * scale) + 'px', 'important');
@@ -417,6 +418,7 @@ function mountPhaser(wrap, width, height, scene, { res = 1 } = {}) {
   };
   size();
   addEventListener('mg:fit', size);
+  if (tall) requestAnimationFrame(() => wrap.parentElement.scrollIntoView({ block: 'end', behavior: 'smooth' }));
   loadPhaser().then(() => {
     if (dead) return;
     wrap.innerHTML = '';
