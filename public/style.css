@@ -2036,3 +2036,8 @@ html.lite .acc-menu { background: oklch(20% 0.025 275); }
 .cue-row.locked canvas { filter: saturate(.75) brightness(.8) drop-shadow(0 3px 3px oklch(0% 0 0 / .45)); }
 .cue-row.locked .tag { color: var(--muted, oklch(70% .02 260)); }
 .cue-row .btn { padding: .45em 1.1em; min-height: 0; }
+/* placar e botão do taco na mesma linha: sobra mais altura pra mesa */
+.game .sn-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: var(--space-xs) var(--space-sm); max-width: 100%; }
+.game .sn-top .cue-btn { margin: 0; }
+/* Sinuca no PC: a mesa deitada aproveita telas largas (o ranking continua ao lado) */
+@media (min-width: 1280px) { main.game-view[data-game="sinuca"] { max-width: min(1600px, 100%); } }
