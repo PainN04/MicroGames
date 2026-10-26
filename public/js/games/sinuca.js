@@ -388,7 +388,7 @@
       // deitada, o container da mesa só gira 90° e as contas de tela passam por toScreen/toLocal.
       const wide = el.clientWidth >= 640, RW = 24, TX = 40, TY = 92;
       const L = wide
-        ? { W: 686, H: 452, Z: 1.35, BAR: { x: 624, y: TY, w: 46, h: TW }, FINE: { x: 16, y: TY + TW + RW + 12, w: TH + RW * 2, h: 30 } }
+        ? { W: 686, H: 452, Z: 1.75, BAR: { x: 624, y: TY, w: 46, h: TW }, FINE: { x: 16, y: TY + TW + RW + 12, w: TH + RW * 2, h: 30 } }
         : { W: 420, H: 724, Z: 1, BAR: { x: 354, y: TY, w: 46, h: TH }, FINE: { x: 16, y: TY + TH + RW + 12, w: TW + RW * 2, h: 30 } };
       const { W, H, Z, BAR, FINE } = L, SPIN = { x: BAR.x + BAR.w / 2, y: FINE.y + FINE.h / 2, r: 20 };
       const ROT = wide ? -Math.PI / 2 : 0;
@@ -397,7 +397,7 @@
       const vecLocal = (sx, sy) => (wide ? [-sy, sx] : [sx, sy]); // direção na tela → direção na mesa
       const LIGHT = vecLocal(-0.36, -0.42), SHADOW = vecLocal(2.6, 3.6);
       const center = toScreen(TW / 2, TH / 2);
-      el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Mesas<b id="w">0</b></span><span class="stat">Máquina<b id="l">Iniciante</b></span></div><button type="button" class="cue-btn" id="cueBtn">${icon('sinuca')}<span>Trocar taco</span><b id="cueName"></b></button><div class="phaser-wrap" id="pw"></div>`;
+      el.innerHTML = `<div class="sn-top"><div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Mesas<b id="w">0</b></span><span class="stat">Máquina<b id="l">Iniciante</b></span></div><button type="button" class="cue-btn" id="cueBtn">${icon('sinuca')}<span>Trocar taco</span><b id="cueName"></b></button></div><div class="phaser-wrap" id="pw"></div>`;
       const hud = { p: el.querySelector('#p'), w: el.querySelector('#w'), l: el.querySelector('#l'), cue: el.querySelector('#cueName') };
       let applyCue = null, picking = false;
       hud.cue.textContent = CUES.find(q => q.id === chosenCue()).name;
@@ -1013,7 +1013,7 @@
 
           newRack();
         },
-      }, { res: Q });
+      }, { res: Q, tall: wide });
     },
   };
 })();

@@ -328,6 +328,7 @@ function play(id) {
     fetchScores().then(() => renderBoard(id));
     loadSocial().then(() => currentView === id && renderBoard(id));
     main.classList.add('game-view');
+    main.dataset.game = id; // o CSS pode dar mais largura a um jogo (a Sinuca deitada no PC)
     window.scrollTo(0, 0);
     fitGame();
     const el = $('#game');
