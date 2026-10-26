@@ -105,10 +105,10 @@ function closeLogin() {
 // outra janela abrindo por cima (modal() remove o .modal anterior) também desliga a vitrine
 new MutationObserver(() => { if (loginStage && !document.querySelector('.login-screen')) closeLogin(); }).observe(document.body, { childList: true });
 
-/** Vitrine: troca de jogo a cada 4,5 s (para quando a pessoa escolhe um), cenas 3D só se as Animações 3D estiverem ligadas. */
+/** Vitrine: troca de jogo a cada 4,5 s (para quando a pessoa escolhe um). A cena da vez e as miniaturas se mexem sempre,
+ *  como os cards do menu; só ficam os ícones se a pessoa desligou as Animações 3D no menu da conta. */
 function startLoginStage(m, show) {
   const scenes = [...m.querySelectorAll('.ls-scene')], thumbs = [...m.querySelectorAll('.ls-thumb')];
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let cur = 0, timer = null, raf = 0, alive = true;
   const live = []; // { i, illo, update }
   const pick = (i, byHand) => {
@@ -129,14 +129,16 @@ function startLoginStage(m, show) {
     const i = (cur + d + show.length) % show.length;
     pick(i, true); thumbs[i].focus();
   });
-  if (!still) timer = setInterval(() => { if (!document.hidden) pick((cur + 1) % show.length); }, 4500);
+  timer = setInterval(() => { if (!document.hidden) pick((cur + 1) % show.length); }, 4500);
 
   (async () => {
-    if (!fx3dOn) return; // 3D desligado (ou modo leve): ficam os ícones
+    // aqui não segue o modo leve automático: é uma cena só e nada mais roda na tela (o Windows com "efeitos de
+    // animação" desligados ou um PC medido como lento deixava tudo parado)
+    if (fx3dPref() === 'off') return;
     try { await loadLib(ZDOG_URL); } catch { return; }
     if (!alive) return;
     const big = matchMedia('(max-width: 860px)').matches ? 190 : matchMedia('(min-width: 1200px) and (min-height: 820px)').matches ? 360 : 300;
-    const mount = (host, size, i) => {
+    const mount = (host, size, i, thumb) => {
       const build = SCENES_3D[show[i].id];
       if (!build) return null;
       const canvas = Object.assign(document.createElement('canvas'), { width: size, height: size });
@@ -145,20 +147,18 @@ function startLoginStage(m, show) {
       const illo = new Zdog.Illustration({ element: canvas, zoom: size / 150 });
       const update = build(Zdog, illo);
       update(1.2); illo.updateRenderGraph();
-      return { i, illo, update };
+      return { i, illo, update, thumb };
     };
     scenes.forEach((s, i) => { const sc = mount(s, big, i); if (sc) live.push(sc); });
-    thumbs.forEach((t, i) => mount(t, 56, i)); // miniaturas: um quadro parado basta
-    if (still) return;
+    thumbs.forEach((t, i) => { const sc = mount(t, 56, i, true); if (sc) live.push(sc); });
     let last = 0;
     const tick = now => {
       if (!alive) return;
       raf = requestAnimationFrame(tick);
       if (document.hidden || now - last < 32) return; // 30 quadros por segundo, como os cards
       last = now;
-      // só a cena da vez se mexe (a que está saindo congela durante o esmaecer)
-      const s = live.find(x => x.i === cur);
-      if (s) { s.update(now / 1000); s.illo.updateRenderGraph(); }
+      // a cena grande da vez (a que está saindo congela durante o esmaecer) e todas as miniaturas
+      for (const s of live) if (s.thumb || s.i === cur) { s.update(now / 1000); s.illo.updateRenderGraph(); }
     };
     raf = requestAnimationFrame(tick);
   })();
