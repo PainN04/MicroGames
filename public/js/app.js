@@ -596,31 +596,6 @@ function setMe(user) {
   applyMeFlair();
 }
 
-function loginModal(msg = '') {
-  const { el, close } = modal(`
-    <h2>Entrar no MicroGame</h2><p>Use o usuário e a senha que o admin te passou.</p>
-    <form id="lf">
-      <input class="txt" name="username" autocomplete="username" placeholder="usuário" aria-label="Usuário" required>
-      <input class="txt" name="password" type="password" autocomplete="current-password" placeholder="senha" aria-label="Senha" required>
-      <p class="err" id="lerr">${esc(msg)}</p>
-      <button class="btn">Entrar</button>
-      <p class="hint login-note">Cada conta funciona em um aparelho por vez: entrar aqui desconecta os outros.</p>
-    </form>`, { locked: true });
-  el.querySelector('#lf').onsubmit = async e => {
-    e.preventDefault();
-    const f = new FormData(e.target), btn = e.target.querySelector('button');
-    btn.disabled = true; el.querySelector('#lerr').textContent = '';
-    try {
-      const { user } = await api('api/auth/login', { method: 'POST', body: { username: f.get('username'), password: f.get('password') } });
-      close();
-      await afterLogin(user);
-    } catch (err) {
-      el.querySelector('#lerr').textContent = err.message;
-      btn.disabled = false;
-    }
-  };
-}
-
 function passwordModal(forced) {
   const { el, close } = modal(`
     <h2>${icon('key-round')} ${forced ? 'Crie sua senha' : 'Trocar senha'}</h2>
