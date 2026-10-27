@@ -2177,3 +2177,35 @@ html.lite .ls-show { box-shadow: none; }
 .tk .actions .btn.danger:hover { color: oklch(80% .14 18); border-color: oklch(66% .22 18 / .5); }
 .admin .note .i { width: 1em; height: 1em; vertical-align: -.15em; }
 .tk .actions .btn .i { color: currentColor; opacity: 1; }
+/* imagens dos tickets: anexar (janela de reportar) e ver (painel) */
+.tk-drop { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; padding: 8px; border-radius: 14px; border: 1px dashed var(--border-strong);
+  transition: border-color var(--duration-fast), background var(--duration-fast); }
+.tk-drop.over { border-color: var(--primary); background: oklch(70% 0.19 290 / .1); }
+.tk-thumbs { display: contents; }
+.tk-shot { position: relative; width: 84px; height: 64px; border-radius: 10px; overflow: hidden; border: 1px solid var(--border-strong); flex: none; }
+.tk-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tk-rm { position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 22px; height: 22px; padding: 0; border: 0; border-radius: 99px;
+  background: oklch(15% 0.02 275 / .85); color: #fff; cursor: pointer; }
+.tk-rm .i { width: 13px; height: 13px; }
+.admin label.tk-add { flex: 1 1 220px; flex-direction: row; display: flex; align-items: center; position: relative; gap: .7em; padding: .4em .5em; border-radius: 10px; cursor: pointer; color: var(--muted); }
+.tk-add[hidden] { display: none; }
+.tk-add:hover { background: oklch(100% 0 0 / .05); }
+.tk-add > .i { width: 2.2em; height: 2.2em; padding: .5em; flex: none; border-radius: 12px; color: #fff;
+  background: linear-gradient(160deg, oklch(55% .15 290), oklch(40% .12 290)); box-shadow: 0 2px 0 oklch(25% .07 290); }
+.tk-add b { display: block; color: var(--text); font-size: var(--fs-sm); }
+.tk-add small { display: block; }
+.tk-add input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.tk-add:focus-within { outline: 3px solid var(--accent); outline-offset: 2px; }
+.tk-imgs { display: flex; flex-wrap: wrap; gap: 8px; }
+.tk-imgs button, .tk-imgs a { display: block; width: 120px; height: 84px; padding: 0; border-radius: 10px; overflow: hidden; cursor: zoom-in;
+  border: 1px solid var(--border-strong); background: oklch(12% 0.02 275 / .6); transition: border-color var(--duration-fast), transform var(--duration-fast); }
+.tk-imgs button:hover, .tk-imgs a:hover { border-color: var(--primary); transform: translateY(-1px); }
+.tk-imgs img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.tk-list.compact .tk-imgs a { width: 84px; height: 60px; }
+.tk-view { display: grid; place-items: center; min-height: 200px; border-radius: 12px; overflow: hidden; background: oklch(10% 0.02 275); }
+.tk-view img { max-width: 100%; max-height: min(70vh, 720px); display: block; }
+.tk-view-nav { align-items: center; margin-top: var(--space-sm); flex-wrap: wrap; }
+.tk-view-nav .hint { font-size: var(--fs-xs); margin: 0 .2em; }
+.tk-view-nav [data-step="1"] { margin-right: auto; }
+.tk-view-nav a.btn { text-decoration: none; }
+.admin label.tk-add[hidden] { display: none; }
