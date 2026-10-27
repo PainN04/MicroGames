@@ -2134,7 +2134,7 @@ html.login-open { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .modal.login-screen, .ls-err { animation: none; } .ls-scene, .ls-thumb { transition: none; } }
 html.lite .ls-show { box-shadow: none; }
 
-/* tickets: janela de reportar problema (ícone do topo) e a aba Tickets da Administração */
+/* tickets: tela de reportar problema (menu da conta) e a aba Tickets da Administração */
 .tk-kinds { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
 .tk-msg { display: grid; gap: 6px; font-size: var(--fs-xs); color: var(--muted); }
 .admin textarea { font: inherit; font-size: var(--fs-sm); line-height: 1.45; color: var(--text); background: oklch(12% 0.02 275 / 0.7); border: 1px solid var(--border-strong);
@@ -2209,3 +2209,13 @@ html.lite .ls-show { box-shadow: none; }
 .tk-view-nav [data-step="1"] { margin-right: auto; }
 .tk-view-nav a.btn { text-decoration: none; }
 .admin label.tk-add[hidden] { display: none; }
+/* tela de reportar: formulário à esquerda, "Seus tickets" à direita (no celular, um embaixo do outro) */
+.tk-cols { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--space-md); align-items: start; }
+.tk-cols > section { margin: 0; }
+.tk-side h3 { display: flex; align-items: center; gap: .5em; margin: 0 0 var(--space-sm); }
+.tk-side h3 .i { width: 1.1em; height: 1.1em; color: var(--primary); }
+.tk-side .tk-list.compact { max-height: min(70vh, 640px); margin-top: 0; }
+.tk-side .empty-state { margin: 0; }
+.tk-sent-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: var(--space-xs); max-width: none !important; }
+.tk-sent-actions .btn { margin-top: 0; }
+@media (max-width: 860px) { .tk-cols { grid-template-columns: 1fr; } .tk-side .tk-list.compact { max-height: none; } }

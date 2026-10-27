@@ -2,7 +2,7 @@
 const PRIO_FIELDS = [['URG', 'Urgente'], ['ALT', 'Alta'], ['MED', 'Média'], ['NOR', 'Normal'], ['BAI', 'Baixa'], ['none', 'Sem prioridade']];
 
 // partes do Painel, cada uma numa aba
-const ADMIN_PANES = [['online', 'eye', 'Online'], ['contas', 'user', 'Contas'], ['duplas', 'users', 'Duplas'], ['geiko', 'clock', 'Fila do Geiko'], ['respostas', 'key-round', 'Respostas do dia'], ['tickets', 'inbox', 'Tickets']];
+const ADMIN_PANES = [['online', 'eye', 'Online'], ['contas', 'user', 'Contas'], ['duplas', 'users', 'Duplas'], ['geiko', 'clock', 'Fila do Geiko'], ['respostas', 'key-round', 'Respostas do dia'], ['tickets', 'report', 'Tickets']];
 let adminPane = 'online';
 
 function showAdmin() {
