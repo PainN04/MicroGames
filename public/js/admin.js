@@ -2,11 +2,12 @@
 const PRIO_FIELDS = [['URG', 'Urgente'], ['ALT', 'Alta'], ['MED', 'Média'], ['NOR', 'Normal'], ['BAI', 'Baixa'], ['none', 'Sem prioridade']];
 
 // partes do Painel, cada uma numa aba
-const ADMIN_PANES = [['online', 'eye', 'Online'], ['contas', 'user', 'Contas'], ['duplas', 'users', 'Duplas'], ['geiko', 'clock', 'Fila do Geiko'], ['respostas', 'key-round', 'Respostas do dia']];
+const ADMIN_PANES = [['online', 'eye', 'Online'], ['contas', 'user', 'Contas'], ['duplas', 'users', 'Duplas'], ['geiko', 'clock', 'Fila do Geiko'], ['respostas', 'key-round', 'Respostas do dia'], ['tickets', 'report', 'Tickets']];
 let adminPane = 'online';
 
 function showAdmin() {
   if (me?.role !== 'admin') return;
+  if (adminPane === 'tickets' && !me.canEditRecords) adminPane = 'online';
   stop();
   currentView = 'admin';
   setTimeout(pingSession, 0);
@@ -67,12 +68,14 @@ function showAdmin() {
         <p class="note">A resposta de cada jogo diário e o que cada pessoa mandou. A resposta fica borrada até você tocar nela, pra não estragar o seu jogo.</p>
         <div class="ans-grid" id="ansList"><p class="hint">Carregando...</p></div>
       </section>
+      ${me?.canEditRecords ? ticketsPaneHtml() : ''}
     </div>`;
     $('#back').onclick = showMenu;
     $('#ansPrev').onclick = () => loadAnswers(ansDay - 1);
     $('#ansNext').onclick = () => loadAnswers(ansDay + 1);
     $('#ansToday').onclick = () => loadAnswers(null);
     if (adminPane === 'respostas') loadAnswers(ansDay);
+    if (me?.canEditRecords) { bindTicketsPane(); if (adminPane === 'tickets') loadTickets(); }
     $('#accNew').onclick = () => accountModal();
     $('#accQ').oninput = renderUsers;
     main.querySelectorAll('[data-accf]').forEach(b => b.onclick = () => {
@@ -837,15 +840,16 @@ async function loadRules() {
 }
 // uma barra só com todas as abas: as partes do Painel, o Relatório e os Recordes (este só pra conta dona)
 function adminTabsHtml(cur) {
-  const tabs = [...ADMIN_PANES, ['report', 'chart-column', 'Relatório'], ['records', 'wrench', 'Recordes']].filter(([k]) => k !== 'records' || me?.canEditRecords);
+  const tabs = [...ADMIN_PANES, ['report', 'chart-column', 'Relatório'], ['records', 'wrench', 'Recordes']].filter(([k]) => !['records', 'tickets'].includes(k) || me?.canEditRecords);
   return `<nav class="adm-tabs" role="tablist" aria-label="Administração">${tabs.map(([k, ic, l]) =>
-    `<button role="tab" data-atab="${k}" aria-selected="${cur === k}">${icon(ic)}<span>${l}</span></button>`).join('')}</nav>`;
+    `<button role="tab" data-atab="${k}" aria-selected="${cur === k}">${icon(ic)}<span>${k === 'tickets' && openTickets ? `${l} (${openTickets})` : l}</span></button>`).join('')}</nav>`;
 }
 function setAdminPane(k) {
   adminPane = k;
   main.querySelectorAll('[data-atab]').forEach(x => x.setAttribute('aria-selected', x.dataset.atab === k));
   main.querySelectorAll('[data-pane]').forEach(sec => { sec.hidden = sec.dataset.pane !== k; });
   if (k === 'respostas') loadAnswers(ansDay);
+  if (k === 'tickets') loadTickets();
 }
 
 // ---------- respostas do dia (gabarito dos jogos diários + o que cada um mandou) ----------

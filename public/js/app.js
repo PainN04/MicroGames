@@ -492,6 +492,7 @@ function noteHtml(n) {
     case 'duo_decline': return `<b>${esc(n.by)}</b> recusou o convite pra dupla ${esc(n.name)}`;
     case 'duo_cancel': return `<b>${esc(n.by)}</b> cancelou o convite pra dupla ${esc(n.name)}`;
     case 'duo_left': return n.by === 'o admin' ? `A dupla <b>${esc(n.name)}</b> foi desfeita pelo admin` : `<b>${esc(n.by)}</b> saiu da dupla ${esc(n.name)}`;
+    case 'ticket': return `Seu ticket foi resolvido: <b>${esc(n.about)}</b>${n.about.length >= 60 ? '…' : ''}<small>${n.reply ? esc(n.reply) : 'toque pra ver seus tickets'}</small>`;
     case 'tourney': return `Torneio da semana (${dayLabelBR(n.start)} – ${dayLabelBR(n.end - 1)}): você ficou em <b>${n.rank}º</b> com ${n.points} pontos`;
     default: {
       const where = n.kind === 'geral' ? 'o recorde geral' : `a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`;
@@ -500,8 +501,8 @@ function noteHtml(n) {
   }
 }
 const isDuoNote = n => String(n.kind || '').startsWith('duo_');
-const noteIcon = n => (n.kind === 'duo_record' ? 'trophy' : isDuoNote(n) ? 'users' : { reaction: 'smile', tourney: 'trophy' }[n.kind] || 'swords');
-const noteKnown = n => (n.kind === 'duo_record' ? !!GAMES[n.game] : n.kind === 'tourney' || isDuoNote(n) || !!GAMES[n.game]);
+const noteIcon = n => (n.kind === 'duo_record' ? 'trophy' : isDuoNote(n) ? 'users' : { reaction: 'smile', tourney: 'trophy', ticket: 'circle-check' }[n.kind] || 'swords');
+const noteKnown = n => (n.kind === 'duo_record' ? !!GAMES[n.game] : n.kind === 'tourney' || n.kind === 'ticket' || isDuoNote(n) || !!GAMES[n.game]);
 /** O que acontece ao tocar no aviso. */
 function noteAct(n) {
   // duelo acabado: abre já com a revanche preenchida (mesmo jogo, mesma pessoa) — é só apertar Desafiar
@@ -509,6 +510,7 @@ function noteAct(n) {
   if (n.kind === 'duel_new' || n.kind === 'duel_cancel') return duelsModal({ game: n.game });
   if (n.kind === 'duo_record') return play(n.game);
   if (n.kind === 'tourney') return showMenu();
+  if (n.kind === 'ticket') return showReportPage();
   if (isDuoNote(n)) return duoModal();
   play(n.game);
 }
@@ -542,13 +544,13 @@ function showNotes(notes) {
   for (const n of notes) {
     if (!noteKnown(n)) continue;
     const t = document.createElement('button');
-    t.className = 'toast glass' + (['reaction', 'tourney', 'duo_accept', 'duo_admin_new', 'duo_record'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win') ? ' good' : '');
+    t.className = 'toast glass' + (['reaction', 'tourney', 'ticket', 'duo_accept', 'duo_admin_new', 'duo_record'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win') ? ' good' : '');
     t.innerHTML = `<span class="ic">${icon(noteIcon(n))}</span><span>${noteHtml(n)}</span>`;
     t.onclick = () => { t.remove(); noteAct(n); };
     box.appendChild(t);
     setTimeout(() => t.remove(), 12_000);
   }
-  notes.some(n => ['reaction', 'tourney', 'duo_invite', 'duo_accept', 'duo_admin_new', 'duo_record'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win')) ? sfx.good?.() : sfx.bad?.();
+  notes.some(n => ['reaction', 'tourney', 'ticket', 'duo_invite', 'duo_accept', 'duo_admin_new', 'duo_record'].includes(n.kind) || (n.kind === 'duel_end' && n.result === 'win')) ? sfx.good?.() : sfx.bad?.();
 }
 async function pingSession() {
   if (!me || document.hidden) return;
@@ -593,6 +595,7 @@ function setMe(user) {
   $('#pname').textContent = player || '—';
   $('#acctWho').innerHTML = user ? `<b>${esc(user.name)}</b>${user.role === 'admin' ? 'Administrador' : 'Jogador'}` : '';
   $('#mAdmin').hidden = $('#sepAdmin').hidden = user?.role !== 'admin';
+  $('#mReport').hidden = !user;
   applyMeFlair();
 }
 
@@ -638,6 +641,7 @@ async function saveUnsaved() {
 async function afterLogin(user) {
   setMe(user);
   pingSession(); // já traz o número de avisos novos
+  if (user.canEditRecords) api('api/auth/me').then(r => setOpenTickets(r.openTickets)).catch(() => {});
   if (user.mustChange) return passwordModal(true);
   await saveUnsaved();
   await refreshGate();
