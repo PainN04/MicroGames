@@ -53,14 +53,14 @@ function loginModal(msg = '') {
         </div>
         <p class="ls-foot">${icon('key-round')}<span>Esqueceu a senha? Fale com quem administra o MicroGame.</span></p>
       </section>
-      <aside class="ls-show" aria-label="Jogos do MicroGame">
+      <aside class="ls-show" style="--h:${GAMES[show[0].id].hue}" aria-label="Jogos do MicroGame">
         <div class="ls-top">
           <span class="ls-tag">${icon('calendar')}Desafio de hoje: ${esc(GAMES[dailyGame()]?.name || '')}</span>
           <span class="ls-count">${minis} minigames e ${dailies} diários</span>
         </div>
-        <div class="ls-stage" aria-hidden="true">${show.map((g, i) => `<div class="ls-scene${i ? '' : ' on'}" data-id="${g.id}"><span class="ls-fallback">${icon(GAMES[g.id].icon || 'gamepad-2')}</span></div>`).join('')}</div>
+        <div class="ls-stage" aria-hidden="true">${show.map((g, i) => `<div class="ls-scene${i ? '' : ' on'}" data-id="${g.id}" style="--h:${GAMES[g.id].hue}"><span class="ls-fallback">${icon(GAMES[g.id].icon || 'gamepad-2')}</span></div>`).join('')}</div>
         <div class="ls-caption" aria-live="polite"><b id="lsName">${esc(show[0].name)}</b><span id="lsLine">${esc(show[0].line)}</span></div>
-        <div class="ls-thumbs" role="tablist" aria-label="Jogos em destaque">${show.map((g, i) => `<button type="button" role="tab" class="ls-thumb" data-i="${i}" aria-selected="${!i}" aria-label="${esc(g.name)}"><span class="ls-fallback">${icon(GAMES[g.id].icon || 'gamepad-2')}</span></button>`).join('')}</div>
+        <div class="ls-thumbs" role="tablist" aria-label="Jogos em destaque">${show.map((g, i) => `<button type="button" role="tab" class="ls-thumb" data-i="${i}" style="--h:${GAMES[g.id].hue}" aria-selected="${!i}" aria-label="${esc(g.name)}"><span class="ls-fallback">${icon(GAMES[g.id].icon || 'gamepad-2')}</span></button>`).join('')}</div>
       </aside>
     </div>`;
   document.body.appendChild(m);
@@ -118,6 +118,7 @@ function startLoginStage(m, show) {
     scenes[cur].classList.add('on'); thumbs[cur].setAttribute('aria-selected', 'true');
     m.querySelector('#lsName').textContent = show[i].name;
     m.querySelector('#lsLine').textContent = show[i].line;
+    m.querySelector('.ls-show').style.setProperty('--h', GAMES[show[i].id].hue); // o brilho da vitrine acompanha a cor do jogo
     if (byHand) clearInterval(timer);
   };
   thumbs.forEach((t, i) => { t.onclick = () => pick(i, true); });
