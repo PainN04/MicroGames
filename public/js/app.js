@@ -510,7 +510,7 @@ function noteAct(n) {
   if (n.kind === 'duel_new' || n.kind === 'duel_cancel') return duelsModal({ game: n.game });
   if (n.kind === 'duo_record') return play(n.game);
   if (n.kind === 'tourney') return showMenu();
-  if (n.kind === 'ticket') return reportModal();
+  if (n.kind === 'ticket') return showReportPage();
   if (isDuoNote(n)) return duoModal();
   play(n.game);
 }
@@ -595,8 +595,7 @@ function setMe(user) {
   $('#pname').textContent = player || '—';
   $('#acctWho').innerHTML = user ? `<b>${esc(user.name)}</b>${user.role === 'admin' ? 'Administrador' : 'Jogador'}` : '';
   $('#mAdmin').hidden = $('#sepAdmin').hidden = user?.role !== 'admin';
-  $('#mTickets').hidden = !user?.canEditRecords;
-  $('#report').hidden = $('#mReport').hidden = !user;
+  $('#mReport').hidden = !user;
   applyMeFlair();
 }
 

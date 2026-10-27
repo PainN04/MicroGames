@@ -48,23 +48,31 @@ function imageModal(id, t) {
 }
 const ticketStatus = t => (t.status === 'done' ? `<span class="chip ok">${icon('circle-check')} resolvido</span>` : '<span class="chip warn">aberto</span>');
 
-// balão com o número de tickets abertos no item "Tickets" do menu da conta e na aba da Administração
+// número de tickets abertos na aba Tickets da Administração
 let openTickets = 0;
 function setOpenTickets(n) {
   openTickets = Number(n) || 0;
-  const txt = openTickets > 9 ? '9+' : String(openTickets);
-  const b = $('#ticketsCnt');
-  if (b) { b.textContent = txt; b.hidden = !openTickets; }
   const tab = $('[data-atab="tickets"] span');
   if (tab) tab.textContent = openTickets ? `Tickets (${openTickets})` : 'Tickets';
 }
 
-/** Janela de reportar um problema (ícone do topo ou "Reportar problema" no menu da conta). */
-async function reportModal() {
-  const view = currentView;
+/** Tela de reportar um problema ("Reportar problema" no menu da conta). É uma tela própria (não janela): o formulário é alto. */
+function showReportPage() {
+  if (!me) return;
+  const view = currentView === 'reportar' ? null : currentView;
   const where = viewName(view);
-  const { el, close } = modal(`<h2>${icon('report')} Reportar um problema</h2>
-    <p class="note tk-lead">Só o administrador do site lê. Quando ele resolver, você recebe um aviso.</p>
+  stop();
+  currentView = 'reportar';
+  setTimeout(pingSession, 0);
+  swap(() => {
+    main.classList.remove('game-view');
+    main.innerHTML = `<div class="admin tk-page">
+      <div class="stage-head">
+        <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
+        <div class="title"><h2>${icon('report')} Reportar um problema</h2><p>Só o administrador do site lê. Quando ele resolver, você recebe um aviso.</p></div>
+      </div>
+      <div class="tk-cols">
+      <section class="glass tk-main">
     <form class="admin acc-form tk-form" autocomplete="off">
       <fieldset class="acc-role tk-kinds"><legend>O que aconteceu?</legend>${TICKET_KINDS.map(([k, ic, l, s], i) =>
         `<label><input type="radio" name="kind" value="${k}" required${i ? '' : ' checked'}><span>${icon(ic)}<b>${l}</b><small>${s}</small></span></label>`).join('')}</fieldset>
@@ -82,7 +90,16 @@ async function reportModal() {
       <p class="err" role="alert"></p>
       <div class="acc-actions"><button type="button" class="btn ghost" data-cancel>Cancelar</button><button class="btn">${icon('send')} Enviar</button></div>
     </form>
-    <div class="tk-mine" id="tkMine"></div>`, { wide: true });
+      </section>
+      <section class="glass tk-side"><h3>${icon('inbox')} Seus tickets</h3><div class="tk-mine" id="tkMine"><p class="hint" style="text-align:left">Carregando...</p></div></section>
+      </div>
+    </div>`;
+    bindReportForm(main, view);
+  });
+}
+function bindReportForm(el, view) {
+  const close = showMenu;
+  $('#back').onclick = showMenu;
   const f = el.querySelector('form'), ok = f.querySelector('button:not([type])'), ta = f.querySelector('textarea');
   el.querySelector('[data-cancel]').onclick = close;
   const shots = []; // data URLs já reduzidas
@@ -101,7 +118,8 @@ async function reportModal() {
     }
   };
   file.onchange = () => { addFiles(file.files); file.value = ''; };
-  el.addEventListener('paste', e => { const fs = [...(e.clipboardData?.files || [])]; if (fs.length) { e.preventDefault(); addFiles(fs); } });
+  const onPaste = e => { if (!f.isConnected) return document.removeEventListener('paste', onPaste); const fs = [...(e.clipboardData?.files || [])]; if (fs.length) { e.preventDefault(); addFiles(fs); } };
+  document.addEventListener('paste', onPaste);
   drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
   drop.ondragleave = () => drop.classList.remove('over');
   drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); };
@@ -114,9 +132,9 @@ async function reportModal() {
     try {
       await api('api/tickets', { method: 'POST', body: { kind: d.get('kind'), message: d.get('message'), view, images: shots } });
       f.outerHTML = `<div class="empty-state tk-sent">${icon('circle-check')}<b>Recebido, valeu!</b><span>O administrador vai dar uma olhada. Quando resolver, aparece nos seus avisos.</span>
-        <button class="btn" data-cancel>Fechar</button></div>`;
-      el.querySelector('.tk-lead').remove();
+        <span class="tk-sent-actions"><button class="btn ghost" data-again>${icon('report')} Reportar outro</button><button class="btn" data-cancel>Voltar ao menu</button></span></div>`;
       el.querySelector('[data-cancel]').onclick = close;
+      el.querySelector('[data-again]').onclick = showReportPage;
       el.querySelector('[data-cancel]').focus();
       loadMyTickets(el);
     } catch (err) { f.querySelector('.err').textContent = err.message; ok.disabled = false; }
@@ -125,15 +143,15 @@ async function reportModal() {
 }
 async function loadMyTickets(el) {
   const box = el.querySelector('#tkMine');
+  if (!box) return;
   try {
     const { tickets } = await api('api/tickets');
-    box.innerHTML = tickets.length ? `<details${tickets.some(t => t.status === 'done' && t.reply) ? ' open' : ''}><summary>Seus tickets <span class="hint">${tickets.length}</span></summary>
-      <ul class="tk-list compact">${tickets.map(t => `<li class="tk${t.status === 'done' ? ' done' : ''}">
+    box.innerHTML = tickets.length ? `<ul class="tk-list compact">${tickets.map(t => `<li class="tk${t.status === 'done' ? ' done' : ''}">
         <div class="tk-top">${icon(ticketKind(t.kind)[1])}<b>${ticketKind(t.kind)[2]}</b>${ticketStatus(t)}<span class="hint">${ticketWhen(t.at)}</span></div>
         <p class="tk-text">${esc(t.message)}</p>
         ${t.images.length ? `<div class="tk-imgs">${t.images.map(id => `<a href="${tkImg(id)}" target="_blank" rel="noopener"><img src="${tkImg(id)}" alt="Imagem anexada" loading="lazy"></a>`).join('')}</div>` : ''}
-        ${t.reply ? `<p class="tk-reply">${icon('message-circle')}<span><b>Resposta</b>${esc(t.reply)}</span></p>` : ''}</li>`).join('')}</ul></details>` : '';
-  } catch { box.innerHTML = ''; }
+        ${t.reply ? `<p class="tk-reply">${icon('message-circle')}<span><b>Resposta</b>${esc(t.reply)}</span></p>` : ''}</li>`).join('')}</ul>` : `<div class="empty-state">${icon('report')}<b>Nenhum ticket ainda</b><span>Os problemas que você mandar aparecem aqui, com a resposta do administrador.</span></div>`;
+  } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
 }
 
 /* --- Administração > Tickets (só a conta dona; o servidor também confere) --- */
@@ -146,7 +164,7 @@ function ticketsPaneHtml() {
       <button class="btn ghost" id="tkReload">${icon('refresh-cw')} Atualizar</button>
     </div>
     <div class="seg acc-filter" role="group" aria-label="Mostrar">${TK_FILTERS.map(([k, l]) => `<button data-tkf="${k}" aria-pressed="${tkFilter === k}">${l}<span class="n" data-tkn="${k}"></span></button>`).join('')}</div>
-    <p class="note">Problemas que o pessoal reportou pelo ícone ${icon('report')} do topo. Só você vê esta aba. Ao marcar como resolvido, quem mandou recebe um aviso (com a sua resposta, se escrever uma).</p>
+    <p class="note">Problemas que o pessoal reportou em "Reportar problema", no menu da conta. Só você vê esta aba. Ao marcar como resolvido, quem mandou recebe um aviso (com a sua resposta, se escrever uma).</p>
     <ul class="tk-list" id="tkList"><li class="hint">Carregando...</li></ul>
   </section>`;
 }
@@ -222,8 +240,4 @@ async function ticketAction(act, t) {
     }
     loadTickets();
   } catch (err) { alert(err.message); }
-}
-function showTickets() {
-  adminPane = 'tickets';
-  showAdmin();
 }
