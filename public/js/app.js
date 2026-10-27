@@ -1,11 +1,37 @@
 // ---------- telas ----------
 function stop() { if (cleanup) { cleanup(); cleanup = null; } unseedDaily(); }
 function swap(render) {
+  // toda troca de tela passa por aqui: solta a cena 3D do título do jogo anterior e acende a seção certa no topo
+  const run = () => { dropHeadScene(); render(); markNav(); };
   if (document.startViewTransition && !reduced) {
     // o navegador cancela a transição (aba oculta, janela redimensionada...) e rejeita as promessas; a tela já foi trocada, então não é erro
-    const t = document.startViewTransition(render);
+    const t = document.startViewTransition(run);
     t.ready.catch(() => {}); t.finished.catch(() => {}); t.updateCallbackDone.catch(() => {});
-  } else render();
+  } else run();
+}
+// cena 3D do card no ladrilho do título do jogo: desenhada parada (move só nos primeiros instantes), pra não disputar atenção com a partida
+let headScene = null;
+function dropHeadScene() { if (headScene) { headScene(); headScene = null; } }
+function mountHeadScene(id) {
+  if (!fx3dOn || !SCENES_3D[id]) return;
+  loadLib(ZDOG_URL).then(() => {
+    const tile = $('#gtile');
+    if (!tile || currentView !== id || headScene) return;
+    const stopScene = mountScene3d(id, tile, SMALL.matches ? 64 : 80);
+    if (!stopScene) return;
+    tile.classList.add('has3d');
+    let done = false;
+    headScene = () => { if (!done) { done = true; stopScene(); } };
+    setTimeout(() => { if (!done) { done = true; stopScene(); } }, 700); // congela: o canvas fica com o último quadro
+  }).catch(() => {});
+}
+// navegação do topo: Jogos e Diários são as abas do menu (acesas também dentro de um jogo daquela aba)
+function markNav() {
+  const g = GAMES[currentView];
+  const here = currentView === 'menu' ? menuTab : g ? (g.daily ? 'daily' : 'main') : null;
+  document.querySelectorAll('#topnav [data-nav]').forEach(b => {
+    if (b.dataset.nav === here) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
 }
 function announce(msg) { $('#live').textContent = msg; }
 
@@ -112,6 +138,7 @@ function setMenuTab(tab) {
   try { localStorage.setItem('mg_tab', tab); } catch {}
   main.querySelectorAll('[data-tab]').forEach(b => { const on = b.dataset.tab === tab; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
   main.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== tab; });
+  markNav();
 }
 // como está cada jogo diário hoje pra quem está logado (GET /api/diarios)
 let dailyStatus = { day: null, games: {} };
@@ -131,8 +158,7 @@ function renderDailyStatus() {
   if (currentView !== 'menu') return;
   for (const [id] of dailyOrder()) { const el = $(`.card[data-id="${id}"] .ds-slot`); if (el) el.innerHTML = dailyStatusHtml(id); }
   const left = me ? dailyOrder().filter(([id]) => !dailyStatus.games[id]?.over).length : 0;
-  const dot = $('#tabDot');
-  if (dot) { dot.hidden = !left; dot.textContent = left; dot.title = `${left} jogo${left > 1 ? 's' : ''} diário${left > 1 ? 's' : ''} pra jogar hoje`; }
+  for (const d of [$('#tabDot'), $('#navDot')]) if (d) { d.hidden = !left; d.textContent = left; d.title = `${left} jogo${left > 1 ? 's' : ''} diário${left > 1 ? 's' : ''} pra jogar hoje`; }
   const head = $('#dailyHead');
   if (head) {
     const ms = dayStart(dayIndex() + 1) - Date.now(), h = Math.floor(ms / 3_600_000), m = Math.floor(ms / 60_000) % 60;
@@ -312,9 +338,12 @@ function play(id) {
       <section class="stage game-stage glass" style="--h:${g.hue};--art:${stageArt(id, g.hue)}">
         <div class="stage-head">
           <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-          <div class="title"><h2>${icon(g.icon)}${g.name}</h2><p title="${esc(g.desc)}">${firstSentence(g.desc)}</p></div>
-          <button class="btn ghost icon-btn" id="how" aria-label="Como jogar" title="Como jogar">?</button>
-          ${g.daily ? '' : `<button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>`}
+          <span class="gtile" id="gtile" aria-hidden="true">${icon(g.icon)}</span>
+          <div class="title"><h2>${g.name}</h2><p title="${esc(g.desc)}">${firstSentence(g.desc)}</p></div>
+          <div class="head-acts">
+            <button class="btn ghost" id="how" aria-label="Como jogar" title="Como jogar">${icon('circle-help')}<span>Como jogar</span></button>
+            ${g.daily ? '' : `<button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>`}
+          </div>
         </div>
         <div class="game" id="game"></div>
       </section>
@@ -324,6 +353,7 @@ function play(id) {
     if (g.daily) setMenuTab('daily'); // voltar ao menu cai na aba dos diários
     else $('#restart').onclick = () => play(id);
     $('#how').onclick = () => { if (!HOWTO[id]) return; stop(); const el = $('#game'); el.innerHTML = ''; cleanup = showHowto(id, el, () => play(id)); };
+    mountHeadScene(id);
     renderBoard(id);
     fetchScores().then(() => renderBoard(id));
     loadSocial().then(() => currentView === id && renderBoard(id));

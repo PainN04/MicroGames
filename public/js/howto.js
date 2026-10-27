@@ -121,7 +121,7 @@ function seedDaily(id) {
   dailySeeded = true;
   const tag = document.createElement('span');
   tag.className = 'daily-tag';
-  tag.innerHTML = `${icon('calendar')} Desafio do dia<span class="dt-more">: partida ${n + 1} igual pra todo mundo</span>`;
+  tag.innerHTML = `${icon('calendar')}<span>Desafio do dia<span class="dt-more">: partida ${n + 1}, igual pra todo mundo</span></span>`;
   document.querySelector('.stage-head .title')?.append(tag);
 }
 function unseedDaily() {

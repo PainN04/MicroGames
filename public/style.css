@@ -2219,3 +2219,110 @@ html.lite .ls-show { box-shadow: none; }
 .tk-sent-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: var(--space-xs); max-width: none !important; }
 .tk-sent-actions .btn { margin-top: 0; }
 @media (max-width: 860px) { .tk-cols { grid-template-columns: 1fr; } .tk-side .tk-list.compact { max-height: none; } }
+
+/* ================= topo e telas de jogo no acabamento dos cards (volume de brinquedo, cor do jogo) =================
+   Peças com "base" mais escura embaixo (o mesmo volume dos cards 3D e do ladrilho do resultado) e a cor de cada jogo (--h). */
+
+/* topo: alinhado com a coluna do conteúdo (antes a marca ficava colada na borda da tela, longe dos cards) */
+header { padding-inline: max(var(--space-md), calc((100% - 1120px) / 2 + var(--space-md))); flex-wrap: nowrap;
+  background: linear-gradient(oklch(17% .03 280 / .82), oklch(14% .025 278 / .7)); box-shadow: 0 1px 0 oklch(0% 0 0 / .35), 0 10px 30px oklch(0% 0 0 / .18); }
+body:has(main.game-view[data-game="sinuca"]) header { padding-inline: var(--space-md); }
+/* marca com volume: a "base" do brinquedo embaixo das letras (drop-shadow funciona também no "Game" em degradê) */
+.logo { font-size: clamp(1.35rem, 1.15rem + .8vw, 1.85rem); letter-spacing: -0.045em; transition: transform var(--duration) var(--ease-spring); }
+.logo .wm { filter: drop-shadow(0 3px 0 oklch(30% .12 288)) drop-shadow(0 8px 12px oklch(0% 0 0 / .35)); }
+.logo:hover { transform: translateY(-1px) rotate(-1.5deg); }
+.logo:active { transform: translateY(1px); }
+
+/* seções no topo: Jogos, Diários e Rankings */
+.topnav { display: flex; align-items: center; gap: 4px; margin-right: auto; margin-left: var(--space-md); }
+.topnav button { position: relative; display: inline-flex; align-items: center; gap: .5em; min-height: 40px; padding: 0 .95em; border: 1px solid transparent; border-radius: 12px;
+  font: inherit; font-size: var(--fs-sm); font-weight: 600; color: var(--muted); background: none; cursor: pointer;
+  transition: color var(--duration-fast), background var(--duration-fast), transform var(--duration-fast); }
+.topnav button .i { width: 1.1em; height: 1.1em; }
+.topnav button:hover { color: var(--text); background: oklch(100% 0 0 / .05); }
+.topnav button:active { transform: translateY(1px); }
+.topnav button[aria-current="page"] { color: var(--text); background: linear-gradient(oklch(32% .05 285), oklch(25% .04 282)); border-color: oklch(100% 0 0 / .1);
+  box-shadow: 0 3px 0 oklch(11% .02 280), 0 6px 14px oklch(0% 0 0 / .25); }
+.topnav button[aria-current="page"] .i { color: oklch(80% .14 var(--nav-h, 290)); }
+.topnav [data-nav="daily"] { --nav-h: 92; }
+.topnav [data-nav="rank"] .i { color: oklch(86% .14 92); }
+.nav-dot { display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 99px; font-size: 11px; font-weight: 700; line-height: 1;
+  color: #fff; background: var(--red); box-shadow: 0 2px 0 oklch(40% .15 18); }
+.nav-dot[hidden] { display: none; }
+@media (max-width: 760px) { .topnav { display: none; } }
+
+/* botões do topo com o mesmo volume */
+header .btn.ghost { background: linear-gradient(oklch(29% .035 280), oklch(23% .03 278)); border-color: oklch(100% 0 0 / .1);
+  box-shadow: 0 3px 0 oklch(11% .02 280), 0 6px 14px oklch(0% 0 0 / .22); }
+header .btn.ghost:hover { transform: translateY(-1px); box-shadow: 0 4px 0 oklch(11% .02 280), 0 8px 18px oklch(0% 0 0 / .28); }
+header .btn.ghost:active { transform: translateY(2px); box-shadow: 0 1px 0 oklch(11% .02 280); }
+header .acct-btn .av { box-shadow: inset 0 -2px 0 oklch(0% 0 0 / .2); }
+/* a lista de seções desce pra baixo do topo fixo ao rolar até ela */
+.menu-bar { scroll-margin-top: 84px; }
+
+/* ---------- tela de jogo ---------- */
+/* palco: a parte de cima ganha o "palco" do card do jogo (luz na cor dele) e a borda pega a cor */
+.game-stage { border-color: oklch(72% .14 var(--h) / .3); box-shadow: 0 18px 44px oklch(0% 0 0 / .35), 0 0 0 1px oklch(0% 0 0 / .2); }
+.game-stage::before { background: radial-gradient(70% 150px at 50% 0%, oklch(62% .16 var(--h) / .32), transparent 100%),
+  linear-gradient(oklch(45% .12 var(--h) / .1), transparent 220px); -webkit-mask-image: none; mask-image: none; }
+.game-stage .stage-head { align-items: center; gap: var(--space-xs); padding-bottom: var(--space-sm); margin-bottom: 2px;
+  border-bottom: 1px solid oklch(72% .15 var(--h) / .22); }
+.game-stage .stage-head .title { min-width: 0; }
+.game-stage .stage-head h2 { font-size: clamp(1.3rem, 1.1rem + .9vw, 1.9rem); letter-spacing: -0.035em; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.game-stage .stage-head p { margin-top: 3px; }
+/* ladrilho do jogo: um pedaço do card (palco na cor do jogo com a cena 3D); sem 3D, o ícone */
+.gtile { position: relative; flex: none; width: 64px; height: 64px; display: grid; place-items: center; overflow: hidden; border-radius: 18px; margin-left: 4px;
+  background: radial-gradient(70% 45% at 50% 92%, oklch(10% .02 var(--h) / .5), transparent 70%),
+    radial-gradient(120% 100% at 50% 0%, oklch(66% .16 var(--h)), oklch(34% .1 var(--h)) 75%);
+  border: 1px solid oklch(85% .1 var(--h) / .4); box-shadow: 0 4px 0 oklch(26% .09 var(--h)), 0 10px 22px oklch(0% 0 0 / .35); }
+.gtile > .i { width: 32px; height: 32px; color: #fff; stroke-width: 2; filter: drop-shadow(0 2px 0 oklch(30% .1 var(--h))); }
+.gtile .z3d { display: block; flex: none; margin: -8px; }
+/* Como jogar e Reiniciar: botões com volume na cor do jogo */
+.head-acts { display: flex; gap: 8px; flex: none; }
+.game-stage .stage-head .btn.ghost { min-height: 42px; background: linear-gradient(oklch(31% .06 var(--h)), oklch(24% .045 var(--h)));
+  border-color: oklch(80% .1 var(--h) / .22); box-shadow: 0 3px 0 oklch(13% .04 var(--h)), 0 6px 14px oklch(0% 0 0 / .25); }
+.game-stage .stage-head .btn.ghost:hover { transform: translateY(-1px); box-shadow: 0 4px 0 oklch(13% .04 var(--h)), 0 8px 18px oklch(0% 0 0 / .3); }
+.game-stage .stage-head .btn.ghost:active { transform: translateY(2px); box-shadow: 0 1px 0 oklch(13% .04 var(--h)); }
+.game-stage .stage-head .back { width: 42px; min-width: 42px; }
+.head-acts .btn { padding: 0 1rem; }
+.head-acts .btn .i { width: 17px; height: 17px; }
+.head-acts #how .i { color: oklch(85% .12 var(--h)); }
+/* com pouco espaço, os dois viram só ícone */
+@media (max-width: 1000px) {
+  .head-acts .btn { width: 42px; min-width: 42px; padding: 0; }
+  .head-acts .btn span { display: none; }
+}
+.game-stage .daily-tag { margin-top: 6px; }
+
+/* placar: cada número numa peça com volume, na cor do jogo */
+.game .hud { gap: 8px; padding: 0; background: none; border: 0; box-shadow: none; flex-wrap: wrap; }
+.game .hud .stat { min-width: 5.4em; padding: .38em 1.05em .5em; border-radius: 14px; text-transform: none; letter-spacing: .01em; font-weight: 600;
+  color: oklch(82% .08 var(--h)); background: linear-gradient(oklch(31% .07 var(--h)), oklch(23% .05 var(--h)));
+  border: 1px solid oklch(82% .1 var(--h) / .22); box-shadow: 0 4px 0 oklch(13% .04 var(--h)), 0 10px 18px oklch(0% 0 0 / .25); }
+.game .hud .stat + .stat { box-shadow: 0 4px 0 oklch(13% .04 var(--h)), 0 10px 18px oklch(0% 0 0 / .25); }
+.game .hud .stat b { color: #fff; font-variant-numeric: tabular-nums; font-size: clamp(1.25rem, 1.1rem + .6vw, 1.6rem); }
+.game .hud .stat.combo.hot { border-color: var(--yellow); box-shadow: 0 4px 0 oklch(45% .12 80), 0 0 18px oklch(86% .17 92 / .3); }
+@media (max-width: 560px) {
+  .game .hud { gap: 6px; flex-wrap: nowrap; }
+  .game .hud .stat { min-width: 0; padding: .28em .75em .38em; font-size: .72rem; border-radius: 12px; box-shadow: 0 3px 0 oklch(13% .04 var(--h)); }
+  .game .hud .stat + .stat { box-shadow: 0 3px 0 oklch(13% .04 var(--h)); }
+  .game .hud .stat b { font-size: 1.2rem; }
+}
+
+/* ranking ao lado: título com o ladrilho na cor do jogo, igual ao do palco */
+.board { border-color: oklch(72% .14 var(--h, 290) / .2); }
+.board h3 > .i { color: #fff; border-color: oklch(85% .1 var(--h, 290) / .35);
+  background: linear-gradient(160deg, oklch(64% .15 var(--h, 290)), oklch(44% .13 var(--h, 290))); box-shadow: 0 3px 0 oklch(26% .09 var(--h, 290)); }
+
+/* celular: ladrilho e título menores, numa linha só com os botões */
+@media (max-width: 560px) {
+  .gtile { width: 48px; height: 48px; border-radius: 14px; margin-left: 0; box-shadow: 0 3px 0 oklch(26% .09 var(--h)); }
+  .gtile > .i { width: 24px; height: 24px; }
+  .gtile .z3d { margin: -8px; }
+  .game-stage .stage-head h2 { font-size: 1.2rem; }
+  .game-stage .stage-head .back, .head-acts .btn { width: 40px; min-width: 40px; min-height: 40px; }
+  .head-acts { gap: 6px; }
+}
+/* selo do desafio do dia no título: uma linha só (o detalhe "partida N" só cabe em tela larga) */
+.game-stage .daily-tag { white-space: nowrap; max-width: 100%; }
+@media (max-width: 1240px) { .game-stage .daily-tag .dt-more { display: none; } }
