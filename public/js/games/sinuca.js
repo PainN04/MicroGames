@@ -336,9 +336,11 @@
     { id: 'fogo', name: 'Fogo', need: { total: 4000 }, tip: '#d42a10', shaft: ['#f3dfb2', '#d4a865'], ring: '#ffd34d', fore: '#2a0d06', flames: true, inlay: null, wrap: '#3a0f08', wrapLine: 'rgba(255,140,40,.4)', ring2: '#ff6a1a', butt: '#1a0804' },
     { id: 'ouro', name: 'Ouro', need: { best: 1500 }, tip: '#1a1a1a', shaft: ['#fff3c8', '#e0b44a'], ring: '#1a1a1a', fore: ['#a8760a', '#ffe08a', '#c8961e'], inlay: '#1a1a1a', wrap: '#2b2210', wrapLine: 'rgba(255,215,120,.4)', ring2: '#ffd76a', butt: '#1a1408' },
   ];
+  // taco só da máquina: fica fora da lista (ninguém destrava nem escolhe); aço escovado com circuito verde
+  const BOT_CUE = { id: 'maquina', name: 'Máquina', tip: '#2ee59d', shaft: ['#e4e8ee', '#8d96a3'], ring: '#2ee59d', fore: ['#26323a', '#3a4a54', '#1c262c'], circuit: '#2ee59d', inlay: null, wrap: '#11181c', wrapLine: 'rgba(46,229,157,.35)', ring2: '#2ee59d', butt: '#0a0f12' };
   const CLASSIC = { tip: '#3f6fd0', shaft: ['#f3dfb2', '#d4a865'], ring: '#d5d9e0', fore: '#4a1f0b', inlay: '#ecd9a6', wrap: '#1b1b1f', ring2: '#5a2a10', butt: '#111' };
   function paintCue(c, LC, id) {
-    const S = { ...CLASSIC, ...CUES.find(q => q.id === id) }, mid = 6, half = x => 2.3 + (x / LC) * 3;
+    const S = { ...CLASSIC, ...[...CUES, BOT_CUE].find(q => q.id === id) }, mid = 6, half = x => 2.3 + (x / LC) * 3;
     const lin = (x0, x1, stops, vertical) => { const g = vertical ? c.createLinearGradient(0, x0, 0, x1) : c.createLinearGradient(x0, 0, x1, 0); stops.forEach((col, i) => g.addColorStop(i / (stops.length - 1), col)); return g; };
     const band = (a, b, col) => { c.fillStyle = col; c.fillRect(a, 0, b - a, 12); };
     c.save(); c.beginPath(); c.moveTo(0, mid - half(0)); c.lineTo(LC - 2, mid - half(LC)); c.quadraticCurveTo(LC, mid, LC - 2, mid + half(LC)); c.lineTo(0, mid + half(0)); c.closePath(); c.clip();
@@ -353,6 +355,14 @@
       c.fillStyle = lin(186, 240, ['#ffe27a', '#ff8a1a', '#d42a10']);
       [[0.5, 4, 192], [3.5, 8.5, 184], [8, 11.5, 194], [2, 6, 206], [6, 10, 202]].forEach(([y0, y1, tip], k) => {
         c.beginPath(); c.moveTo(240, y0); c.quadraticCurveTo(222, y0 - 1.5, tip, (y0 + y1) / 2 + (k % 2 ? 1.2 : -1.2)); c.quadraticCurveTo(224, y1 + 1, 240, y1); c.closePath(); c.fill();
+      });
+    }
+    if (S.circuit) {
+      // trilhas de placa com pontinhos de solda no antebraço
+      c.strokeStyle = S.circuit; c.fillStyle = S.circuit; c.lineWidth = 0.9;
+      [[187, 3, 200, 3, 204, 6, 214], [192, 9, 206, 9, 210, 6, 224], [218, 3, 228, 3, 232, 6, 238]].forEach(([x0, y0, x1, y1, x2, y2, x3]) => {
+        c.beginPath(); c.moveTo(x0, y0); c.lineTo(x1, y1); c.lineTo(x2, y2); c.lineTo(x3, y2); c.stroke();
+        c.beginPath(); c.arc(x3, y2, 1.3, 0, Math.PI * 2); c.fill();
       });
     }
     if (S.inlay) { c.fillStyle = S.inlay; for (let k = 0; k < 4; k++) { const x = 190 + k * 12; c.beginPath(); c.moveTo(x, mid); c.lineTo(x + 6, mid - 3.4); c.lineTo(x + 12, mid); c.lineTo(x + 6, mid + 3.4); c.closePath(); c.fill(); } }
@@ -382,7 +392,7 @@
   GAMES.sinuca = {
     name: 'Sinuca', icon: 'sinuca', hue: 152,
     desc: 'Sinuca de 8 bolas contra a máquina, no estilo 8 Ball Pool. Arraste na mesa pra mirar e puxe o taco (barra da direita) pra dar a força; toque na bolinha embaixo pra escolher o efeito na branca. Encaçape o seu grupo (lisas ou listradas) e depois a 8. Cada mesa vencida deixa a máquina melhor; perdeu, acabou.',
-    better: 'high', unit: 'pontos', phaser: true, engine, cues: { CUES, cueOpen },
+    better: 'high', unit: 'pontos', phaser: true, engine, cues: { CUES, BOT_CUE, cueOpen },
     start(el, done) {
       // No computador a mesa fica deitada (e maior); no celular, em pé. A física é sempre a da mesa em pé:
       // deitada, o container da mesa só gira 90° e as contas de tela passam por toScreen/toLocal.
@@ -536,7 +546,7 @@
           const LC = 310;
           let cueId = chosenCue();
           const cueKey = id => art.tex('sn_cue_' + id, LC, 12, c => paintCue(c, LC, id));
-          cueKey(cueId);
+          cueKey(cueId); cueKey(BOT_CUE.id);
           art.tex('sn_power', BAR.w, BAR.h, c => {
             art.rr(c, 0, 0, BAR.w, BAR.h, 14); c.fillStyle = art.lin(c, 0, 0, 0, BAR.h, [[0, '#2fe08a'], [0.55, '#ffd34d'], [1, '#ff4d5e']]); c.fill();
             art.rr(c, 3, 3, BAR.w * 0.32, BAR.h - 6, 10); c.fillStyle = 'rgba(255,255,255,.22)'; c.fill();
@@ -572,7 +582,8 @@
           applyCue = id => {
             if (!scene.sys?.isActive()) return;
             cueId = id; cueKey(id);
-            cueImg.setTexture('sn_cue_' + id).setDisplaySize(LC, 12); barCue.setTexture('sn_cue_' + id).setDisplaySize(BAR.h * 0.6, 10);
+            if (turn === 'me') cueImg.setTexture('sn_cue_' + id).setDisplaySize(LC, 12);
+            barCue.setTexture('sn_cue_' + id).setDisplaySize(BAR.h * 0.6, 10);
           };
           // a barra, o ajuste fino e o efeito ficam por cima do taco (ele passa por baixo deles)
           [ui, powerFill, barCue, pctText, fine, spinDisc].forEach(o => o.setDepth(2));
@@ -948,6 +959,9 @@
             const show = gap !== undefined && (cue.on || phase === 'roll');
             cueImg.setVisible(show); cueShadow.clear();
             if (!show) return;
+            // a máquina joga sempre com o taco dela, não com o que você escolheu
+            const key = 'sn_cue_' + (turn === 'cpu' ? BOT_CUE.id : cueId);
+            if (cueImg.texture.key !== key) cueImg.setTexture(key).setDisplaySize(LC, 12);
             const back = aim + Math.PI, from = phase === 'roll' ? strikeAt : cue, ox = from.x, oy = from.y;
             const cx = ox + Math.cos(back) * gap, cy = oy + Math.sin(back) * gap;
             cueImg.setPosition(cx, cy).setRotation(back).setAlpha(alpha);
