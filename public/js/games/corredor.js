@@ -363,7 +363,7 @@ GAMES.corredor = {
 
       // ---------- urubu (de frente pro corredor) ----------
       // 3 quadros de asa: 0 = em cima, 1 = meio, 2 = embaixo. Centro do corpo em (30, 24).
-      const VK = '#140d18';
+      const VK = '#2e1c14'; // contorno mais claro que o INK: o urubu precisa aparecer no céu da noite
       [-20, -3, 15].forEach((tipY, fr) => tex('cr_vul' + fr, 60, 50, c => {
         c.translate(30, 24);
         const wing = (dy, fill, under) => {
@@ -372,12 +372,12 @@ GAMES.corredor = {
           for (let k = 0; k < 3; k++) { const fx = 8 + k * 3.2, fy = tipY + dy + (tipY < 0 ? 2 : -2) * k; c.lineTo(fx, fy); c.lineTo(fx + 1.4, fy + (tipY < 0 ? 4 : -4)); }
           c.quadraticCurveTo(14, tipY * 0.35 + dy, 11, 0); c.closePath();
           paint(c, fill, VK, 1.1);
-          if (under) { c.save(); c.clip(); c.strokeStyle = 'rgba(200,190,210,.55)'; c.lineWidth = 2.4; c.beginPath(); c.moveTo(9, 0); c.quadraticCurveTo(13, tipY * 0.4, 12, tipY + 1); c.stroke(); c.restore(); }
+          if (under) { c.save(); c.clip(); c.strokeStyle = 'rgba(245,232,214,.85)'; c.lineWidth = 2.6; c.beginPath(); c.moveTo(9, 0); c.quadraticCurveTo(13, tipY * 0.4, 12, tipY + 1); c.stroke(); c.restore(); }
         };
-        wing(-1, '#2a2030'); // asa de trás
-        c.beginPath(); c.moveTo(13, -3); c.lineTo(25, -2); c.lineTo(24, 2); c.lineTo(13, 3); c.closePath(); paint(c, '#2e2434', VK, 1.1); // rabo
-        ell(c, 3, 0, 13.5, 6.8); paint(c, lin(c, 0, -7, 0, 7, [[0, '#56465f'], [1, '#221828']]), VK, 1.2);
-        wing(1, lin(c, 0, tipY, 0, 0, [[0, '#2f2537'], [1, '#4b3e55']]), true);
+        wing(-1, '#6e5040'); // asa de trás
+        c.beginPath(); c.moveTo(13, -3); c.lineTo(25, -2); c.lineTo(24, 2); c.lineTo(13, 3); c.closePath(); paint(c, '#7a5a46', VK, 1.1); // rabo
+        ell(c, 3, 0, 13.5, 6.8); paint(c, lin(c, 0, -7, 0, 7, [[0, '#b88d6c'], [1, '#6a4a38']]), VK, 1.2);
+        wing(1, lin(c, 0, tipY, 0, 0, [[0, '#7c5a44'], [1, '#b08a6c']]), true);
         // gola branca fofinha
         c.beginPath(); for (let k = 0; k < 6; k++) c.arc(-9 + Math.cos(k) * 2.5, -1.5 + Math.sin(k * 1.3) * 2.5, 2.6, 0, TAU); paint(c, '#efe7dc', null);
         // cabeça careca e bico curvo
