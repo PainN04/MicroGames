@@ -44,17 +44,6 @@ setInterval(checkVersion, 30000);
 if (!localMode && 'serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
 $('#home').onclick = showMenu;
-// topo: Jogos e Diários levam à aba do menu (já rolando até os cards); Rankings abre a janela
-$('#topnav').onclick = async e => {
-  const b = e.target.closest('[data-nav]');
-  if (!b) return;
-  if (b.dataset.nav === 'rank') return rankingsModal();
-  const tab = b.dataset.nav;
-  setMenuTab(tab);
-  if (tab === 'daily') loadDailyStatus();
-  if (currentView !== 'menu') { showMenu(); await new Promise(r => setTimeout(r, 260)); } // espera a troca de tela (view transition)
-  $('.menu-bar')?.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
-};
 $('#acctBtn').onclick = () => toggleAcct();
 $('#mNotes').onclick = () => { toggleAcct(false); openNotes(); };
 $('#mDuo').onclick = () => { toggleAcct(false); duoModal(); };
