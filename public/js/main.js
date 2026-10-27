@@ -51,6 +51,9 @@ $('#mProfile').onclick = () => { toggleAcct(false); showProfile(player); };
 $('#mPass').onclick = () => { toggleAcct(false); passwordModal(false); };
 $('#mLogout').onclick = () => { toggleAcct(false); logout(); };
 $('#mAdmin').onclick = () => { toggleAcct(false); showAdmin(); };
+$('#mTickets').onclick = () => { toggleAcct(false); showTickets(); };
+$('#mReport').onclick = () => { toggleAcct(false); reportModal(); };
+$('#report').onclick = reportModal;
 addEventListener('hashchange', () => { if (location.hash === '#recordes' && me?.canEditRecords) showRecords(); });
 $('#mute').onclick = () => { muted = !muted; localStorage.setItem('mg_mute', muted ? '1' : '0'); renderMute(); if (!muted) sfx.good(); };
 renderMute();
@@ -65,7 +68,7 @@ setInterval(() => { if (currentView === 'menu' && !document.hidden) refreshGate(
   if (!pending().length) scoresEarly = requestScores(); // o ranking é público: baixa enquanto descobre quem está logado
   try { me0 = await api('api/auth/me'); } catch {}
   const { user = null, gate: g = null, reason } = me0 || {};
-  if (user) { setMe(user); setUnread(me0.unread); if (!user.mustChange) gate = g; }
+  if (user) { setMe(user); setUnread(me0.unread); setOpenTickets(me0.openTickets); if (!user.mustChange) gate = g; }
   if (user && !user.mustChange && location.hash === '#recordes' && user.canEditRecords) { scoresEarly = null; return showRecords(); }
   showMenu();
   if (!me0) return loginModal('Não consegui falar com o servidor. Tente de novo.');
