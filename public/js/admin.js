@@ -102,14 +102,15 @@ const duoSinceField = cur => `<fieldset class="acc-role duo-since"><legend>As pa
   `<label><input type="radio" name="since" value="${v}" required${v === cur ? ' checked' : ''}><span>${icon(ic)}<b>${l}</b><small>${s}</small></span></label>`).join('')}</fieldset>`;
 
 /** Janela com um formulário curto da administração: `send(dados)` faz a chamada; se der erro, ele aparece na própria janela. */
-function adminFormModal(title, fields, okLabel, send, { danger = false } = {}) {
+function adminFormModal(title, fields, okLabel, send, { danger = false, onOpen } = {}) {
   const { el, close } = modal(`<h2>${title}</h2>
     <form class="admin acc-form" autocomplete="off">${fields}<p class="err"></p>
       <div class="acc-actions"><button type="button" class="btn ghost" data-cancel>Cancelar</button><button class="btn${danger ? ' danger' : ''}">${okLabel}</button></div>
     </form>`, { wide: true });
   const f = el.querySelector('form'), ok = f.querySelector('button:not([type])');
   el.querySelector('[data-cancel]').onclick = close;
-  f.querySelector('input:not([type=radio]), select')?.focus();
+  onOpen?.(f);
+  f.querySelector('input:not([type=radio]):not([type=file]), select, textarea')?.focus();
   f.onsubmit = async e => {
     e.preventDefault();
     ok.disabled = true;

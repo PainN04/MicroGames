@@ -2152,9 +2152,9 @@ html.lite .ls-show { box-shadow: none; }
 .tk-mine summary { cursor: pointer; font-size: var(--fs-sm); font-weight: 600; color: var(--text); padding: .4em 0; }
 .tk-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .tk-list.compact { max-height: min(40vh, 320px); overflow-y: auto; margin-top: 6px; }
-.tk { display: grid; gap: 6px; padding: .8em .9em; border-radius: 14px; border: 1px solid var(--border); background: oklch(100% 0 0 / .03);
+.tkt { display: grid; gap: 6px; padding: .8em .9em; border-radius: 14px; border: 1px solid var(--border); background: oklch(100% 0 0 / .03);
   border-left: 3px solid oklch(80% .12 70 / .8); }
-.tk.done { border-left-color: oklch(75% .15 150 / .7); opacity: .85; }
+.tkt.done { border-left-color: oklch(75% .15 150 / .7); opacity: .85; }
 .tk-top { display: flex; flex-wrap: wrap; align-items: center; gap: .5em; }
 .tk-top > .i { width: 1.1em; height: 1.1em; color: var(--muted); }
 .tk-top .hint { margin-left: auto; font-size: var(--fs-xs); }
@@ -2171,12 +2171,12 @@ html.lite .ls-show { box-shadow: none; }
 .tk-reply b { display: block; font-size: var(--fs-xs); color: oklch(84% .14 150); }
 .tk-quote { margin: 0; padding: .6em .8em; border-left: 3px solid var(--border-strong); border-radius: 6px; background: oklch(100% 0 0 / .04);
   color: var(--muted); font-size: var(--fs-sm); white-space: pre-wrap; word-break: break-word; max-height: 8em; overflow: auto; }
-.tk .actions { display: flex; justify-content: flex-end; gap: 6px; }
-.tk .actions .btn { min-height: 34px; padding: 0 .8rem; font-size: var(--fs-xs); gap: .4em; }
-.tk .actions .icon-btn { width: 34px; padding: 0; }
-.tk .actions .btn.danger:hover { color: oklch(80% .14 18); border-color: oklch(66% .22 18 / .5); }
+.tkt .actions { display: flex; justify-content: flex-end; gap: 6px; }
+.tkt .actions .btn { min-height: 34px; padding: 0 .8rem; font-size: var(--fs-xs); gap: .4em; }
+.tkt .actions .icon-btn { width: 34px; padding: 0; }
+.tkt .actions .btn.danger:hover { color: oklch(80% .14 18); border-color: oklch(66% .22 18 / .5); }
 .admin .note .i { width: 1em; height: 1em; vertical-align: -.15em; }
-.tk .actions .btn .i { color: currentColor; opacity: 1; }
+.tkt .actions .btn .i { color: currentColor; opacity: 1; }
 /* imagens dos tickets: anexar (janela de reportar) e ver (painel) */
 .tk-drop { display: flex; flex-wrap: wrap; align-items: stretch; gap: 8px; padding: 8px; border-radius: 14px; border: 1px dashed var(--border-strong);
   transition: border-color var(--duration-fast), background var(--duration-fast); }
