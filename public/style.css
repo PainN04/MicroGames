@@ -1714,6 +1714,16 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 .board li { grid-template-columns: auto minmax(0, 1fr) auto auto; gap: .55rem; padding: .5em .4em .5em .6em; }
 .board li > .sc { font-size: var(--fs-sm); text-align: right; min-width: 3ch; }
 .board .name { display: flex; align-items: center; gap: .45em; min-width: 0; border-bottom: 0; }
+/* avatar, coroa e selos ficam no tamanho certo; quem encolhe (com reticências) é só o texto do nome */
+.board .name, .rk-list li .name { display: flex; align-items: center; gap: .4em; min-width: 0; }
+.board .name > :not(.nmt), .rk-list li .name > :not(.nmt) { flex-shrink: 0; }
+.board .name > .pa, .rk-list li .name > .pa { margin-right: 0; vertical-align: 0; }
+.board .name > .nmt, .rk-list li .name > .nmt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a lista da janela Rankings é uma grade: sem minmax(0, 1fr) um nome comprido alargava a linha e empurrava os pontos pra fora no celular */
+.rk-body .rk-list { grid-template-columns: minmax(0, 1fr); }
+.rk-list li b { flex-shrink: 0; white-space: nowrap; }
+/* o "10" cabe na mesma bolinha do "1": não empurra o avatar e o nome pra direita nem rouba espaço do nome */
+.board .pos .rank { padding: 0 .15em; letter-spacing: -.03em; }
 .board .name:hover { text-decoration: underline; text-underline-offset: 3px; }
 /* pódio: faixa na cor da medalha à esquerda e um brilho que some pra direita */
 .board li.top { background: linear-gradient(90deg, var(--md) 0%, transparent 75%); box-shadow: inset 3px 0 0 var(--mdl); }
