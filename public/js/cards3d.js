@@ -2449,7 +2449,8 @@ async function enhanceCards() {
   document.querySelectorAll('.grid').forEach(g => g.classList.add('has3d'));
   // tamanho da cena: 190px no computador, 150px no celular
   // (a Zdog grava o tamanho no próprio canvas, então o tamanho do celular sai daqui e não do CSS)
-  const size = SMALL.matches ? 150 : 190;
+  // no celular o card tem ~160px de largura: canvas do tamanho do card e cena um pouco menor (as de palavras são largas)
+  const size = SMALL.matches ? 160 : 190, fit = SMALL.matches ? 0.88 : 1;
   document.querySelectorAll('.grid .card').forEach(card => {
     const build = SCENES_3D[card.dataset.id];
     if (!build) return;
@@ -2457,7 +2458,7 @@ async function enhanceCards() {
     canvas.setAttribute('aria-hidden', 'true');
     card.prepend(canvas);
     // zoom proporcional (as cenas foram desenhadas pra 150px); a Zdog já ajusta pra telas de alta densidade
-    const illo = new Zdog.Illustration({ element: canvas, zoom: size / 150 });
+    const illo = new Zdog.Illustration({ element: canvas, zoom: size / 150 * fit });
     scenes3d.push({ canvas, illo, update: build(Zdog, illo) });
     io?.observe(canvas);
   });

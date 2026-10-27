@@ -129,7 +129,7 @@ GAMES.cruzadinha = {
       grid.style.setProperty('--n', S);
       grid.innerHTML = L.map((_, i) => (black(i) ? '<div class="cw-c blk" aria-hidden="true"></div>'
         : `<div class="cw-c" data-i="${i}">${v.nums[i] ? `<small>${v.nums[i]}</small>` : ''}<i></i></div>`)).join('');
-      const list = (t, arr, d) => `<div><h4>${t}</h4><ol>${arr.map(s => `<li data-k="${d}${s.n}"><b>${s.n}</b> ${esc(s.clue)}</li>`).join('')}</ol></div>`;
+      const list = (t, arr, d) => `<div><h2>${t}</h2><ol>${arr.map(s => `<li data-k="${d}${s.n}"><b>${s.n}</b> ${esc(s.clue)}</li>`).join('')}</ol></div>`;
       el.querySelector('#wl').innerHTML = list('Horizontais', v.across, 'A') + list('Verticais', v.down, 'D');
       el.querySelectorAll('#wl li').forEach(li => li.onclick = () => { if (!v.over) goSlot(slots().find(s => s.dir + s.n === li.dataset.k)); });
       if (v.over) return endPanel();
