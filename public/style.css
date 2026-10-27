@@ -2084,7 +2084,7 @@ html.login-open { overflow: hidden; }
 /* vitrine */
 .ls-show { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: var(--space-md); padding: clamp(18px, 3vw, 36px); min-height: 560px;
   border-radius: 28px; border: 1px solid var(--border);
-  background: radial-gradient(520px 420px at 50% 44%, oklch(34% 0.13 290 / .55), transparent 70%), linear-gradient(180deg, oklch(22% 0.03 275 / .9), oklch(15% 0.02 275 / .9));
+  background: radial-gradient(520px 420px at 50% 44%, oklch(34% 0.13 var(--h, 290) / .5), transparent 70%), linear-gradient(180deg, oklch(22% 0.03 275 / .9), oklch(15% 0.02 275 / .9));
   box-shadow: 0 30px 80px oklch(0% 0 0 / .45); }
 /* fio de luz no topo, some nas pontas */
 .ls-show::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--primary) 30%, var(--accent) 70%, transparent); }
@@ -2093,22 +2093,27 @@ html.login-open { overflow: hidden; }
   color: oklch(90% 0.06 290); background: oklch(70% 0.19 290 / .16); border: 1px solid oklch(70% 0.19 290 / .35); }
 .ls-count { font-size: var(--fs-xs); color: var(--muted); }
 .ls-stage { position: relative; flex: 1; min-height: 300px; display: grid; place-items: center; }
-.ls-scene { position: absolute; inset: 0; display: grid; place-items: center; opacity: 0; transform: scale(.92); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+/* cada cena num palco na cor do jogo, igual à capa dos cards do menu */
+.ls-scene { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; opacity: 0; transform: scale(.96); transition: opacity .6s var(--ease), transform .6s var(--ease);
+  border-radius: 20px; border: 1px solid oklch(72% 0.15 var(--h) / .3);
+  background: radial-gradient(70% 55% at 50% 88%, oklch(10% 0.02 var(--h) / .55), transparent 70%),
+    radial-gradient(120% 100% at 50% 0%, oklch(62% 0.16 var(--h) / .55), oklch(30% 0.09 var(--h) / .55) 70%); }
 .ls-scene.on { opacity: 1; transform: none; }
 .ls-scene canvas { max-width: 100%; height: auto; filter: drop-shadow(0 18px 30px oklch(0% 0 0 / .45)); }
-.ls-fallback { display: grid; place-items: center; width: 132px; height: 132px; border-radius: 32px; color: oklch(88% 0.08 290);
-  background: linear-gradient(145deg, oklch(40% 0.14 290 / .7), oklch(26% 0.06 275 / .8)); border: 1px solid var(--border-strong); }
+.ls-fallback { display: grid; place-items: center; width: 132px; height: 132px; color: oklch(90% 0.09 var(--h)); filter: drop-shadow(0 10px 14px oklch(0% 0 0 / .45)); }
 .ls-fallback .i { width: 56px; height: 56px; stroke-width: 1.6; }
 .ls-caption { display: flex; flex-direction: column; gap: 2px; min-height: 3.6em; }
 .ls-caption b { font-size: var(--fs-xl); letter-spacing: -0.03em; line-height: 1.1; }
 .ls-caption span { font-size: var(--fs-sm); color: var(--muted); }
 .ls-thumbs { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .ls-thumb { aspect-ratio: 1; display: grid; place-items: center; padding: 0; cursor: pointer; border-radius: 14px; overflow: hidden;
-  background: oklch(13% 0.02 275 / .7); border: 1px solid var(--border); transition: border-color var(--duration), background var(--duration), transform var(--duration) var(--ease-spring); }
-.ls-thumb:hover { border-color: oklch(70% 0.19 290 / .55); transform: translateY(-2px); }
-.ls-thumb[aria-selected="true"] { border-color: var(--primary); background: oklch(70% 0.19 290 / .14); box-shadow: 0 0 0 3px oklch(70% 0.19 290 / .18); }
+  border: 1px solid oklch(72% 0.15 var(--h) / .3);
+  background: radial-gradient(70% 55% at 50% 88%, oklch(10% 0.02 var(--h) / .55), transparent 70%),
+    radial-gradient(120% 100% at 50% 0%, oklch(62% 0.16 var(--h) / .55), oklch(30% 0.09 var(--h) / .55) 70%); transition: border-color var(--duration), background var(--duration), transform var(--duration) var(--ease-spring); }
+.ls-thumb:hover { border-color: oklch(78% 0.15 var(--h) / .7); transform: translateY(-2px); }
+.ls-thumb[aria-selected="true"] { border-color: oklch(85% 0.12 var(--h)); box-shadow: 0 0 0 3px oklch(72% 0.15 var(--h) / .35); }
 .ls-thumb canvas { width: 56px; height: 56px; max-width: 100%; }
-.ls-thumb .ls-fallback { width: 70%; height: 70%; border-radius: 10px; background: none; border: 0; }
+.ls-thumb .ls-fallback { width: 70%; height: 70%; filter: none; }
 .ls-thumb .ls-fallback .i { width: 55%; height: 55%; }
 
 @media (max-width: 860px) {
