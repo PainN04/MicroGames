@@ -323,6 +323,40 @@ test('erros do navegador: só de quem está logado, agrupados pro admin', async 
   assert.equal((await adm('/api/admin/errors')).body.errors.length, 0);
 });
 
+test('tickets: quem está logado reporta, só a conta dona lê e resolve', async () => {
+  assert.equal((await client()('/api/tickets', { method: 'POST', body: { kind: 'bug', message: 'quebrou tudo' } })).status, 401);
+  const ana = await login('ana', 'senha-ana-123');
+  assert.equal((await ana('/api/tickets', { method: 'POST', body: { kind: 'nada', message: 'quebrou tudo' } })).status, 400);
+  assert.equal((await ana('/api/tickets', { method: 'POST', body: { kind: 'bug', message: 'oi' } })).status, 400);
+  assert.equal((await ana('/api/tickets', { method: 'POST', body: { kind: 'bug', message: 'O Sudoku travou no fim', view: 'sudoku' } })).status, 201);
+  assert.equal((await ana('/api/admin/tickets')).status, 403);
+  const adm = await login('outroadm', 'senha-adm-123');
+  assert.equal((await adm('/api/admin/tickets')).status, 403, 'outro admin não vê');
+
+  const owner = await login('paulo', 'senha-dono-123');
+  assert.equal((await owner('/api/auth/me')).body.openTickets, 1);
+  assert.equal((await ana('/api/auth/me')).body.openTickets, undefined);
+  const { tickets } = (await owner('/api/admin/tickets')).body;
+  assert.equal(tickets.length, 1);
+  assert.equal(tickets[0].name, 'Ana');
+  assert.equal(tickets[0].view, 'sudoku');
+  assert.equal(tickets[0].status, 'open');
+  assert.equal((await adm('/api/admin/tickets/update', { method: 'POST', body: { id: tickets[0].id, status: 'done' } })).status, 403);
+
+  await ana('/api/auth/ping'); // limpa avisos antigos
+  const r = await owner('/api/admin/tickets/update', { method: 'POST', body: { id: tickets[0].id, status: 'done', reply: 'Arrumado!' } });
+  assert.equal(r.status, 200);
+  const mine = (await ana('/api/tickets')).body.tickets;
+  assert.equal(mine[0].status, 'done');
+  assert.equal(mine[0].reply, 'Arrumado!');
+  const { notes } = (await ana('/api/notifications')).body;
+  assert.ok(JSON.stringify(notes).includes('"kind":"ticket"'), 'quem mandou recebe aviso');
+  assert.equal((await owner('/api/auth/me')).body.openTickets, 0);
+
+  assert.equal((await owner('/api/admin/tickets/delete', { method: 'POST', body: { id: tickets[0].id } })).status, 200);
+  assert.equal((await owner('/api/admin/tickets')).body.tickets.length, 0);
+});
+
 test('aviso de recorde tomado chega uma vez só pra quem perdeu o 1º lugar', async () => {
   const ana = await login('ana', 'senha-ana-123');
   const bia = await login('bia', 'senha-bia-123');
