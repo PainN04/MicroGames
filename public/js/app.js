@@ -295,12 +295,12 @@ async function showMenu() {
 function boardHtml(id) {
   const g = GAMES[id], all = bestPerPlayer(id), rows = all.slice(0, 10);
   const mine = all.findIndex(([n]) => n === player);
-  const num = v => (g.decimals ? v.toFixed(g.decimals) : v.toLocaleString('pt-BR'));
+  const num = v => (g.decimals ? dec(v, g.decimals) : v.toLocaleString('pt-BR'));
   // a unidade (pontos, s, cliques...) aparece uma vez no topo da coluna; nas linhas fica só o número, e sobra espaço pro nome
   const row = ([n, s], k) => `<li class="${n === player ? 'me' : ''}${k < 3 ? ` top t${k + 1}` : ''}"><span class="pos">${rankBadge(k + 1)}</span>${nameHtml(n, { cls: 'name', extra: ticketStar(n) })}<span class="sc">${num(s)}</span>${rxButton(id, n)}${rxChips(id, n)}</li>`;
-  return (g.daily ? `<h3>${icon('trophy')} Ranking</h3><p class="hint board-reset">Só de hoje: zera à meia-noite</p>` : `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}`)
+  return (g.daily ? `<h2>${icon('trophy')} Ranking</h2><p class="hint board-reset">Só de hoje: zera à meia-noite</p>` : `<h2>${icon('trophy')} Ranking</h2>${seasonSeg()}`)
     + (g.boardNote ? `<p class="hint board-note">${g.boardNote}</p>` : '') + (rows.length
-    ? `<div class="bd-cols" aria-hidden="true"><span>${all.length} ${all.length > 1 ? 'jogadores' : 'jogador'}</span><span>${esc(g.unit)}</span></div>`
+    ? `<div class="bd-cols" aria-hidden="true"><span>${all.length} ${all.length > 1 ? 'jogadores' : 'jogador'}</span><span>${g.unit === 's' ? 'segundos' : esc(g.unit)}</span></div>`
       + '<ol>' + rows.map(row).join('') + '</ol>'
       // fora do top 10: a sua linha fica embaixo, separada
       + (mine >= 10 ? `<ol class="bd-me" start="${mine + 1}">${row(all[mine], mine)}</ol>` : '')
@@ -331,7 +331,7 @@ function play(id) {
         <div class="stage-head">
           <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
           <span class="gtile" id="gtile" aria-hidden="true">${icon(g.icon)}</span>
-          <div class="title"><h2>${g.name}</h2><p title="${esc(g.desc)}">${firstSentence(g.desc)}</p></div>
+          <div class="title"><h1>${g.name}</h1><p title="${esc(g.desc)}">${firstSentence(g.desc)}</p></div>
           <div class="head-acts">
             <button class="btn ghost" id="how" aria-label="Como jogar" title="Como jogar">${icon('circle-help')}<span>Como jogar</span></button>
             ${g.daily ? '' : `<button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>`}
@@ -599,6 +599,9 @@ function modal(html, { locked = false, wide = false } = {}) {
   m.className = 'modal';
   m.innerHTML = `<div class="box glass${wide ? ' wide' : ''}" role="dialog" aria-modal="true">${html}</div>`;
   document.body.appendChild(m);
+  // nome da janela para leitores de tela: o primeiro título dentro dela
+  const ttl = m.querySelector('h1, h2, h3');
+  if (ttl) { ttl.id ||= 'modalTitle'; m.firstElementChild.setAttribute('aria-labelledby', ttl.id); }
   const close = () => m.remove();
   if (!locked) {
     m.addEventListener('click', e => { if (e.target === m) close(); });

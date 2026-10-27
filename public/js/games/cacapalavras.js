@@ -11,7 +11,7 @@ GAMES.cacapalavras = {
     let v = null, S = 10, busy = true, alive = true, saved = 'ok', timers = [], tick = 0, a = null, b = null, dragging = false, moved = false;
     el.innerHTML = `<div class="hud"><span class="stat">Tempo<b id="ct">0:00</b></span><span class="stat">Achadas<b id="cf">0/8</b></span></div>
       <div class="cp-temas" id="ctm"></div>
-      <div class="cp-box"><div class="cp-grid" id="cg" role="grid" aria-label="Quadro de letras"></div><svg class="cp-lines" id="cl" viewBox="0 0 10 10" aria-hidden="true"></svg></div>
+      <div class="cp-box"><div class="cp-grid" id="cg" role="group" aria-label="Quadro de letras"></div><svg class="cp-lines" id="cl" viewBox="0 0 10 10" aria-hidden="true"></svg></div>
       <ul class="cp-words" id="cw"></ul>
       <p class="hint" id="cmsg" aria-live="polite"></p>
       <div class="row-btns" id="cbtns"><button class="btn ghost" id="cgive">${icon('flag')} Desistir</button></div>`;
@@ -54,7 +54,7 @@ GAMES.cacapalavras = {
       if (!alive) return;
       v = nv; S = v.size; busy = false; say('');
       grid.style.setProperty('--n', S);
-      grid.innerHTML = [...v.grid].map((ch, i) => `<div class="cp-c" data-i="${i}" role="gridcell">${ch}</div>`).join('');
+      grid.innerHTML = [...v.grid].map((ch, i) => `<div class="cp-c" data-i="${i}">${ch}</div>`).join('');
       el.querySelector('#ctm').innerHTML = v.temas.map(t => `<span class="mtitle">${esc(t)}</span>`).join('');
       paint();
       if (v.over) return endPanel();

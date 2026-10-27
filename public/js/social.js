@@ -114,7 +114,7 @@ function rankingsModal(tab = rankTab) {
   if (!tabs.some(([t]) => t === tab)) tab = 'kings';
   rankTab = tab;
   const { el, close } = modal(`<h2>${icon('crown')} Rankings</h2>
-    <div class="seg rk-tabs" role="tablist" aria-label="Rankings">${tabs.map(([t, ic, l]) => `<button role="tab" data-rk="${t}" aria-selected="${tab === t}" aria-pressed="${tab === t}">${icon(ic)} ${l}</button>`).join('')}</div>
+    <div class="seg rk-tabs" role="tablist" aria-label="Rankings">${tabs.map(([t, ic, l]) => `<button role="tab" data-rk="${t}" aria-selected="${tab === t}">${icon(ic)} ${l}</button>`).join('')}</div>
     <div class="rk-body kings"></div><button class="btn ghost" id="rkClose">Fechar</button>`, { wide: true });
   const body = el.querySelector('.rk-body');
   // troca de aba / de período só refaz o miolo — a janela fica no lugar (recriar faria a animação de entrada piscar)
@@ -124,7 +124,7 @@ function rankingsModal(tab = rankTab) {
   };
   el.querySelectorAll('[data-rk]').forEach(b => b.onclick = () => {
     rankTab = b.dataset.rk;
-    el.querySelectorAll('[data-rk]').forEach(x => { const on = x === b; x.setAttribute('aria-selected', on); x.setAttribute('aria-pressed', on); });
+    el.querySelectorAll('[data-rk]').forEach(x => { const on = x === b; x.setAttribute('aria-selected', on); });
     paint();
   });
   el.querySelector('#rkClose').onclick = close;

@@ -78,7 +78,7 @@ GAMES.sudoku = {
     const clock = s => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 
     el.innerHTML = `<div class="hud"><span class="stat">Tempo<b id="t">0:00</b></span><span class="stat">Dicas<b id="h">0</b></span></div>
-      <div class="sd"><div class="sd-in"><div class="sd-board" id="bd" role="grid" aria-label="Sudoku"></div>
+      <div class="sd"><div class="sd-in"><div class="sd-board" id="bd" role="group" aria-label="Sudoku"></div>
       <div class="sd-side"><div class="sd-pad" id="pad">${Array.from({ length: 9 }, (_, i) => `<button class="sd-num" data-n="${i + 1}">${i + 1}</button>`).join('')}</div>
       <div class="sd-tools"><button class="btn ghost" id="note" aria-pressed="false" title="Notas desligadas (N)">${icon('pencil')} Notas</button>
         <button class="btn ghost" id="del">${icon('delete')} Apagar</button><button class="btn ghost" id="undo">${icon('rotate-ccw')} Desfazer</button><button class="btn ghost" id="hint">${icon('lightbulb')} Dica +${HINT_COST}s</button></div></div></div></div>
@@ -103,7 +103,7 @@ GAMES.sudoku = {
         const cls = ['sd-cell', given[i] && 'given', hinted.has(i) && 'tip', i === sel && 'sel', peer && 'peer', sv && v === sv && i !== sel && 'same', bad.has(i) && 'bad',
           c % 3 === 2 && c < 8 && 'br', r % 3 === 2 && r < 8 && 'bb'].filter(Boolean).join(' ');
         const inner = v ? v : notes[i] ? `<span class="nt">${Array.from({ length: 9 }, (_, k) => notes[i] & bit(k + 1) ? k + 1 : '').map(x => `<i>${x}</i>`).join('')}</span>` : '';
-        return `<button class="${cls}" data-i="${i}" role="gridcell" aria-label="linha ${r + 1}, coluna ${c + 1}${v ? ', ' + v : ''}">${inner}</button>`;
+        return `<button class="${cls}" data-i="${i}" aria-label="linha ${r + 1}, coluna ${c + 1}${v ? ', ' + v : ''}">${inner}</button>`;
       }).join('');
       const count = d => cells.filter(v => v === d).length;
       el.querySelectorAll('.sd-num').forEach(b => { b.disabled = count(+b.dataset.n) >= 9; });

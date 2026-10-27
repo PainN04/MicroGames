@@ -4,7 +4,7 @@ GAMES.mira = {
   // Phaser. Mesma regra de antes (20 alvos de 48px, erro = +0,5s, tempo conta do 1º acerto) pra manter o ranking justo.
   start(el, done) {
     const W = 640, H = 360, R = 24, TOTAL = 20;
-    el.innerHTML = '<div class="hud"><span class="stat">Alvos<b id="h">0/20</b></span><span class="stat">Erros<b id="m">0</b></span><span class="stat">Tempo<b id="t">0.00s</b></span></div><div class="phaser-wrap" id="pw"></div>';
+    el.innerHTML = '<div class="hud"><span class="stat">Alvos<b id="h">0/20</b></span><span class="stat">Erros<b id="m">0</b></span><span class="stat">Tempo<b id="t">0,00s</b></span></div><div class="phaser-wrap" id="pw"></div>';
     const hud = { h: el.querySelector('#h'), m: el.querySelector('#m'), t: el.querySelector('#t') };
     const red = hex('--red'), white = 0xf4f1ea;
     return mountPhaser(el.querySelector('#pw'), W, H, {
@@ -62,7 +62,7 @@ GAMES.mira = {
               over = true;
               const score = +elapsed().toFixed(2);
               target.destroy();
-              hud.t.textContent = score.toFixed(2) + 's';
+              hud.t.textContent = dec(score, 2) + 's';
               this.time.delayedCall(350, () => done(score));
             } else place();
           } else if (t0) {
@@ -81,7 +81,7 @@ GAMES.mira = {
             holes.fillStyle(0x1a110c, m.a).fillCircle(m.x, m.y, 3);
             holes.lineStyle(1, 0xd9b48a, 0.4 * m.a).strokeCircle(m.x, m.y, 5.5);
           }
-          if (t0 && !over) { const now = performance.now(); run += Math.min(now - frameAt, 100); frameAt = now; hud.t.textContent = elapsed().toFixed(2) + 's'; }
+          if (t0 && !over) { const now = performance.now(); run += Math.min(now - frameAt, 100); frameAt = now; hud.t.textContent = dec(elapsed(), 2) + 's'; }
         });
         place();
       },
