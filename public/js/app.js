@@ -31,7 +31,7 @@ function recHtml(id) {
   const g = GAMES[id], top = bestPerPlayer(id)[0];
   const fr = top && flair.frames[top[0]]; // nome do recordista: branco, ou na cor da moldura de avatar dele
   return top ? `${icon('trophy')} <b${fr ? ` class="fr-${fr}"` : ''}>${esc(top[0])}</b> · ${fmt(g, top[1])}`
-    : g.daily ? 'Ninguém jogou hoje' : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()}`;
+    : `<span class="rec-t">${g.daily ? 'Ninguém jogou hoje' : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()}`}</span>`;
 }
 function kingsHtml() {
   const kings = champions();

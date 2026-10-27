@@ -1528,7 +1528,7 @@
 @keyframes cw-win { 40% { transform: translateY(-6px) scale(1.06); } }
 .cw-grid.nope { animation: shake .3s; }
 .cw-lists { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; width: min(100%, 560px); }
-.cw-lists h4 { margin: 0 0 4px; font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .08em; opacity: .7; }
+.cw-lists :is(h2, h4) { margin: 0 0 4px; font-size: var(--fs-sm); text-transform: uppercase; letter-spacing: .08em; opacity: .7; }
 .cw-lists ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
 .cw-lists li { padding: .3em .55em; border-radius: 8px; font-size: var(--fs-sm); line-height: 1.3; cursor: pointer; transition: background .15s, opacity .2s; }
 .cw-lists li b { display: inline-block; min-width: 1.3em; opacity: .75; }
@@ -1573,7 +1573,7 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 /* ---------- Ritmo: escolha da música ---------- */
 .rt-pick { width: 100%; max-width: 560px; display: grid; gap: .8rem; }
 .rt-head { display: flex; align-items: end; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
-.rt-head h3 { margin: 0; }
+.rt-head :is(h2, h3) { margin: 0; font-size: 1.17em; }
 .rt-total { display: grid; text-align: right; font-size: var(--fs-xs); color: var(--muted); }
 .rt-total b { font-size: 1.6rem; color: var(--text); font-variant-numeric: tabular-nums; line-height: 1.1; }
 .rt-list { display: grid; gap: .6rem; }
@@ -2349,3 +2349,39 @@ header .acct-btn .av { box-shadow: inset 0 -2px 0 oklch(0% 0 0 / .2); }
 /* janela Rankings: menos espaço vazio entre as abas e o seletor de temporada */
 .modal .rk-body.kings { margin-top: 0; }
 .modal .rk-body .season-seg { margin-top: 0; }
+
+/* ---------- tela de jogo no PC: o cartão vai até o fim da tela e o jogo fica centrado no espaço que sobra ---------- */
+@media (min-width: 821px) {
+  .game-stage .game { margin-block: auto; }
+}
+
+/* ---------- celular: jogo mais largo e título inteiro ---------- */
+@media (max-width: 560px) {
+  main.game-view { padding-left: 8px; padding-right: 8px; }
+  .game-stage { padding-left: 10px; padding-right: 10px; }
+  .layout { gap: 10px; }
+  .gtile { width: 44px; height: 44px; }
+  /* o nome do jogo quebra em duas linhas em vez de virar "Campo M…" */
+  .game-stage .stage-head :is(h1, h2) { font-size: 1.1rem; white-space: normal; overflow: visible; text-overflow: clip;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: break-word; line-height: 1.1; }
+  .game-stage .daily-tag { font-size: .72rem; text-overflow: ellipsis; }
+}
+
+/* ---------- menu no celular: menos coisa antes do primeiro jogo ---------- */
+.card .rec .rec-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 560px) {
+  /* desafio do dia: só o líder; o top 3 inteiro fica a um toque, em "Ranking completo" */
+  .daily-side ol li:nth-child(n+2) { display: none; }
+  /* atalhos (Rankings, Torneio, Duplas, Duelos) numa faixa só, que desliza para o lado */
+  .hub { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain;
+    -webkit-mask-image: linear-gradient(to right, #000 82%, transparent); mask-image: linear-gradient(to right, #000 82%, transparent); }
+  .hub::-webkit-scrollbar { display: none; }
+  .hub-btn, .hub-btn:last-child:nth-child(odd) { flex: 0 0 auto; max-width: 78%; scroll-snap-align: start; box-shadow: inset -1px 0 0 var(--border) !important; }
+  .hub-btn small { white-space: nowrap; overflow: visible; }
+  .tabs [role="tab"] { white-space: nowrap; font-size: var(--fs-sm); }
+}
+@media (max-width: 560px) {
+  /* cena 3D do card: a borda lateral some menos, senão as palavras (Termo, Quarteto, Soletra) ficam cortadas */
+  .grid .card .z3d { -webkit-mask-image: linear-gradient(to bottom, transparent 6%, #000 16%, #000 80%, transparent 92%), linear-gradient(to right, transparent, #000 5%, #000 95%, transparent);
+    mask-image: linear-gradient(to bottom, transparent 6%, #000 16%, #000 80%, transparent 92%), linear-gradient(to right, transparent, #000 5%, #000 95%, transparent); }
+}
