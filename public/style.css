@@ -58,7 +58,7 @@
 
   /* ---------- ícones (public/js/icons.js) ---------- */
   .i { width: 1.1em; height: 1.1em; flex: none; vertical-align: -0.18em; stroke-width: 2; }
-  h2 > .i, h3 > .i { color: var(--muted); margin-right: .15em; }
+  h1 > .i, h2 > .i, h3 > .i { color: var(--muted); margin-right: .15em; }
   /* selo de posição: 1º ouro, 2º prata, 3º bronze */
   .rank { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.6em; padding: 0 .35em; border-radius: 999px; flex: none;
     font-size: .78em; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); background: var(--surface-2); border: 1px solid var(--border); }
@@ -257,7 +257,7 @@
   .stage { padding: var(--space-sm) var(--space-md) var(--space-md); display: flex; flex-direction: column; gap: var(--space-sm); }
   .stage-head { display: flex; align-items: flex-start; gap: var(--space-sm); } /* botões alinhados com a linha do título, mesmo com a descrição quebrando */
   .stage-head .title { flex: 1; min-width: 0; }
-  .stage-head h2 { margin: 0; font-size: var(--fs-lg); letter-spacing: -0.03em; display: flex; align-items: center; gap: .4em; }
+  .stage-head :is(h1, h2) { margin: 0; font-size: var(--fs-lg); letter-spacing: -0.03em; display: flex; align-items: center; gap: .4em; }
   .stage-head p { margin: .1rem 0 0; color: var(--muted); font-size: var(--fs-xs); line-height: 1.35;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .game { --avail: 520px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: var(--space-sm); }
@@ -268,7 +268,7 @@
   .hint { color: var(--muted); text-align: center; margin: 0; font-size: var(--fs-sm); }
 
   .board { padding: var(--space-md); position: sticky; top: 80px; max-height: calc(100dvh - 96px); overflow: auto; }
-  .board h3 { margin: 0 0 var(--space-sm); font-size: var(--fs-lg); letter-spacing: -0.02em; }
+  .board :is(h2, h3) { margin: 0 0 var(--space-sm); font-size: var(--fs-lg); letter-spacing: -0.02em; }
   .board ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
   .board li { display: grid; grid-template-columns: 2rem 1fr auto; align-items: center; gap: .5rem; padding: .55em .7em; border-radius: 12px; font-size: var(--fs-sm); font-variant-numeric: tabular-nums; }
   .board li:nth-child(odd) { background: oklch(100% 0 0 / 0.03); }
@@ -282,7 +282,7 @@
   .result .place b { color: var(--text); }
   .part-sum { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 2px 0 4px; max-width: 520px; }
   .part-sum > div { min-width: 92px; padding: 8px 12px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--border); }
-  .part-sum dt { font-size: var(--fs-xs); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+  .part-sum dt { font-size: var(--fs-xs); color: var(--muted); font-weight: 600; letter-spacing: .01em; }
   .part-sum dd { margin: 2px 0 0; font-weight: 700; font-size: 1.05rem; }
   .part-sum .bars { display: flex; align-items: flex-end; gap: 3px; height: 34px; }
   .part-sum .bars i { display: block; width: 8px; border-radius: 3px 3px 0 0; background: linear-gradient(var(--accent), var(--primary)); }
@@ -500,7 +500,7 @@
   /* ---------- painel admin ---------- */
   .admin { display: flex; flex-direction: column; gap: var(--space-md); }
   .admin section { padding: var(--space-md); }
-  .admin h2 { margin: 0 0 var(--space-sm); font-size: var(--fs-lg); letter-spacing: -0.02em; }
+  .admin :is(h1, h2) { margin: 0 0 var(--space-sm); font-size: var(--fs-lg); letter-spacing: -0.02em; }
   .admin .row { display: flex; gap: var(--space-xs); flex-wrap: wrap; align-items: end; }
   .admin label { display: flex; flex-direction: column; gap: 4px; font-size: var(--fs-xs); color: var(--muted); }
   .admin input, .admin select { font: inherit; font-size: var(--fs-sm); color: var(--text); background: oklch(12% 0.02 275 / 0.7); border: 1px solid var(--border-strong); border-radius: 10px; padding: .55em .7em; min-height: 40px; }
@@ -520,7 +520,7 @@
     --heat-1: #184f95; --heat-2: #256abf; --heat-3: #3987e5; --heat-4: #6da7ec; --heat-5: #9ec5f4; }
   .seg { display: inline-flex; padding: 4px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); gap: 2px; }
   .seg button { font: inherit; font-size: var(--fs-sm); border: 0; background: none; color: var(--muted); padding: .45em 1em; border-radius: 999px; cursor: pointer; min-height: 36px; }
-  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--text); font-weight: 700; box-shadow: var(--elev-1); }
+  .seg button[aria-pressed="true"], .seg button[aria-selected="true"] { background: var(--surface); color: var(--text); font-weight: 700; box-shadow: var(--elev-1); }
   .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 148px), 1fr)); gap: var(--space-sm); }
   .kpi { padding: var(--space-sm) var(--space-md); }
   .kpi .l { color: var(--muted); font-size: var(--fs-xs); }
@@ -577,18 +577,18 @@
   /* cabeçalho das telas: voltar redondo + ícone num ladrilho na cor da tela (--h) */
   .stage-head .back { width: 44px; padding: 0; flex: none; }
   .stage-head .back .i { width: 20px; height: 20px; }
-  .stage-head h2 > .i { width: 1.8em; height: 1.8em; padding: .4em; border-radius: 12px; margin-right: .25em; stroke-width: 2;
+  .stage-head :is(h1, h2) > .i { width: 1.8em; height: 1.8em; padding: .4em; border-radius: 12px; margin-right: .25em; stroke-width: 2;
     color: oklch(90% 0.1 var(--h, 290)); background: oklch(62% 0.16 var(--h, 290) / .28); border: 1px solid oklch(72% 0.15 var(--h, 290) / .35); }
   .stage-head #restart .i { width: 16px; height: 16px; }
   /* subtítulo alinhado com o texto do título (depois do ladrilho do ícone) */
-  .stage-head h2:has(> .i) + p { padding-left: calc(var(--fs-lg) * 2.5); }
+  .stage-head :is(h1, h2):has(> .i) + p { padding-left: calc(var(--fs-lg) * 2.5); }
   /* título da lista de jogos ao lado do seletor de ranking */
   .menu-bar { justify-content: space-between; }
   .menu-bar h2 { margin: 0 auto 0 0; font-size: var(--fs-lg); letter-spacing: -0.02em; }
 
   /* títulos de seção: ícone num ladrilho neutro */
-  .admin section h2, .admin section h3, .board h3, .kings h2 { display: flex; align-items: center; gap: .45em; }
-  .admin section h2 > .i, .admin section h3 > .i, .board h3 > .i, .kings h2 > .i { width: 1.6em; height: 1.6em; padding: .32em; margin: 0;
+  .admin section h2, .admin section h3, .board :is(h2, h3), .kings h2 { display: flex; align-items: center; gap: .45em; }
+  .admin section h2 > .i, .admin section h3 > .i, .board :is(h2, h3) > .i, .kings h2 > .i { width: 1.6em; height: 1.6em; padding: .32em; margin: 0;
     border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); color: var(--text); }
   .seg button { display: inline-flex; align-items: center; gap: .4em; }
   .seg button .i { width: 1em; height: 1em; }
@@ -924,7 +924,7 @@
   /* celular: nome, título e botões do cabeçalho do perfil/admin quebram linha em vez de ficar um por cima do outro;
      abas ocupam a largura toda, ícone em cima do nome, pra caberem todas numa linha */
   .admin .stage-head { flex-wrap: wrap; }
-  .admin .stage-head h2 { flex-wrap: wrap; row-gap: .25em; }
+  .admin .stage-head :is(h1, h2) { flex-wrap: wrap; row-gap: .25em; }
   @media (max-width: 560px) {
     .admin .stage-head .title { flex-basis: calc(100% - 44px - var(--space-sm)); }
     .admin .stage-head .title + .btn { margin-left: calc(44px + var(--space-sm)); }
@@ -1181,7 +1181,7 @@
   background: linear-gradient(160deg, oklch(30% .08 var(--h)), oklch(20% .04 var(--h))); border: 1px solid oklch(60% .12 var(--h) / .5); box-shadow: 0 20px 60px rgb(0 0 0 / .5); }
 .howto-art { width: 150px; height: 150px; display: grid; place-items: center; }
 .howto-art > .i { width: 84px; height: 84px; color: oklch(80% .14 var(--h)); }
-.howto h3 { margin: 0; font-size: var(--fs-lg); }
+.howto :is(h2, h3) { margin: 0; font-size: var(--fs-lg); }
 .howto ol { margin: 0; padding: 0; list-style: none; counter-reset: st; text-align: left; display: grid; gap: 8px; width: 100%; }
 .howto li { counter-increment: st; display: flex; gap: 10px; align-items: baseline; }
 .howto li::before { content: counter(st); flex: none; width: 1.6em; height: 1.6em; display: grid; place-items: center; border-radius: 50%; font-weight: 700; font-size: .85em; background: oklch(65% .16 var(--h)); color: #10131c; }
@@ -1238,7 +1238,7 @@
 .tabs [role="tab"][aria-selected="true"] { color: #10131c; background: linear-gradient(135deg, oklch(86% 0.13 92), oklch(78% 0.16 60)); box-shadow: 0 4px 14px oklch(70% 0.16 70 / .35); }
 .tabs [role="tab"][data-tab="main"][aria-selected="true"] { background: linear-gradient(135deg, oklch(78% 0.15 290), oklch(70% 0.19 300)); box-shadow: 0 4px 14px oklch(60% 0.2 295 / .35); }
 .tab-dot { min-width: 1.35em; height: 1.35em; padding: 0 .35em; display: inline-grid; place-items: center; border-radius: 999px; font-size: .75em; line-height: 1;
-  background: var(--red); color: #fff; box-shadow: 0 0 0 2px var(--bg); }
+  background: oklch(54% 0.2 20); color: #fff; box-shadow: 0 0 0 2px var(--bg); }
 .tab-dot[hidden] { display: none; }
 [data-panel][hidden] { display: none; }
 @media (max-width: 560px) { .tabs { width: 100%; } .tabs [role="tab"] { flex: 1; justify-content: center; padding: .45em .6em; } }
@@ -1550,7 +1550,7 @@ html.lite .backdrop { background:
 html.lite .backdrop i { display: none; }
 html.lite *, html.lite *::before, html.lite *::after { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 html.lite header { background: oklch(15% 0.02 275 / 0.97); }
-html.lite .modal { background: oklch(10% 0.02 275 / 0.82); }
+html.lite .modal:not(.login-screen) { background: oklch(10% 0.02 275 / 0.82); }
 html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *)::after { animation-iteration-count: 1 !important; }
 /* jogos diários: sequência, compartilhar e lembrete da noite */
 .daily-head .dt-streak { display: inline-flex; align-items: center; gap: .3em; padding: .15em .7em; border-radius: 999px; background: oklch(70% 0.19 45 / .16); color: #ffb36b; }
@@ -1627,7 +1627,7 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 .result .label { letter-spacing: 0; }
 .kpi .v .i { width: .78em; height: .78em; vertical-align: -.04em; color: var(--yellow); }
 /* celular: a descrição do jogo cortada no topo não ajudava (o "?" mostra o Como jogar inteiro) */
-@media (max-width: 560px) { .stage-head .title p:not(.pbio) { display: none; } .stage-head h2:has(> .i) + p { padding-left: 0; } }
+@media (max-width: 560px) { .stage-head .title p:not(.pbio) { display: none; } .stage-head :is(h1, h2):has(> .i) + p { padding-left: 0; } }
 
 /* ---------- telas de jogo: palco com a arte do jogo, placar, Como jogar e resultado ----------
    A cor de cada jogo (--h) e a arte "peças soltas" (--art, js/stageart.js) dão identidade a cada tela.
@@ -1636,7 +1636,7 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 .game-stage::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit;
   background: var(--art) right top / 560px 140px no-repeat, radial-gradient(90% 260px at 85% -40px, oklch(55% .15 var(--h) / .22), transparent 70%); }
 /* ladrilho do ícone com a "base" embaixo, como as peças dos cards 3D */
-.game-stage .stage-head h2 > .i { background: linear-gradient(160deg, oklch(66% .16 var(--h)), oklch(48% .15 var(--h))); border-color: oklch(80% .12 var(--h) / .45);
+.game-stage .stage-head :is(h1, h2) > .i { background: linear-gradient(160deg, oklch(66% .16 var(--h)), oklch(48% .15 var(--h))); border-color: oklch(80% .12 var(--h) / .45);
   color: #fff; box-shadow: 0 3px 0 oklch(32% .1 var(--h)); }
 .game-stage .stage-head p { -webkit-line-clamp: 1; }
 
@@ -1655,7 +1655,7 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 /* Como jogar */
 .howto-card { position: relative; isolation: isolate; }
 .howto-card::before { content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; background: var(--art) right top / 480px 120px no-repeat; }
-.howto h3 span { color: oklch(86% .12 var(--h)); }
+.howto :is(h2, h3) span { color: oklch(86% .12 var(--h)); }
 .howto li::before { box-shadow: 0 2px 0 oklch(38% .12 var(--h)); }
 .howto-keys kbd { font-size: .8rem; padding: 7px 10px 6px; border-radius: 9px; border: 1px solid oklch(100% 0 0 / .14); border-bottom-width: 1px;
   background: linear-gradient(oklch(34% .03 var(--h)), oklch(27% .03 var(--h))); box-shadow: 0 3px 0 oklch(14% .02 var(--h)), 0 4px 8px oklch(0% 0 0 / .3); }
@@ -1716,9 +1716,9 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
 .board .name { display: flex; align-items: center; gap: .45em; min-width: 0; border-bottom: 0; }
 /* avatar, coroa e selos ficam no tamanho certo; quem encolhe (com reticências) é só o texto do nome */
 .board .name, .rk-list li .name { display: flex; align-items: center; gap: .4em; min-width: 0; }
-.board .name > :not(.nmt), .rk-list li .name > :not(.nmt) { flex-shrink: 0; }
+.board .name > :not(.nm-t), .rk-list li .name > :not(.nm-t) { flex-shrink: 0; }
 .board .name > .pa, .rk-list li .name > .pa { margin-right: 0; vertical-align: 0; }
-.board .name > .nmt, .rk-list li .name > .nmt { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board .name > .nm-t, .rk-list li .name > .nm-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* a lista da janela Rankings é uma grade: sem minmax(0, 1fr) um nome comprido alargava a linha e empurrava os pontos pra fora no celular */
 .rk-body .rk-list { grid-template-columns: minmax(0, 1fr); }
 .rk-list li b { flex-shrink: 0; white-space: nowrap; }
@@ -1753,8 +1753,8 @@ html.lite :not(.game *), html.lite :not(.game *)::before, html.lite :not(.game *
   .admin .users td:has(> .rank) + td { flex: 1 1 70%; }
   .admin .users td:has(> .rank) ~ td:nth-child(4)::before { content: 'partidas: '; color: var(--muted); }
   /* título do jogo cabe numa linha ao lado dos botões */
-  .game-stage .stage-head h2 { font-size: 1.12rem; white-space: nowrap; }
-  .game-stage .stage-head h2 > .i { width: 1.9em; height: 1.9em; }
+  .game-stage .stage-head :is(h1, h2) { font-size: 1.12rem; white-space: nowrap; }
+  .game-stage .stage-head :is(h1, h2) > .i { width: 1.9em; height: 1.9em; }
   .daily-tag .dt-more { display: none; }
 }
 
@@ -2227,8 +2227,8 @@ html.lite .ls-show { box-shadow: none; }
 /* tela de reportar: formulário à esquerda, "Seus tickets" à direita (no celular, um embaixo do outro) */
 .tk-cols { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--space-md); align-items: start; }
 .tk-cols > section { margin: 0; }
-.tk-side h3 { display: flex; align-items: center; gap: .5em; margin: 0 0 var(--space-sm); }
-.tk-side h3 .i { width: 1.1em; height: 1.1em; color: var(--primary); }
+.tk-side :is(h2, h3) { display: flex; align-items: center; gap: .5em; margin: 0 0 var(--space-sm); }
+.tk-side :is(h2, h3) .i { width: 1.1em; height: 1.1em; color: var(--primary); }
 .tk-side .tk-list.compact { max-height: min(70vh, 640px); margin-top: 0; }
 .tk-side .empty-state { margin: 0; }
 .tk-sent-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: var(--space-xs); max-width: none !important; }
@@ -2264,7 +2264,7 @@ header .acct-btn .av { box-shadow: inset 0 -2px 0 oklch(0% 0 0 / .2); }
 .game-stage .stage-head { align-items: center; gap: var(--space-xs); padding-bottom: var(--space-sm); margin-bottom: 2px;
   border-bottom: 1px solid oklch(72% .15 var(--h) / .22); }
 .game-stage .stage-head .title { min-width: 0; }
-.game-stage .stage-head h2 { font-size: clamp(1.3rem, 1.1rem + .9vw, 1.9rem); letter-spacing: -0.035em; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+.game-stage .stage-head :is(h1, h2) { font-size: clamp(1.3rem, 1.1rem + .9vw, 1.9rem); letter-spacing: -0.035em; line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
 .game-stage .stage-head p { margin-top: 3px; }
 /* ladrilho do jogo: um pedaço do card (palco na cor do jogo com a cena 3D); sem 3D, o ícone */
 .gtile { position: relative; flex: none; width: 64px; height: 64px; display: grid; place-items: center; overflow: hidden; border-radius: 18px; margin-left: 4px;
@@ -2307,7 +2307,7 @@ header .acct-btn .av { box-shadow: inset 0 -2px 0 oklch(0% 0 0 / .2); }
 
 /* ranking ao lado: título com o ladrilho na cor do jogo, igual ao do palco */
 .board { border-color: oklch(72% .14 var(--h, 290) / .2); }
-.board h3 > .i { color: #fff; border-color: oklch(85% .1 var(--h, 290) / .35);
+.board :is(h2, h3) > .i { color: #fff; border-color: oklch(85% .1 var(--h, 290) / .35);
   background: linear-gradient(160deg, oklch(64% .15 var(--h, 290)), oklch(44% .13 var(--h, 290))); box-shadow: 0 3px 0 oklch(26% .09 var(--h, 290)); }
 
 /* celular: ladrilho e título menores, numa linha só com os botões */
@@ -2315,10 +2315,37 @@ header .acct-btn .av { box-shadow: inset 0 -2px 0 oklch(0% 0 0 / .2); }
   .gtile { width: 48px; height: 48px; border-radius: 14px; margin-left: 0; box-shadow: 0 3px 0 oklch(26% .09 var(--h)); }
   .gtile > .i { width: 24px; height: 24px; }
   .gtile .z3d { margin: -8px; }
-  .game-stage .stage-head h2 { font-size: 1.2rem; }
+  .game-stage .stage-head :is(h1, h2) { font-size: 1.2rem; }
   .game-stage .stage-head .back, .head-acts .btn { width: 40px; min-width: 40px; min-height: 40px; }
   .head-acts { gap: 6px; }
 }
 /* selo do desafio do dia no título: uma linha só (o detalhe "partida N" só cabe em tela larga) */
 .game-stage .daily-tag { white-space: nowrap; max-width: 100%; overflow: hidden; }
 @media (max-width: 1500px) { .game-stage .daily-tag .dt-more { display: none; } }
+
+/* ---------- acessibilidade e toque (análise ui-ux-pro-max) ---------- */
+/* link "pular para o conteúdo": só aparece no foco do teclado */
+.skip { position: fixed; top: 8px; left: 8px; z-index: 1000; padding: .6em 1em; border-radius: 12px; background: var(--surface); color: var(--text);
+  font-weight: 700; text-decoration: none; box-shadow: var(--elev-1); transform: translateY(-150%); }
+.skip:focus { transform: none; }
+#main:focus { outline: none; }
+/* letra mínima de 12px (selos de posição, bolinha de avisos, rótulos do HUD no celular, chips do admin) */
+.rank { font-size: max(.78em, 12px); }
+.tab-dot { font-size: max(.75em, 12px); }
+.chip { font-size: max(.72rem, 12px); }
+@media (max-width: 560px) { .game .hud .stat { font-size: .75rem; } }
+/* toque: área mínima de 44px no celular. O desenho fica do mesmo tamanho; uma camada invisível aumenta a área de toque */
+@media (pointer: coarse) {
+  header .icon-btn, header .acct-btn, .stage-head .back, .head-acts .btn, .seg button, .rx-add, a[data-profile] { position: relative; }
+  header .icon-btn::before, header .acct-btn::before, .stage-head .back::before, .head-acts .btn::before, .seg button::before, .rx-add::before, a[data-profile]::before {
+    content: ''; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
+  .adm-tabs button { min-height: 44px; }
+}
+/* nome longo no ranking termina em reticências (o link é flex, então o texto precisa da própria caixa) */
+.nm-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (pointer: coarse) { .board .name { padding-block: 12px; margin-block: -12px; } }
+/* Sudoku: as linhas dos blocos 3×3 se destacam das linhas finas */
+.sd-cell.br { border-right-color: oklch(78% .1 262 / .6); } .sd-cell.bb { border-bottom-color: oklch(78% .1 262 / .6); }
+/* janela Rankings: menos espaço vazio entre as abas e o seletor de temporada */
+.modal .rk-body.kings { margin-top: 0; }
+.modal .rk-body .season-seg { margin-top: 0; }

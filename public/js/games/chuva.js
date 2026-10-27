@@ -3,7 +3,7 @@ GAMES.chuva = {
   better: 'high', unit: 's', decimals: 1, phaser: true,
   start(el, done) {
     const W = 480, H = 520, PY = H - 44, PR = 16;
-    el.innerHTML = '<div class="hud"><span class="stat">Tempo<b id="t">0.0s</b></span><span class="stat">Bugs<b id="b">0</b></span><span class="stat">Café<b id="c" class="bonus-hud">—</b></span></div><div class="phaser-wrap" id="pw"></div>';
+    el.innerHTML = '<div class="hud"><span class="stat">Tempo<b id="t">0,0s</b></span><span class="stat">Bugs<b id="b">0</b></span><span class="stat">Café<b id="c" class="bonus-hud">—</b></span></div><div class="phaser-wrap" id="pw"></div>';
     const hud = { t: el.querySelector('#t'), b: el.querySelector('#b'), c: el.querySelector('#c') };
     // tipos de bug: raio de colisão, tamanho, velocidade (× a base), cor
     const KINDS = {
@@ -106,7 +106,7 @@ GAMES.chuva = {
           for (const img of code) { img.y += (started && alive ? 40 + t * 2 : 12) * dt; if (img.y >= CODE_H) img.y -= CODE_H * 2; }
           if (!started || !alive) return;
           t += rdt; // o tempo da pontuação é o real (câmera lenta não dá ponto extra)
-          hud.t.textContent = t.toFixed(1) + 's';
+          hud.t.textContent = dec(t, 1) + 's';
           const dir = (keys.RIGHT.isDown || keys.D.isDown) - (keys.LEFT.isDown || keys.A.isDown);
           if (dir) { px += dir * 380 * rdt; target = null; }
           else if (target !== null) px += Phaser.Math.Clamp(target - px, -480 * rdt, 480 * rdt);

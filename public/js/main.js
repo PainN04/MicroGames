@@ -52,6 +52,8 @@ $('#mPass').onclick = () => { toggleAcct(false); passwordModal(false); };
 $('#mLogout').onclick = () => { toggleAcct(false); logout(); };
 $('#mAdmin').onclick = () => { toggleAcct(false); showAdmin(); };
 $('#mReport').onclick = () => { toggleAcct(false); showReportPage(); };
+// link de pular: foca o conteúdo sem mexer no #hash (o #recordes usa o hash)
+$('.skip').addEventListener('click', e => { e.preventDefault(); $('#main').focus(); });
 addEventListener('hashchange', () => { if (location.hash === '#recordes' && me?.canEditRecords) showRecords(); });
 $('#mute').onclick = () => { muted = !muted; localStorage.setItem('mg_mute', muted ? '1' : '0'); renderMute(); if (!muted) sfx.good(); };
 renderMute();
