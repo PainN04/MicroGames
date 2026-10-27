@@ -48,6 +48,17 @@ const HOWTO = {
 const howtoSeen = id => { try { return localStorage.getItem('mg_howto_' + id) === '1'; } catch { return true; } };
 const howtoMark = id => { try { localStorage.setItem('mg_howto_' + id, '1'); } catch {} };
 
+// tela larga: o Como jogar vira duas colunas (arte grande à esquerda, passos à direita); mesmo limite do CSS
+const WIDE_HOWTO = matchMedia('(min-width: 900px)');
+// seu recorde e o melhor do mês (jogo diário: o seu de hoje e o líder de hoje), pra saber o que bater antes de começar
+function howtoRecs(id) {
+  const g = GAMES[id], range = g.daily ? dayRange() : { since: monthStart() };
+  const mine = bestPerPlayer(id, g.daily ? range : {}).find(([n]) => n === player), top = bestPerPlayer(id, range)[0];
+  if (!mine && !top) return '';
+  const cell = (label, v) => `<div><dt>${label}</dt><dd>${v ? fmt(g, v[1]) : '—'}</dd></div>`;
+  return `<dl class="howto-recs">${cell(g.daily ? 'Seu resultado hoje' : 'Seu recorde', mine)}${cell(g.daily ? 'Líder de hoje' : 'Melhor do mês', top)}</dl>`;
+}
+
 /** Mostra o "Como jogar" dentro de `el`; `then` roda quando a pessoa aperta Jogar. Devolve a limpeza. */
 function showHowto(id, el, then) {
   const g = GAMES[id], h = HOWTO[id];
@@ -55,14 +66,17 @@ function showHowto(id, el, then) {
   box.className = 'howto';
   box.innerHTML = `<div class="howto-card glass" style="--h:${g.hue};--art:${stageArt(id, g.hue)}" role="dialog" aria-label="Como jogar ${esc(g.name)}">
       <div class="howto-art">${icon(g.icon)}</div>
-      <h3>Como jogar <span>${esc(g.name)}</span></h3>
-      <ol>${h.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
-      <div class="howto-keys">${h.keys.map(k => `<kbd>${esc(k)}</kbd>`).join('')}</div>
-      <button class="btn" id="howGo">${icon('play')} Jogar</button>
+      <div class="howto-body">
+        <h3>Como jogar <span>${esc(g.name)}</span></h3>
+        <ol>${h.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
+        <div class="howto-keys">${h.keys.map(k => `<kbd>${esc(k)}</kbd>`).join('')}</div>
+        ${howtoRecs(id)}
+        <button class="btn" id="howGo">${icon('play')} Jogar</button>
+      </div>
     </div>`;
   el.append(box);
-  // ilustração: a cena 3D do card (se o 3D estiver ligado e a biblioteca já veio)
-  const un3d = mountScene3d(id, box.querySelector('.howto-art'), 150);
+  // ilustração: a cena 3D do card (se o 3D estiver ligado e a biblioteca já veio); maior quando o cartão fica em duas colunas
+  const un3d = mountScene3d(id, box.querySelector('.howto-art'), WIDE_HOWTO.matches ? 280 : 150);
   const close = () => {
     un3d?.();
     removeEventListener('keydown', onKey);
