@@ -298,16 +298,14 @@ function boardHtml(id) {
   const num = v => (g.decimals ? v.toFixed(g.decimals) : v.toLocaleString('pt-BR'));
   // a unidade (pontos, s, cliques...) aparece uma vez no topo da coluna; nas linhas fica só o número, e sobra espaço pro nome
   const row = ([n, s], k) => `<li class="${n === player ? 'me' : ''}${k < 3 ? ` top t${k + 1}` : ''}"><span class="pos">${rankBadge(k + 1)}</span>${nameHtml(n, { cls: 'name', extra: ticketStar(n) })}<span class="sc">${num(s)}</span>${rxButton(id, n)}${rxChips(id, n)}</li>`;
-  // embaixo do jogo: título, seletor e Desafiar à esquerda (.bd-side); a lista ao lado (.bd-main)
-  return '<div class="bd-side">' + (g.daily ? `<h3>${icon('trophy')} Ranking</h3><p class="hint board-reset">Só de hoje: zera à meia-noite</p>` : `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}`)
-    + (g.boardNote ? `<p class="hint board-note">${g.boardNote}</p>` : '')
-    + (me && !g.daily ? `<button class="btn ghost board-duel" data-duel="${id}">${icon('swords')} Desafiar alguém</button>` : '')
-    + '</div><div class="bd-main">' + (rows.length
+  return (g.daily ? `<h3>${icon('trophy')} Ranking</h3><p class="hint board-reset">Só de hoje: zera à meia-noite</p>` : `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}`)
+    + (g.boardNote ? `<p class="hint board-note">${g.boardNote}</p>` : '') + (rows.length
     ? `<div class="bd-cols" aria-hidden="true"><span>${all.length} ${all.length > 1 ? 'jogadores' : 'jogador'}</span><span>${esc(g.unit)}</span></div>`
       + '<ol>' + rows.map(row).join('') + '</ol>'
       // fora do top 10: a sua linha fica embaixo, separada
       + (mine >= 10 ? `<ol class="bd-me" start="${mine + 1}">${row(all[mine], mine)}</ol>` : '')
-    : `<div class="board-empty">${icon('trophy')}<b>${g.daily ? 'Ninguém jogou hoje ainda' : seasonMode === 'all' ? 'Ninguém jogou ainda' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda`}</b><span>Sua partida já entra aqui.</span></div>`) + '</div>';
+    : `<div class="board-empty">${icon('trophy')}<b>${g.daily ? 'Ninguém jogou hoje ainda' : seasonMode === 'all' ? 'Ninguém jogou ainda' : `Ninguém jogou em ${seasonLabel().toLowerCase()} ainda`}</b><span>Sua partida já entra aqui.</span></div>`)
+    + (me && !g.daily ? `<button class="btn ghost board-duel" data-duel="${id}">${icon('swords')} Desafiar alguém</button>` : '');
 }
 // desenha o ranking da partida e liga o seletor Mês/Geral
 function renderBoard(id) {
@@ -336,7 +334,6 @@ function play(id) {
           <div class="title"><h2>${g.name}</h2><p title="${esc(g.desc)}">${firstSentence(g.desc)}</p></div>
           <div class="head-acts">
             <button class="btn ghost" id="how" aria-label="Como jogar" title="Como jogar">${icon('circle-help')}<span>Como jogar</span></button>
-            <button class="btn ghost" id="toBoard" aria-label="Ver o ranking" title="Ranking">${icon('trophy')}<span>Ranking</span></button>
             ${g.daily ? '' : `<button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>`}
           </div>
         </div>
@@ -345,7 +342,6 @@ function play(id) {
       <aside class="board glass" id="board" style="--h:${g.hue}">${boardHtml(id)}</aside>
     </div>`;
     $('#back').onclick = showMenu;
-    $('#toBoard').onclick = () => $('#board').scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' });
     if (g.daily) setMenuTab('daily'); // voltar ao menu cai na aba dos diários
     else $('#restart').onclick = () => play(id);
     $('#how').onclick = () => { if (!HOWTO[id]) return; stop(); const el = $('#game'); el.innerHTML = ''; cleanup = showHowto(id, el, () => play(id)); };
