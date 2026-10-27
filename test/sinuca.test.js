@@ -103,3 +103,9 @@ test('sinuca: tacos destravam por partidas, pontos somados ou recorde', () => {
   assert.deepEqual(plain(open({ plays: 3, total: 900, best: 400 })), ['classico', 'ebano']);
   assert.deepEqual(plain(open({ plays: 9, total: 4200, best: 1600 })), ['classico', 'ebano', 'neon', 'carbono', 'fogo', 'ouro']);
 });
+
+test('sinuca: a máquina tem taco próprio, fora da lista de tacos do jogador', () => {
+  const { CUES, BOT_CUE } = ctx.GAMES.sinuca.cues;
+  assert.equal(BOT_CUE.id, 'maquina');
+  assert.ok(!CUES.some(q => q.id === BOT_CUE.id), 'jogador não escolhe o taco da máquina');
+});
