@@ -31,9 +31,40 @@ async function shrinkImage(file) {
     throw new Error('grande demais');
   } finally { URL.revokeObjectURL(url); }
 }
+/** Área "Anexar imagem" (escolher, arrastar ou colar), igual no formulário de reportar e na resposta do admin. */
+const attachHtml = hint => `<div class="tk-att"><div class="tk-drop" tabindex="-1">
+    <div class="tk-thumbs"></div>
+    <label class="tk-add">${icon('image-plus')}<span><b>Anexar imagem</b><small>${hint} Até ${TK_IMG_MAX}: escolha, arraste ou cole (Ctrl+V).</small></span>
+      <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple></label>
+  </div></div>`;
+/** Liga a área de anexo dentro de `f`; devolve a lista (viva) de imagens já reduzidas. */
+function bindAttach(f) {
+  const shots = [];
+  const thumbs = f.querySelector('.tk-thumbs'), drop = f.querySelector('.tk-drop'), file = f.querySelector('input[type=file]');
+  const drawShots = () => {
+    thumbs.innerHTML = shots.map((s, i) => `<span class="tk-shot"><img src="${s}" alt="Imagem ${i + 1}"><button type="button" class="tk-rm" data-rm="${i}" aria-label="Tirar imagem ${i + 1}">${icon('x')}</button></span>`).join('');
+    thumbs.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { shots.splice(+b.dataset.rm, 1); drawShots(); });
+    f.querySelector('.tk-add').hidden = shots.length >= TK_IMG_MAX;
+  };
+  const addFiles = async files => {
+    const err = f.querySelector('.err');
+    if (err) err.textContent = '';
+    for (const fl of [...files].filter(x => x.type.startsWith('image/'))) {
+      if (shots.length >= TK_IMG_MAX) { if (err) err.textContent = `No máximo ${TK_IMG_MAX} imagens.`; break; }
+      try { shots.push(await shrinkImage(fl)); drawShots(); } catch { if (err) err.textContent = 'Não consegui ler essa imagem.'; }
+    }
+  };
+  file.onchange = () => { addFiles(file.files); file.value = ''; };
+  const onPaste = e => { if (!f.isConnected) return document.removeEventListener('paste', onPaste); const fs = [...(e.clipboardData?.files || [])]; if (fs.length) { e.preventDefault(); addFiles(fs); } };
+  document.addEventListener('paste', onPaste);
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); };
+  return shots;
+}
 /** Imagem de um ticket em tamanho grande (Administração > Tickets). */
-function imageModal(id, t) {
-  const ids = t?.images || [id];
+function imageModal(id, t, reply) {
+  const ids = (reply ? t?.replyImages : t?.images) || [id];
   let i = Math.max(0, ids.indexOf(id));
   const { el } = modal(`<div class="tk-view"><img alt="Imagem anexada ao ticket"></div>
     <div class="acc-actions tk-view-nav">${ids.length > 1 ? `<button class="btn ghost icon-btn" data-step="-1" aria-label="Imagem anterior">${icon('chevron-left')}</button><span class="hint"></span><button class="btn ghost icon-btn" data-step="1" aria-label="Próxima imagem">${icon('chevron-right')}</button>` : ''}
@@ -80,13 +111,7 @@ function showReportPage() {
         <textarea name="message" rows="5" maxlength="1000" required minlength="5" placeholder="Ex.: no Sudoku, ao terminar o tabuleiro a tela ficou parada e o ponto não entrou."></textarea>
         <small class="tk-meta"><span>${where ? `${icon('map-pin')} Enviado de: ${esc(where)}` : ''}</span><span class="tk-count">0/1000</span></small>
       </label>
-      <div class="tk-att">
-        <div class="tk-drop" tabindex="-1">
-          <div class="tk-thumbs"></div>
-          <label class="tk-add">${icon('image-plus')}<span><b>Anexar imagem</b><small>Print da tela ajuda muito. Até ${TK_IMG_MAX}: escolha, arraste ou cole (Ctrl+V).</small></span>
-            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" multiple></label>
-        </div>
-      </div>
+      ${attachHtml('Print da tela ajuda muito.')}
       <p class="err" role="alert"></p>
       <div class="acc-actions"><button type="button" class="btn ghost" data-cancel>Cancelar</button><button class="btn">${icon('send')} Enviar</button></div>
     </form>
@@ -102,27 +127,7 @@ function bindReportForm(el, view) {
   $('#back').onclick = showMenu;
   const f = el.querySelector('form'), ok = f.querySelector('button:not([type])'), ta = f.querySelector('textarea');
   el.querySelector('[data-cancel]').onclick = close;
-  const shots = []; // data URLs já reduzidas
-  const thumbs = f.querySelector('.tk-thumbs'), drop = f.querySelector('.tk-drop'), file = f.querySelector('input[type=file]');
-  const drawShots = () => {
-    thumbs.innerHTML = shots.map((s, i) => `<span class="tk-shot"><img src="${s}" alt="Imagem ${i + 1}"><button type="button" class="tk-rm" data-rm="${i}" aria-label="Tirar imagem ${i + 1}">${icon('x')}</button></span>`).join('');
-    thumbs.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { shots.splice(+b.dataset.rm, 1); drawShots(); });
-    f.querySelector('.tk-add').hidden = shots.length >= TK_IMG_MAX;
-  };
-  const addFiles = async files => {
-    const err = f.querySelector('.err');
-    err.textContent = '';
-    for (const fl of [...files].filter(x => x.type.startsWith('image/'))) {
-      if (shots.length >= TK_IMG_MAX) { err.textContent = `No máximo ${TK_IMG_MAX} imagens.`; break; }
-      try { shots.push(await shrinkImage(fl)); drawShots(); } catch { err.textContent = 'Não consegui ler essa imagem.'; }
-    }
-  };
-  file.onchange = () => { addFiles(file.files); file.value = ''; };
-  const onPaste = e => { if (!f.isConnected) return document.removeEventListener('paste', onPaste); const fs = [...(e.clipboardData?.files || [])]; if (fs.length) { e.preventDefault(); addFiles(fs); } };
-  document.addEventListener('paste', onPaste);
-  drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
-  drop.ondragleave = () => drop.classList.remove('over');
-  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); };
+  const shots = bindAttach(f); // data URLs já reduzidas
   ta.oninput = () => { f.querySelector('.tk-count').textContent = `${ta.value.length}/1000`; };
   ta.focus();
   f.onsubmit = async e => {
@@ -146,11 +151,12 @@ async function loadMyTickets(el) {
   if (!box) return;
   try {
     const { tickets } = await api('api/tickets');
-    box.innerHTML = tickets.length ? `<ul class="tk-list compact">${tickets.map(t => `<li class="tk${t.status === 'done' ? ' done' : ''}">
+    box.innerHTML = tickets.length ? `<ul class="tk-list compact">${tickets.map(t => `<li class="tkt${t.status === 'done' ? ' done' : ''}">
         <div class="tk-top">${icon(ticketKind(t.kind)[1])}<b>${ticketKind(t.kind)[2]}</b>${ticketStatus(t)}<span class="hint">${ticketWhen(t.at)}</span></div>
         <p class="tk-text">${esc(t.message)}</p>
         ${t.images.length ? `<div class="tk-imgs">${t.images.map(id => `<a href="${tkImg(id)}" target="_blank" rel="noopener"><img src="${tkImg(id)}" alt="Imagem anexada" loading="lazy"></a>`).join('')}</div>` : ''}
-        ${t.reply ? `<p class="tk-reply">${icon('message-circle')}<span><b>Resposta</b>${esc(t.reply)}</span></p>` : ''}</li>`).join('')}</ul>` : `<div class="empty-state">${icon('report')}<b>Nenhum ticket ainda</b><span>Os problemas que você mandar aparecem aqui, com a resposta do administrador.</span></div>`;
+        ${t.reply || t.replyImages.length ? `<p class="tk-reply">${icon('message-circle')}<span><b>Resposta</b>${esc(t.reply || '')}</span></p>` : ''}
+        ${t.replyImages.length ? `<div class="tk-imgs">${t.replyImages.map(id => `<a href="${tkImg(id)}" target="_blank" rel="noopener"><img src="${tkImg(id)}" alt="Imagem da resposta" loading="lazy"></a>`).join('')}</div>` : ''}</li>`).join('')}</ul>` : `<div class="empty-state">${icon('report')}<b>Nenhum ticket ainda</b><span>Os problemas que você mandar aparecem aqui, com a resposta do administrador.</span></div>`;
   } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; }
 }
 
@@ -197,20 +203,21 @@ function renderTickets() {
   }
   box.innerHTML = rows.map(t => {
     const [, ic, label] = ticketKind(t.kind), where = viewName(t.view);
-    return `<li class="tk${t.status === 'done' ? ' done' : ''}" data-id="${t.id}">
+    return `<li class="tkt${t.status === 'done' ? ' done' : ''}" data-id="${t.id}">
       <div class="tk-top"><span class="tk-ic k-${t.kind}">${icon(ic)}</span><b>${label}</b>${ticketStatus(t)}
         <span class="hint">${ticketWhen(t.at)}</span></div>
       <p class="tk-text">${esc(t.message)}</p>
       ${t.images.length ? `<div class="tk-imgs">${t.images.map((id, i) => `<button type="button" data-img="${id}" aria-label="Ver imagem ${i + 1}"><img src="${tkImg(id)}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
       <div class="tk-info"><span>${icon('user')} ${esc(t.name || 'conta apagada')}</span>${where ? `<span>${icon('map-pin')} ${esc(where)}</span>` : ''}${t.agent ? `<span title="${esc(t.agent)}">${icon('monitor')} ${esc(agentShort(t.agent))}</span>` : ''}</div>
-      ${t.reply ? `<p class="tk-reply">${icon('message-circle')}<span><b>Sua resposta</b>${esc(t.reply)}</span></p>` : ''}
+      ${t.reply || t.replyImages.length ? `<p class="tk-reply">${icon('message-circle')}<span><b>Sua resposta</b>${esc(t.reply || '')}</span></p>` : ''}
+      ${t.replyImages.length ? `<div class="tk-imgs">${t.replyImages.map((id, i) => `<button type="button" data-img="${id}" data-reply="1" aria-label="Ver imagem da resposta ${i + 1}"><img src="${tkImg(id)}" alt="" loading="lazy"></button>`).join('')}</div>` : ''}
       <div class="actions">${t.status === 'open'
         ? `<button class="btn" data-tk="done">${icon('circle-check')}<span class="t">Resolver</span></button>`
         : `<button class="btn ghost" data-tk="open">${icon('rotate-ccw')}<span class="t">Reabrir</span></button>`}
         <button class="btn ghost icon-btn danger" data-tk="del" aria-label="Apagar ticket">${icon('trash-2')}</button></div>
     </li>`;
   }).join('');
-  box.querySelectorAll('[data-img]').forEach(b => b.onclick = () => imageModal(+b.dataset.img, tkData.find(t => t.id === +b.closest('li').dataset.id)));
+  box.querySelectorAll('[data-img]').forEach(b => b.onclick = () => imageModal(+b.dataset.img, tkData.find(t => t.id === +b.closest('li').dataset.id), b.dataset.reply));
   box.querySelectorAll('[data-tk]').forEach(b => b.onclick = () => ticketAction(b.dataset.tk, tkData.find(t => t.id === +b.closest('li').dataset.id)));
 }
 // "Mozilla/5.0 (iPhone; ...) ... Safari" → "iPhone · Safari": dá pra saber o aparelho sem ler o texto inteiro
@@ -222,15 +229,17 @@ function agentShort(ua) {
 async function ticketAction(act, t) {
   if (!t) return;
   if (act === 'done') {
+    let shots = [];
     return adminFormModal(`${icon('circle-check')} Resolver ticket`,
       `<p class="tk-quote">${esc(t.message)}</p>
        <label class="tk-msg"><span>Resposta pra ${esc(t.name || 'a pessoa')} (opcional)</span>
          <textarea name="reply" rows="3" maxlength="500" placeholder="Ex.: Arrumei, já pode jogar de novo!"></textarea>
-         <small>Vai junto no aviso de resolvido.</small></label>`,
+         <small>Vai junto no aviso de resolvido.</small></label>
+       ${attachHtml('Um print do que mudou, por exemplo.')}`,
       'Marcar como resolvido', async d => {
-        await api('api/admin/tickets/update', { method: 'POST', body: { id: t.id, status: 'done', reply: d.get('reply') } });
+        await api('api/admin/tickets/update', { method: 'POST', body: { id: t.id, status: 'done', reply: d.get('reply'), images: shots } });
         loadTickets();
-      });
+      }, { onOpen: f => { shots = bindAttach(f); } });
   }
   try {
     if (act === 'open') await api('api/admin/tickets/update', { method: 'POST', body: { id: t.id, status: 'open', reply: t.reply } });

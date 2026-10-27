@@ -514,7 +514,7 @@ function noteHtml(n) {
     case 'duo_decline': return `<b>${esc(n.by)}</b> recusou o convite pra dupla ${esc(n.name)}`;
     case 'duo_cancel': return `<b>${esc(n.by)}</b> cancelou o convite pra dupla ${esc(n.name)}`;
     case 'duo_left': return n.by === 'o admin' ? `A dupla <b>${esc(n.name)}</b> foi desfeita pelo admin` : `<b>${esc(n.by)}</b> saiu da dupla ${esc(n.name)}`;
-    case 'ticket': return `Seu ticket foi resolvido: <b>${esc(n.about)}</b>${n.about.length >= 60 ? '…' : ''}<small>${n.reply ? esc(n.reply) : 'toque pra ver seus tickets'}</small>`;
+    case 'ticket': return `Seu ticket foi resolvido: <b>${esc(n.about)}</b>${n.about.length >= 60 ? '…' : ''}<small>${n.reply ? esc(n.reply) : 'toque pra ver seus tickets'}${n.images ? ` · ${n.images} imagem${n.images > 1 ? 's' : ''}` : ''}</small>`;
     case 'tourney': return `Torneio da semana (${dayLabelBR(n.start)} – ${dayLabelBR(n.end - 1)}): você ficou em <b>${n.rank}º</b> com ${n.points} pontos`;
     default: {
       const where = n.kind === 'geral' ? 'o recorde geral' : `a liderança de ${monthName(monthKey(n.at)).toLowerCase()}`;

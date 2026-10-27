@@ -378,6 +378,18 @@ test('tickets: imagens anexadas só pra quem mandou e pra conta dona', async () 
   assert.equal(mine.status, 200);
   assert.equal(mine.headers.get('content-type'), 'image/png');
   assert.equal((await owner(`/api/tickets/image?id=${t.images[1]}`)).status, 200);
+  const adm = await login('outroadm', 'senha-adm-123');
+  // resposta do dono com imagens: ficam separadas das de quem reportou e chegam a quem reportou
+  assert.equal((await adm('/api/admin/tickets/update', { method: 'POST', body: { id: t.id, status: 'done', images: [png] } })).status, 403);
+  assert.equal((await owner('/api/admin/tickets/update', { method: 'POST', body: { id: t.id, status: 'done', reply: 'Veja', images: ['data:text/html;base64,PGI+'] } })).status, 400);
+  assert.equal((await owner('/api/admin/tickets/update', { method: 'POST', body: { id: t.id, status: 'done', reply: 'Veja', images: [png, png] } })).status, 200);
+  const done = (await ana('/api/tickets')).body.tickets.find(x => x.id === t.id);
+  assert.equal(done.images.length, 2, 'as de quem reportou continuam');
+  assert.equal(done.replyImages.length, 2);
+  assert.equal((await ana(`/api/tickets/image?id=${done.replyImages[0]}`)).status, 200);
+  assert.equal((await bia(`/api/tickets/image?id=${done.replyImages[0]}`)).status, 404);
+  await owner('/api/admin/tickets/update', { method: 'POST', body: { id: t.id, status: 'done', reply: 'Veja', images: [png] } });
+  assert.equal((await owner('/api/admin/tickets')).body.tickets.find(x => x.id === t.id).replyImages.length, 1, 'mandar de novo troca as anteriores');
   await owner('/api/admin/tickets/delete', { method: 'POST', body: { id: t.id } });
   assert.equal((await sql`SELECT count(*) AS n FROM ticket_images WHERE ticket_id = ${t.id}`)[0].n, 0, 'apagar leva as imagens junto');
   assert.equal((await owner('/api/admin/tickets')).body.tickets.length, 0);
