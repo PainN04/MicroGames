@@ -248,7 +248,9 @@ async function saveScore(gameId, score, proof, pass) {
     return 'queued';
   }
 }
-function fmt(g, v) { return (g.decimals ? v.toFixed(g.decimals) : v) + ' ' + g.unit; }
+// número com vírgula, como se escreve em português (2,5 e não 2.5)
+function dec(v, d = 1) { return (+v).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmt(g, v) { return (g.decimals ? dec(v, g.decimals) : v) + ' ' + g.unit; }
 
 // ---------- som ----------
 // Bipes sintetizados (Web Audio), sem arquivos. Botão de som no topo liga/desliga.

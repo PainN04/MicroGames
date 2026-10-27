@@ -69,7 +69,7 @@ function showReportPage() {
     main.innerHTML = `<div class="admin tk-page">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('report')} Reportar um problema</h2><p>Só o administrador do site lê. Quando ele resolver, você recebe um aviso.</p></div>
+        <div class="title"><h1>${icon('report')} Reportar um problema</h1><p>Só o administrador do site lê. Quando ele resolver, você recebe um aviso.</p></div>
       </div>
       <div class="tk-cols">
       <section class="glass tk-main">
@@ -91,7 +91,7 @@ function showReportPage() {
       <div class="acc-actions"><button type="button" class="btn ghost" data-cancel>Cancelar</button><button class="btn">${icon('send')} Enviar</button></div>
     </form>
       </section>
-      <section class="glass tk-side"><h3>${icon('inbox')} Seus tickets</h3><div class="tk-mine" id="tkMine"><p class="hint" style="text-align:left">Carregando...</p></div></section>
+      <section class="glass tk-side"><h2>${icon('inbox')} Seus tickets</h2><div class="tk-mine" id="tkMine"><p class="hint" style="text-align:left">Carregando...</p></div></section>
       </div>
     </div>`;
     bindReportForm(main, view);

@@ -122,7 +122,7 @@ function showProfile(name = player, tab = 'resumo') {
     main.innerHTML = `<div class="admin profile">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2><span id="profAv">${avatarHtml(flair.avatars?.[name], 'big') || icon('user')}</span> ${esc(name)}<span id="profTitle"></span>${duoOfName(name) ? ` <span class="tag team-tag" title="Dupla de ${esc(duoOfName(name).aName)} e ${esc(duoOfName(name).bName)}">${icon('users')} ${esc(duoOfName(name).name)}</span>` : ''}</h2><p class="pbio" id="profBio" hidden></p><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p><div class="mtitles" id="mtitles"></div></div>
+        <div class="title"><h1><span id="profAv">${avatarHtml(flair.avatars?.[name], 'big') || icon('user')}</span> ${esc(name)}<span id="profTitle"></span>${duoOfName(name) ? ` <span class="tag team-tag" title="Dupla de ${esc(duoOfName(name).aName)} e ${esc(duoOfName(name).bName)}">${icon('users')} ${esc(duoOfName(name).name)}</span>` : ''}</h1><p class="pbio" id="profBio" hidden></p><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p><div class="mtitles" id="mtitles"></div></div>
         ${name !== player && me ? `${social?.myDuo?.state === 'none' && social.people.find(p => p.name === name)?.free ? `<button class="btn ghost" id="profDuo">${icon('users')} <span>Chamar pra dupla</span></button>` : ''}<button class="btn ghost" id="profDuel">${icon('swords')} <span>Desafiar</span></button>` : name === player ? `<button class="btn ghost" id="profRecap">${icon('calendar')} <span>Minha semana</span></button>` : ''}
       </div>
       <div id="prof"><p class="hint" style="text-align:left">Carregando...</p></div>
@@ -215,7 +215,7 @@ const PROF_TABS = [['resumo', 'chart-column', 'Resumo'], ['conquistas', 'award',
 function profTabsHtml(own, only) {
   const tabs = PROF_TABS.filter(([k]) => (own || k !== 'personalizar') && (!only || only.includes(k)));
   return `<div class="seg view-tabs" role="tablist" aria-label="Perfil">${tabs.map(([k, ic, l]) =>
-    `<button role="tab" data-ptab="${k}" aria-selected="${profTab === k}" aria-pressed="${profTab === k}">${icon(ic)} ${l}</button>`).join('')}</div>`;
+    `<button role="tab" data-ptab="${k}" aria-selected="${profTab === k}">${icon(ic)} ${l}</button>`).join('')}</div>`;
 }
 function bindProfTabs(name) {
   document.querySelectorAll('[data-ptab]').forEach(b => b.onclick = () => { profTab = b.dataset.ptab; renderProfile(name); });

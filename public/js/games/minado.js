@@ -6,7 +6,7 @@ GAMES.minado = {
     const N = 12, MINES = 28;
     let mines = null, t0 = 0, iv, over = false, flagMode = false, longPress = null, longFired = false;
     const open = new Set(), flags = new Set();
-    el.innerHTML = `<div class="hud"><span class="stat">Minas<b id="m">${MINES}</b></span><span class="stat">Tempo<b id="t">0.0s</b></span></div>
+    el.innerHTML = `<div class="hud"><span class="stat">Minas<b id="m">${MINES}</b></span><span class="stat">Tempo<b id="t">0,0s</b></span></div>
       <div class="mines" id="mf" style="--n:${N}">${Array.from({ length: N * N }, (_, i) => `<button class="mc" data-i="${i}" aria-label="casa ${i + 1}"></button>`).join('')}</div>
       <button class="btn ghost" id="flag" aria-pressed="false">${icon('flag')} <span>Modo marcar: desligado</span></button>`;
     const cells = [...el.querySelectorAll('.mc')];
@@ -91,7 +91,7 @@ GAMES.minado = {
       if (!mines) {
         placeMines(i);
         t0 = performance.now();
-        iv = setInterval(() => el.querySelector('#t').textContent = elapsed().toFixed(1) + 's', 100);
+        iv = setInterval(() => el.querySelector('#t').textContent = dec(elapsed(), 1) + 's', 100);
       }
       if (mines.has(i)) return lose(i);
       const stack = [i];
@@ -108,7 +108,7 @@ GAMES.minado = {
       if (open.size === N * N - MINES) {
         over = true; clearInterval(iv);
         const score = +elapsed().toFixed(1);
-        el.querySelector('#t').textContent = score.toFixed(1) + 's';
+        el.querySelector('#t').textContent = dec(score, 1) + 's';
         for (const m of mines) cells[m].innerHTML = icon('flag', { cls: 'flag' });
         setTimeout(() => done(score), 500);
       }

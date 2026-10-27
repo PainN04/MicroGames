@@ -16,7 +16,7 @@ function showAdmin() {
     main.innerHTML = `<div class="admin">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('settings')} Administração</h2><p>Contas de quem joga, vínculo com o Geiko e a regra de bloqueio por fila.</p></div>
+        <div class="title"><h1>${icon('settings')} Administração</h1><p>Contas de quem joga, vínculo com o Geiko e a regra de bloqueio por fila.</p></div>
       </div>
       ${adminTabsHtml(adminPane)}
       <section class="glass" data-pane="online"${adminPane === 'online' ? '' : ' hidden'}>
@@ -208,7 +208,7 @@ function showRecords() {
     main.innerHTML = `<div class="admin">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('settings')} Administração</h2>
+        <div class="title"><h1>${icon('settings')} Administração</h1>
           <p>Mudar aqui altera o ranking na hora. Pra abrir direto numa aba nova: <a href="${location.pathname}#recordes" target="_blank" style="color:var(--primary)">${esc(location.host)}/#recordes</a></p></div>
       </div>
       ${adminTabsHtml('records')}
@@ -401,7 +401,7 @@ function showReport() {
     main.innerHTML = `<div class="admin report">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('settings')} Administração</h2><p>Quanto o pessoal está jogando — por pessoa, por jogo, por dia e por hora.</p></div>
+        <div class="title"><h1>${icon('settings')} Administração</h1><p>Quanto o pessoal está jogando — por pessoa, por jogo, por dia e por hora.</p></div>
       </div>
       ${adminTabsHtml('report')}
       <div class="row" style="justify-content:space-between">

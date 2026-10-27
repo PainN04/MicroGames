@@ -63,7 +63,7 @@ GAMES.comecome = {
     const COLS = 19, ROWS = 21, T = 24, W = COLS * T, H = ROWS * T, TUNNEL = 9;
     const DIR = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
     const KEYS = { ArrowUp: 'up', w: 'up', ArrowDown: 'down', s: 'down', ArrowLeft: 'left', a: 'left', ArrowRight: 'right', d: 'right' };
-    const arrow = (d, rot) => `<button class="dbtn" data-d="${d}" aria-label="${d}" style="--r:${rot}deg">${icon('arrow-left')}</button>`;
+    const arrow = (d, rot) => `<button class="dbtn" data-d="${d}" tabindex="-1" aria-label="${d}" style="--r:${rot}deg">${icon('arrow-left')}</button>`;
     el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Vidas<b id="v" class="lives">${hearts(3)}</b></span><span class="stat">Fase<b id="f">1</b></span></div>
       <div class="phaser-wrap" id="pw"></div>
       <div class="dpad flat" aria-hidden="true">${arrow('left', 0)}${arrow('up', 90)}${arrow('down', -90)}${arrow('right', 180)}</div>
