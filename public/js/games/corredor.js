@@ -363,8 +363,9 @@ GAMES.corredor = {
 
       // ---------- urubu (de frente pro corredor) ----------
       // 3 quadros de asa: 0 = em cima, 1 = meio, 2 = embaixo. Centro do corpo em (30, 24).
-      const VK = '#2e1c14'; // contorno mais claro que o INK: o urubu precisa aparecer no céu da noite
-      [-20, -3, 15].forEach((tipY, fr) => tex('cr_vul' + fr, 60, 50, c => {
+      // cinza-azulado frio + borda clara: não some no céu da noite nem se confunde com a areia e as mesas
+      const VK = '#1c2230';
+      const vulture = (c, tipY) => {
         c.translate(30, 24);
         const wing = (dy, fill, under) => {
           c.beginPath(); c.moveTo(-4, -2);
@@ -372,12 +373,12 @@ GAMES.corredor = {
           for (let k = 0; k < 3; k++) { const fx = 8 + k * 3.2, fy = tipY + dy + (tipY < 0 ? 2 : -2) * k; c.lineTo(fx, fy); c.lineTo(fx + 1.4, fy + (tipY < 0 ? 4 : -4)); }
           c.quadraticCurveTo(14, tipY * 0.35 + dy, 11, 0); c.closePath();
           paint(c, fill, VK, 1.1);
-          if (under) { c.save(); c.clip(); c.strokeStyle = 'rgba(245,232,214,.85)'; c.lineWidth = 2.6; c.beginPath(); c.moveTo(9, 0); c.quadraticCurveTo(13, tipY * 0.4, 12, tipY + 1); c.stroke(); c.restore(); }
+          if (under) { c.save(); c.clip(); c.strokeStyle = 'rgba(225,235,250,.9)'; c.lineWidth = 2.6; c.beginPath(); c.moveTo(9, 0); c.quadraticCurveTo(13, tipY * 0.4, 12, tipY + 1); c.stroke(); c.restore(); }
         };
-        wing(-1, '#6e5040'); // asa de trás
-        c.beginPath(); c.moveTo(13, -3); c.lineTo(25, -2); c.lineTo(24, 2); c.lineTo(13, 3); c.closePath(); paint(c, '#7a5a46', VK, 1.1); // rabo
-        ell(c, 3, 0, 13.5, 6.8); paint(c, lin(c, 0, -7, 0, 7, [[0, '#b88d6c'], [1, '#6a4a38']]), VK, 1.2);
-        wing(1, lin(c, 0, tipY, 0, 0, [[0, '#7c5a44'], [1, '#b08a6c']]), true);
+        wing(-1, '#3c4658'); // asa de trás
+        c.beginPath(); c.moveTo(13, -3); c.lineTo(25, -2); c.lineTo(24, 2); c.lineTo(13, 3); c.closePath(); paint(c, '#46516a', VK, 1.1); // rabo
+        ell(c, 3, 0, 13.5, 6.8); paint(c, lin(c, 0, -7, 0, 7, [[0, '#7d8aa6'], [1, '#3a4358']]), VK, 1.2);
+        wing(1, lin(c, 0, tipY, 0, 0, [[0, '#465270'], [1, '#7a88a8']]), true);
         // gola branca fofinha
         c.beginPath(); for (let k = 0; k < 6; k++) c.arc(-9 + Math.cos(k) * 2.5, -1.5 + Math.sin(k * 1.3) * 2.5, 2.6, 0, TAU); paint(c, '#efe7dc', null);
         // cabeça careca e bico curvo
@@ -385,6 +386,16 @@ GAMES.corredor = {
         ell(c, -16, -6, 4.6, 4.1); paint(c, rad(c, -17, -7.5, 0.5, 5, [[0, '#f3a196'], [1, '#c45e57']]), VK, 1.1);
         c.beginPath(); c.moveTo(-19.5, -7.5); c.quadraticCurveTo(-25, -7, -25.5, -3.5); c.quadraticCurveTo(-23, -4.6, -20, -4); c.closePath(); paint(c, '#f1e2c4', VK, 1);
         ell(c, -17, -7, 1.5, 1.5); c.fillStyle = '#fff'; c.fill(); ell(c, -17.4, -7, 0.8, 0.8); c.fillStyle = VK; c.fill();
+      };
+      [-20, -3, 15].forEach((tipY, fr) => tex('cr_vul' + fr, 60, 50, c => {
+        // desenha num canvas à parte e carimba a silhueta clara em volta antes (borda de "adesivo")
+        const art = document.createElement('canvas'); art.width = 60 * R; art.height = 50 * R;
+        const a = art.getContext('2d'); a.scale(R, R); vulture(a, tipY);
+        const halo = document.createElement('canvas'); halo.width = art.width; halo.height = art.height;
+        const h = halo.getContext('2d'); h.drawImage(art, 0, 0); h.globalCompositeOperation = 'source-in'; h.fillStyle = '#fff6e6'; h.fillRect(0, 0, halo.width, halo.height);
+        c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+        for (let k = 0; k < 12; k++) c.drawImage(halo, Math.cos(k * TAU / 12) * 1.6 * R, Math.sin(k * TAU / 12) * 1.6 * R);
+        c.drawImage(art, 0, 0); c.restore();
       }));
 
       // ---------- cactos saguaro (gerados sob demanda por altura e variação) ----------
