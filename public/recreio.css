@@ -146,6 +146,7 @@ html[data-skin="recreio"] .rc-track { display: flex; gap: 16px; overflow-x: auto
 html[data-skin="recreio"] .rc-track::-webkit-scrollbar { display: none; }
 /* botão Diários: só a fileira dos jogos diários, aberta em grade */
 html[data-skin="recreio"] main.only-daily > :is(.hero, #daily, #dtRemind, .rc-row:not(#row-daily)) { display: none; }
+html[data-skin="recreio"] main:not(.only-daily) > #dailyPick { display: none; }
 html[data-skin="recreio"] main.only-daily #row-daily :is(.rc-arrows, .rc-more) { display: none; }
 html[data-skin="recreio"] main.only-daily #row-daily .rc-row-head h2 { font-size: clamp(1.7rem, 1.3rem + 1.2vw, 2.4rem); }
 html[data-skin="recreio"] .rc-track.wrap { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); overflow: visible; }

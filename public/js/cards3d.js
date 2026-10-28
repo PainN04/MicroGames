@@ -2464,10 +2464,10 @@ async function enhanceCards() {
     scenes3d.push({ canvas, illo, update: build(Zdog, illo) });
     io?.observe(canvas);
   });
-  // palco do desafio do dia
-  const stage = document.querySelector('.daily-stage');
-  const build = stage && SCENES_3D[stage.dataset.id];
-  if (build) {
+  // palcos grandes: o desafio do dia e o diário em destaque
+  document.querySelectorAll('.daily-stage').forEach(stage => {
+    const build = SCENES_3D[stage.dataset.id];
+    if (!build) return;
     const ds = +stage.dataset.size || (SMALL.matches ? 150 : 170);
     const canvas = Object.assign(document.createElement('canvas'), { className: 'z3d', width: ds, height: ds });
     canvas.setAttribute('aria-hidden', 'true');
@@ -2476,7 +2476,7 @@ async function enhanceCards() {
     const illo = new Zdog.Illustration({ element: canvas, zoom: ds / 150 });
     scenes3d.push({ canvas, illo, update: build(Zdog, illo) });
     io?.observe(canvas);
-  }
+  });
   if (!loopOn && scenes3d.length) { loopOn = true; requestAnimationFrame(loop); }
   // inclinação 3D com brilho (só com mouse; no celular fica parado)
   if (matchMedia('(hover: hover)').matches) {
