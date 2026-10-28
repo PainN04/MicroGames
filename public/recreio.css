@@ -71,11 +71,11 @@ html[data-skin="recreio"] .link-btn { color: var(--primary); font-weight: 700; }
   html[data-skin="recreio"] header { background: var(--surface); box-shadow: none; border-bottom: 1px solid var(--border); padding-inline: 14px;
     backdrop-filter: none; -webkit-backdrop-filter: none; }
   html[data-skin="recreio"] .side-nav { position: fixed; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); z-index: 12; display: flex; justify-content: space-around;
-    padding: 6px; border-radius: 22px; background: var(--text); color: var(--bg); box-shadow: 0 10px 30px oklch(0% 0 0 / .25); }
+    padding: 6px; border-radius: 22px; background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); box-shadow: 0 10px 30px oklch(0% 0 0 / .25); }
   html[data-skin="recreio"] .side-hub { display: contents; }
   html[data-skin="recreio"] .side-btn, html[data-skin="recreio"] .side-hub .hub-btn { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 2px; min-height: 52px; padding: 4px 2px; border: 0; border-radius: 16px; background: none; color: inherit; font: inherit; font-size: .66rem; font-weight: 600; box-shadow: none; opacity: .72; }
-  html[data-skin="recreio"] .side-btn.on { opacity: 1; background: color-mix(in oklab, var(--bg) 16%, transparent); }
+  html[data-skin="recreio"] .side-btn.on { opacity: 1; background: color-mix(in oklab, var(--primary) 18%, transparent); color: var(--primary); }
   html[data-skin="recreio"] .side-btn > .i { width: 21px; height: 21px; }
   html[data-skin="recreio"] .side-hub .hub-btn .ic { width: 22px; height: 22px; background: none !important; color: inherit !important; border-radius: 0; }
   html[data-skin="recreio"] .side-hub .hub-btn .ic .i { width: 21px; height: 21px; }
@@ -84,6 +84,8 @@ html[data-skin="recreio"] .link-btn { color: var(--primary); font-weight: 700; }
   html[data-skin="recreio"] .side-hub .hub-btn small { display: none; }
   html[data-skin="recreio"] .side-btn .tab-dot { position: absolute; top: 2px; left: calc(50% + 6px); box-shadow: none; }
   html[data-skin="recreio"] body { padding-bottom: 86px; }
+  /* uma barra só: com a navegação embaixo, o topo deixa de ser barra (sem fundo, sem borda, rola junto com a página) */
+  html[data-skin="recreio"] body:not(:has(main.game-view)) header { position: relative; background: none; border-bottom: 0; }
   /* na partida a barra sai: o jogo precisa da altura toda (o botão voltar leva ao menu) */
   html[data-skin="recreio"] body:has(main.game-view) .side-nav { display: none; }
   html[data-skin="recreio"] body:has(main.game-view) { padding-bottom: 0; }
@@ -304,7 +306,7 @@ html[data-skin="recreio"] .stage-head :is(h1, h2) > .i { color: #fff; border: 0;
   html[data-skin="recreio"] .side-hub .hub-btn.on small { color: color-mix(in oklab, var(--bg) 70%, transparent); }
 }
 @media (max-width: 900px) {
-  html[data-skin="recreio"] .side-hub .hub-btn.on { opacity: 1; background: color-mix(in oklab, var(--bg) 16%, transparent); }
+  html[data-skin="recreio"] .side-hub .hub-btn.on { opacity: 1; background: color-mix(in oklab, var(--primary) 18%, transparent); color: var(--primary); }
 }
 html[data-skin="recreio"] .comp-page > section, html[data-skin="recreio"] .comp-page :is(.t-body, .duo-cols, .duel-cols, .duel-main) > section { margin: 0; }
 html[data-skin="recreio"] .comp-page .comp-sub { font-size: 1.15rem; margin: 0 0 var(--space-sm); }
