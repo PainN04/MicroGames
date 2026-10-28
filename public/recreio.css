@@ -298,3 +298,53 @@ html[data-skin="recreio"] .ls-thumb[aria-selected="true"] { background: oklch(10
 /* ladrilho do ícone no título das páginas (administração, tickets...): cheio, igual ao do jogo */
 html[data-skin="recreio"] .stage-head :is(h1, h2) > .i { color: #fff; border: 0;
   background: linear-gradient(160deg, oklch(68% .15 var(--h, 290)), oklch(50% .16 var(--h, 290))); box-shadow: 0 3px 0 oklch(38% .12 var(--h, 290) / .6); }
+
+/* ----- telas de competição: Rankings, Torneio, Duplas e Duelos ----- */
+@media (min-width: 901px) {
+  html[data-skin="recreio"] .side-hub .hub-btn.on { background: var(--text); color: var(--bg); }
+  html[data-skin="recreio"] .side-hub .hub-btn.on small { color: color-mix(in oklab, var(--bg) 70%, transparent); }
+}
+@media (max-width: 900px) {
+  html[data-skin="recreio"] .side-hub .hub-btn.on { opacity: 1; background: color-mix(in oklab, var(--bg) 16%, transparent); }
+}
+html[data-skin="recreio"] .comp-page > section, html[data-skin="recreio"] .comp-page :is(.t-body, .duo-cols, .duel-cols, .duel-main) > section { margin: 0; }
+html[data-skin="recreio"] .comp-page .comp-sub { font-size: 1.15rem; margin: 0 0 var(--space-sm); }
+html[data-skin="recreio"] .comp-page .stage-head .btn:not(.back) { margin-left: auto; }
+html[data-skin="recreio"] .comp-page .rk-tabs { align-self: flex-start; }
+html[data-skin="recreio"] .comp-page .rk-body.kings { margin-top: 0; }
+html[data-skin="recreio"] .comp-page .duo-how { margin-top: var(--space-sm); }
+/* torneio: jogos da semana à esquerda, classificação à direita */
+html[data-skin="recreio"] .comp-torneio .t-body { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: start; }
+html[data-skin="recreio"] .comp-torneio .tgames { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+html[data-skin="recreio"] .comp-torneio .tgame { flex-direction: column; align-items: flex-start; padding: 16px; border-radius: 18px; }
+html[data-skin="recreio"] .comp-torneio .tgame b { font-size: 1.05rem; }
+html[data-skin="recreio"] .comp-torneio .tgame small { flex-basis: auto; max-width: 100%; }
+/* duplas: classificação e os pontos de cada jogo */
+html[data-skin="recreio"] .duo-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: var(--space-md); align-items: start; }
+html[data-skin="recreio"] .duo-cols .teams { margin: 0; }
+html[data-skin="recreio"] .dg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+html[data-skin="recreio"] .dg { padding: 12px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--border); }
+html[data-skin="recreio"] .dg-head { display: flex; align-items: center; gap: .55em; margin: 0 0 8px; }
+html[data-skin="recreio"] .dg-head .ic { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 10px; color: #fff;
+  background: linear-gradient(160deg, oklch(68% .15 var(--h)), oklch(50% .16 var(--h))); }
+html[data-skin="recreio"] .dg-head .ic .i { width: 17px; height: 17px; }
+html[data-skin="recreio"] .dg ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+html[data-skin="recreio"] .dg li { display: flex; align-items: center; gap: .5em; padding: .35em .55em; border-radius: 10px; background: var(--surface); font-size: var(--fs-sm); }
+html[data-skin="recreio"] .dg li.me { outline: 1px solid oklch(70% .19 290 / .5); background: oklch(70% .19 290 / .14); }
+html[data-skin="recreio"] .dg .dn { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; overflow: hidden; }
+html[data-skin="recreio"] .dg .dn small { color: var(--muted); font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .dg li > b { margin-left: auto; white-space: nowrap; color: var(--yellow); font-variant-numeric: tabular-nums; }
+html[data-skin="recreio"][data-mode="light"] .dg li > b { color: oklch(55% .13 70); }
+html[data-skin="recreio"] .dg li > b.zero { color: var(--muted); font-weight: 600; }
+html[data-skin="recreio"] .dg-idle { text-align: left; margin: var(--space-sm) 0 0; font-size: var(--fs-xs); }
+/* duelos: em andamento e resultados à esquerda, novo duelo à direita */
+html[data-skin="recreio"] .duel-cols { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--space-md); align-items: start; }
+html[data-skin="recreio"] .duel-main { display: grid; gap: var(--space-md); }
+html[data-skin="recreio"] .duel-cols .duel + .duel { margin-top: 6px; }
+html[data-skin="recreio"] .duel-cols .duel-form { margin: 0; }
+html[data-skin="recreio"] .duel-cols .empty-state { margin: 0; }
+@media (max-width: 900px) {
+  html[data-skin="recreio"] :is(.comp-torneio .t-body, .duo-cols, .duel-cols) { grid-template-columns: 1fr; }
+  html[data-skin="recreio"] .dg-grid { grid-template-columns: 1fr; }
+}
+html[data-skin="recreio"] .duel-cols .err:empty { display: none; }

@@ -13,6 +13,9 @@ const GAME_CATS = [
 const catOf = id => (GAME_CATS.find(([, , , ids]) => ids.includes(id)) || GAME_CATS[0])[0];
 const catOrder = key => menuOrder().filter(([id]) => catOf(id) === key);
 
+// atalho da faixa de competição -> a tela que ele abre (social.js)
+const HUB_VIEWS = { rank: 'rankings', tourney: 'torneio', duos: 'duplas', duels: 'duelos' };
+
 /* ---------- tema claro/escuro ---------- */
 const modeNow = () => document.documentElement.dataset.mode === 'light' ? 'light' : 'dark';
 function setMode(m) {
@@ -55,7 +58,7 @@ sideNav.querySelector('[data-go="home"]').onclick = () => showMenuPart(null);
 sideNav.querySelector('[data-go="daily"]').onclick = () => showMenuPart('daily');
 $('#home').addEventListener('click', () => { menuOnly = null; }, true); // o logo também volta pro menu inteiro
 // recolhido, os atalhos ficam só com o ícone: o nome vai pra dica
-new MutationObserver(() => sideNav.querySelectorAll('.hub-btn').forEach(b => { b.title = b.querySelector('b')?.textContent || ''; }))
+new MutationObserver(() => { sideNav.querySelectorAll('.hub-btn').forEach(b => { b.title = b.querySelector('b')?.textContent || ''; }); paintSideNav(); })
   .observe($('#strip'), { childList: true });
 // botão de recolher/abrir o menu lateral (só no PC; fica salvo)
 $('header .logo').insertAdjacentHTML('afterend', `<button class="side-fold" id="sideFold" aria-controls="main"></button>`);
@@ -82,6 +85,7 @@ paintMode();
 // acende o item da tela atual (nenhum durante a partida)
 function paintSideNav() {
   sideNav.querySelectorAll('.side-btn').forEach(b => b.classList.toggle('on', currentView === 'menu' && b.dataset.go === (menuOnly || 'home')));
+  sideNav.querySelectorAll('.hub-btn').forEach(b => b.classList.toggle('on', HUB_VIEWS[b.dataset.act] === currentView));
 }
 // só os diários: o resto do menu some (CSS) e a fileira vira grade com todos os jogos
 function paintMenuPart() {

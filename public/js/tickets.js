@@ -7,7 +7,7 @@ const TICKET_KINDS = [
   ['outro', 'ellipsis', 'Outra coisa', 'Qualquer outro assunto'],
 ];
 const ticketKind = k => TICKET_KINDS.find(t => t[0] === k) || TICKET_KINDS[4];
-const viewName = v => (GAMES[v]?.name || { menu: 'Menu', admin: 'Administração', records: 'Recordes', profile: 'Perfil' }[v] || '');
+const viewName = v => (GAMES[v]?.name || { menu: 'Menu', admin: 'Administração', records: 'Recordes', profile: 'Perfil', rankings: 'Rankings', torneio: 'Torneio', duplas: 'Duplas', duelos: 'Duelos' }[v] || '');
 const ticketWhen = at => new Date(at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const TK_IMG_MAX = 3;
 const tkImg = id => `api/tickets/image?id=${id}`;
