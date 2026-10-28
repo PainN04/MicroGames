@@ -69,17 +69,20 @@ function weekInnerHtml(d = weekData) {
 
 // quadro do desafio do dia (topo do menu)
 function dailyHtml() {
-  const id = dailyGame(), g = GAMES[id];
-  const hoursLeft = Math.max(1, Math.ceil((dayStart(dayIndex() + 1) - Date.now()) / 3_600_000));
-  return `<div class="daily-stage" data-id="${id}"><span class="icon">${icon(g.icon)}</span></div>
-    <div class="daily-info">
-      <span class="tag">${icon('star')} Desafio de hoje · acaba em ${hoursLeft}h</span>
-      <h2>${g.name}</h2>
+  return `${dailyStageHtml()}${dailyInfoHtml()}
+    <div class="daily-side">${dailySideHtml()}</div>`;
+}
+const dailyHoursLeft = () => Math.max(1, Math.ceil((dayStart(dayIndex() + 1) - Date.now()) / 3_600_000));
+// palco 3D do desafio; size = tamanho da cena em px (sem: o padrão do enhanceCards)
+const dailyStageHtml = size => `<div class="daily-stage" data-id="${dailyGame()}"${size ? ` data-size="${size}"` : ''}><span class="icon">${icon(GAMES[dailyGame()].icon)}</span></div>`;
+function dailyInfoHtml() {
+  return `<div class="daily-info">
+      <span class="tag">${icon('star')} Desafio de hoje · acaba em ${dailyHoursLeft()}h</span>
+      <h2>${GAMES[dailyGame()].name}</h2>
       <p class="hint">Vale a sua melhor partida de hoje. Amanhã é outro jogo.</p>
       <button class="btn" id="dailyPlay">${icon('play')} Jogar</button>
       <div class="pick-row" id="pickRow">${pickRowHtml()}</div>
-    </div>
-    <div class="daily-side">${dailySideHtml()}</div>`;
+    </div>`;
 }
 // top 3 do desafio de hoje (atualiza sozinho quando o placar chega, sem redesenhar o palco 3D); o resto fica na janela Rankings
 function dailySideHtml() {
@@ -228,8 +231,10 @@ const cardHtml = (id, g, i, extra = '') => `<button class="card glass" data-id="
 function renderMenu() {
   main.classList.remove('game-view');
   main.replaceChildren(heroNode);
-  main.insertAdjacentHTML('beforeend', `
-    <div class="site-lock glass" id="siteLock" role="status" hidden></div>
+  // aviso de bloqueio geral (vale nos três visuais)
+  main.insertAdjacentHTML('beforeend', '<div class="site-lock glass" id="siteLock" role="status" hidden></div>');
+  // Recreio e Console (js/skins.js) montam o próprio menu, com os mesmos ids (#daily, #strip, #dailyHead...)
+  main.insertAdjacentHTML('beforeend', SKIN !== 'classic' ? skinMenuHtml() : `
     <section class="daily glass" id="daily" data-game="${dailyGame()}" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
     <nav class="hub glass" id="strip" aria-label="Competição"></nav>
     <div class="dt-remind glass" id="dtRemind" hidden></div>
@@ -248,7 +253,7 @@ function renderMenu() {
 `);
   main.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { setMenuTab(b.dataset.tab); if (b.dataset.tab === 'daily') loadDailyStatus(); });
   // setas trocam de aba (padrão de tablist)
-  main.querySelector('.tabs').onkeydown = e => {
+  if (main.querySelector('.tabs')) main.querySelector('.tabs').onkeydown = e => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     const next = menuTab === 'main' ? 'daily' : 'main';
     setMenuTab(next); main.querySelector(`[data-tab="${next}"]`).focus();
@@ -263,6 +268,7 @@ function renderMenu() {
   if (dc) { dc.classList.add('is-daily'); dc.insertAdjacentHTML('beforeend', `<span class="daily-badge" title="Desafio de hoje">${icon('star')}</span>`); }
   renderGate();
   prefetchPhaser();
+  if (SKIN !== 'classic') bindSkinMenu();
   enhanceCards();
 }
 // Quando o ranking novo chega, só troca os textos (sem redesenhar nem reanimar os cards).
@@ -275,6 +281,7 @@ function refreshMenu() {
   refreshPickRow();
   applyMeFlair();
   renderDailyStatus();
+  if (SKIN !== 'classic') refreshSkinMenu();
 }
 async function showMenu() {
   stop();
@@ -326,6 +333,7 @@ function play(id) {
   currentView = id;
   setTimeout(pingSession, 0); // avisa o painel "online" que trocou de jogo
   const g = GAMES[id];
+  setSkinHue(g.hue);
   swap(() => {
     main.innerHTML = `<div class="layout">
       <section class="stage game-stage glass" style="--h:${g.hue};--art:${stageArt(id, g.hue)}">
@@ -338,7 +346,7 @@ function play(id) {
             ${g.daily ? '' : `<button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>`}
           </div>
         </div>
-        <div class="game" id="game"></div>
+        <div class="screen"><div class="game" id="game"></div></div>
       </section>
       <aside class="board glass" id="board" style="--h:${g.hue}">${boardHtml(id)}</aside>
     </div>`;

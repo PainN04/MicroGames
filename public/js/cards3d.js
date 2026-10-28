@@ -2450,10 +2450,12 @@ async function enhanceCards() {
   // tamanho da cena: 190px no computador, 150px no celular
   // (a Zdog grava o tamanho no próprio canvas, então o tamanho do celular sai daqui e não do CSS)
   // no celular o card tem ~160px de largura: canvas do tamanho do card e cena um pouco menor (as de palavras são largas)
-  const size = SMALL.matches ? 160 : 190, fit = SMALL.matches ? 0.88 : 1;
+  const size0 = SMALL.matches ? 160 : 190, fit0 = SMALL.matches ? 0.88 : 1;
   document.querySelectorAll('.grid .card').forEach(card => {
     const build = SCENES_3D[card.dataset.id];
     if (!build) return;
+    // a grade pode pedir outro tamanho (data-z3d / data-fit): os ladrilhos quadrados do visual Console
+    const box = card.parentElement.dataset, size = +box.z3d || size0, fit = +box.fit || fit0;
     const canvas = Object.assign(document.createElement('canvas'), { className: 'z3d', width: size, height: size });
     canvas.setAttribute('aria-hidden', 'true');
     card.prepend(canvas);
@@ -2466,7 +2468,7 @@ async function enhanceCards() {
   const stage = document.querySelector('.daily-stage');
   const build = stage && SCENES_3D[stage.dataset.id];
   if (build) {
-    const ds = SMALL.matches ? 150 : 170;
+    const ds = +stage.dataset.size || (SMALL.matches ? 150 : 170);
     const canvas = Object.assign(document.createElement('canvas'), { className: 'z3d', width: ds, height: ds });
     canvas.setAttribute('aria-hidden', 'true');
     stage.prepend(canvas);
