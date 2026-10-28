@@ -963,6 +963,9 @@
   .tm { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; width: min(100%, 330px, calc((var(--avail, 520px) - 250px) * 5 / 6)); }
   .tm-t { aspect-ratio: 1; display: grid; place-items: center; border: 2px solid var(--border-strong); border-radius: 10px; background: var(--surface); font-size: clamp(1.2rem, 5.5vw, 1.8rem); font-weight: 700; text-transform: uppercase; }
   .tm-t.on { border-color: var(--text); animation: pop .12s var(--ease-spring); }
+  /* linha atual: tocar num quadrado escolhe onde a próxima letra entra (Termo, Dueto, Quarteto, Octeto, Equação) */
+  .tm .tm-t[role=button] { cursor: pointer; transition: border-color .12s, box-shadow .12s; }
+  .tm .tm-t.sel { border-color: var(--primary); box-shadow: inset 0 -3px 0 oklch(0% 0 0 / .22), 0 0 0 2px color-mix(in oklch, var(--primary) 45%, transparent); }
   .tm-t.flip { animation: tmflip .5s var(--d, 0s) both; }
   @keyframes tmflip { 50% { transform: scaleY(0); } }
   .tm-t.g, .tm-t.y, .tm-t.x { color: #10131c; border-color: transparent; }
@@ -1447,8 +1450,6 @@
 /* ---------- Equação ---------- */
 .tm.eq { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; width: min(100%, 420px, calc((var(--avail, 520px) - 200px) * 8 / 6)); }
 .tm.eq .tm-t { border-radius: 8px; font-size: clamp(1rem, 4.6vw, 1.5rem); }
-.tm.eq .tm-t[role=button] { cursor: pointer; transition: border-color .12s, box-shadow .12s; }
-.tm.eq .tm-t.sel { border-color: var(--primary); box-shadow: inset 0 -3px 0 oklch(0% 0 0 / .22), 0 0 0 2px color-mix(in oklch, var(--primary) 45%, transparent); }
 .eq-kb .tm-k { font-size: 1.1rem; }
 .eq-kb .tm-k.wide { font-size: .85rem; }
 .eq-ans { margin: 0 0 var(--space-xs); text-align: center; }
