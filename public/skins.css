@@ -1,0 +1,399 @@
+/* ================= visuais novos: Recreio e Console (js/skins.js) =================
+   <html data-skin="recreio|console|classic"> e, no Recreio, data-mode="light|dark". O Atual (classic) não usa nada daqui.
+   Tudo vem com html[data-skin=...] na frente: ganha das regras do style.css sem precisar de !important. */
+
+/* a área do jogo fica numa "tela" (.screen); no Atual ela não existe pro layout */
+.screen { display: contents; }
+.daily-head[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- Recreio ---------------------------------------------------------------- */
+html[data-skin="recreio"] {
+  --rc-side: 236px;
+  --font-display: 'Bricolage Grotesque', 'Space Grotesk', system-ui, sans-serif;
+  /* escuro: grafite quente, cartões sólidos (sem vidro) */
+  --bg: #15131d; --surface: #1f1c2a; --surface-2: #2a2637; --border: oklch(100% 0 0 / .08); --border-strong: oklch(100% 0 0 / .16);
+  --text: #f4f1fb; --muted: #a9a3bb;
+  --elev-1: 0 1px 2px oklch(0% 0 0 / .3); --elev-3: 0 10px 28px oklch(0% 0 0 / .3);
+  --tile-l: 36%; --tile-c: .1; --rc-hero-l: 52%;
+}
+html[data-skin="recreio"][data-mode="light"] {
+  color-scheme: light;
+  --bg: #f6f1e7; --surface: #ffffff; --surface-2: #f2ece1; --border: oklch(30% .03 280 / .1); --border-strong: oklch(30% .03 280 / .2);
+  --text: #1f1b2e; --muted: #6b6580;
+  --primary: oklch(55% .2 290); --accent: oklch(63% .18 35);
+  --green: oklch(54% .15 150); --red: oklch(55% .2 22); --yellow: oklch(60% .14 70); --blue: oklch(52% .16 250);
+  --elev-1: 0 1px 2px oklch(30% .03 280 / .08); --elev-3: 0 10px 30px oklch(30% .05 280 / .08);
+  --tile-l: 91%; --tile-c: .07; --rc-hero-l: 60%;
+}
+html[data-skin="recreio"] body { font-family: 'DM Sans', 'Space Grotesk', system-ui, sans-serif; background: var(--bg); }
+html[data-skin="recreio"] :is(h1, h2, h3, .logo, .result .score) { font-family: var(--font-display); }
+html[data-skin="recreio"] .backdrop { display: none; }
+html[data-skin="recreio"] .glass { background: var(--surface); border: 1px solid var(--border); border-radius: 22px; box-shadow: var(--elev-1);
+  backdrop-filter: none; -webkit-backdrop-filter: none; }
+html[data-skin="recreio"] .btn.ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); box-shadow: none; }
+html[data-skin="recreio"] .link-btn { color: var(--primary); font-weight: 700; }
+
+/* ----- menu lateral (PC) ----- */
+@media (min-width: 901px) {
+  html[data-skin="recreio"] body { padding-left: var(--rc-side); }
+  html[data-skin="recreio"] header { position: fixed; inset: 0 auto 0 0; width: var(--rc-side); z-index: 12; flex-direction: column; align-items: stretch; justify-content: flex-start;
+    flex-wrap: nowrap; gap: 18px; padding: 22px 14px 16px; overflow-y: auto; overscroll-behavior: contain;
+    background: var(--surface); border: 0; border-right: 1px solid var(--border); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  html[data-skin="recreio"] .logo { padding: 0 10px; justify-content: flex-start; }
+  html[data-skin="recreio"] .side-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  html[data-skin="recreio"] .side-hub { display: flex; flex-direction: column; gap: 2px; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--border);
+    background: none; border-radius: 0; overflow: visible; box-shadow: none; }
+  html[data-skin="recreio"] .side-btn, html[data-skin="recreio"] .side-hub .hub-btn { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 46px; padding: 8px 12px;
+    border: 0; border-radius: 14px; background: none; color: var(--text); font: inherit; font-weight: 600; font-size: .98rem; text-align: left; cursor: pointer; box-shadow: none;
+    transition: background var(--duration-fast); }
+  html[data-skin="recreio"] .side-btn > .i { width: 20px; height: 20px; color: var(--muted); }
+  html[data-skin="recreio"] .side-btn:hover, html[data-skin="recreio"] .side-hub .hub-btn:hover { background: var(--surface-2); }
+  html[data-skin="recreio"] .side-btn.on { background: var(--text); color: var(--bg); }
+  html[data-skin="recreio"] .side-btn.on > .i { color: var(--bg); }
+  html[data-skin="recreio"] .side-btn .tab-dot { margin-left: auto; box-shadow: none; }
+  html[data-skin="recreio"] .side-hub .hub-btn .ic { width: 30px; height: 30px; border-radius: 10px; }
+  html[data-skin="recreio"] .side-hub .hub-btn b { font-size: .95rem; font-weight: 600; }
+  html[data-skin="recreio"] .side-hub .hub-btn small { font-size: .74rem; }
+  /* conta, som e tema no pé do menu */
+  html[data-skin="recreio"] .who { flex-wrap: wrap; gap: 6px; align-items: center; }
+  html[data-skin="recreio"] .who .acct { order: -1; width: 100%; }
+  html[data-skin="recreio"] .acct-btn { width: 100%; justify-content: flex-start; min-height: 52px; padding: 0 .8rem 0 .45rem; border-radius: 16px; background: var(--surface-2); }
+  html[data-skin="recreio"] .acct-btn .chev { margin-left: auto; }
+  html[data-skin="recreio"] .acct-menu { top: auto; bottom: calc(100% + 8px); left: 0; right: auto; }
+  html[data-skin="recreio"] .pill { width: auto; max-width: 100%; }
+  html[data-skin="recreio"] main { max-width: 1180px; }
+}
+/* ----- celular e tablet: barra no topo e navegação embaixo ----- */
+@media (max-width: 900px) {
+  /* sem backdrop-filter: com ele o header vira a referência do position: fixed e a barra de baixo ia parar no topo */
+  html[data-skin="recreio"] header { background: var(--surface); box-shadow: none; border-bottom: 1px solid var(--border); padding-inline: 14px;
+    backdrop-filter: none; -webkit-backdrop-filter: none; }
+  html[data-skin="recreio"] .side-nav { position: fixed; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); z-index: 12; display: flex; justify-content: space-around;
+    padding: 6px; border-radius: 22px; background: var(--text); color: var(--bg); box-shadow: 0 10px 30px oklch(0% 0 0 / .25); }
+  html[data-skin="recreio"] .side-hub { display: contents; }
+  html[data-skin="recreio"] .side-btn, html[data-skin="recreio"] .side-hub .hub-btn { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; min-height: 52px; padding: 4px 2px; border: 0; border-radius: 16px; background: none; color: inherit; font: inherit; font-size: .66rem; font-weight: 600; box-shadow: none; opacity: .72; }
+  html[data-skin="recreio"] .side-btn.on { opacity: 1; background: color-mix(in oklab, var(--bg) 16%, transparent); }
+  html[data-skin="recreio"] .side-btn > .i { width: 21px; height: 21px; }
+  html[data-skin="recreio"] .side-hub .hub-btn .ic { width: 22px; height: 22px; background: none !important; color: inherit !important; border-radius: 0; }
+  html[data-skin="recreio"] .side-hub .hub-btn .ic .i { width: 21px; height: 21px; }
+  html[data-skin="recreio"] .side-hub .hub-btn .tx { display: block; text-align: center; }
+  html[data-skin="recreio"] .side-hub .hub-btn b { font-size: .66rem; font-weight: 600; }
+  html[data-skin="recreio"] .side-hub .hub-btn small { display: none; }
+  html[data-skin="recreio"] .side-btn .tab-dot { position: absolute; top: 2px; left: calc(50% + 6px); box-shadow: none; }
+  html[data-skin="recreio"] body { padding-bottom: 86px; }
+  /* na partida a barra sai: o jogo precisa da altura toda (o botão voltar leva ao menu) */
+  html[data-skin="recreio"] body:has(main.game-view) .side-nav { display: none; }
+  html[data-skin="recreio"] body:has(main.game-view) { padding-bottom: 0; }
+}
+html[data-skin="recreio"] .logo .wm { filter: none; }
+html[data-skin="recreio"] header .btn.ghost { background: var(--surface-2); border: 1px solid var(--border); box-shadow: none; color: var(--text); }
+html[data-skin="recreio"] .side-hub .hub-btn .ic { background: oklch(70% .15 290 / .14); color: oklch(55% .17 290); }
+html[data-skin="recreio"][data-mode="dark"] .side-hub .hub-btn .ic { color: oklch(82% .12 290); }
+html[data-skin="recreio"] .side-hub .hub-btn[data-act="rank"] .ic { background: oklch(80% .15 85 / .2); color: oklch(55% .13 70); }
+html[data-skin="recreio"][data-mode="dark"] .side-hub .hub-btn[data-act="rank"] .ic { color: var(--yellow); }
+
+/* ----- menu ----- */
+html[data-skin="recreio"] .hero { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; padding: 4px 0 20px; }
+html[data-skin="recreio"] .hero h1 { font-size: clamp(1.9rem, 1.4rem + 1.6vw, 2.6rem); letter-spacing: -0.035em; line-height: 1.05; font-weight: 800; }
+html[data-skin="recreio"] .hero h1 em { background: none; color: var(--primary); }
+html[data-skin="recreio"] .hero p { display: none; }
+html[data-skin="recreio"] .rc-streak { display: inline-flex; align-items: center; gap: .4em; padding: .45em .9em; border-radius: 999px; font-weight: 700; font-size: .9rem;
+  background: oklch(80% .14 50 / .18); color: oklch(55% .17 40); }
+html[data-skin="recreio"][data-mode="dark"] .rc-streak { color: oklch(80% .14 55); }
+
+/* desafio do dia: cartão grande na cor do jogo + "Na frente hoje" ao lado */
+html[data-skin="recreio"] .daily.rc-daily { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; padding: 0; margin: 0 0 6px;
+  background: none; border: 0; box-shadow: none; overflow: visible; align-items: stretch; }
+html[data-skin="recreio"] .rc-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 250px;
+  padding: 26px 18px 26px 30px; border-radius: 26px; color: #fff; overflow: hidden; isolation: isolate;
+  background: radial-gradient(60% 90% at 85% 50%, oklch(80% .12 var(--h) / .45), transparent 70%), linear-gradient(135deg, oklch(var(--rc-hero-l) .17 var(--h)), oklch(calc(var(--rc-hero-l) - 12%) .17 calc(var(--h) + 30))); }
+html[data-skin="recreio"] .rc-hero .daily-info { padding: 0; gap: .4rem; }
+html[data-skin="recreio"] .rc-hero .tag { color: #fff; background: oklch(100% 0 0 / .2); padding: .35em .8em; border-radius: 999px; font-size: .8rem; }
+html[data-skin="recreio"] .rc-hero h2 { font-size: clamp(2.2rem, 1.6rem + 2.6vw, 3.6rem); font-weight: 800; letter-spacing: -0.04em; line-height: .95; margin: .15em 0 .05em; }
+html[data-skin="recreio"] .rc-hero .hint { color: oklch(100% 0 0 / .86); max-width: 34ch; }
+html[data-skin="recreio"] .rc-hero .btn:not(.ghost) { background: #fff; color: #1f1b2e; min-height: 48px; padding: 0 1.5rem; font-size: 1rem; box-shadow: 0 6px 18px oklch(0% 0 0 / .18); }
+html[data-skin="recreio"] .rc-hero .pick-row .chosen { color: oklch(100% 0 0 / .85); }
+html[data-skin="recreio"] .rc-hero .pick-row .chosen .i { color: #fff; }
+html[data-skin="recreio"] .rc-hero .pick-row .btn.ghost { background: oklch(100% 0 0 / .18); color: #fff; border-color: oklch(100% 0 0 / .3); }
+html[data-skin="recreio"] .rc-hero .daily-stage { width: 230px; height: 230px; min-height: 0; background: none; overflow: visible; }
+html[data-skin="recreio"] .rc-hero .daily-stage .z3d { -webkit-mask-image: none; mask-image: none; scale: 1; filter: drop-shadow(0 18px 24px oklch(0% 0 0 / .25)); }
+html[data-skin="recreio"] .rc-hero .daily-stage .icon .i { width: 110px; height: 110px; color: #fff; }
+html[data-skin="recreio"] .rc-daily .daily-side { padding: 20px; border-radius: 22px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--elev-1); justify-content: flex-start; gap: .55rem; }
+html[data-skin="recreio"] .rc-daily .daily-side h3 { font-size: 1.05rem; font-weight: 700; color: var(--text); text-transform: none; letter-spacing: -0.01em; }
+html[data-skin="recreio"] .rc-daily li { padding: .55em .7em; border-radius: 12px; background: var(--surface-2); }
+html[data-skin="recreio"] .rc-daily li.me { outline: 0; background: oklch(70% .15 290 / .16); }
+html[data-skin="recreio"] .rc-daily li b { color: var(--text); }
+html[data-skin="recreio"] .dt-remind { margin-top: 14px; }
+
+/* fileiras por categoria */
+html[data-skin="recreio"] .rc-row { margin-top: 30px; scroll-margin-top: 20px; }
+html[data-skin="recreio"] .rc-row-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+html[data-skin="recreio"] .rc-row-head h2 { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em; display: flex; align-items: center; gap: .4em; }
+html[data-skin="recreio"] .rc-row-head h2 > .i { color: var(--primary); width: .95em; height: .95em; }
+html[data-skin="recreio"] .rc-count { color: var(--muted); font-size: .9rem; }
+html[data-skin="recreio"] .rc-arrows { margin-left: auto; display: flex; gap: 6px; align-self: center; }
+html[data-skin="recreio"] .rc-arr { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--surface);
+  color: var(--text); cursor: pointer; }
+html[data-skin="recreio"] .rc-arr:hover { background: var(--surface-2); }
+html[data-skin="recreio"] .rc-row.open .rc-arrows { visibility: hidden; }
+html[data-skin="recreio"] .rc-more { align-self: center; font-size: .9rem; }
+html[data-skin="recreio"] .rc-row .daily-head { padding: 0; margin: -2px 0 10px; background: none; border: 0; box-shadow: none; }
+html[data-skin="recreio"] .rc-track { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x proximity; padding: 6px 6px 16px; margin: 0 -6px; scrollbar-width: none; }
+html[data-skin="recreio"] .rc-track::-webkit-scrollbar { display: none; }
+html[data-skin="recreio"] .rc-track.wrap { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); overflow: visible; }
+/* card: arte numa área pastel na cor do jogo, nome e recorde embaixo */
+html[data-skin="recreio"] .rc-track .card { flex: 0 0 200px; scroll-snap-align: start; border-radius: 22px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--elev-1); }
+html[data-skin="recreio"] .rc-track .card::before { height: 150px; inset: 0 0 auto 0; border-radius: 21px 21px 0 0;
+  background: radial-gradient(60% 40% at 50% 92%, oklch(20% .05 var(--h) / .16), transparent 70%), oklch(var(--tile-l) var(--tile-c) var(--h)); }
+html[data-skin="recreio"] .rc-track .card .z3d { top: -20px; }
+html[data-skin="recreio"] .rc-track .card .icon { height: 150px; filter: none; }
+html[data-skin="recreio"] .rc-track .card .icon .i { color: oklch(48% .15 var(--h)); }
+html[data-skin="recreio"][data-mode="dark"] .rc-track .card .icon .i { color: oklch(88% .09 var(--h)); }
+html[data-skin="recreio"] .rc-track .card h3 { margin-top: 150px; padding: .75rem .95rem 0; border: 0; font-size: 1.06rem; font-weight: 700; letter-spacing: -0.02em; }
+html[data-skin="recreio"] .rc-track .card .rec { padding: .15rem .95rem .85rem; }
+html[data-skin="recreio"] .rc-track .card .ds-slot { padding: 0 .95rem .85rem; margin-top: -.3rem; }
+html[data-skin="recreio"] .rc-track .card:hover { border-color: oklch(60% .14 var(--h) / .5); box-shadow: 0 14px 30px oklch(30% .1 var(--h) / .16); }
+html[data-skin="recreio"] .rc-track .card.is-daily { border-color: oklch(75% .15 85 / .7); }
+html[data-skin="recreio"][data-mode="light"] .card .rec b:is(.fr-bronze, .fr-silver, .fr-gold) { color: var(--text); text-shadow: none; }
+
+/* ----- tela de jogo: painel claro com uma "tela" escura onde o jogo roda ----- */
+html[data-skin="recreio"] .game-stage.glass { border-radius: 26px; padding: 14px 16px 16px; background: var(--surface); border-color: var(--border); box-shadow: var(--elev-1); }
+html[data-skin="recreio"] .game-stage::before { background: radial-gradient(60% 120px at 50% 0%, oklch(70% .14 var(--h) / .16), transparent 100%); }
+html[data-skin="recreio"] .game-stage .stage-head { border-bottom: 0; padding-bottom: 6px; }
+html[data-skin="recreio"] .game-stage .stage-head :is(h1, h2) { font-weight: 800; }
+html[data-skin="recreio"] .game-stage .stage-head .btn.ghost { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); box-shadow: 0 2px 0 var(--border-strong); }
+html[data-skin="recreio"] .head-acts #how .i { color: oklch(55% .15 var(--h)); }
+html[data-skin="recreio"][data-mode="dark"] .head-acts #how .i { color: oklch(82% .12 var(--h)); }
+html[data-skin="recreio"] .gtile { box-shadow: 0 3px 0 oklch(40% .1 var(--h) / .6); }
+html[data-skin="recreio"] .game-stage .screen { display: flex; flex-direction: column; flex: 1; gap: var(--space-sm); padding: 16px 12px; border-radius: 20px;
+  background: radial-gradient(80% 60% at 50% 0%, oklch(30% .06 var(--h)), transparent 70%), oklch(19% .03 var(--h)); box-shadow: inset 0 2px 10px oklch(0% 0 0 / .35); }
+html[data-skin="recreio"] .board.glass { border-radius: 24px; }
+html[data-skin="recreio"] .board :is(h2, h3) { font-weight: 800; }
+html[data-skin="recreio"][data-mode="light"] .board li.t1 > .sc { color: oklch(55% .13 70); }
+
+/* dentro da tela do jogo e na tela de entrar valem as cores escuras de sempre (os jogos foram feitos pra elas) */
+html[data-skin="recreio"][data-mode="light"] :is(.screen, .modal.login-screen) {
+  color-scheme: dark; color: var(--text);
+  --bg: oklch(15% 0.02 275); --surface: oklch(22% 0.025 275 / 0.62); --surface-2: oklch(28% 0.03 275 / 0.7);
+  --border: oklch(100% 0 0 / 0.09); --border-strong: oklch(100% 0 0 / 0.18); --text: oklch(97% 0.01 275); --muted: oklch(76% 0.02 275);
+  --green: oklch(76% 0.18 150); --red: oklch(66% 0.22 18); --yellow: oklch(86% 0.17 92); --blue: oklch(70% 0.16 245);
+  --primary: oklch(70% 0.19 290); --accent: oklch(74% 0.17 35);
+}
+/* claro: campos, menus e janelas que tinham fundo escuro fixo */
+html[data-skin="recreio"][data-mode="light"] :is(input.txt, .admin input, .admin select, .admin textarea, .acc-role span, .tk-imgs button, .tk-imgs a):not(.screen *) { background: var(--surface-2); }
+html[data-skin="recreio"][data-mode="light"] :is(.gate-pop.glass, .acc-menu, .viz-tip) { background: var(--surface); box-shadow: 0 16px 40px oklch(30% .05 280 / .18); }
+html[data-skin="recreio"][data-mode="light"] #rulesForm.dirty .save-bar { background: oklch(100% 0 0 / .95); }
+html[data-skin="recreio"][data-mode="light"] .modal:not(.login-screen) { background: oklch(25% .03 280 / .35); }
+html[data-skin="recreio"][data-mode="light"] .modal .err { color: var(--red); }
+html[data-skin="recreio"][data-mode="light"] :is(.acct-menu .sw, .sw) { background: oklch(30% .03 280 / .14); }
+html[data-skin="recreio"][data-mode="light"] .admin select option, html[data-skin="recreio"][data-mode="light"] .title-sel option { background: #fff; }
+html[data-skin="recreio"][data-mode="light"] a[data-profile] { border-bottom-color: oklch(30% .03 280 / .3); }
+html[data-skin="recreio"][data-mode="light"] .ds.new { color: #fff; }
+html[data-skin="recreio"][data-mode="light"] .daily-head .dt-streak { color: oklch(52% .16 45); }
+html[data-skin="recreio"][data-mode="light"] .daily-head .dt-streak :is(b, .i) { color: oklch(52% .16 45); }
+html[data-skin="recreio"][data-mode="light"] .acct-btn .av { color: #fff; }
+
+/* celular */
+@media (max-width: 760px) {
+  html[data-skin="recreio"] .daily.rc-daily { grid-template-columns: 1fr; gap: 12px; }
+  html[data-skin="recreio"] .rc-hero { min-height: 0; padding: 20px 14px 20px 20px; border-radius: 22px; }
+  html[data-skin="recreio"] .rc-hero .daily-stage { display: grid; width: 120px; height: 120px; align-self: start; }
+  html[data-skin="recreio"] .rc-hero .daily-stage .icon .i { width: 64px; height: 64px; }
+  html[data-skin="recreio"] .rc-hero .hint { font-size: .88rem; }
+  html[data-skin="recreio"] .rc-hero .btn:not(.ghost) { width: auto; }
+  html[data-skin="recreio"] .rc-daily .daily-side { padding: 14px 16px; }
+  html[data-skin="recreio"] .rc-arrows { display: none; }
+  html[data-skin="recreio"] .rc-more { margin-left: auto; }
+  html[data-skin="recreio"] .rc-track { gap: 12px; margin: 0 -16px; padding: 4px 16px 14px; scroll-padding-inline: 16px; }
+  html[data-skin="recreio"] .rc-track.wrap { grid-template-columns: 1fr 1fr; margin: 0; padding: 4px 0 14px; }
+  html[data-skin="recreio"] .rc-track .card { flex-basis: 150px; }
+  html[data-skin="recreio"] .rc-track .card::before, html[data-skin="recreio"] .rc-track .card .icon { height: 118px; }
+  html[data-skin="recreio"] .rc-track .card .z3d { top: -22px; }
+  html[data-skin="recreio"] .rc-track .card h3 { margin-top: 118px; padding: .6rem .75rem 0; font-size: .95rem; }
+  html[data-skin="recreio"] .rc-track .card .rec { padding: .1rem .75rem .7rem; }
+  html[data-skin="recreio"] .rc-track .card .ds-slot { padding: 0 .75rem .7rem; }
+  html[data-skin="recreio"] .rc-row { margin-top: 24px; }
+  html[data-skin="recreio"] .rc-row-head h2 { font-size: 1.2rem; }
+  html[data-skin="recreio"] .game-stage .screen { padding: 12px 6px; border-radius: 16px; }
+  html[data-skin="recreio"] .game-stage.glass { padding: 10px 8px 8px; border-radius: 20px; }
+}
+@media (max-width: 560px) {
+  /* o style.css esconde o palco 3D e mostra só o líder no celular; aqui o palco cabe ao lado do nome */
+  html[data-skin="recreio"] .rc-hero .daily-info { padding-top: 0; }
+  html[data-skin="recreio"] .daily-side ol li:nth-child(n+2) { display: flex; }
+  html[data-skin="recreio"] .daily-side ol li:nth-child(n+3) { display: none; }
+}
+
+/* ---------------------------------------------------------------- Console ---------------------------------------------------------------- */
+@property --skin-h { syntax: '<number>'; inherits: true; initial-value: 290; }
+html[data-skin="console"] {
+  color-scheme: dark;
+  --bg: #07080d; --surface: oklch(100% 0 0 / .06); --surface-2: oklch(100% 0 0 / .1); --border: oklch(100% 0 0 / .12); --border-strong: oklch(100% 0 0 / .22);
+  --text: #fff; --muted: oklch(80% .02 270);
+}
+html[data-skin="console"] body { font-family: 'Outfit', 'Space Grotesk', system-ui, sans-serif; background: #07080d; }
+/* fundo: luz na cor do jogo em destaque (ou da partida), que muda devagar; linhas finas de tela por cima */
+html[data-skin="console"] .backdrop { transition: --skin-h .8s ease;
+  background: radial-gradient(70% 80% at 78% 22%, oklch(52% .17 var(--skin-h) / .6), transparent 70%),
+    radial-gradient(60% 60% at 8% 100%, oklch(45% .15 calc(var(--skin-h) + 60) / .35), transparent 70%), linear-gradient(#0b0d16, #05060a); }
+html[data-skin="console"] .backdrop i { display: none; }
+html[data-skin="console"] .backdrop::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, oklch(100% 0 0 / .022) 0 1px, transparent 1px 4px); }
+html.lite[data-skin="console"] .backdrop { transition: none; }
+html[data-skin="console"] .glass { background: oklch(100% 0 0 / .06); border: 0; box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .12); border-radius: 26px; }
+html[data-skin="console"] .modal .box.glass, html[data-skin="console"] .acct-menu.glass, html[data-skin="console"] .gate-pop.glass { background: oklch(17% .02 270 / .97); }
+html[data-skin="console"] .btn:not(.ghost) { background: #fff; color: #0a0b12; }
+html[data-skin="console"] .btn.ghost { background: oklch(100% 0 0 / .1); border: 0; box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .2); color: #fff; }
+html[data-skin="console"] .link-btn { color: oklch(85% .1 var(--skin-h)); }
+
+/* topo: a conta à esquerda (como o perfil de um videogame) e o relógio à direita */
+html[data-skin="console"] header { position: relative; background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+  padding: 22px max(20px, calc((100% - 1360px) / 2 + 40px)) 6px; justify-content: flex-start; }
+html[data-skin="console"] .logo { display: none; }
+html[data-skin="console"] .who { flex: 1; flex-wrap: nowrap; gap: 14px; }
+html[data-skin="console"] .who .acct { order: -1; margin-right: auto; }
+html[data-skin="console"] .acct-btn { background: none !important; border: 0; box-shadow: none !important; padding: 0 .6rem 0 0; gap: .75em; font-size: 1.05rem; min-height: 52px; }
+html[data-skin="console"] .acct-btn .av { width: 46px; height: 46px; background: linear-gradient(135deg, oklch(70% .15 var(--skin-h)), oklch(65% .17 calc(var(--skin-h) + 80))); color: #fff;
+  box-shadow: 0 0 0 3px oklch(100% 0 0 / .2) !important; }
+html[data-skin="console"] .acct-btn .av .i { width: 22px; height: 22px; }
+html[data-skin="console"] .acct-menu { left: 0; right: auto; }
+html[data-skin="console"] header .icon-btn { background: none; border: 0; box-shadow: none; }
+html[data-skin="console"] .cs-clock { font-weight: 700; font-size: 1.2rem; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+html[data-skin="console"] main { max-width: 1360px; padding: 0 40px 40px; }
+html[data-skin="console"] .hero { padding: 0; }
+
+/* destaque do desafio: nome gigante, números e a cena 3D grande */
+html[data-skin="console"] .daily.cs-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; min-height: 380px; padding: 6px 0 0;
+  margin: 0; background: none; border: 0; box-shadow: none; overflow: visible; }
+html[data-skin="console"] .cs-hero .daily-info { padding: 0; gap: 0; }
+html[data-skin="console"] .cs-hero .tag { font-size: .8rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: oklch(86% .13 var(--h)); }
+html[data-skin="console"] .cs-hero h2 { font-size: clamp(3.2rem, 1.8rem + 5vw, 6.6rem); font-weight: 900; letter-spacing: -0.045em; line-height: .9; margin: 14px 0 14px; }
+html[data-skin="console"] .cs-desc { margin: 0 0 22px; font-size: 1.15rem; line-height: 1.45; color: oklch(100% 0 0 / .72); max-width: 42ch; }
+html[data-skin="console"] .cs-meta { display: flex; flex-wrap: wrap; gap: 14px 30px; margin-bottom: 26px; }
+html[data-skin="console"] .cs-meta small { display: block; font-size: .82rem; color: oklch(100% 0 0 / .6); }
+html[data-skin="console"] .cs-meta b { font-size: 1.35rem; font-weight: 800; }
+html[data-skin="console"] .cs-cta { display: flex; flex-wrap: wrap; gap: 12px; }
+html[data-skin="console"] .cs-cta .btn { min-height: 56px; padding: 0 1.9rem; font-size: 1.1rem; font-weight: 800; }
+html[data-skin="console"] .cs-hero .pick-row { margin-top: 14px; }
+html[data-skin="console"] .cs-hero .daily-stage { width: 360px; height: 360px; min-height: 0; background: none; overflow: visible; }
+html[data-skin="console"] .cs-hero .daily-stage .z3d { -webkit-mask-image: none; mask-image: none; scale: 1; filter: drop-shadow(0 30px 50px oklch(0% 0 0 / .55)); }
+html[data-skin="console"] .cs-hero .daily-stage .icon .i { width: 160px; height: 160px; color: #fff; }
+
+/* prateleira: abas e uma fileira de ladrilhos quadrados */
+html[data-skin="console"] .cs-shelf { margin-top: 28px; }
+html[data-skin="console"] .cs-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
+html[data-skin="console"] .cs-tabs::-webkit-scrollbar { display: none; }
+html[data-skin="console"] .cs-tabs button { position: relative; display: inline-flex; align-items: center; gap: .5em; flex: none; min-height: 40px; padding: 0 1.1em; border: 0; border-radius: 999px;
+  background: none; color: oklch(100% 0 0 / .62); font: inherit; font-weight: 700; font-size: .82rem; letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
+html[data-skin="console"] .cs-tabs button:hover { color: #fff; }
+html[data-skin="console"] .cs-tabs button[aria-selected="true"] { background: #fff; color: #0a0b12; }
+html[data-skin="console"] .cs-tabs .tab-dot { box-shadow: none; letter-spacing: 0; }
+html[data-skin="console"] .cs-shelf .daily-head { margin: 10px 0 0; padding: .6rem 1rem; }
+html[data-skin="console"] .cs-row { display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; padding: 18px 10px 54px; margin: 0 -10px;
+  -webkit-mask-image: linear-gradient(to right, #000 92%, transparent); mask-image: linear-gradient(to right, #000 92%, transparent); }
+html[data-skin="console"] .cs-row::-webkit-scrollbar { display: none; }
+html[data-skin="console"] .cs-row .card { flex: 0 0 150px; height: 150px; padding: 0; min-height: 0; scroll-snap-align: start; overflow: visible; border: 0; border-radius: 30px;
+  background: linear-gradient(160deg, oklch(68% .15 var(--h)), oklch(40% .13 var(--h))); box-shadow: 0 12px 30px oklch(0% 0 0 / .45), inset 0 1.5px 0 oklch(100% 0 0 / .25);
+  backdrop-filter: none; -webkit-backdrop-filter: none; transition: transform var(--duration) var(--ease-spring), outline-color var(--duration-fast); outline: 4px solid transparent; outline-offset: 5px; }
+html[data-skin="console"] .cs-row .card.off { display: none; }
+html[data-skin="console"] .cs-row .card::before { inset: 0; height: auto; border-radius: inherit; background: radial-gradient(70% 50% at 50% 100%, oklch(0% 0 0 / .25), transparent 70%); }
+html[data-skin="console"] .cs-row .card .z3d { top: 50%; left: 50%; translate: -50% -50%; -webkit-mask-image: none; mask-image: none; }
+html[data-skin="console"] .cs-row .card .icon { inset: 0; height: auto; }
+html[data-skin="console"] .cs-row .card .icon .i { width: 58px; height: 58px; color: #fff; }
+html[data-skin="console"] .cs-row .card h3 { position: absolute; top: calc(100% + 12px); left: -8px; right: -8px; margin: 0; padding: 0; border: 0; transform: none !important;
+  text-align: center; font-size: .92rem; font-weight: 700; color: oklch(100% 0 0 / .7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="console"] .cs-row .card .rec { display: none; }
+html[data-skin="console"] .cs-row .card:is(:hover, :focus-visible) { outline-color: #fff; transform: scale(1.06); }
+html[data-skin="console"] .cs-row .card:is(:hover, :focus-visible) h3 { color: #fff; }
+html[data-skin="console"] .cs-row.tilt-on .card:hover { transform: scale(1.06); }
+/* estado do diário: só uma bolinha com o ícone no canto do ladrilho */
+html[data-skin="console"] .cs-row .card .ds-slot { position: absolute; top: 9px; left: 9px; padding: 0; margin: 0; z-index: 2; }
+html[data-skin="console"] .cs-row .ds { width: 26px; height: 26px; padding: 0; justify-content: center; font-size: 0; border: 0; box-shadow: 0 0 0 3px oklch(0% 0 0 / .25); }
+html[data-skin="console"] .cs-row .ds .i { width: 15px; height: 15px; }
+html[data-skin="console"] .cs-row .ds.won { background: var(--green); color: #0a0b12; }
+html[data-skin="console"] .cs-row .ds.going { background: var(--blue); color: #0a0b12; }
+html[data-skin="console"] .cs-row .ds.lost { background: oklch(40% .02 270); color: #fff; }
+html[data-skin="console"] .cs-row .card .daily-badge { top: 9px; right: 9px; }
+
+/* atalhos: botões redondos embaixo (Rankings, Torneio, Duplas, Duelos) */
+html[data-skin="console"] .cs-dock { display: flex; justify-content: center; gap: 30px; margin: 4px 0 20px; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
+html[data-skin="console"] .cs-dock .hub-btn { flex-direction: column; gap: 8px; min-height: 0; max-width: 150px; padding: 4px; border-radius: 18px; background: none; box-shadow: none; text-align: center; }
+html[data-skin="console"] .cs-dock .hub-btn .ic { width: 66px; height: 66px; border-radius: 50%; background: oklch(100% 0 0 / .08); color: #fff; box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .16);
+  transition: background var(--duration-fast), color var(--duration-fast), transform var(--duration) var(--ease-spring); }
+html[data-skin="console"] .cs-dock .hub-btn .ic .i { width: 26px; height: 26px; }
+html[data-skin="console"] .cs-dock .hub-btn:hover { background: none; }
+html[data-skin="console"] .cs-dock .hub-btn:hover .ic { background: #fff; color: #0a0b12; transform: scale(1.06); }
+html[data-skin="console"] .cs-dock .hub-btn.hot .ic { box-shadow: inset 0 0 0 2px var(--yellow); }
+html[data-skin="console"] .cs-dock .hub-btn .tx { justify-items: center; }
+html[data-skin="console"] .cs-dock .hub-btn b { font-size: .92rem; }
+html[data-skin="console"] .cs-dock .hub-btn small { max-width: 13em; }
+
+/* tela de jogo: título solto em cima, o jogo numa "tela" escura e o ranking num painel de vidro */
+html[data-skin="console"] main.game-view { padding-top: 6px; }
+html[data-skin="console"] .layout { gap: 28px; }
+@media (min-width: 1100px) { html[data-skin="console"] .layout { grid-template-columns: minmax(0, 1fr) 340px; } }
+html[data-skin="console"] .game-stage.glass { padding: 0; background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+html[data-skin="console"] .game-stage::before { display: none; }
+html[data-skin="console"] .game-stage .stage-head { border: 0; padding: 0 0 14px; gap: 14px; }
+html[data-skin="console"] .game-stage .stage-head :is(h1, h2) { font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.6rem); font-weight: 900; letter-spacing: -0.035em; }
+html[data-skin="console"] .game-stage .stage-head p { font-size: .95rem; color: oklch(100% 0 0 / .6); }
+html[data-skin="console"] .game-stage .stage-head .btn.ghost { min-height: 50px; border-radius: 999px; background: oklch(100% 0 0 / .08); border: 0;
+  box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .18); }
+html[data-skin="console"] .game-stage .stage-head .btn.ghost:hover { background: oklch(100% 0 0 / .16); box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .3); transform: none; }
+html[data-skin="console"] .game-stage .stage-head .back { width: 50px; min-width: 50px; }
+html[data-skin="console"] .gtile { border-radius: 16px; }
+html[data-skin="console"] .game-stage .screen { display: flex; flex-direction: column; flex: 1; gap: var(--space-sm); padding: 22px 16px; border-radius: 30px;
+  background: oklch(13% .02 var(--h) / .72); box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .1), 0 40px 80px oklch(0% 0 0 / .45);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+html.lite[data-skin="console"] .game-stage .screen { backdrop-filter: none; -webkit-backdrop-filter: none; background: oklch(13% .02 var(--h) / .95); }
+html[data-skin="console"] .game .hud .stat { background: oklch(100% 0 0 / .07); border: 0; box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .14); color: oklch(100% 0 0 / .7); border-radius: 16px; }
+html[data-skin="console"] .game .hud .stat + .stat { box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .14); }
+html[data-skin="console"] .board.glass { padding: 22px; background: oklch(100% 0 0 / .06); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
+html[data-skin="console"] .board :is(h2, h3) { font-weight: 800; }
+html[data-skin="console"] .board li { border-radius: 14px; }
+
+@media (max-width: 900px) {
+  html[data-skin="console"] header { padding: 14px 16px 4px; }
+  html[data-skin="console"] main { padding: 0 16px 100px; }
+  html[data-skin="console"] .daily.cs-hero { grid-template-columns: 1fr; min-height: 0; gap: 0; }
+  html[data-skin="console"] .cs-hero .daily-stage { display: grid; grid-row: 1; justify-self: center; width: 220px; height: 220px; margin: -6px 0 -8px; }
+  html[data-skin="console"] .cs-hero h2 { margin: 10px 0; }
+  html[data-skin="console"] .cs-desc { font-size: 1rem; margin-bottom: 16px; }
+  html[data-skin="console"] .cs-meta { gap: 10px 22px; margin-bottom: 18px; }
+  html[data-skin="console"] .cs-meta b { font-size: 1.1rem; }
+  html[data-skin="console"] .cs-cta .btn { min-height: 50px; padding: 0 1.4rem; font-size: 1rem; }
+  /* atalhos viram a barra fixa de baixo */
+  html[data-skin="console"] .cs-dock { position: fixed; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 12; justify-content: space-around; gap: 0; margin: 0;
+    padding: 8px 4px; border-radius: 24px; background: oklch(17% .02 270 / .92); box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .12), 0 10px 30px oklch(0% 0 0 / .5);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); -webkit-mask-image: none; mask-image: none; }
+  html[data-skin="console"] .cs-dock .hub-btn, html[data-skin="console"] .cs-dock .hub-btn:last-child:nth-child(odd) { flex: 1; max-width: none; gap: 2px; padding: 2px; box-shadow: none !important; }
+  html[data-skin="console"] .cs-dock .hub-btn .ic { width: 30px; height: 30px; background: none; box-shadow: none; }
+  html[data-skin="console"] .cs-dock .hub-btn .ic .i { width: 22px; height: 22px; }
+  html[data-skin="console"] .cs-dock .hub-btn b { font-size: .7rem; font-weight: 600; }
+  html[data-skin="console"] .cs-dock .hub-btn small { display: none; }
+  html[data-skin="console"] .layout { gap: 14px; }
+  html[data-skin="console"] .game-stage .screen { padding: 14px 6px; border-radius: 22px; }
+  html[data-skin="console"] .game-stage .stage-head .btn.ghost, html[data-skin="console"] .game-stage .stage-head .back { min-height: 44px; }
+  html[data-skin="console"] .game-stage .stage-head .back { width: 44px; min-width: 44px; }
+}
+@media (max-width: 560px) {
+  html[data-skin="console"] .acct-btn .av { width: 40px; height: 40px; }
+  html[data-skin="console"] #pname { max-width: 7em; }
+  html[data-skin="console"] .cs-hero h2 { font-size: 3.2rem; }
+  html[data-skin="console"] .cs-row { gap: 14px; padding: 14px 16px 46px; margin: 0 -16px; scroll-padding-inline: 16px; }
+  html[data-skin="console"] .cs-row .card { flex-basis: 100px; height: 100px; border-radius: 24px; }
+  html[data-skin="console"] .cs-row .card h3 { font-size: .8rem; top: calc(100% + 8px); }
+  html[data-skin="console"] .cs-row .card .icon .i { width: 40px; height: 40px; }
+  html[data-skin="console"] .cs-tabs button { padding: 0 .9em; font-size: .74rem; }
+  html[data-skin="console"] .daily-side ol li:nth-child(n+2) { display: flex; }
+}
+
+/* ---------------------------------------------------------------- menu da conta: Visual do site (vale nos três) ---------------------------------------------------------------- */
+.acct-lbl { padding: .5em .8em .15em; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.skin-pick { display: flex; flex-direction: column; gap: 2px; }
+.acct-menu [role="menuitemradio"]::after { content: ''; margin-left: auto; width: 16px; height: 16px; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--border-strong); }
+.acct-menu [role="menuitemradio"][aria-checked="true"] { font-weight: 700; }
+.acct-menu [role="menuitemradio"][aria-checked="true"]::after { box-shadow: inset 0 0 0 5px var(--primary); }
+.acct-menu [role="menuitemradio"][aria-checked="true"] .i { color: var(--primary); }
+/* o ranking ao lado do jogo gruda no topo da tela (no Recreio e no Console não tem barra fixa em cima) */
+@media (min-width: 901px) { html[data-skin="recreio"] .board, html[data-skin="console"] .board { top: 20px; max-height: calc(100dvh - 40px); } }
