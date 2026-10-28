@@ -2040,7 +2040,7 @@ html.login-open { overflow: hidden; }
 
 .ls-form { display: flex; flex-direction: column; justify-content: space-between; gap: var(--space-xl); padding: clamp(8px, 2.5vw, 32px) clamp(4px, 2.5vw, 40px); }
 .ls-brand { display: flex; align-items: center; gap: 12px; font-size: var(--fs-lg); font-weight: 700; letter-spacing: -0.035em; }
-.ls-brand img { width: 40px; height: 40px; border-radius: 11px; box-shadow: 0 6px 18px oklch(0% 0 0 / .35); }
+.ls-brand img { width: 34px; height: 34px; }
 .ls-brand .wm > span { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .ls-main { display: flex; flex-direction: column; gap: var(--space-lg); max-width: 400px; }
 .login-screen h1 { margin: 0; font-size: clamp(2.5rem, 1.6rem + 3.2vw, 3.75rem); font-weight: 700; letter-spacing: -0.045em; line-height: .98; }
