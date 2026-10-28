@@ -36,7 +36,9 @@ html[data-skin="recreio"] .link-btn { color: var(--primary); font-weight: 700; }
   html[data-skin="recreio"] header { position: fixed; inset: 0 auto 0 0; width: var(--rc-side); z-index: 12; flex-direction: column; align-items: stretch; justify-content: flex-start;
     flex-wrap: nowrap; gap: 18px; padding: 22px 14px 16px; overflow-y: auto; overscroll-behavior: contain;
     background: var(--surface); border: 0; border-right: 1px solid var(--border); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
-  html[data-skin="recreio"] .logo { padding: 0 10px; justify-content: flex-start; }
+  /* nome com tamanho fixo e espaço pro botão de recolher; o respiro no fim evita que o "e" com degradê seja cortado */
+  html[data-skin="recreio"] .logo { padding: 0 44px 0 10px; justify-content: flex-start; font-size: 1.7rem; }
+  html[data-skin="recreio"] .logo .wm > span { padding-right: .1em; }
   html[data-skin="recreio"] .side-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
   html[data-skin="recreio"] .side-hub { display: flex; flex-direction: column; gap: 2px; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--border);
     background: none; border-radius: 0; overflow: visible; box-shadow: none; }
@@ -58,6 +60,9 @@ html[data-skin="recreio"] .link-btn { color: var(--primary); font-weight: 700; }
   html[data-skin="recreio"] .acct-btn .chev { margin-left: auto; }
   html[data-skin="recreio"] .acct-menu { top: auto; bottom: calc(100% + 8px); left: 0; right: auto; }
   html[data-skin="recreio"] .pill { width: auto; max-width: 100%; }
+  /* fila do Geiko do mesmo tamanho do som e do tema */
+  html[data-skin="recreio"] .gate-pill { min-height: 44px; padding: 0 1em; border-radius: 99px; font-size: .9rem; gap: .45em; }
+  html[data-skin="recreio"] .gate-pill .i { width: 18px; height: 18px; }
   html[data-skin="recreio"] main { max-width: 1180px; }
 }
 /* ----- celular e tablet: barra no topo e navegação embaixo ----- */
@@ -247,6 +252,7 @@ html[data-skin="recreio"] .side-fold { display: none; }
   html.side-mini[data-skin="recreio"] .side-hub { align-items: center; width: 100%; }
   html.side-mini[data-skin="recreio"] .who { flex-direction: column; align-items: center; }
   html.side-mini[data-skin="recreio"] .who .acct { width: auto; }
+  html.side-mini[data-skin="recreio"] .gate-pill { flex-direction: column; gap: 2px; width: 52px; min-height: 52px; padding: 6px 0; border-radius: 16px; font-size: .78rem; }
   html.side-mini[data-skin="recreio"] .acct-btn { width: 52px; min-height: 52px; padding: 0; justify-content: center; }
   html.side-mini[data-skin="recreio"] .acct-btn :is(#pname, .chev) { display: none; }
   html.side-mini[data-skin="recreio"] .acct-btn .nbadge { position: absolute; top: 2px; right: 2px; }
