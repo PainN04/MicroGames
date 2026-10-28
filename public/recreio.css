@@ -279,7 +279,6 @@ html[data-skin="recreio"] .ls-input input::placeholder { color: var(--muted); op
 html[data-skin="recreio"] .ls-input input:hover { border-color: color-mix(in oklab, var(--primary) 50%, transparent); }
 html[data-skin="recreio"] .ls-foot { color: var(--muted); }
 html[data-skin="recreio"][data-mode="light"] .ls-err { color: var(--red); background: oklch(60% .2 22 / .08); }
-html[data-skin="recreio"][data-mode="light"] .ls-brand img { box-shadow: 0 6px 18px oklch(30% .05 280 / .18); }
 html[data-skin="recreio"] .ls-show { border: 0; color: #fff; transition: background .6s var(--ease);
   background: radial-gradient(70% 55% at 50% 42%, oklch(82% .12 var(--h) / .45), transparent 70%),
     linear-gradient(150deg, oklch(var(--rc-hero-l) .16 var(--h)), oklch(calc(var(--rc-hero-l) - 12%) .16 calc(var(--h) + 30)));
