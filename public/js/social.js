@@ -141,9 +141,10 @@ function tourneyBodyHtml() {
   const games = t.games.filter(id => GAMES[id]).map(id => {
     const g = GAMES[id], list = bestPerPlayer(id, range), top = list[0], mineIdx = list.findIndex(([n]) => n === player);
     return `<button class="tgame" data-id="${id}" style="--h:${g.hue}">
-      <span class="ic">${icon(g.icon)}</span><b>${g.name}</b>
+      <span class="tg-art" aria-hidden="true"><span class="tg-tile">${icon(g.icon)}</span></span>
+      <span class="tg-tx"><b>${g.name}</b>
       <small>${top ? `${icon('crown')} ${esc(top[0])} · ${fmt(g, top[1])}` : 'ninguém jogou ainda'}</small>
-      <small class="you">${mineIdx >= 0 ? `você: ${mineIdx + 1}º · ${fmt(g, list[mineIdx][1])}` : 'você ainda não jogou'}</small></button>`;
+      <small class="you">${mineIdx >= 0 ? `você: ${mineIdx + 1}º · ${fmt(g, list[mineIdx][1])}` : 'você ainda não jogou'}</small></span></button>`;
   }).join('');
   const stand = t.standings.slice(0, 10), lastTop = t.last?.top?.[0], ids = t.games.filter(id => GAMES[id]);
   // pontos de cada pessoa em cada jogo (pela posição dela no jogo)
@@ -179,7 +180,18 @@ async function tourneyModal() {
   await loadSocial();
   const t = social?.tourney;
   compPage('torneio', compTitle('trophy', 'Torneio da semana', t?.on ? `${dayLabelBR(t.start)} a ${dayLabelBR(t.end - 1)} · acaba em ${leftText(t.end - Date.now())}` : 'Três jogos por semana, quem somar mais leva o troféu.'),
-    tourneyBodyHtml(), el => el.querySelectorAll('.tgame').forEach(b => b.onclick = () => play(b.dataset.id)));
+    tourneyBodyHtml(), el => { el.querySelectorAll('.tgame').forEach(b => b.onclick = () => play(b.dataset.id)); mountTourneyArt(el); });
+}
+// os jogos da semana ganham a cena 3D do card do menu (cards3d.js); sem 3D (ou sem internet), fica o ícone num ladrilho com volume
+async function mountTourneyArt(el) {
+  if (!fx3dOn) return;
+  try { await loadLib(ZDOG_URL); } catch { return; }
+  if (currentView !== 'torneio' || !el.isConnected) return;
+  const size = SMALL.matches ? 76 : 96;
+  const offs = [...el.querySelectorAll('.tgame')].map(b => mountScene3d(b.dataset.id, b.querySelector('.tg-art'), size)).filter(Boolean);
+  if (!offs.length) return;
+  const prev = cleanup;
+  cleanup = () => { offs.forEach(f => f()); prev?.(); };
 }
 
 /* ---------- barra de competição (menu): atalhos sem listas — os rankings ficam todos na tela "Rankings" ---------- */
