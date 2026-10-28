@@ -1,5 +1,5 @@
 GAMES.blocos = {
-  name: 'Blocos', icon: 'blocks', hue: 255, desc: 'Estilo Tetris. ←→ move, ↑/X gira, Z gira ao contrário, ↓ desce, Espaço solta, C guarda a peça. Limpar linhas em peças seguidas sobe o multiplicador (x2, x3, até x4); peça que não limpa nada zera. TETRA seguido vale 1,5×. No celular: toque gira, arraste move, deslize pra baixo solta, toque na coluna da direita guarda.',
+  name: 'Blocos', icon: 'blocos', hue: 255, desc: 'Estilo Tetris. ←→ move, ↑/X gira, Z gira ao contrário, ↓ desce, Espaço solta, C guarda a peça. Limpar linhas em peças seguidas sobe o multiplicador (x2, x3, até x4); peça que não limpa nada zera. TETRA seguido vale 1,5×. No celular: toque gira, arraste move, deslize pra baixo solta, toque na coluna da direita guarda.',
   better: 'high', unit: 'pontos', phaser: true,
   start(el, done) {
     const COLS = 10, ROWS = 20, S = 26, BW = COLS * S, W = BW + 130, H = ROWS * S;

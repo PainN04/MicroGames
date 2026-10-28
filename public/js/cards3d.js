@@ -994,8 +994,12 @@ const SCENES_3D = {
   // parede de tijolos coloridos; a bola sai da raquete, quebra um tijolo (que explode em pedacinhos) e volta;
   // a raquete corre pra pegar; no fim a parede se refaz
   tijolos(Z, illo) {
-    const COLS = 6, ROWS = 3, BW = 19, BH = 9, bx = c => (c - (COLS - 1) / 2) * (BW + 2), by = r => -46 + r * (BH + 2);
+    const COLS = 6, ROWS = 3, BW = 19, BH = 9, bx = c => (c - (COLS - 1) / 2) * (BW + 2), by = r => -38 + r * (BH + 2);
     const COLORS = ['#ff4d6a', '#ff8a5c', '#ffd34d'];
+    // fundo do fliperama: placa escura com borda, atrás dos tijolos
+    const cab = backdrop(Z, illo, 0, { translate: { z: -10 } });
+    slab(Z, cab, 140, 112, 6, '#262a40');
+    new Z.Rect({ addTo: cab, width: 132, height: 104, stroke: 1.5, fill: true, color: '#1d2033', translate: { z: 3.2 } });
     const bricks = [];
     for (let r = 0; r < ROWS; r++) for (let c = 0; c < COLS; c++) {
       const g = new Z.Group({ addTo: illo, updateSort: true, translate: { x: bx(c), y: by(r) } });
@@ -1006,7 +1010,7 @@ const SCENES_3D = {
       bricks.push({ g, c, r });
     }
     // raquete com as pontas arredondadas
-    const pad = new Z.Anchor({ addTo: illo, translate: { y: 50 } });
+    const pad = new Z.Anchor({ addTo: illo, translate: { y: 44 } });
     slab(Z, pad, 30, 6, 8, '#cfd3ff');
     for (const s of [-1, 1]) new Z.Shape({ addTo: pad, stroke: 8, color: '#8b6cff', translate: { x: s * 15 } });
     const ball = new Z.Shape({ addTo: illo, stroke: 8, color: '#ffffff' });
@@ -1028,7 +1032,7 @@ const SCENES_3D = {
       });
       // bola: da raquete até o tijolo (f 0–1) e de volta até a próxima posição da raquete (f 1–2)
       const [hc, hr] = HITS[Math.min(i, HITS.length - 1)];
-      const from = { x: PAD_X[i] ?? 0, y: 43 }, hit = { x: bx(hc), y: by(hr) + BH / 2 + 4 }, back = { x: PAD_X[i + 1] ?? 0, y: 43 };
+      const from = { x: PAD_X[i] ?? 0, y: 37 }, hit = { x: bx(hc), y: by(hr) + BH / 2 + 4 }, back = { x: PAD_X[i + 1] ?? 0, y: 37 };
       const p = !playing ? from : f < 1 ? { x: from.x + (hit.x - from.x) * f, y: from.y + (hit.y - from.y) * f } : { x: hit.x + (back.x - hit.x) * (f - 1), y: hit.y + (back.y - hit.y) * (f - 1) };
       ball.visible = ballShine.visible = playing;
       ball.translate.set({ ...p, z: 4 });
@@ -1057,9 +1061,11 @@ const SCENES_3D = {
   // torre de blocos: o bloco de cima desliza de um lado pro outro, cai, a sobra é cortada e despenca girando;
   // depois de três, a torre desce pra dar espaço e recomeça
   torre(Z, illo) {
+    // a torre inteira 30% maior (no tamanho original ela ficava pequena e baixa no card)
+    const root = new Z.Anchor({ addTo: illo, scale: 1.3, translate: { y: -26 } });
     const H = 9, D = 30, W0 = 50, COLORS = ['#8b6cff', '#ff6b8a', '#ff8a5c', '#ffd34d', '#3ddc97', '#4dc3ff'];
     // Group: o visible esconde o bloco inteiro e as faces se ordenam entre si
-    const block = (w, color) => { const g = new Z.Group({ addTo: illo, updateSort: true }); slab(Z, g, w, H, D, color); return g; };
+    const block = (w, color) => { const g = new Z.Group({ addTo: root, updateSort: true }); slab(Z, g, w, H, D, color); return g; };
     const base = [0, 1, 2].map(i => block(W0, COLORS[i]));
     // cada queda: onde o bloco para (fora do centro do de baixo), o que fica e o que é cortado
     const OFFS = [10, -8, 3];
@@ -1071,7 +1077,7 @@ const SCENES_3D = {
       w = keepW; cx = keepX;
       return d;
     });
-    const sparks = Array.from({ length: 6 }, (_, i) => ({ s: new Z.Shape({ addTo: illo, stroke: 2.6, color: i % 2 ? '#ffffff' : '#ffd34d' }), a: (i / 6) * Math.PI + Math.PI }));
+    const sparks = Array.from({ length: 6 }, (_, i) => ({ s: new Z.Shape({ addTo: root, stroke: 2.6, color: i % 2 ? '#ffffff' : '#ffd34d' }), a: (i / 6) * Math.PI + Math.PI }));
     return t => {
       const SEG = 1.5, T = SEG * 3 + 1.2, k = t % T, i = Math.floor(k / SEG), f = (k % SEG) / SEG, end = i >= 3;
       // a torre desce um andar a cada encaixe (a "câmera" sobe) e volta pro começo no fim
@@ -1955,7 +1961,7 @@ const SCENES_3D = {
   // Contexto: palpites entram na lista na posição certa (barra maior = mais perto); o último é o nº 1 e brilha.
   // Uma lupa passeia por cima
   contexto(Z, illo) {
-    const RANKS = [842, 97, 2140, 13, 1], N = 13642, W = 74, H = 11, ROWGAP = 14;
+    const RANKS = [842, 97, 2140, 13, 1], N = 13642, W = 92, H = 13, ROWGAP = 16;
     const tone = r => (r === 1 ? '#3ddc97' : r <= 300 ? '#2fbf80' : r <= 1500 ? '#e8b923' : '#ff6b8a');
     const rows = RANKS.map((r, k) => {
       const a = new Z.Anchor({ addTo: illo });
@@ -2242,19 +2248,19 @@ const SCENES_3D = {
   },
   // Equação: um palpite (13+34=47) vira com as cores e depois a conta certa (12+35=47) vira toda verde
   equacao(Z, illo) {
-    const GUESS = '13+34=47', ANSWER = '12+35=47', S = 10.5, STEP = S + 1.6;
-    const rows = [GUESS, ANSWER].map((w, r) => {
+    const ANSWER = '12+35=47', WORDS = ['13+34=47', '15+32=47', ANSWER], S = 14, STEP = S + 1.8, LAST = WORDS.length - 1;
+    const rows = WORDS.map((w, r) => {
       const cols = termoColors(w, ANSWER);
-      return [...w].map((ch, i) => ({ ...letterTile(Z, illo, ch, S, { x: (i - 3.5) * STEP, y: (r - 0.5) * (STEP + 4) }, { glyphScale: 0.42, stroke: 1.5 }), color: TERMO_C[cols[i]], r, i }));
+      return [...w].map((ch, i) => ({ ...letterTile(Z, illo, ch, S, { x: (i - 3.5) * STEP, y: (r - 1) * (STEP + 4) }, { glyphScale: 0.56, stroke: 1.8 }), color: TERMO_C[cols[i]], r, i }));
     });
     return t => {
-      const FLIP = 0.13, ROW = 8 * FLIP + 0.5, T = 2 * ROW + 1.8, k = t % T;
+      const FLIP = 0.13, ROW = 8 * FLIP + 0.5, T = WORDS.length * ROW + 1.8, k = t % T;
       rows.flat().forEach(tl => {
         const f = (k - tl.r * ROW - tl.i * FLIP) / (FLIP * 1.8);
         tl.a.rotate.x = f > 0 && f < 1 ? Math.sin(f * Math.PI) * Math.PI / 2 * (f < 0.5 ? 1 : -1) : 0;
         tl.paint(f >= 0.5 ? tl.color : TILE_OFF);
-        tl.g.visible = tl.r === 0 || k > ROW - 0.2;
-        const won = tl.r === 1 ? k - 2 * ROW : -1;
+        tl.g.visible = k > tl.r * ROW - 0.2;
+        const won = tl.r === LAST ? k - WORDS.length * ROW : -1;
         tl.a.translate.z = won > 0 ? Math.max(0, Math.sin(won * 7 - tl.i * 0.55)) * (won < 1.5 ? 6 : 0) : 0;
       });
       illo.rotate.x = -0.3;

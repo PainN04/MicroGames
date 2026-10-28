@@ -1,5 +1,5 @@
 GAMES.snake = {
-  name: 'Cobrinha', icon: 'worm', hue: 150, desc: 'Setas, WASD, deslize ou os botões. Acelera a cada fruta; a dourada vale 5 e a azul encolhe o rabo (−3)!',
+  name: 'Cobrinha', icon: 'cobrinha', hue: 150, desc: 'Setas, WASD, deslize ou os botões. Acelera a cada fruta; a dourada vale 5 e a azul encolhe o rabo (−3)!',
   better: 'high', unit: 'pontos', phaser: true,
   // Phaser. Lógica em grade (20×20); o desenho desliza entre as casas. Feita pra responder na hora:
   //  - a curva não espera o próximo passo: se já passou de ~45% da casa, o passo é antecipado (some o "delay");
