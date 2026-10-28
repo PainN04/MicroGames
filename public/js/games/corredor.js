@@ -29,6 +29,9 @@ GAMES.corredor = {
         const ground = strip('cr_ground', 1, 0);
         layers.push(ground);
         const obsLayer = scene.add.layer();
+        // coiote de enfeite: de vez em quando entra pela esquerda, persegue um pouco, cansa e fica pra trás (não encosta em nada)
+        const coyImg = scene.add.image(-60, GY + 1, 'cr_coy0').setOrigin(0.5, 48 / 50).setScale(0.44).setVisible(false);
+        const coy = { st: 'off', x: -60, y: 0, vy: 0, t: rand(9, 15), hold: 0, f: 0, dust: 0 };
         const shadow = scene.add.image(X, GY + 2, 'cr_shadow').setScale(0.5);
         const me = scene.add.image(X, GY, 'cr_idle').setOrigin(0.5, art.footY).setScale(0.5);
         const dust = scene.add.particles(0, 0, 'cr_puff', { speed: { min: 20, max: 70 }, angle: { min: 175, max: 235 }, lifespan: 420, scale: { start: 0.45, end: 0.9 }, alpha: { start: 0.7, end: 0 }, emitting: false });
@@ -167,6 +170,21 @@ GAMES.corredor = {
           const tint = c => { const a = Phaser.Display.Color.Interpolate.ColorWithColor(Phaser.Display.Color.ValueToColor(0xffffff), Phaser.Display.Color.ValueToColor(c), 100, nightA * 100); return Phaser.Display.Color.GetColor(a.r, a.g, a.b); };
           clouds.forEach(c => c.setTint(tint(0x7a7fb8)));
           layers.slice(0, 3).forEach(L => L.imgs.forEach(img => img.setTint(tint(0x9a9ad0))));
+          // coiote
+          if (started && alive) {
+            if (coy.st === 'off' && (coy.t -= dt) <= 0) { coy.st = 'in'; coy.x = -45; coyImg.setVisible(true); }
+            else if (coy.st === 'in') { coy.x += 55 * dt; if (coy.x >= 18) { coy.st = 'chase'; coy.hold = rand(3, 5); } }
+            else if (coy.st === 'chase') { coy.x = 18 + Math.sin(tick * 1.7) * 3; if ((coy.hold -= dt) <= 0) coy.st = 'out'; }
+            else if (coy.st === 'out') { coy.x -= 32 * dt; if (coy.x < -45) { coy.st = 'off'; coyImg.setVisible(false); coy.t = rand(16, 30); } }
+            if (coy.st !== 'off') {
+              coy.f += dt * (coy.st === 'out' ? 8 : 15);
+              // pula os cactos e o urubu baixo, igual ao corredor
+              if (coy.y === 0 && obs.some(o => o.kind !== 'flock' && o.x - o.w / 2 - coy.x > 4 && o.x - o.w / 2 - coy.x < 34)) coy.vy = -540;
+              coy.vy += GRAV * dt; coy.y = Math.min(0, coy.y + coy.vy * dt); if (coy.y === 0) coy.vy = 0;
+              if (coy.y === 0 && coy.st !== 'out' && (coy.dust -= delta) <= 0) { dust.emitParticleAt(coy.x - 6, GY - 3, 1); coy.dust = 90; }
+            }
+          }
+          coyImg.setPosition(coy.x, GY + 1 + coy.y).setTexture((coy.st === 'out' ? 'cr_coy_t' : 'cr_coy') + (coy.y < 0 ? 0 : Math.floor(coy.f) % 4));
           // corredor
           const duck = ducking && onGround(), air = !onGround(), f = Math.floor(tick * 18) % 6;
           me.setY(y).setTexture(!alive ? 'cr_dead' : duck ? (started ? 'cr_duck' + f : 'cr_duck0') : air ? 'cr_jump' : started ? 'cr_run' + f : 'cr_idle');
@@ -284,31 +302,44 @@ GAMES.corredor = {
         paint(c, fill, INK, 1.1);
       };
       const eye = (c, x, y, dead) => {
-        ell(c, x - 4.5, y + 0.6, 3, 1.6); c.fillStyle = '#ff6a3d'; c.fill(); // pele laranja atrás do olho
-        ell(c, x, y, 3.3, 3.5); paint(c, '#ffffff', INK, 1);
+        // pele nua atrás do olho, como no papa-léguas de verdade: azul e laranja
+        ell(c, x - 4.8, y + 0.4, 3.4, 1.9, 0.1); c.fillStyle = '#5b8cff'; c.fill();
+        ell(c, x - 6.4, y + 0.8, 2, 1.4, 0.1); c.fillStyle = '#ff6a3d'; c.fill();
+        ell(c, x, y, 3.6, 3.8); paint(c, '#ffffff', INK, 1);
         if (dead) { c.strokeStyle = INK; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x - 1.8, y - 1.8); c.lineTo(x + 1.8, y + 1.8); c.moveTo(x - 1.8, y + 1.8); c.lineTo(x + 1.8, y - 1.8); c.stroke(); return; }
-        ell(c, x + 1, y + 0.2, 1.8, 2); c.fillStyle = '#14112e'; c.fill();
-        ell(c, x + 1.6, y - 0.7, 0.7, 0.7); c.fillStyle = '#fff'; c.fill();
-        c.strokeStyle = INK; c.lineWidth = 1.3; c.beginPath(); c.moveTo(x - 3, y - 4.2); c.lineTo(x + 3.2, y - 2.9); c.stroke(); // sobrancelha decidida
+        ell(c, x + 1.1, y + 0.3, 2, 2.2); c.fillStyle = '#14112e'; c.fill();
+        ell(c, x + 1.8, y - 0.6, 0.8, 0.8); c.fillStyle = '#fff'; c.fill();
+        ell(c, x + 0.4, y + 1.6, 0.4, 0.4); c.fillStyle = 'rgba(255,255,255,.7)'; c.fill();
+        c.save(); ell(c, x, y, 3.6, 3.8); c.clip(); c.fillStyle = '#3a46b0'; c.fillRect(x - 4, y - 5, 8, 2.6); c.restore(); // pálpebra: olhar decidido
+        c.strokeStyle = INK; c.lineWidth = 1.4; c.lineCap = 'round'; c.beginPath(); c.moveTo(x - 3.4, y - 4.4); c.lineTo(x + 3.4, y - 2.6); c.stroke(); c.lineCap = 'butt';
       };
       const beak = (c, x, y, len) => {
-        c.beginPath(); c.moveTo(x, y - 2.4); c.quadraticCurveTo(x + len * 0.6, y - 2.8, x + len, y + 0.6); c.lineTo(x + 1, y + 0.8); c.closePath(); paint(c, '#ffd04f', INK, 1.1);
+        c.beginPath(); c.moveTo(x, y - 2.4); c.quadraticCurveTo(x + len * 0.6, y - 2.9, x + len, y + 0.6); c.lineTo(x + 1, y + 0.8); c.closePath(); paint(c, lin(c, 0, y - 3, 0, y + 1, [[0, '#ffe07a'], [1, '#ffc23a']]), INK, 1.1);
         c.beginPath(); c.moveTo(x + 1, y + 0.8); c.lineTo(x + len - 1.5, y + 1); c.quadraticCurveTo(x + len * 0.5, y + 3.4, x + 1, y + 2.6); c.closePath(); paint(c, '#e79a22', INK, 1.1);
+        c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 0.8; c.beginPath(); c.moveTo(x + 2.5, y - 1.6); c.quadraticCurveTo(x + len * 0.45, y - 2, x + len * 0.7, y - 1); c.stroke();
+        ell(c, x + 3.2, y - 0.6, 0.9, 0.45); c.fillStyle = '#9a5a10'; c.fill(); // narina
       };
-      const speckles = (c, pts) => { c.fillStyle = 'rgba(220,228,255,.85)'; pts.forEach(([x, y]) => { ell(c, x, y, 1.1, 0.7, -0.4); c.fill(); }); };
+      // escamas claras nas costas (penas com borda clara, no lugar das pintinhas)
+      const scallops = (c, pts, col = 'rgba(205,215,255,.75)') => { c.strokeStyle = col; c.lineWidth = 0.9; c.lineCap = 'round'; pts.forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 1.9, 0.15, Math.PI - 0.15); c.stroke(); }); c.lineCap = 'butt'; };
       const LEG = '#ff9b3a', LEG_D = '#c96a1c';
+      const toes = (c, x, y, col, k = 1) => { // pé com dedos em X (dois pra frente, dois pra trás)
+        c.lineCap = 'round'; c.strokeStyle = INK; c.lineWidth = 2.6;
+        c.beginPath(); c.moveTo(x, y); c.lineTo(x + 4.5 * k, y); c.moveTo(x, y); c.lineTo(x + 3 * k, y - 1.4); c.moveTo(x, y); c.lineTo(x - 3 * k, y); c.stroke();
+        c.strokeStyle = col; c.lineWidth = 1.4; c.stroke(); c.lineCap = 'butt';
+      };
       const legWheel = (c, hx, hy, r, f) => {
-        // pernas tão rápidas que viram uma roda borrada
-        ell(c, hx, hy, r, r); c.fillStyle = 'rgba(255,155,58,.22)'; c.fill();
+        // pernas tão rápidas que viram uma roda borrada (com os pés aparecendo)
+        ell(c, hx, hy, r, r); c.fillStyle = 'rgba(255,155,58,.28)'; c.fill();
+        c.strokeStyle = 'rgba(201,106,28,.55)'; c.lineWidth = 1.3; c.stroke();
         c.lineCap = 'round';
-        for (let k = 0; k < 3; k++) {
-          const a = f * (TAU / 18) + k * TAU / 3;
-          c.strokeStyle = k ? 'rgba(255,155,58,.55)' : LEG; c.lineWidth = 2.2;
-          c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx + Math.cos(a) * r, hy + Math.sin(a) * r); c.stroke();
-          ell(c, hx + Math.cos(a) * r, hy + Math.sin(a) * r, 2, 1.3, a); c.fillStyle = k ? 'rgba(201,106,28,.6)' : LEG_D; c.fill();
+        for (let k = 0; k < 4; k++) {
+          const a = f * (TAU / 24) + k * TAU / 4, ex = hx + Math.cos(a) * r, ey = hy + Math.sin(a) * r;
+          c.strokeStyle = k ? 'rgba(255,155,58,.6)' : LEG; c.lineWidth = k ? 2 : 2.6;
+          c.beginPath(); c.moveTo(hx, hy); c.lineTo(ex, ey); c.stroke();
+          ell(c, ex, ey, 2.6, 1.4, a + Math.PI / 2); c.fillStyle = k ? 'rgba(201,106,28,.65)' : LEG_D; c.fill();
         }
-        c.strokeStyle = 'rgba(255,190,120,.6)'; c.lineWidth = 1.2;
-        c.beginPath(); c.arc(hx, hy, r + 1.5, Math.PI * 0.55 + f * 0.35, Math.PI * 1.1 + f * 0.35); c.stroke();
+        c.strokeStyle = 'rgba(255,225,170,.8)'; c.lineWidth = 1.4;
+        c.beginPath(); c.arc(hx, hy, r + 1.8, Math.PI * 0.5 + f * 0.4, Math.PI * 1.15 + f * 0.4); c.stroke();
         c.lineCap = 'butt';
       };
       const leg = (c, pts, col) => {
@@ -317,74 +348,283 @@ GAMES.corredor = {
         c.strokeStyle = col; c.lineWidth = 2; c.stroke();
         c.lineCap = 'butt';
       };
-      const standing = (c, legs, { tailUp = 0, dead = false, lean = 0 } = {}) => {
+      const speedLines = (c, x, ys) => { c.lineCap = 'round'; ys.forEach(([y, l], i) => { c.strokeStyle = `rgba(255,255,255,${0.7 - i * 0.12})`; c.lineWidth = 1.4; c.beginPath(); c.moveTo(x - l, y); c.lineTo(x, y); c.stroke(); }); c.lineCap = 'butt'; };
+      // pena do rabo com ponta branca e listras claras
+      const tailFeather = (c, x0, y0, x1, y1, w, dark, light) => {
+        feather(c, x0, y0, x1, y1, w, lin(c, x1, y1, x0, y0, [[0, dark], [1, light]]));
+        c.save(); feather(c, x0, y0, x1, y1, w, 'rgba(0,0,0,0)'); c.clip();
+        c.strokeStyle = 'rgba(160,175,255,.45)'; c.lineWidth = 0.9;
+        [0.35, 0.55, 0.72].forEach(t => { const mx = x0 + (x1 - x0) * t, my = y0 + (y1 - y0) * t, nx = -(y1 - y0), ny = x1 - x0, l = Math.hypot(nx, ny); c.beginPath(); c.moveTo(mx + nx / l * w, my + ny / l * w); c.lineTo(mx - nx / l * w, my - ny / l * w); c.stroke(); });
+        c.restore();
+        ell(c, x1 + (x0 - x1) * 0.06, y1 + (y0 - y1) * 0.06, 1.8, 1.2, Math.atan2(y1 - y0, x1 - x0)); c.fillStyle = '#f2f4ff'; c.fill();
+      };
+      const standing = (c, legs, { tailUp = 0, dead = false, lean = 0, run = false } = {}) => {
         c.translate(FX, FY);
+        if (run) speedLines(c, -14, [[-30, 12], [-23, 16], [-16, 9]]);
         legs(c);
         c.rotate(lean);
-        // rabo comprido: duas penas
-        feather(c, -6, -28, -38, -48 - tailUp, 4.2, lin(c, -38, -50, -6, -28, [[0, '#1f2570'], [1, '#3a46b0']]));
-        feather(c, -6, -29, -36, -42 - tailUp, 3.6, lin(c, -36, -44, -6, -28, [[0, '#2a3290'], [1, '#4d5fd6']]));
-        ell(c, -36.5, -46 - tailUp, 1.4, 1); c.fillStyle = '#e8ecff'; c.fill();
+        // rabo comprido: três penas listradas com ponta branca
+        tailFeather(c, -6, -28, -39, -49 - tailUp, 4.2, '#1a1f66', '#3a46b0');
+        tailFeather(c, -6, -29, -37, -43 - tailUp, 3.8, '#232a80', '#4d5fd6');
+        tailFeather(c, -6, -27, -33, -37 - tailUp * 0.6, 3.2, '#1f2570', '#3a46b0');
         // corpo, barriga e asa
         ell(c, -1, -24, 14, 9.8, -0.28); paint(c, BODY(c, -34, -14));
-        ell(c, 4, -19.5, 8.5, 5.5, -0.35); c.fillStyle = lin(c, 0, -25, 0, -14, [[0, '#eef0ff'], [1, '#b9c3f2']]); c.fill();
-        ell(c, -5, -25.5, 9.5, 5.5, -0.2); paint(c, lin(c, 0, -31, 0, -20, [[0, '#3e4cc0'], [1, '#262d86']]), INK, 1.1);
-        speckles(c, [[-9, -26], [-5, -28], [-1, -25.5], [-7, -23], [-11, -24.5]]);
-        // pescoço e cabeça
+        ell(c, 4, -19.5, 8.5, 5.5, -0.35); c.fillStyle = lin(c, 0, -25, 0, -14, [[0, '#f4f5ff'], [1, '#c3cbf5']]); c.fill();
+        c.strokeStyle = 'rgba(120,135,210,.5)'; c.lineWidth = 0.8; [[2, -21], [5, -19], [7, -22]].forEach(([x, y]) => { c.beginPath(); c.moveTo(x, y); c.lineTo(x + 1.5, y + 1.5); c.stroke(); });
+        scallops(c, [[-8, -30], [-3, -31.5], [2, -30.5]]);
+        // asa: coberteiras + três penas de voo com borda clara
+        [[-1, -24, -20, -21, '#232a80'], [-1, -25.5, -19, -24, '#2b3390'], [-1, -27, -17, -27.5, '#3340a0']].forEach(([x0, y0, x1, y1, f]) => {
+          feather(c, x0, y0, x1, y1, 2.6, f);
+          c.strokeStyle = 'rgba(190,200,255,.6)'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(x0 - 3, y0 + 0.4); c.lineTo(x1 + 2, y1 + 0.6); c.stroke();
+        });
+        ell(c, -3, -26, 8, 5, -0.2); paint(c, lin(c, 0, -31, 0, -21, [[0, '#4656c8'], [1, '#283090']]), INK, 1.1);
+        scallops(c, [[-7, -26], [-3, -27.5], [0, -25.5], [-5, -23.5]]);
+        // pescoço com garganta clara e listrinhas
         c.beginPath(); c.moveTo(1, -30); c.quadraticCurveTo(5, -38, 6, -44); c.lineTo(13, -42); c.quadraticCurveTo(12, -34, 9, -28); c.closePath(); paint(c, BODY(c, -46, -28));
-        // crista: penas pra trás
-        feather(c, 6, -46, -7, -56 + (dead ? 4 : 0), 2.4, '#2b3390');
-        feather(c, 7, -47, -2, -60 + (dead ? 6 : 0), 2.4, '#3a46b0');
-        feather(c, 9, -47, 4, -59 + (dead ? 3 : 0), 2.2, '#5566dd');
+        c.save(); c.beginPath(); c.moveTo(1, -30); c.quadraticCurveTo(5, -38, 6, -44); c.lineTo(13, -42); c.quadraticCurveTo(12, -34, 9, -28); c.closePath(); c.clip();
+        c.beginPath(); c.moveTo(13.5, -42); c.quadraticCurveTo(12, -34, 9, -27); c.lineTo(6.5, -28); c.quadraticCurveTo(9.5, -35, 10, -42); c.closePath(); c.fillStyle = '#e6eaff'; c.fill();
+        c.strokeStyle = 'rgba(30,36,110,.55)'; c.lineWidth = 0.7; [[9.5, -39], [9, -35.5], [8, -32]].forEach(([x, y]) => { c.beginPath(); c.moveTo(x, y); c.lineTo(x + 1.6, y + 0.9); c.stroke(); });
+        c.restore();
+        // crista: quatro penas pra trás, com pontinha clara (deita com o vento quando corre)
+        const blow = run ? 4 : 0;
+        [[6, -46, -8, -55 + blow, 2.4, '#232a80'], [7, -47, -4, -59.5 + blow * 1.2, 2.4, '#2b3390'], [8, -47.5, 0, -61 + blow * 1.4, 2.3, '#3a46b0'], [9.5, -47.5, 5, -59.5 + blow * 1.5, 2.1, '#5566dd']].forEach(([x0, y0, x1, y1, w, f]) => {
+          if (dead) y1 += 5;
+          feather(c, x0, y0, x1, y1, w, f);
+          ell(c, x1 + (x0 - x1) * 0.12, y1 + (y0 - y1) * 0.12, 1, 0.7); c.fillStyle = 'rgba(210,220,255,.9)'; c.fill();
+        });
         ell(c, 9, -41.5, 7.6, 7); paint(c, BODY(c, -49, -34));
+        c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 1.2; c.beginPath(); c.arc(9, -41.5, 5.6, Math.PI * 1.1, Math.PI * 1.55); c.stroke(); // brilho na cabeça
         beak(c, 14.5, -41, 17);
         eye(c, 11, -43, dead);
       };
-      tex('cr_idle', RW, RH, c => standing(c, c => { leg(c, [[-2, -12], [-3, 0], [1, 0]], LEG_D); leg(c, [[2, -12], [3, 0], [7, 0]], LEG); }));
-      tex('cr_dead', RW, RH, c => standing(c, c => { leg(c, [[-2, -12], [-4, 0], [0, 0]], LEG_D); leg(c, [[2, -12], [4, 0], [8, 0]], LEG); }, { dead: true }));
+      const stand = c => { leg(c, [[-2, -12], [-3, 0]], LEG_D); toes(c, -3, 0, LEG_D); leg(c, [[2, -12], [3, 0]], LEG); toes(c, 3, 0, LEG); };
+      tex('cr_idle', RW, RH, c => standing(c, stand));
+      tex('cr_dead', RW, RH, c => standing(c, stand, { dead: true }));
       tex('cr_jump', RW, RH, c => standing(c, c => { leg(c, [[-1, -13], [-7, -8], [-13, -10]], LEG_D); leg(c, [[2, -13], [-3, -6], [-9, -6]], LEG); }, { tailUp: 5 }));
-      for (let f = 0; f < 6; f++) tex('cr_run' + f, RW, RH, c => standing(c, c => legWheel(c, 0, -9, 9, f), { lean: 0.06 }));
+      for (let f = 0; f < 6; f++) tex('cr_run' + f, RW, RH, c => standing(c, c => legWheel(c, 0, -9.5, 9.5, f), { lean: 0.12, run: true, tailUp: -2 }));
       // abaixado: corpo comprido rente ao chão, crista deitada
       for (let f = 0; f < 6; f++) tex('cr_duck' + f, RW, RH, c => {
         c.translate(FX, FY);
+        speedLines(c, -22, [[-19, 10], [-13, 14], [-7, 8]]);
         legWheel(c, 1, -6, 6, f);
-        feather(c, -12, -15, -41, -20, 3.4, lin(c, -41, -20, -12, -15, [[0, '#1f2570'], [1, '#3a46b0']]));
-        feather(c, -12, -14, -38, -15, 2.8, '#4d5fd6');
+        tailFeather(c, -12, -15, -42, -20, 3.4, '#1a1f66', '#3a46b0');
+        tailFeather(c, -12, -14, -38, -15, 2.8, '#232a80', '#4d5fd6');
         ell(c, 0, -13, 17, 7.5); paint(c, BODY(c, -21, -6));
-        ell(c, 4, -9.5, 10, 3.6); c.fillStyle = '#d9defa'; c.fill();
-        ell(c, -3, -14.5, 10, 4.5, -0.05); paint(c, '#2f3897', INK, 1.1);
-        speckles(c, [[-8, -15], [-3, -16.5], [1, -14], [-10, -13]]);
-        feather(c, 15, -21, 2, -24, 2, '#2b3390');
-        feather(c, 16, -21, 4, -26, 2, '#4d5fd6');
+        ell(c, 4, -9.5, 10, 3.6); c.fillStyle = '#e0e5fb'; c.fill();
+        ell(c, -3, -14.5, 10, 4.5, -0.05); paint(c, lin(c, 0, -19, 0, -10, [[0, '#4656c8'], [1, '#283090']]), INK, 1.1);
+        scallops(c, [[-8, -15], [-3, -16.5], [1, -14], [-10, -13]]);
+        feather(c, 15, -21, 1, -23.5, 2, '#232a80');
+        feather(c, 16, -21, 3, -26, 2, '#3a46b0');
+        feather(c, 17, -21.5, 7, -27, 1.8, '#5566dd');
         ell(c, 17, -16, 6.8, 6.3); paint(c, BODY(c, -23, -10));
+        c.strokeStyle = 'rgba(255,255,255,.45)'; c.lineWidth = 1.1; c.beginPath(); c.arc(17, -16, 5, Math.PI * 1.1, Math.PI * 1.55); c.stroke();
         beak(c, 22, -16, 15);
         eye(c, 19, -18);
       });
 
+      // ---------- coiote (só de enfeite: às vezes aparece correndo atrás do corredor e cansa) ----------
+      // Canvas 76x50, pés em (38, 48). cr_coy0-3 = galope, cr_coy_t0-3 = cansado (língua de fora).
+      const FUR = (c, y0, y1) => lin(c, 0, y0, 0, y1, [[0, '#e0b47a'], [0.45, '#c08f58'], [1, '#93683f']]);
+      const FUR_FAR = (c, y0, y1) => lin(c, 0, y0, 0, y1, [[0, '#9c7348'], [1, '#6e4d30']]);
+      const CREAM = '#f6e6c8';
+      // pata com forma: polígono afinando pelos pontos (quadril → joelho → jarrete → pé), com ponta arredondada
+      const limb = (c, pts, ws, fill) => {
+        const L = [], Rr = [];
+        pts.forEach((p, i) => {
+          const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+          let nx = -(b[1] - a[1]), ny = b[0] - a[0]; const l = Math.hypot(nx, ny) || 1; nx /= l; ny /= l;
+          L.push([p[0] + nx * ws[i] / 2, p[1] + ny * ws[i] / 2]); Rr.push([p[0] - nx * ws[i] / 2, p[1] - ny * ws[i] / 2]);
+        });
+        c.beginPath(); c.moveTo(L[0][0], L[0][1]);
+        for (let i = 1; i < L.length; i++) { const m = [(L[i - 1][0] + L[i][0]) / 2, (L[i - 1][1] + L[i][1]) / 2]; c.quadraticCurveTo(L[i - 1][0], L[i - 1][1], m[0], m[1]); }
+        const e = pts[pts.length - 1]; c.lineTo(L[L.length - 1][0], L[L.length - 1][1]);
+        c.arc(e[0], e[1], ws[ws.length - 1] / 2, Math.atan2(L[L.length - 1][1] - e[1], L[L.length - 1][0] - e[0]), Math.atan2(Rr[Rr.length - 1][1] - e[1], Rr[Rr.length - 1][0] - e[0]));
+        for (let i = Rr.length - 1; i > 0; i--) { const m = [(Rr[i][0] + Rr[i - 1][0]) / 2, (Rr[i][1] + Rr[i - 1][1]) / 2]; c.quadraticCurveTo(Rr[i][0], Rr[i][1], m[0], m[1]); }
+        c.lineTo(Rr[0][0], Rr[0][1]); c.closePath();
+        paint(c, fill, INK, 1.1);
+      };
+      const paw = (c, [x, y], dir = 1) => { ell(c, x + dir * 1.4, y + 0.2, 2.9, 1.6); paint(c, '#5b4030', INK, 0.9); c.strokeStyle = 'rgba(255,230,200,.35)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(x + dir * 2.2, y - 0.8); c.lineTo(x + dir * 2.4, y + 1); c.stroke(); };
+      // galope em 4 quadros: [quadril, joelho, jarrete, pé] e [ombro, cotovelo, punho, pé]
+      const GALLOP = [
+        { bob: -3, back: [[-10, -19], [-15, -13], [-22, -11], [-28, -8]], front: [[10, -20], [16, -15], [23, -13], [29, -11]] },
+        { bob: -1, back: [[-10, -19], [-4, -13], [-6, -6], [-1, -2]], front: [[10, -20], [9, -13], [6, -7], [2, -3]] },
+        { bob: 0, back: [[-10, -19], [-8, -11], [-14, -5], [-12, 0]], front: [[10, -20], [15, -14], [20, -9], [25, -6]] },
+        { bob: 1, back: [[-10, -19], [-13, -12], [-19, -7], [-22, -1]], front: [[10, -20], [11, -12], [10, -5], [13, 0]] },
+      ];
+      const coyote = (c, f, tired) => {
+        c.translate(38, 48);
+        const G = GALLOP[f], bob = G.bob, hy = tired ? 4 : 0, tl = tired ? 8 : 0;
+        const at = (pts, dx = 0) => pts.map(([x, y], i) => [x + dx, y + (i === 0 ? bob : i === 1 ? bob * 0.5 : 0)]);
+        // patas do lado de lá
+        const farB = GALLOP[(f + 1) % 4].back, farF = GALLOP[(f + 1) % 4].front;
+        limb(c, at(farB, 3), [7, 4.8, 3.4, 3.2], FUR_FAR(c, -20, 0)); paw(c, at(farB, 3)[3]);
+        limb(c, at(farF, -3), [6, 4.2, 3.2, 3], FUR_FAR(c, -20, 0)); paw(c, at(farF, -3)[3]);
+        c.save(); c.translate(0, bob);
+        // rabo peludo: tufos na borda, barriga clara e ponta preta
+        c.beginPath(); c.moveTo(-14, -24);
+        c.bezierCurveTo(-22, -28 + tl * 0.5, -30, -27 + tl, -38, -21 + tl * 1.3);
+        [[-36.5, -19.5], [-37.5, -17.5], [-35, -16.5], [-35.5, -14.6], [-31, -15.2], [-29.5, -13.6], [-25, -15.6], [-22, -14.6]].forEach(([x, y]) => c.lineTo(x, y + tl * (0.6 + (x + 38) / -40 * 0.6)));
+        c.quadraticCurveTo(-18, -17, -14, -18); c.closePath();
+        paint(c, lin(c, -38, 0, -14, 0, [[0, '#2a221d'], [0.18, '#3a2e26'], [0.3, '#a07548'], [1, '#c8975e']]), INK, 1.1);
+        c.strokeStyle = 'rgba(245,225,190,.55)'; c.lineWidth = 1; c.beginPath(); c.moveTo(-17, -18.5); c.quadraticCurveTo(-24, -17.5 + tl * 0.6, -29, -16.5 + tl * 0.9); c.stroke();
+        c.strokeStyle = 'rgba(70,45,25,.45)'; c.lineWidth = 0.8;
+        [[-20, -24 + tl * 0.4], [-25, -23.5 + tl * 0.6], [-29.5, -22 + tl * 0.8]].forEach(([x, y]) => { c.beginPath(); c.moveTo(x, y); c.lineTo(x - 3, y + 1.6); c.stroke(); });
+        // corpo: anca redonda, cintura fina, peito fundo
+        const body = () => { c.beginPath(); c.moveTo(-15, -23.5);
+          c.bezierCurveTo(-12, -28.5, -2, -28.5, 5, -27.5); c.bezierCurveTo(10, -27, 14, -25.5, 16, -21.5);
+          c.bezierCurveTo(17, -18, 15, -15.5, 11, -15); c.quadraticCurveTo(3, -16.5, -3, -16);
+          c.bezierCurveTo(-9, -14, -15, -14.5, -17, -18); c.quadraticCurveTo(-18, -21.5, -15, -23.5); c.closePath(); };
+        body(); paint(c, FUR(c, -29, -14), INK, 1.2);
+        c.save(); body(); c.clip();
+        c.beginPath(); c.moveTo(16, -21); c.bezierCurveTo(15, -16, 8, -14, 0, -15.5); c.lineTo(-4, -13); c.lineTo(17, -13); c.closePath(); c.fillStyle = CREAM; c.fill(); // peito e barriga clara
+        c.beginPath(); c.moveTo(-16, -25); c.bezierCurveTo(-8, -29.5, 4, -29.5, 12, -27); c.lineTo(12, -25.6); c.bezierCurveTo(4, -27.6, -8, -27.6, -16, -23); c.closePath(); c.fillStyle = 'rgba(80,60,45,.5)'; c.fill(); // faixa grisalha nas costas
+        c.strokeStyle = 'rgba(90,60,35,.5)'; c.lineWidth = 0.8;
+        [[-11, -25.4], [-6, -26.2], [-1, -26.4], [4, -26]].forEach(([x, y]) => { c.beginPath(); c.moveTo(x, y); c.lineTo(x + 2, y + 2.3); c.stroke(); });
+        c.restore();
+        c.restore();
+        // patas do lado de cá
+        limb(c, at(G.back), [8.5, 5.8, 3.8, 3.4], FUR(c, -20, 0)); paw(c, at(G.back)[3]);
+        limb(c, at(G.front), [7, 4.8, 3.6, 3.2], FUR(c, -20, 0)); paw(c, at(G.front)[3]);
+        c.save(); c.translate(0, bob);
+        // coxa e ombro cobrem o encaixe das patas no corpo
+        ell(c, -10.5, -19.5, 7, 6.6, 0.3); c.fillStyle = FUR(c, -29, -14); c.fill();
+        c.strokeStyle = INK; c.lineWidth = 1.1; c.beginPath(); c.ellipse(-10.5, -19.5, 7, 6.6, 0.3, Math.PI * 0.35, Math.PI * 1.02); c.stroke();
+        c.strokeStyle = 'rgba(70,45,25,.5)'; c.lineWidth = 0.9; c.beginPath(); c.ellipse(-10.5, -19.5, 7, 6.6, 0.3, -Math.PI * 0.35, Math.PI * 0.35); c.stroke();
+        ell(c, 10, -20.5, 5.4, 5.8, -0.2); c.fillStyle = FUR(c, -29, -14); c.fill();
+        c.strokeStyle = INK; c.lineWidth = 1.1; c.beginPath(); c.ellipse(10, -20.5, 5.4, 5.8, -0.2, -Math.PI * 0.05, Math.PI * 0.6); c.stroke();
+        // pescoço com juba
+        c.beginPath(); c.moveTo(6, -27); c.bezierCurveTo(10, -31 + hy, 14, -33 + hy, 19, -33.5 + hy);
+        c.lineTo(22, -25 + hy); c.bezierCurveTo(19, -22 + hy * 0.5, 17, -19, 15, -17); c.quadraticCurveTo(11, -20, 6, -27); c.closePath(); paint(c, FUR(c, -34, -17), INK, 1.1);
+        c.beginPath(); c.moveTo(21.5, -25 + hy); [[19.5, -23 + hy * 0.6], [20, -21 + hy * 0.4], [17.5, -20], [17, -18]].forEach(([x, y]) => c.lineTo(x, y)); c.quadraticCurveTo(16, -22, 21.5, -25 + hy); c.fillStyle = CREAM; c.fill(); // peito fofo
+        c.strokeStyle = 'rgba(80,55,30,.45)'; c.lineWidth = 0.8; [[10, -29 + hy * 0.5], [13, -30.5 + hy * 0.7]].forEach(([x, y]) => { c.beginPath(); c.moveTo(x, y); c.lineTo(x + 1.5, y + 2.4); c.stroke(); });
+        // orelhas grandes com tufo claro dentro (deitam quando cansa)
+        const ed = tired ? 1 : 0;
+        [[16.5, -34, 13.5 - ed * 4, -45 + ed * 6, 20.5, -37.5, '#a87a4a'], [20, -35.5, 21 - ed * 4, -47.5 + ed * 7, 25.5, -36, '#c8975e']].forEach(([x0, y0, x1, y1, x2, y2, col]) => {
+          c.beginPath(); c.moveTo(x0, y0 + hy); c.quadraticCurveTo(x1 - 1, (y0 + y1) / 2 + hy, x1, y1 + hy); c.quadraticCurveTo(x2, (y1 + y2) / 2 + hy, x2, y2 + hy); c.closePath(); paint(c, col, INK, 1.1);
+          c.beginPath(); c.moveTo(x0 + 1.3, y0 + hy - 0.6); c.quadraticCurveTo(x1, (y0 + y1) / 2 + hy + 1, x1 + 0.8, y1 + hy + 3.2); c.quadraticCurveTo(x2 - 1.5, (y1 + y2) / 2 + hy + 1, x2 - 1.3, y2 + hy - 0.6); c.closePath(); c.fillStyle = '#d98f84'; c.fill();
+          c.strokeStyle = CREAM; c.lineWidth = 0.8; c.beginPath(); c.moveTo(x0 + 2, y0 + hy - 0.6); c.lineTo(x0 + 2.4 + (x1 - x0) * 0.25, y0 + hy - 4); c.moveTo(x0 + 3, y0 + hy - 0.8); c.lineTo(x0 + 3.6 + (x1 - x0) * 0.2, y0 + hy - 3.4); c.stroke();
+        });
+        // cabeça: crânio, bochecha fofa clara e focinho comprido
+        ell(c, 22, -30.5 + hy, 6.2, 5.2, -0.1); paint(c, FUR(c, -36 + hy, -25 + hy), INK, 1.1);
+        c.beginPath(); c.moveTo(24.5, -33.8 + hy); c.bezierCurveTo(29, -33.6 + hy, 34, -32 + hy, 37.6, -29.8 + hy); c.quadraticCurveTo(38.2, -28 + hy, 36, -27.4 + hy); c.lineTo(25.5, -27 + hy); c.closePath();
+        paint(c, lin(c, 0, -34 + hy, 0, -27 + hy, [[0, '#d8a86c'], [1, '#c08f58']]), INK, 1.1);
+        c.strokeStyle = 'rgba(255,240,215,.6)'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(26, -33 + hy); c.quadraticCurveTo(31, -32.6 + hy, 35, -30.8 + hy); c.stroke(); // brilho no focinho
+        // maxilar claro + bochecha em tufos
+        c.beginPath(); c.moveTo(36, -27.4 + hy); c.quadraticCurveTo(33, -24.6 + hy, 28, -24.4 + hy);
+        [[25.5, -23 + hy], [24.5, -25 + hy], [22, -23.6 + hy], [21.6, -26 + hy]].forEach(([x, y]) => c.lineTo(x, y));
+        c.quadraticCurveTo(22, -28 + hy, 25.5, -27 + hy); c.closePath(); paint(c, CREAM, INK, 1);
+        ell(c, 37.6, -29.6 + hy, 1.7, 1.45); paint(c, '#241b17', null); ell(c, 37, -30.2 + hy, 0.6, 0.38); c.fillStyle = 'rgba(255,255,255,.75)'; c.fill(); // nariz
+        // boca: sorriso safado com canino (ou língua de fora, cansado)
+        c.strokeStyle = INK; c.lineWidth = 0.9; c.beginPath(); c.moveTo(36.2, -27.6 + hy); c.quadraticCurveTo(31, -26.4 + hy, 27, -27.6 + hy); c.stroke();
+        if (tired) { c.beginPath(); c.moveTo(31.5, -26.8 + hy); c.bezierCurveTo(33.5, -22 + hy, 32.5, -18.5 + hy, 30.5, -18.8 + hy); c.bezierCurveTo(28.6, -19.2 + hy, 29, -23 + hy, 29.5, -26.8 + hy); c.closePath(); paint(c, lin(c, 0, -27 + hy, 0, -19 + hy, [[0, '#ff6f80'], [1, '#ff9aa6']]), INK, 0.9);
+          c.strokeStyle = 'rgba(180,40,60,.5)'; c.lineWidth = 0.6; c.beginPath(); c.moveTo(30.6, -25 + hy); c.lineTo(30.8, -21 + hy); c.stroke(); }
+        else { c.beginPath(); c.moveTo(29.5, -27.3 + hy); c.lineTo(30.9, -27.2 + hy); c.lineTo(30.2, -25.5 + hy); c.closePath(); c.fillStyle = '#fff'; c.fill(); c.strokeStyle = INK; c.lineWidth = 0.5; c.stroke(); }
+        // olho amendoado amarelo com pupila, brilho e sobrancelha
+        c.beginPath(); c.moveTo(22.2, -32 + hy); c.quadraticCurveTo(24.6, -35 + hy, 27.4, -32.6 + hy); c.quadraticCurveTo(24.8, -30.4 + hy, 22.2, -32 + hy); c.closePath(); paint(c, '#ffd84a', INK, 0.9);
+        ell(c, 25.1, -32.3 + hy, 1.1, 1.35); c.fillStyle = '#1a120e'; c.fill();
+        ell(c, 25.5, -32.9 + hy, 0.42, 0.42); c.fillStyle = '#fff'; c.fill();
+        if (tired) { c.save(); c.beginPath(); c.moveTo(22.2, -32 + hy); c.quadraticCurveTo(24.6, -35 + hy, 27.4, -32.6 + hy); c.quadraticCurveTo(24.8, -30.4 + hy, 22.2, -32 + hy); c.clip(); c.fillStyle = '#b8874f'; c.fillRect(21, -36 + hy, 8, 3.6); c.restore(); }
+        c.strokeStyle = INK; c.lineWidth = 1.3; c.lineCap = 'round'; c.beginPath();
+        if (tired) { c.moveTo(21.8, -34.8 + hy); c.quadraticCurveTo(24.5, -35.6 + hy, 27.4, -34.6 + hy); } else { c.moveTo(21.6, -36 + hy); c.quadraticCurveTo(24.5, -35.6 + hy, 27.6, -33.6 + hy); }
+        c.stroke(); c.lineCap = 'butt';
+        if (tired) { c.beginPath(); c.moveTo(17, -40.5); c.quadraticCurveTo(18.6, -37.6, 17, -36.6); c.quadraticCurveTo(15.4, -37.6, 17, -40.5); paint(c, '#a8e0ff', INK, 0.7); } // gota de suor
+        c.restore();
+      };
+      for (let f = 0; f < 4; f++) tex('cr_coy' + f, 76, 50, c => coyote(c, f, false));
+      for (let f = 0; f < 4; f++) tex('cr_coy_t' + f, 76, 50, c => coyote(c, f, true));
+
       // ---------- urubu (de frente pro corredor) ----------
-      // 3 quadros de asa: 0 = em cima, 1 = meio, 2 = embaixo. Centro do corpo em (30, 24).
-      const VK = '#2e1c14'; // contorno mais claro que o INK: o urubu precisa aparecer no céu da noite
-      [-20, -3, 15].forEach((tipY, fr) => tex('cr_vul' + fr, 60, 50, c => {
-        c.translate(30, 24);
-        const wing = (dy, fill, under) => {
-          c.beginPath(); c.moveTo(-4, -2);
-          c.quadraticCurveTo(2, tipY * 0.6 + dy - 3, 6, tipY + dy);
-          for (let k = 0; k < 3; k++) { const fx = 8 + k * 3.2, fy = tipY + dy + (tipY < 0 ? 2 : -2) * k; c.lineTo(fx, fy); c.lineTo(fx + 1.4, fy + (tipY < 0 ? 4 : -4)); }
-          c.quadraticCurveTo(14, tipY * 0.35 + dy, 11, 0); c.closePath();
-          paint(c, fill, VK, 1.1);
-          if (under) { c.save(); c.clip(); c.strokeStyle = 'rgba(245,232,214,.85)'; c.lineWidth = 2.6; c.beginPath(); c.moveTo(9, 0); c.quadraticCurveTo(13, tipY * 0.4, 12, tipY + 1); c.stroke(); c.restore(); }
+      // 3 quadros de asa: 0 = em cima, 1 = planando, 2 = embaixo. Corpo no centro do canvas 70x70.
+      // Direção de arte: silhueta clássica de urubu (asa larga com as penas da ponta abertas como dedos, rabo em leque,
+      // cabeça careca vermelha), corpo ameixa-escuro com penas de voo prateadas (contraste dentro do próprio desenho)
+      // e uma borda creme em volta: lê bem no céu da noite, no pôr do sol e na areia, e não lembra o corredor azul.
+      const VK = INK;
+      // asas desenhadas à mão por quadro: ombro, punho, pontas dos 5 "dedos" e onde a borda de trás encontra o corpo
+      const WINGS = [
+        { sh: [-2, -3], wr: [1, -16], tips: [[-2, -27], [3, -29.5], [8, -28.5], [12, -25], [15, -20.5]], end: [12, -3] },
+        { sh: [-2, -3], wr: [9, -9], tips: [[19, -15.5], [23, -13.5], [26, -10], [26.5, -6], [24.5, -2.5]], end: [11, 2] },
+        { sh: [-2, -1], wr: [2, 12], tips: [[-1, 22.5], [4, 25], [9, 24.5], [13, 21.5], [15.5, 17]], end: [12, 1] },
+      ];
+      const vulture = (c, fr) => {
+        c.translate(35, 35);
+        const mix = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+        const wing = (off, far) => {
+          const w = WINGS[fr], P = pt => [pt[0] + off[0], pt[1] + off[1]];
+          const S0 = P(w.sh), Wr = P(w.wr), E = P(w.end), T = w.tips.map(P);
+          // penas de voo: borda da frente até o punho, dedos abertos na ponta, borda de trás em escamas até o corpo
+          c.beginPath(); c.moveTo(S0[0], S0[1]);
+          const lead = mix(S0, Wr, 0.5);
+          c.quadraticCurveTo(lead[0] - (Wr[1] - S0[1]) * 0.12, lead[1] + (Wr[0] - S0[0]) * 0.12, Wr[0], Wr[1]);
+          let prev = Wr;
+          T.forEach((t, k) => { // cada dedo com a ponta arredondada
+            const nt = k < T.length - 1 ? mix(mix(t, T[k + 1], 0.5), Wr, 0.24) : null, a0 = mix(prev, t, 0.75);
+            c.lineTo(a0[0], a0[1]);
+            const b0 = nt ? mix(t, nt, 0.3) : t; c.quadraticCurveTo(t[0], t[1], b0[0], b0[1]);
+            if (nt) c.lineTo(nt[0], nt[1]);
+            prev = nt || t;
+          });
+          const last = T[T.length - 1];
+          for (let j = 1; j <= 4; j++) { const p0 = mix(last, E, (j - 1) / 4), p1 = mix(last, E, j / 4), m = mix(p0, p1, 0.5), dx = p1[0] - p0[0], dy = p1[1] - p0[1], l = Math.hypot(dx, dy) || 1;
+            const side = (E[0] - Wr[0]) * dy - (E[1] - Wr[1]) * dx > 0 ? 1 : -1;
+            c.quadraticCurveTo(m[0] + dy / l * 2 * side, m[1] - dx / l * 2 * side, p1[0], p1[1]); }
+          c.closePath();
+          const tc = mix(T[0], T[4], 0.5);
+          paint(c, lin(c, S0[0], S0[1], tc[0], tc[1], far ? [[0, '#7d7690'], [1, '#a9a2bd']] : [[0, '#c4bed6'], [1, '#f6f3fb']]), VK, 1.1);
+          // riscos entre as penas
+          c.strokeStyle = far ? 'rgba(50,40,70,.45)' : 'rgba(90,80,120,.45)'; c.lineWidth = 0.7;
+          T.slice(0, 4).forEach((t, k) => { const nt = mix(mix(t, T[k + 1], 0.5), Wr, 0.24), a0 = mix(nt, Wr, 0.6); c.beginPath(); c.moveTo(a0[0], a0[1]); c.lineTo(nt[0], nt[1]); c.stroke(); });
+          for (let j = 1; j < 4; j++) { const e = mix(last, E, j / 4), a0 = mix(e, mix(S0, Wr, 0.5 + j * 0.1), 0.45); c.beginPath(); c.moveTo(a0[0], a0[1]); c.lineTo(e[0], e[1]); c.stroke(); }
+          // coberteiras escuras: do ombro ao punho, terminando em escamas no meio da asa
+          let px = Wr[1] - S0[1], py = S0[0] - Wr[0]; const pl = Math.hypot(px, py); px /= pl; py /= pl;
+          if ((E[0] - S0[0]) * px + (E[1] - S0[1]) * py < 0) { px = -px; py = -py; } // aponta pro lado de trás da asa
+          const C1 = [Wr[0] + px * 7 + (Wr[0] - S0[0]) * 0.12, Wr[1] + py * 7 + (Wr[1] - S0[1]) * 0.12], C3 = [S0[0] + px * 9.5, S0[1] + py * 9.5];
+          c.beginPath(); c.moveTo(S0[0], S0[1]);
+          c.quadraticCurveTo(lead[0] - (Wr[1] - S0[1]) * 0.12, lead[1] + (Wr[0] - S0[0]) * 0.12, Wr[0], Wr[1]);
+          c.quadraticCurveTo(Wr[0] + px * 1.5 + (Wr[0] - S0[0]) * 0.15, Wr[1] + py * 1.5 + (Wr[1] - S0[1]) * 0.15, C1[0], C1[1]);
+          for (let j = 1; j <= 4; j++) { const p0 = mix(C1, C3, (j - 1) / 4), p1 = mix(C1, C3, j / 4), m = mix(p0, p1, 0.5); c.quadraticCurveTo(m[0] + px * 2, m[1] + py * 2, p1[0], p1[1]); }
+          c.closePath();
+          paint(c, far ? '#3a3044' : lin(c, S0[0], S0[1], C3[0], C3[1], [[0, '#8a79a0'], [1, '#4f405f']]), VK, 1.1);
+          if (!far) { const h0 = mix(S0, Wr, 0.15), h1 = mix(S0, Wr, 0.85); c.strokeStyle = 'rgba(240,230,255,.55)'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(h0[0] + 0.8, h0[1] + 0.3); c.lineTo(h1[0] + 0.8, h1[1] + 0.3); c.stroke(); }
         };
-        wing(-1, '#6e5040'); // asa de trás
-        c.beginPath(); c.moveTo(13, -3); c.lineTo(25, -2); c.lineTo(24, 2); c.lineTo(13, 3); c.closePath(); paint(c, '#7a5a46', VK, 1.1); // rabo
-        ell(c, 3, 0, 13.5, 6.8); paint(c, lin(c, 0, -7, 0, 7, [[0, '#b88d6c'], [1, '#6a4a38']]), VK, 1.2);
-        wing(1, lin(c, 0, tipY, 0, 0, [[0, '#7c5a44'], [1, '#b08a6c']]), true);
-        // gola branca fofinha
-        c.beginPath(); for (let k = 0; k < 6; k++) c.arc(-9 + Math.cos(k) * 2.5, -1.5 + Math.sin(k * 1.3) * 2.5, 2.6, 0, TAU); paint(c, '#efe7dc', null);
-        // cabeça careca e bico curvo
-        c.beginPath(); c.moveTo(-10, -2); c.quadraticCurveTo(-13, -6, -15, -6); c.lineTo(-13, -1); c.closePath(); paint(c, '#d77468', VK, 1);
-        ell(c, -16, -6, 4.6, 4.1); paint(c, rad(c, -17, -7.5, 0.5, 5, [[0, '#f3a196'], [1, '#c45e57']]), VK, 1.1);
-        c.beginPath(); c.moveTo(-19.5, -7.5); c.quadraticCurveTo(-25, -7, -25.5, -3.5); c.quadraticCurveTo(-23, -4.6, -20, -4); c.closePath(); paint(c, '#f1e2c4', VK, 1);
-        ell(c, -17, -7, 1.5, 1.5); c.fillStyle = '#fff'; c.fill(); ell(c, -17.4, -7, 0.8, 0.8); c.fillStyle = VK; c.fill();
+        wing([2.5, -0.5], true); // asa de trás
+        // rabo em leque
+        [[-0.28, '#4a3e58'], [0.32, '#4a3e58'], [0.02, '#5d4f6d']].forEach(([a, f]) => feather(c, 10, 0.5, 10 + Math.cos(a) * 13, 0.5 + Math.sin(a) * 13, 3.4, f));
+        // corpo
+        ell(c, 2, 0.5, 12.5, 7, 0.06); paint(c, lin(c, 0, -7, 0, 8, [[0, '#7c6c88'], [0.5, '#54465f'], [1, '#2f2638']]), VK, 1.2);
+        c.save(); ell(c, 2, 0.5, 12.5, 7, 0.06); c.clip(); c.strokeStyle = 'rgba(225,215,240,.28)'; c.lineWidth = 0.8;
+        [[-1, -2], [4, -3], [8, -1], [2, 2], [7, 3]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 2.2, 0.2, Math.PI - 0.2); c.stroke(); });
+        c.restore();
+        // pés recolhidos
+        c.strokeStyle = '#e9b5a6'; c.lineWidth = 1.6; c.lineCap = 'round';
+        c.beginPath(); c.moveTo(5, 6); c.lineTo(9, 8.2); c.moveTo(7.5, 5.5); c.lineTo(11, 7.4); c.stroke(); c.lineCap = 'butt';
+        wing([0, 0], false);
+        // gola creme fofinha
+        c.beginPath(); for (let k = 0; k < 7; k++) c.arc(-9 + Math.cos(k * 0.9) * 2.6, -2 + Math.sin(k * 0.9) * 2.4, 2.5, 0, TAU);
+        paint(c, rad(c, -9, -3, 0.5, 5, [[0, '#fffaf0'], [1, '#e2d6c6']]), null);
+        // pescoço e cabeça careca, com rugas
+        c.beginPath(); c.moveTo(-10, -2.5); c.quadraticCurveTo(-13, -7, -16, -7.5); c.lineTo(-14.5, -2.5); c.closePath(); paint(c, '#d46a5f', VK, 1);
+        ell(c, -17, -7.5, 4.8, 4.2, -0.15); paint(c, rad(c, -18, -9, 0.5, 5.2, [[0, '#ffb3a4'], [0.6, '#e2776b'], [1, '#b9504b']]), VK, 1.1);
+        c.strokeStyle = 'rgba(140,40,40,.55)'; c.lineWidth = 0.7;
+        c.beginPath(); c.moveTo(-15, -10); c.quadraticCurveTo(-14, -8, -15, -6); c.moveTo(-13.6, -9); c.quadraticCurveTo(-12.8, -7.5, -13.6, -6); c.stroke();
+        // bico curvo cor de marfim, ponta escura
+        c.beginPath(); c.moveTo(-20.6, -9.2); c.quadraticCurveTo(-26, -9, -27, -5.4); c.quadraticCurveTo(-24.4, -6.4, -21, -5.6); c.closePath(); paint(c, '#f4e6c8', VK, 1);
+        c.beginPath(); c.moveTo(-25.4, -7.6); c.quadraticCurveTo(-26.8, -6.8, -27, -5.4); c.lineTo(-25.2, -6); c.closePath(); c.fillStyle = '#6b5a4a'; c.fill();
+        ell(c, -21.3, -7.6, 0.8, 0.5); c.fillStyle = '#7a3a36'; c.fill(); // narina
+        // olho com brilho e sobrancelha brava
+        ell(c, -18.2, -8.8, 1.7, 1.8); paint(c, '#fff', VK, 0.8);
+        ell(c, -18.7, -8.7, 0.95, 1.05); c.fillStyle = VK; c.fill();
+        ell(c, -18.4, -9.3, 0.35, 0.35); c.fillStyle = '#fff'; c.fill();
+        c.strokeStyle = VK; c.lineWidth = 1.1; c.beginPath(); c.moveTo(-20.4, -11.2); c.lineTo(-16.4, -10.2); c.stroke();
+      };
+      [0, 1, 2].forEach(fr => tex('cr_vul' + fr, 70, 70, c => {
+        // desenha num canvas à parte e carimba a silhueta creme em volta antes (borda de "adesivo")
+        const art = document.createElement('canvas'); art.width = 70 * R; art.height = 70 * R;
+        const a = art.getContext('2d'); a.scale(R, R); vulture(a, fr);
+        const halo = document.createElement('canvas'); halo.width = art.width; halo.height = art.height;
+        const h = halo.getContext('2d'); h.drawImage(art, 0, 0); h.globalCompositeOperation = 'source-in'; h.fillStyle = '#fff4e2'; h.fillRect(0, 0, halo.width, halo.height);
+        c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
+        for (let k = 0; k < 12; k++) c.drawImage(halo, Math.cos(k * TAU / 12) * 1.5 * R, Math.sin(k * TAU / 12) * 1.5 * R);
+        c.drawImage(art, 0, 0); c.restore();
       }));
 
       // ---------- cactos saguaro (gerados sob demanda por altura e variação) ----------
