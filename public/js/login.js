@@ -34,7 +34,7 @@ function loginModal(msg = '') {
   m.innerHTML = `
     <div class="ls-wrap" role="dialog" aria-modal="true" aria-labelledby="lsTitle">
       <section class="ls-form">
-        <div class="ls-brand"><img src="icons/icon.svg?v=6" alt="" width="40" height="40"><span class="wm">Micro<span>Game</span></span></div>
+        <div class="ls-brand"><img src="icons/icon.svg?v=7" alt="" width="40" height="40"><span class="wm">Micro<span>Game</span></span></div>
         <div class="ls-main">
           <h1 id="lsTitle">Bom te ver<br>de volta.</h1>
           <p class="ls-lead">Entre com o usuário e a senha que o admin te passou pra jogar e salvar seus recordes no ranking da galera.</p>

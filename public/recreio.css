@@ -21,6 +21,7 @@ html[data-skin="recreio"][data-mode="light"] {
   --green: oklch(54% .15 150); --red: oklch(55% .2 22); --yellow: oklch(60% .14 70); --blue: oklch(52% .16 250);
   --elev-1: 0 1px 2px oklch(30% .03 280 / .08); --elev-3: 0 10px 30px oklch(30% .05 280 / .08);
   --tile-l: 91%; --tile-c: .07; --rc-hero-l: 60%;
+  --veil: 30% .03 280;
 }
 html[data-skin="recreio"] body { font-family: 'DM Sans', 'Space Grotesk', system-ui, sans-serif; background: var(--bg); }
 html[data-skin="recreio"] :is(h1, h2, h3, .logo, .result .score) { font-family: var(--font-display); }
@@ -180,7 +181,7 @@ html[data-skin="recreio"][data-mode="light"] .screen {
   --bg: oklch(15% 0.02 275); --surface: oklch(22% 0.025 275 / 0.62); --surface-2: oklch(28% 0.03 275 / 0.7);
   --border: oklch(100% 0 0 / 0.09); --border-strong: oklch(100% 0 0 / 0.18); --text: oklch(97% 0.01 275); --muted: oklch(76% 0.02 275);
   --green: oklch(76% 0.18 150); --red: oklch(66% 0.22 18); --yellow: oklch(86% 0.17 92); --blue: oklch(70% 0.16 245);
-  --primary: oklch(70% 0.19 290); --accent: oklch(74% 0.17 35);
+  --primary: oklch(70% 0.19 290); --accent: oklch(74% 0.17 35); --veil: 100% 0 0;
 }
 /* claro: campos, menus e janelas que tinham fundo escuro fixo */
 html[data-skin="recreio"][data-mode="light"] :is(input.txt, .admin input, .admin select, .admin textarea, .acc-role span, .tk-imgs button, .tk-imgs a):not(.screen *) { background: var(--surface-2); }
