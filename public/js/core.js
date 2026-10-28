@@ -410,7 +410,9 @@ function mountPhaser(wrap, width, height, scene, { res = 1, tall = false } = {})
     const box = wrap.parentElement, cs = getComputedStyle(box);
     const gap = parseFloat(cs.rowGap) || 0;
     const others = [...box.children].filter(c => c !== wrap).reduce((sum, c) => sum + c.offsetHeight + gap, 0);
-    const maxH = (tall ? innerHeight - (document.querySelector('body > header')?.offsetHeight || 0) - 40 : parseFloat(cs.getPropertyValue('--avail')) || height) - others;
+    // a barra do topo só conta quando está em cima; no PC o header é o menu lateral (altura da tela toda) e zerava a altura do jogo
+    const hr = document.querySelector('body > header')?.getBoundingClientRect(), headH = hr && hr.width > innerWidth / 2 ? hr.height : 0;
+    const maxH = (tall ? innerHeight - headH - 40 : parseFloat(cs.getPropertyValue('--avail')) || height) - others;
     const scale = Math.max(0.35, Math.min(1, box.clientWidth / width, maxH / height));
     // !important: nada (CSS do layout, Phaser) pode esticar a caixa além do tamanho calculado
     wrap.style.setProperty('width', Math.floor(width * scale) + 'px', 'important');
