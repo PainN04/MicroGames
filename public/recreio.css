@@ -347,20 +347,23 @@ html[data-skin="recreio"] .tg-art .z3d { transition: transform var(--duration) v
 /* duplas: classificação e os pontos de cada jogo */
 html[data-skin="recreio"] .duo-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: var(--space-md); align-items: start; }
 html[data-skin="recreio"] .duo-cols .teams { margin: 0; }
-html[data-skin="recreio"] .dg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
-html[data-skin="recreio"] .dg { padding: 12px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--border); }
-html[data-skin="recreio"] .dg-head { display: flex; align-items: center; gap: .55em; margin: 0 0 8px; }
-html[data-skin="recreio"] .dg-head .ic { width: 30px; height: 30px; flex: none; display: grid; place-items: center; border-radius: 10px; color: #fff;
+html[data-skin="recreio"] .dg-table { display: grid; gap: 4px; }
+html[data-skin="recreio"] .dg-row { display: grid; grid-template-columns: minmax(100px, .6fr) repeat(3, minmax(0, 1fr)); align-items: center; gap: 6px; padding: 5px 8px; border-radius: 12px; background: var(--surface-2); }
+html[data-skin="recreio"] .dg-row :is(.dg-g, .dg-c) { display: flex; align-items: center; gap: .45em; min-width: 0; }
+html[data-skin="recreio"] .dg-g .ic { width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: 8px; color: #fff;
   background: linear-gradient(160deg, oklch(68% .15 var(--h)), oklch(50% .16 var(--h))); }
-html[data-skin="recreio"] .dg-head .ic .i { width: 17px; height: 17px; }
-html[data-skin="recreio"] .dg ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-html[data-skin="recreio"] .dg li { display: flex; align-items: center; gap: .5em; padding: .35em .55em; border-radius: 10px; background: var(--surface); font-size: var(--fs-sm); }
-html[data-skin="recreio"] .dg li.me { outline: 1px solid oklch(70% .19 290 / .5); background: oklch(70% .19 290 / .14); }
-html[data-skin="recreio"] .dg .dn { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; overflow: hidden; }
-html[data-skin="recreio"] .dg .dn small { color: var(--muted); font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-html[data-skin="recreio"] .dg li > b { margin-left: auto; white-space: nowrap; color: var(--yellow); font-variant-numeric: tabular-nums; }
-html[data-skin="recreio"][data-mode="light"] .dg li > b { color: oklch(55% .13 70); }
-html[data-skin="recreio"] .dg li > b.zero { color: var(--muted); font-weight: 600; }
+html[data-skin="recreio"] .dg-g .ic .i { width: 15px; height: 15px; }
+html[data-skin="recreio"] .dg-row .dn { min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+html[data-skin="recreio"] .dg-row .dn :is(b, small) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .dg-row .dn b { font-size: var(--fs-sm); font-weight: 600; }
+html[data-skin="recreio"] .dg-g .dn b { font-weight: 700; font-size: var(--fs-xs); white-space: normal; overflow: visible; line-height: 1.15; }
+html[data-skin="recreio"] .dg-g { gap: .4em !important; }
+html[data-skin="recreio"] .dg-row .dn small { color: var(--muted); font-size: var(--fs-xs); }
+html[data-skin="recreio"] .dg-g .dn small { color: oklch(78% .14 290); }
+html[data-skin="recreio"] .dg-c { padding: 3px 5px; border-radius: 9px; gap: .35em !important; }
+html[data-skin="recreio"] .dg-c.me { outline: 1px solid oklch(70% .19 290 / .5); background: oklch(70% .19 290 / .14); }
+html[data-skin="recreio"] .dg-c.empty { color: var(--muted); }
+html[data-skin="recreio"] .dg-c .rank { flex: none; width: 20px; height: 20px; font-size: 11px; }
 html[data-skin="recreio"] .dg-idle { text-align: left; margin: var(--space-sm) 0 0; font-size: var(--fs-xs); }
 /* duelos: em andamento e resultados à esquerda, novo duelo à direita */
 html[data-skin="recreio"] .duel-cols { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--space-md); align-items: start; }
@@ -370,7 +373,14 @@ html[data-skin="recreio"] .duel-cols .duel-form { margin: 0; }
 html[data-skin="recreio"] .duel-cols .empty-state { margin: 0; }
 @media (max-width: 900px) {
   html[data-skin="recreio"] :is(.comp-torneio .t-body, .duo-cols, .duel-cols) { grid-template-columns: 1fr; }
-  html[data-skin="recreio"] .dg-grid { grid-template-columns: 1fr; }
+}
+/* celular: o nome do jogo em cima e as 3 duplas embaixo, uma por linha */
+@media (max-width: 600px) {
+  html[data-skin="recreio"] .dg-row { grid-template-columns: 1fr; gap: 2px; padding: 8px; }
+  html[data-skin="recreio"] .dg-g { margin-bottom: 2px; }
+  html[data-skin="recreio"] .dg-g .dn b { font-size: var(--fs-sm); }
+  html[data-skin="recreio"] .dg-c .dn { flex: 1; flex-direction: row; align-items: baseline; justify-content: space-between; gap: .6em; }
+  html[data-skin="recreio"] .dg-c .dn small { flex: none; }
 }
 html[data-skin="recreio"] .duel-cols .err:empty { display: none; }
 
