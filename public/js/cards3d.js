@@ -88,7 +88,7 @@ const SCENES_3D = {
   // chuva de peças: as 7 peças do Tetris caem girando em profundidades diferentes, cada uma no seu ritmo, e voltam
   // pro alto quando saem do card. Cada peça é um Group (as faces se ordenam dentro dela, sem misturar com as outras).
   blocos(Z, illo) {
-    const C = 13;
+    const C = 12;
     const SHAPES = {
       I: [[-1.5, 0], [-0.5, 0], [0.5, 0], [1.5, 0]], O: [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]],
       T: [[-1, 0.5], [0, 0.5], [1, 0.5], [0, -0.5]], L: [[-1, 0.5], [0, 0.5], [1, 0.5], [1, -0.5]],
@@ -97,9 +97,9 @@ const SCENES_3D = {
     };
     const COLOR = { I: '#4dc3ff', O: '#ffd34d', T: '#8b6cff', L: '#ff8a5c', J: '#5b7cff', S: '#3ddc97', Z: '#ff6b8a' };
     // x (coluna), z (profundidade: as de trás menores), atraso, velocidade e giro de cada peça
-    const RAIN = [['T', -42, -26, 0, 1, 0.9], ['I', 6, 10, 0.55, 0.85, -0.6], ['O', 44, -10, 0.25, 1.1, 0.7], ['S', -16, 24, 0.8, 0.95, -0.8],
-      ['L', 32, 30, 0.1, 1.05, 0.5], ['Z', -46, 4, 0.45, 0.9, -0.7], ['J', 12, -34, 0.7, 1, 0.8], ['O', -10, -40, 0.95, 0.8, -0.5],
-      ['T', 40, -30, 0.62, 0.9, -0.6], ['I', -34, 18, 0.33, 1.1, 0.5]];
+    // (as peças ficam no miolo do card: no celular a faixa da arte corta o canvas em cima e embaixo)
+    const RAIN = [['T', -32, -20, 0, 1, 0.9], ['I', 4, 10, 0.55, 0.85, -0.6], ['O', 34, -8, 0.25, 1.1, 0.7], ['S', -12, 22, 0.8, 0.95, -0.8],
+      ['L', 26, 26, 0.1, 1.05, 0.5], ['Z', -34, 4, 0.42, 0.9, -0.7], ['J', 10, -30, 0.7, 1, 0.8]];
     const pieces = RAIN.map(([k, x, z, delay, speed, spin]) => {
       const g = new Z.Group({ addTo: illo, updateSort: true, translate: { x, z } });
       for (const [cx, cy] of SHAPES[k]) cube(Z, g, C - 1, COLOR[k], { translate: { x: cx * C, y: cy * C } });
@@ -108,18 +108,20 @@ const SCENES_3D = {
     // brilhinhos que ficam pra trás da peça mais rápida
     const sparks = Array.from({ length: 5 }, (_, i) => new Z.Shape({ addTo: illo, stroke: 2.2, color: i % 2 ? '#ffffff' : '#ffe68a' }));
     return t => {
-      const FALL = 3.4; // segundos pra atravessar o card
+      const FALL = 2.8; // segundos de cada queda
       pieces.forEach(p => {
         const k = ((t * p.speed) / FALL + p.delay) % 1;
-        p.g.translate.y = -105 + k * 210;
-        p.g.translate.x = p.x + Math.sin(t * 0.9 + p.delay * 6) * 4;
+        // nasce crescendo no alto e some encolhendo embaixo, sempre dentro do quadro
+        p.g.translate.y = -40 + k * 76;
+        p.g.scale = Math.max(0.01, smooth(Math.min(1, k / 0.18)) * smooth(Math.min(1, (1 - k) / 0.18)));
+        p.g.translate.x = p.x + Math.sin(t * 0.9 + p.delay * 6) * 3;
         p.g.rotate.z = p.spin * (t + p.delay * 5);
         p.g.rotate.x = 0.35 + Math.sin(t * 0.7 + p.delay * 4) * 0.25 * p.tilt;
         p.g.rotate.y = 0.4 * Math.sin(t * 0.5 + p.delay * 3);
       });
       const lead = pieces[1];
-      sparks.forEach((s, i) => s.translate.set({ x: lead.g.translate.x + Math.sin(t * 3 + i * 2) * 10, y: lead.g.translate.y - 22 - i * 8, z: lead.g.translate.z }));
-      sparks.forEach((s, i) => { s.stroke = 2.4 - i * 0.4; });
+      sparks.forEach((s, i) => s.translate.set({ x: lead.g.translate.x + Math.sin(t * 3 + i * 2) * 10, y: lead.g.translate.y - 16 - i * 6, z: lead.g.translate.z }));
+      sparks.forEach((s, i) => { s.stroke = (2.4 - i * 0.4) * lead.g.scale; });
       illo.rotate.x = -0.15;
       illo.rotate.y = Math.sin(t * 0.4) * 0.3;
     };
