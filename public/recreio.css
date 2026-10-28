@@ -1,9 +1,6 @@
-/* ================= visuais novos: Recreio e Console (js/skins.js) =================
-   <html data-skin="recreio|console|classic"> e, no Recreio, data-mode="light|dark". O Atual (classic) não usa nada daqui.
-   Tudo vem com html[data-skin=...] na frente: ganha das regras do style.css sem precisar de !important. */
-
-/* a área do jogo fica numa "tela" (.screen); no Atual ela não existe pro layout */
-.screen { display: contents; }
+/* ================= visual do site: Recreio (js/recreio.js) =================
+   Por cima do style.css: <html data-skin="recreio" data-mode="light|dark">, e .side-mini com o menu lateral recolhido.
+   Tudo vem com html[data-skin="recreio"] na frente: ganha das regras do style.css sem precisar de !important. */
 .daily-head[hidden] { display: none; }
 
 /* ---------------------------------------------------------------- Recreio ---------------------------------------------------------------- */
@@ -172,8 +169,8 @@ html[data-skin="recreio"] .board.glass { border-radius: 24px; }
 html[data-skin="recreio"] .board :is(h2, h3) { font-weight: 800; }
 html[data-skin="recreio"][data-mode="light"] .board li.t1 > .sc { color: oklch(55% .13 70); }
 
-/* dentro da tela do jogo e na tela de entrar valem as cores escuras de sempre (os jogos foram feitos pra elas) */
-html[data-skin="recreio"][data-mode="light"] :is(.screen, .modal.login-screen) {
+/* dentro da tela do jogo valem as cores escuras de sempre (os jogos foram feitos pra elas) */
+html[data-skin="recreio"][data-mode="light"] .screen {
   color-scheme: dark; color: var(--text);
   --bg: oklch(15% 0.02 275); --surface: oklch(22% 0.025 275 / 0.62); --surface-2: oklch(28% 0.03 275 / 0.7);
   --border: oklch(100% 0 0 / 0.09); --border-strong: oklch(100% 0 0 / 0.18); --text: oklch(97% 0.01 275); --muted: oklch(76% 0.02 275);
@@ -225,175 +222,61 @@ html[data-skin="recreio"][data-mode="light"] .acct-btn .av { color: #fff; }
   html[data-skin="recreio"] .daily-side ol li:nth-child(n+3) { display: none; }
 }
 
-/* ---------------------------------------------------------------- Console ---------------------------------------------------------------- */
-@property --skin-h { syntax: '<number>'; inherits: true; initial-value: 290; }
-html[data-skin="console"] {
-  color-scheme: dark;
-  --bg: #07080d; --surface: oklch(100% 0 0 / .06); --surface-2: oklch(100% 0 0 / .1); --border: oklch(100% 0 0 / .12); --border-strong: oklch(100% 0 0 / .22);
-  --text: #fff; --muted: oklch(80% .02 270);
-}
-html[data-skin="console"] body { font-family: 'Outfit', 'Space Grotesk', system-ui, sans-serif; background: #07080d; }
-/* fundo: luz na cor do jogo em destaque (ou da partida), que muda devagar; linhas finas de tela por cima */
-html[data-skin="console"] .backdrop { transition: --skin-h .8s ease;
-  background: radial-gradient(70% 80% at 78% 22%, oklch(52% .17 var(--skin-h) / .6), transparent 70%),
-    radial-gradient(60% 60% at 8% 100%, oklch(45% .15 calc(var(--skin-h) + 60) / .35), transparent 70%), linear-gradient(#0b0d16, #05060a); }
-html[data-skin="console"] .backdrop i { display: none; }
-html[data-skin="console"] .backdrop::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, oklch(100% 0 0 / .022) 0 1px, transparent 1px 4px); }
-html.lite[data-skin="console"] .backdrop { transition: none; }
-html[data-skin="console"] .glass { background: oklch(100% 0 0 / .06); border: 0; box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .12); border-radius: 26px; }
-html[data-skin="console"] .modal .box.glass, html[data-skin="console"] .acct-menu.glass, html[data-skin="console"] .gate-pop.glass { background: oklch(17% .02 270 / .97); }
-html[data-skin="console"] .btn:not(.ghost) { background: #fff; color: #0a0b12; }
-html[data-skin="console"] .btn.ghost { background: oklch(100% 0 0 / .1); border: 0; box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .2); color: #fff; }
-html[data-skin="console"] .link-btn { color: oklch(85% .1 var(--skin-h)); }
+/* o ranking ao lado do jogo gruda no topo da tela (não tem barra fixa em cima) */
+@media (min-width: 901px) { html[data-skin="recreio"] .board { top: 20px; max-height: calc(100dvh - 40px); } }
 
-/* topo: a conta à esquerda (como o perfil de um videogame) e o relógio à direita */
-html[data-skin="console"] header { position: relative; background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
-  padding: 22px max(20px, calc((100% - 1360px) / 2 + 40px)) 6px; justify-content: flex-start; }
-html[data-skin="console"] .logo { display: none; }
-html[data-skin="console"] .who { flex: 1; flex-wrap: nowrap; gap: 14px; }
-html[data-skin="console"] .who .acct { order: -1; margin-right: auto; }
-html[data-skin="console"] .acct-btn { background: none !important; border: 0; box-shadow: none !important; padding: 0 .6rem 0 0; gap: .75em; font-size: 1.05rem; min-height: 52px; }
-html[data-skin="console"] .acct-btn .av { width: 46px; height: 46px; background: linear-gradient(135deg, oklch(70% .15 var(--skin-h)), oklch(65% .17 calc(var(--skin-h) + 80))); color: #fff;
-  box-shadow: 0 0 0 3px oklch(100% 0 0 / .2) !important; }
-html[data-skin="console"] .acct-btn .av .i { width: 22px; height: 22px; }
-html[data-skin="console"] .acct-menu { left: 0; right: auto; }
-html[data-skin="console"] header .icon-btn { background: none; border: 0; box-shadow: none; }
-html[data-skin="console"] .cs-clock { font-weight: 700; font-size: 1.2rem; letter-spacing: .02em; font-variant-numeric: tabular-nums; }
-html[data-skin="console"] main { max-width: 1360px; padding: 0 40px 40px; }
-html[data-skin="console"] .hero { padding: 0; }
-
-/* destaque do desafio: nome gigante, números e a cena 3D grande */
-html[data-skin="console"] .daily.cs-hero { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 20px; min-height: 380px; padding: 6px 0 0;
-  margin: 0; background: none; border: 0; box-shadow: none; overflow: visible; }
-html[data-skin="console"] .cs-hero .daily-info { padding: 0; gap: 0; }
-html[data-skin="console"] .cs-hero .tag { font-size: .8rem; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: oklch(86% .13 var(--h)); }
-html[data-skin="console"] .cs-hero h2 { font-size: clamp(3.2rem, 1.8rem + 5vw, 6.6rem); font-weight: 900; letter-spacing: -0.045em; line-height: .9; margin: 14px 0 14px; }
-html[data-skin="console"] .cs-desc { margin: 0 0 22px; font-size: 1.15rem; line-height: 1.45; color: oklch(100% 0 0 / .72); max-width: 42ch; }
-html[data-skin="console"] .cs-meta { display: flex; flex-wrap: wrap; gap: 14px 30px; margin-bottom: 26px; }
-html[data-skin="console"] .cs-meta small { display: block; font-size: .82rem; color: oklch(100% 0 0 / .6); }
-html[data-skin="console"] .cs-meta b { font-size: 1.35rem; font-weight: 800; }
-html[data-skin="console"] .cs-cta { display: flex; flex-wrap: wrap; gap: 12px; }
-html[data-skin="console"] .cs-cta .btn { min-height: 56px; padding: 0 1.9rem; font-size: 1.1rem; font-weight: 800; }
-html[data-skin="console"] .cs-hero .pick-row { margin-top: 14px; }
-html[data-skin="console"] .cs-hero .daily-stage { width: 360px; height: 360px; min-height: 0; background: none; overflow: visible; }
-html[data-skin="console"] .cs-hero .daily-stage .z3d { -webkit-mask-image: none; mask-image: none; scale: 1; filter: drop-shadow(0 30px 50px oklch(0% 0 0 / .55)); }
-html[data-skin="console"] .cs-hero .daily-stage .icon .i { width: 160px; height: 160px; color: #fff; }
-
-/* prateleira: abas e uma fileira de ladrilhos quadrados */
-html[data-skin="console"] .cs-shelf { margin-top: 28px; }
-html[data-skin="console"] .cs-tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px; }
-html[data-skin="console"] .cs-tabs::-webkit-scrollbar { display: none; }
-html[data-skin="console"] .cs-tabs button { position: relative; display: inline-flex; align-items: center; gap: .5em; flex: none; min-height: 40px; padding: 0 1.1em; border: 0; border-radius: 999px;
-  background: none; color: oklch(100% 0 0 / .62); font: inherit; font-weight: 700; font-size: .82rem; letter-spacing: .12em; text-transform: uppercase; cursor: pointer; }
-html[data-skin="console"] .cs-tabs button:hover { color: #fff; }
-html[data-skin="console"] .cs-tabs button[aria-selected="true"] { background: #fff; color: #0a0b12; }
-html[data-skin="console"] .cs-tabs .tab-dot { box-shadow: none; letter-spacing: 0; }
-html[data-skin="console"] .cs-shelf .daily-head { margin: 10px 0 0; padding: .6rem 1rem; }
-html[data-skin="console"] .cs-row { display: flex; gap: 20px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; padding: 18px 10px 54px; margin: 0 -10px;
-  -webkit-mask-image: linear-gradient(to right, #000 92%, transparent); mask-image: linear-gradient(to right, #000 92%, transparent); }
-html[data-skin="console"] .cs-row::-webkit-scrollbar { display: none; }
-html[data-skin="console"] .cs-row .card { flex: 0 0 150px; height: 150px; padding: 0; min-height: 0; scroll-snap-align: start; overflow: visible; border: 0; border-radius: 30px;
-  background: linear-gradient(160deg, oklch(68% .15 var(--h)), oklch(40% .13 var(--h))); box-shadow: 0 12px 30px oklch(0% 0 0 / .45), inset 0 1.5px 0 oklch(100% 0 0 / .25);
-  backdrop-filter: none; -webkit-backdrop-filter: none; transition: transform var(--duration) var(--ease-spring), outline-color var(--duration-fast); outline: 4px solid transparent; outline-offset: 5px; }
-html[data-skin="console"] .cs-row .card.off { display: none; }
-html[data-skin="console"] .cs-row .card::before { inset: 0; height: auto; border-radius: inherit; background: radial-gradient(70% 50% at 50% 100%, oklch(0% 0 0 / .25), transparent 70%); }
-html[data-skin="console"] .cs-row .card .z3d { top: 50%; left: 50%; translate: -50% -50%; -webkit-mask-image: none; mask-image: none; }
-html[data-skin="console"] .cs-row .card .icon { inset: 0; height: auto; }
-html[data-skin="console"] .cs-row .card .icon .i { width: 58px; height: 58px; color: #fff; }
-html[data-skin="console"] .cs-row .card h3 { position: absolute; top: calc(100% + 12px); left: -8px; right: -8px; margin: 0; padding: 0; border: 0; transform: none !important;
-  text-align: center; font-size: .92rem; font-weight: 700; color: oklch(100% 0 0 / .7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-html[data-skin="console"] .cs-row .card .rec { display: none; }
-html[data-skin="console"] .cs-row .card:is(:hover, :focus-visible) { outline-color: #fff; transform: scale(1.06); }
-html[data-skin="console"] .cs-row .card:is(:hover, :focus-visible) h3 { color: #fff; }
-html[data-skin="console"] .cs-row.tilt-on .card:hover { transform: scale(1.06); }
-/* estado do diário: só uma bolinha com o ícone no canto do ladrilho */
-html[data-skin="console"] .cs-row .card .ds-slot { position: absolute; top: 9px; left: 9px; padding: 0; margin: 0; z-index: 2; }
-html[data-skin="console"] .cs-row .ds { width: 26px; height: 26px; padding: 0; justify-content: center; font-size: 0; border: 0; box-shadow: 0 0 0 3px oklch(0% 0 0 / .25); }
-html[data-skin="console"] .cs-row .ds .i { width: 15px; height: 15px; }
-html[data-skin="console"] .cs-row .ds.won { background: var(--green); color: #0a0b12; }
-html[data-skin="console"] .cs-row .ds.going { background: var(--blue); color: #0a0b12; }
-html[data-skin="console"] .cs-row .ds.lost { background: oklch(40% .02 270); color: #fff; }
-html[data-skin="console"] .cs-row .card .daily-badge { top: 9px; right: 9px; }
-
-/* atalhos: botões redondos embaixo (Rankings, Torneio, Duplas, Duelos) */
-html[data-skin="console"] .cs-dock { display: flex; justify-content: center; gap: 30px; margin: 4px 0 20px; padding: 0; background: none; border: 0; border-radius: 0; box-shadow: none; overflow: visible; }
-html[data-skin="console"] .cs-dock .hub-btn { flex-direction: column; gap: 8px; min-height: 0; max-width: 150px; padding: 4px; border-radius: 18px; background: none; box-shadow: none; text-align: center; }
-html[data-skin="console"] .cs-dock .hub-btn .ic { width: 66px; height: 66px; border-radius: 50%; background: oklch(100% 0 0 / .08); color: #fff; box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .16);
-  transition: background var(--duration-fast), color var(--duration-fast), transform var(--duration) var(--ease-spring); }
-html[data-skin="console"] .cs-dock .hub-btn .ic .i { width: 26px; height: 26px; }
-html[data-skin="console"] .cs-dock .hub-btn:hover { background: none; }
-html[data-skin="console"] .cs-dock .hub-btn:hover .ic { background: #fff; color: #0a0b12; transform: scale(1.06); }
-html[data-skin="console"] .cs-dock .hub-btn.hot .ic { box-shadow: inset 0 0 0 2px var(--yellow); }
-html[data-skin="console"] .cs-dock .hub-btn .tx { justify-items: center; }
-html[data-skin="console"] .cs-dock .hub-btn b { font-size: .92rem; }
-html[data-skin="console"] .cs-dock .hub-btn small { max-width: 13em; }
-
-/* tela de jogo: título solto em cima, o jogo numa "tela" escura e o ranking num painel de vidro */
-html[data-skin="console"] main.game-view { padding-top: 6px; }
-html[data-skin="console"] .layout { gap: 28px; }
-@media (min-width: 1100px) { html[data-skin="console"] .layout { grid-template-columns: minmax(0, 1fr) 340px; } }
-html[data-skin="console"] .game-stage.glass { padding: 0; background: none; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
-html[data-skin="console"] .game-stage::before { display: none; }
-html[data-skin="console"] .game-stage .stage-head { border: 0; padding: 0 0 14px; gap: 14px; }
-html[data-skin="console"] .game-stage .stage-head :is(h1, h2) { font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.6rem); font-weight: 900; letter-spacing: -0.035em; }
-html[data-skin="console"] .game-stage .stage-head p { font-size: .95rem; color: oklch(100% 0 0 / .6); }
-html[data-skin="console"] .game-stage .stage-head .btn.ghost { min-height: 50px; border-radius: 999px; background: oklch(100% 0 0 / .08); border: 0;
-  box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .18); }
-html[data-skin="console"] .game-stage .stage-head .btn.ghost:hover { background: oklch(100% 0 0 / .16); box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .3); transform: none; }
-html[data-skin="console"] .game-stage .stage-head .back { width: 50px; min-width: 50px; }
-html[data-skin="console"] .gtile { border-radius: 16px; }
-html[data-skin="console"] .game-stage .screen { display: flex; flex-direction: column; flex: 1; gap: var(--space-sm); padding: 22px 16px; border-radius: 30px;
-  background: oklch(13% .02 var(--h) / .72); box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .1), 0 40px 80px oklch(0% 0 0 / .45);
-  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-html.lite[data-skin="console"] .game-stage .screen { backdrop-filter: none; -webkit-backdrop-filter: none; background: oklch(13% .02 var(--h) / .95); }
-html[data-skin="console"] .game .hud .stat { background: oklch(100% 0 0 / .07); border: 0; box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .14); color: oklch(100% 0 0 / .7); border-radius: 16px; }
-html[data-skin="console"] .game .hud .stat + .stat { box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .14); }
-html[data-skin="console"] .board.glass { padding: 22px; background: oklch(100% 0 0 / .06); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); }
-html[data-skin="console"] .board :is(h2, h3) { font-weight: 800; }
-html[data-skin="console"] .board li { border-radius: 14px; }
-
-@media (max-width: 900px) {
-  html[data-skin="console"] header { padding: 14px 16px 4px; }
-  html[data-skin="console"] main { padding: 0 16px 100px; }
-  html[data-skin="console"] .daily.cs-hero { grid-template-columns: 1fr; min-height: 0; gap: 0; }
-  html[data-skin="console"] .cs-hero .daily-stage { display: grid; grid-row: 1; justify-self: center; width: 220px; height: 220px; margin: -6px 0 -8px; }
-  html[data-skin="console"] .cs-hero h2 { margin: 10px 0; }
-  html[data-skin="console"] .cs-desc { font-size: 1rem; margin-bottom: 16px; }
-  html[data-skin="console"] .cs-meta { gap: 10px 22px; margin-bottom: 18px; }
-  html[data-skin="console"] .cs-meta b { font-size: 1.1rem; }
-  html[data-skin="console"] .cs-cta .btn { min-height: 50px; padding: 0 1.4rem; font-size: 1rem; }
-  /* atalhos viram a barra fixa de baixo */
-  html[data-skin="console"] .cs-dock { position: fixed; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 12; justify-content: space-around; gap: 0; margin: 0;
-    padding: 8px 4px; border-radius: 24px; background: oklch(17% .02 270 / .92); box-shadow: inset 0 0 0 1.5px oklch(100% 0 0 / .12), 0 10px 30px oklch(0% 0 0 / .5);
-    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); -webkit-mask-image: none; mask-image: none; }
-  html[data-skin="console"] .cs-dock .hub-btn, html[data-skin="console"] .cs-dock .hub-btn:last-child:nth-child(odd) { flex: 1; max-width: none; gap: 2px; padding: 2px; box-shadow: none !important; }
-  html[data-skin="console"] .cs-dock .hub-btn .ic { width: 30px; height: 30px; background: none; box-shadow: none; }
-  html[data-skin="console"] .cs-dock .hub-btn .ic .i { width: 22px; height: 22px; }
-  html[data-skin="console"] .cs-dock .hub-btn b { font-size: .7rem; font-weight: 600; }
-  html[data-skin="console"] .cs-dock .hub-btn small { display: none; }
-  html[data-skin="console"] .layout { gap: 14px; }
-  html[data-skin="console"] .game-stage .screen { padding: 14px 6px; border-radius: 22px; }
-  html[data-skin="console"] .game-stage .stage-head .btn.ghost, html[data-skin="console"] .game-stage .stage-head .back { min-height: 44px; }
-  html[data-skin="console"] .game-stage .stage-head .back { width: 44px; min-width: 44px; }
-}
-@media (max-width: 560px) {
-  html[data-skin="console"] .acct-btn .av { width: 40px; height: 40px; }
-  html[data-skin="console"] #pname { max-width: 7em; }
-  html[data-skin="console"] .cs-hero h2 { font-size: 3.2rem; }
-  html[data-skin="console"] .cs-row { gap: 14px; padding: 14px 16px 46px; margin: 0 -16px; scroll-padding-inline: 16px; }
-  html[data-skin="console"] .cs-row .card { flex-basis: 100px; height: 100px; border-radius: 24px; }
-  html[data-skin="console"] .cs-row .card h3 { font-size: .8rem; top: calc(100% + 8px); }
-  html[data-skin="console"] .cs-row .card .icon .i { width: 40px; height: 40px; }
-  html[data-skin="console"] .cs-tabs button { padding: 0 .9em; font-size: .74rem; }
-  html[data-skin="console"] .daily-side ol li:nth-child(n+2) { display: flex; }
+/* ---------- menu lateral que recolhe (PC): o botão fica ao lado da marca; recolhido, só os ícones ---------- */
+html[data-skin="recreio"] .side-fold { display: none; }
+@media (min-width: 901px) {
+  html[data-skin="recreio"] body { transition: padding-left var(--duration) var(--ease); }
+  html[data-skin="recreio"] header { transition: width var(--duration) var(--ease), padding var(--duration) var(--ease); }
+  html[data-skin="recreio"] .side-fold { display: grid; place-items: center; position: absolute; top: 24px; right: 12px; width: 34px; height: 34px; padding: 0; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; }
+  html[data-skin="recreio"] .side-fold:hover { color: var(--text); background: var(--surface-2); }
+  html[data-skin="recreio"] .side-fold .i { width: 18px; height: 18px; }
+  html.side-mini[data-skin="recreio"] { --rc-side: 80px; }
+  html.side-mini[data-skin="recreio"] header { padding: 18px 12px 16px; align-items: center; overflow: visible; }
+  html.side-mini[data-skin="recreio"] .logo { padding: 0; justify-content: center; }
+  html.side-mini[data-skin="recreio"] .logo .wm { display: none; }
+  html.side-mini[data-skin="recreio"] .logo::before { content: ''; width: 42px; height: 42px; border-radius: 12px; background: url("icons/icon.svg?v=6") center / contain no-repeat; }
+  html.side-mini[data-skin="recreio"] .side-fold { position: static; margin: -6px 0 0; }
+  html.side-mini[data-skin="recreio"] .side-nav { align-items: center; }
+  html.side-mini[data-skin="recreio"] :is(.side-btn, .side-hub .hub-btn) { position: relative; width: 52px; justify-content: center; padding: 8px 0; }
+  html.side-mini[data-skin="recreio"] .side-btn > span:not(.tab-dot), html.side-mini[data-skin="recreio"] .side-hub .hub-btn .tx { display: none; }
+  html.side-mini[data-skin="recreio"] .side-btn .tab-dot { position: absolute; top: 2px; right: 0; margin: 0; }
+  html.side-mini[data-skin="recreio"] .side-hub { align-items: center; width: 100%; }
+  html.side-mini[data-skin="recreio"] .who { flex-direction: column; align-items: center; }
+  html.side-mini[data-skin="recreio"] .who .acct { width: auto; }
+  html.side-mini[data-skin="recreio"] .acct-btn { width: 52px; min-height: 52px; padding: 0; justify-content: center; }
+  html.side-mini[data-skin="recreio"] .acct-btn :is(#pname, .chev) { display: none; }
+  html.side-mini[data-skin="recreio"] .acct-btn .nbadge { position: absolute; top: 2px; right: 2px; }
+  html.side-mini[data-skin="recreio"] .acct-menu { left: calc(100% + 14px); bottom: 0; }
 }
 
-/* ---------------------------------------------------------------- menu da conta: Visual do site (vale nos três) ---------------------------------------------------------------- */
-.acct-lbl { padding: .5em .8em .15em; font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.skin-pick { display: flex; flex-direction: column; gap: 2px; }
-.acct-menu [role="menuitemradio"]::after { content: ''; margin-left: auto; width: 16px; height: 16px; flex: none; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--border-strong); }
-.acct-menu [role="menuitemradio"][aria-checked="true"] { font-weight: 700; }
-.acct-menu [role="menuitemradio"][aria-checked="true"]::after { box-shadow: inset 0 0 0 5px var(--primary); }
-.acct-menu [role="menuitemradio"][aria-checked="true"] .i { color: var(--primary); }
-/* o ranking ao lado do jogo gruda no topo da tela (no Recreio e no Console não tem barra fixa em cima) */
-@media (min-width: 901px) { html[data-skin="recreio"] .board, html[data-skin="console"] .board { top: 20px; max-height: calc(100dvh - 40px); } }
+/* ---------- tela de entrar: formulário no fundo do site e a vitrine num cartão grande na cor do jogo ---------- */
+html[data-skin="recreio"] .modal.login-screen { background: var(--bg); }
+html[data-skin="recreio"] .login-screen h1 { font-weight: 800; }
+html[data-skin="recreio"] .ls-input input { background: var(--surface); border-color: var(--border-strong); }
+html[data-skin="recreio"] .ls-input input::placeholder { color: var(--muted); opacity: .8; }
+html[data-skin="recreio"] .ls-input input:hover { border-color: color-mix(in oklab, var(--primary) 50%, transparent); }
+html[data-skin="recreio"] .ls-foot { color: var(--muted); }
+html[data-skin="recreio"][data-mode="light"] .ls-err { color: var(--red); background: oklch(60% .2 22 / .08); }
+html[data-skin="recreio"][data-mode="light"] .ls-brand img { box-shadow: 0 6px 18px oklch(30% .05 280 / .18); }
+html[data-skin="recreio"] .ls-show { border: 0; color: #fff; transition: background .6s var(--ease);
+  background: radial-gradient(70% 55% at 50% 42%, oklch(82% .12 var(--h) / .45), transparent 70%),
+    linear-gradient(150deg, oklch(var(--rc-hero-l) .16 var(--h)), oklch(calc(var(--rc-hero-l) - 12%) .16 calc(var(--h) + 30)));
+  box-shadow: 0 24px 60px oklch(30% .08 var(--h) / .25); }
+html[data-skin="recreio"] .ls-show::before { display: none; }
+html[data-skin="recreio"] .ls-tag { color: #fff; background: oklch(100% 0 0 / .2); border: 0; font-weight: 700; }
+html[data-skin="recreio"] .ls-count { color: oklch(100% 0 0 / .85); }
+html[data-skin="recreio"] .ls-scene { background: none; border: 0; }
+html[data-skin="recreio"] .ls-caption b { font-family: var(--font-display); font-weight: 800; }
+html[data-skin="recreio"] .ls-caption span { color: oklch(100% 0 0 / .88); }
+html[data-skin="recreio"] .ls-fallback { color: #fff; }
+html[data-skin="recreio"] .ls-thumb { background: oklch(100% 0 0 / .16); border: 1px solid oklch(100% 0 0 / .22); }
+html[data-skin="recreio"] .ls-thumb:hover { border-color: oklch(100% 0 0 / .6); }
+html[data-skin="recreio"] .ls-thumb[aria-selected="true"] { background: oklch(100% 0 0 / .3); border-color: #fff; box-shadow: 0 0 0 3px oklch(100% 0 0 / .3); }
+
+/* ladrilho do ícone no título das páginas (administração, tickets...): cheio, igual ao do jogo */
+html[data-skin="recreio"] .stage-head :is(h1, h2) > .i { color: #fff; border: 0;
+  background: linear-gradient(160deg, oklch(68% .15 var(--h, 290)), oklch(50% .16 var(--h, 290))); box-shadow: 0 3px 0 oklch(38% .12 var(--h, 290) / .6); }

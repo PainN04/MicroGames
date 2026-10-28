@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-skin="recreio" data-mode="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -18,11 +18,11 @@
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=optional" rel="stylesheet">
 <!-- modo leve (js/perf.js) já no primeiro desenho: sem isso o PC fraco engasga com o fundo animado antes do JS carregar -->
 <script>try{(function(s){var p=s.getItem('mg_perf');if(p==='lite'||(p!=='full'&&s.getItem('mg_perf_auto')==='lite'))document.documentElement.classList.add('lite')})(localStorage)}catch(e){}</script>
-<!-- visual (js/skins.js) também antes do CSS: Recreio (claro ou escuro), Console ou o Atual. ?visual=console na URL troca e fica salvo -->
-<script>try{(function(s,d){var q=/[?&]visual=(recreio|console|classic)/.exec(location.search);if(q)s.setItem('mg_skin',q[1]);var k=s.getItem('mg_skin');if(k!=='classic'&&k!=='console')k='recreio';d.dataset.skin=k;var m=s.getItem('mg_mode');if(m!=='light'&&m!=='dark')m=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.dataset.mode=m})(localStorage,document.documentElement)}catch(e){}</script>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=DM+Sans:opsz,wght@9..40,400..700&family=Outfit:wght@400..900&display=swap" rel="stylesheet">
+<!-- tema claro/escuro (mg_mode) e menu lateral recolhido (mg_side) também antes do CSS, sem piscar. Sem escolha salva, segue o sistema -->
+<script>try{(function(s,d){var m=s.getItem('mg_mode');if(m!=='light'&&m!=='dark')m=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.dataset.mode=m;if(s.getItem('mg_side')==='mini')d.classList.add('side-mini')})(localStorage,document.documentElement)}catch(e){}</script>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=DM+Sans:opsz,wght@9..40,400..700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="skins.css">
+<link rel="stylesheet" href="recreio.css">
 </head>
 <body>
 <div class="backdrop" aria-hidden="true"><i></i><i></i><i></i></div>
@@ -49,14 +49,6 @@
         <!-- desempenho: ficavam no topo, como dois botões a mais; aqui são chaves (o estado aparece na própria linha) -->
         <button role="menuitemcheckbox" id="fx3d" aria-checked="true"><span data-ic="sparkles"></span>Animações 3D<span class="sw" aria-hidden="true"></span></button>
         <button role="menuitemcheckbox" id="lite" aria-checked="false"><span data-ic="gauge"></span>Modo leve<span class="sw" aria-hidden="true"></span></button>
-        <span class="acct-sep" role="separator"></span>
-        <!-- visual do site (js/skins.js): o Paulo testa os dois novos antes de escolher um -->
-        <span class="acct-lbl" id="skinLbl">Visual do site</span>
-        <span class="skin-pick" role="group" aria-labelledby="skinLbl">
-          <button role="menuitemradio" data-skin="recreio"><span data-ic="house"></span>Recreio</button>
-          <button role="menuitemradio" data-skin="console"><span data-ic="gamepad-2"></span>Console</button>
-          <button role="menuitemradio" data-skin="classic"><span data-ic="sparkles"></span>Atual</button>
-        </span>
         <button role="menuitemcheckbox" id="mDark" aria-checked="false"><span data-ic="moon"></span>Tema escuro<span class="sw" aria-hidden="true"></span></button>
         <span class="acct-sep" role="separator"></span>
         <button role="menuitem" id="mReport"><span data-ic="report"></span>Reportar problema</button>
@@ -125,7 +117,7 @@
 <script src="js/flair.js"></script>
 <script src="js/social.js"></script>
 <script src="js/app.js"></script>
-<script src="js/skins.js"></script>
+<script src="js/recreio.js"></script>
 <script src="js/login.js"></script>
 <script src="js/profile.js"></script>
 <script src="js/admin.js"></script>
