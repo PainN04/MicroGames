@@ -239,6 +239,18 @@ test('bloqueio geral: só a dona liga; ninguém mais joga até ela liberar', asy
   assert.equal((await owner('/api/admin/site-lock', { method: 'PUT', body: { on: false } })).body.lock, null);
   assert.equal((await c('/api/auth/ping')).body.site, null);
   assert.equal((await play(c, 'snake', 5)).status, 201);
+  // com tempo: fecha agora e libera sozinho quando o tempo acaba
+  const timed = await owner('/api/admin/site-lock', { method: 'PUT', body: { on: true, minutes: 30 } });
+  assert.ok(timed.body.lock.until > Date.now() + 29 * 60_000);
+  assert.equal((await play(c, 'snake', 5)).status, 423);
+  assert.equal((await c('/api/gate')).body.site.until, timed.body.lock.until);
+  const [row] = await sql`SELECT value FROM settings WHERE key = 'site_lock'`;
+  const expired = { ...JSON.parse(row.value), until: Date.now() - 1000 };
+  await sql`UPDATE settings SET value = ${JSON.stringify(expired)} WHERE key = 'site_lock'`;
+  assert.equal((await c('/api/gate')).body.site, undefined);
+  assert.equal((await play(c, 'snake', 5)).status, 201);
+  assert.equal((await owner('/api/admin/site-lock', { method: 'PUT', body: { on: true, minutes: -5 } })).status, 400);
+  await owner('/api/admin/site-lock', { method: 'PUT', body: { on: false } });
 });
 
 /* ---------- permissões ---------- */
