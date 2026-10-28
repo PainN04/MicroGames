@@ -2233,4 +2233,5 @@ html.lite .ls-show { box-shadow: none; }
 .site-lock-adm .note { margin: 0; }
 .site-lock-adm .sl-form { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-sm); flex: 1 1 300px; }
 .site-lock-adm .sl-form input { flex: 1 1 200px; min-width: 0; }
+.site-lock-adm .sl-form select { flex: 0 1 auto; min-width: 0; }
 .site-lock-adm .sl-form .hint:empty { display: none; }

@@ -108,19 +108,28 @@ async function loadSiteLock(lock) {
   const since = lock && new Date(lock.since).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
   box.innerHTML = lock
     ? `<div class="sl-txt"><h2>${icon('lock')} Jogos bloqueados pra todo mundo</h2>
-        <p class="note">Desde ${since}. Ninguém consegue jogar, só você.${lock.reason ? ` Motivo mostrado: <b>${esc(lock.reason)}</b>` : ''}</p></div>
+        <p class="note">Desde ${since}, ${lock.until ? `libera sozinho ${untilText(lock.until).replace('até', 'às')}` : 'até você liberar'}. Ninguém consegue jogar, só você.${lock.reason ? ` Motivo mostrado: <b>${esc(lock.reason)}</b>` : ''}</p></div>
       <div class="sl-form"><span id="slMsg" class="hint" role="status"></span><button class="btn" id="slOff">${icon('lock-open')} Liberar os jogos</button></div>`
     : `<div class="sl-txt"><h2>${icon('lock-open')} Bloqueio geral</h2>
         <p class="note">Fecha todos os jogos pra todo mundo (menos você) na hora, sem deploy. Quem estiver jogando sai da partida em até 20s.</p></div>
       <form class="sl-form" id="slForm"><input name="reason" maxlength="200" placeholder="Motivo (opcional, aparece pra todos)" aria-label="Motivo do bloqueio">
+        <select name="minutes" aria-label="Por quanto tempo">
+          <option value="15">15 minutos</option><option value="30">30 minutos</option><option value="60">1 hora</option><option value="120">2 horas</option>
+          <option value="240">4 horas</option><option value="eod">Até o fim do dia</option><option value="0" selected>Até eu liberar</option>
+        </select>
         <span id="slMsg" class="hint" role="status"></span><button class="btn danger">${icon('lock')} Bloquear todos os jogos</button></form>`;
-  const save = async (on, reason = '') => {
+  const save = async (on, reason = '', minutes = 0) => {
     box.querySelectorAll('button').forEach(b => { b.disabled = true; });
-    try { loadSiteLock((await api('api/admin/site-lock', { method: 'PUT', body: { on, reason } })).lock); }
+    try { loadSiteLock((await api('api/admin/site-lock', { method: 'PUT', body: { on, reason, minutes } })).lock); }
     catch (err) { $('#slMsg').textContent = err.message; box.querySelectorAll('button').forEach(b => { b.disabled = false; }); }
   };
   if (lock) $('#slOff').onclick = () => save(false);
-  else $('#slForm').onsubmit = e => { e.preventDefault(); save(true, new FormData(e.target).get('reason')); };
+  else $('#slForm').onsubmit = e => {
+    e.preventDefault();
+    const f = new FormData(e.target), v = f.get('minutes');
+    const endOfDay = () => { const d = new Date(); d.setHours(23, 59, 0, 0); return Math.max(1, Math.round((d - Date.now()) / 60000)); };
+    save(true, f.get('reason'), v === 'eod' ? endOfDay() : Number(v));
+  };
 }
 
 // ---------- duplas (moderação) ----------
