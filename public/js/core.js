@@ -307,8 +307,7 @@ const sfx = {
   power: () => { [440, 554, 659, 880].forEach((f, i) => setTimeout(() => beep(f, 90, 'square', 0.03), i * 55)); buzz([20, 30, 20]); },
 };
 function renderMute() {
-  $('#mute').innerHTML = icon(muted ? 'volume-x' : 'volume-2');
-  $('#mute').setAttribute('aria-label', muted ? 'Ligar som' : 'Desligar som');
+  $('#mute').setAttribute('aria-checked', !muted); // chave "Som" no menu da conta
 }
 
 // "+3" subindo e sumindo em cima de um elemento (jogos de tela, como o floatText dos de Phaser). kind: 'bad' = vermelho
