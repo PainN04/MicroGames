@@ -347,23 +347,23 @@ html[data-skin="recreio"] .tg-art .z3d { transition: transform var(--duration) v
 /* duplas: classificação e os pontos de cada jogo */
 html[data-skin="recreio"] .duo-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: var(--space-md); align-items: start; }
 html[data-skin="recreio"] .duo-cols .teams { margin: 0; }
-html[data-skin="recreio"] .dg-table { display: grid; gap: 4px; }
-html[data-skin="recreio"] .dg-row { display: grid; grid-template-columns: minmax(100px, .6fr) repeat(3, minmax(0, 1fr)); align-items: center; gap: 6px; padding: 5px 8px; border-radius: 12px; background: var(--surface-2); }
-html[data-skin="recreio"] .dg-row :is(.dg-g, .dg-c) { display: flex; align-items: center; gap: .45em; min-width: 0; }
-html[data-skin="recreio"] .dg-g .ic { width: 24px; height: 24px; flex: none; display: grid; place-items: center; border-radius: 8px; color: #fff;
-  background: linear-gradient(160deg, oklch(68% .15 var(--h)), oklch(50% .16 var(--h))); }
-html[data-skin="recreio"] .dg-g .ic .i { width: 15px; height: 15px; }
-html[data-skin="recreio"] .dg-row .dn { min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
-html[data-skin="recreio"] .dg-row .dn :is(b, small) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-html[data-skin="recreio"] .dg-row .dn b { font-size: var(--fs-sm); font-weight: 600; }
-html[data-skin="recreio"] .dg-g .dn b { font-weight: 700; font-size: var(--fs-xs); white-space: normal; overflow: visible; line-height: 1.15; }
-html[data-skin="recreio"] .dg-g { gap: .4em !important; }
-html[data-skin="recreio"] .dg-row .dn small { color: var(--muted); font-size: var(--fs-xs); }
-html[data-skin="recreio"] .dg-g .dn small { color: oklch(78% .14 290); }
-html[data-skin="recreio"] .dg-c { padding: 3px 5px; border-radius: 9px; gap: .35em !important; }
-html[data-skin="recreio"] .dg-c.me { outline: 1px solid oklch(70% .19 290 / .5); background: oklch(70% .19 290 / .14); }
-html[data-skin="recreio"] .dg-c.empty { color: var(--muted); }
-html[data-skin="recreio"] .dg-c .rank { flex: none; width: 20px; height: 20px; font-size: 11px; }
+html[data-skin="recreio"] .dg-mx { display: grid; font-size: var(--fs-sm); }
+html[data-skin="recreio"] .mx-row { display: grid; grid-template-columns: minmax(120px, 1.6fr) repeat(var(--n), minmax(0, 1fr)); align-items: center; min-height: 32px; border-bottom: 1px solid var(--border); }
+html[data-skin="recreio"] .mx-row > span { min-width: 0; padding: 0 6px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .mx-row > span:first-child { text-align: left; padding-left: 2px; }
+html[data-skin="recreio"] .mx-row > .me { background: oklch(70% .19 290 / .12); }
+html[data-skin="recreio"] .mx-head { min-height: 28px; color: var(--muted); font-size: var(--fs-xs); font-weight: 700; }
+html[data-skin="recreio"] .mx-head > .me { color: oklch(80% .14 290); border-radius: 8px 8px 0 0; }
+html[data-skin="recreio"] .mx-g { display: flex; align-items: center; gap: .5em; }
+html[data-skin="recreio"] .mx-g .i { width: 15px; height: 15px; flex: none; color: oklch(72% .15 var(--h)); }
+html[data-skin="recreio"] .mx-g b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .mx-p { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-style: normal; font-size: 11px; font-weight: 800; color: var(--muted); }
+html[data-skin="recreio"] .mx-p.r1 { color: #3a2a00; background: linear-gradient(135deg, #ffe58a, #f2b93b); }
+html[data-skin="recreio"] .mx-p.r2 { color: #23262f; background: linear-gradient(135deg, #f1f3f8, #b9bfcc); }
+html[data-skin="recreio"] .mx-p.r3 { color: #3b1d08; background: linear-gradient(135deg, #f3b98a, #c9783e); }
+html[data-skin="recreio"] .mx-total { border-bottom: 0; font-family: var(--font-display); font-weight: 800; color: var(--yellow); }
+html[data-skin="recreio"] .mx-total > span:first-child { color: var(--muted); font-family: inherit; font-size: var(--fs-xs); }
+html[data-skin="recreio"] .mx-total > .me { border-radius: 0 0 8px 8px; }
 html[data-skin="recreio"] .dg-idle { text-align: left; margin: var(--space-sm) 0 0; font-size: var(--fs-xs); }
 /* duelos: em andamento e resultados à esquerda, novo duelo à direita */
 html[data-skin="recreio"] .duel-cols { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--space-md); align-items: start; }
@@ -374,13 +374,11 @@ html[data-skin="recreio"] .duel-cols .empty-state { margin: 0; }
 @media (max-width: 900px) {
   html[data-skin="recreio"] :is(.comp-torneio .t-body, .duo-cols, .duel-cols) { grid-template-columns: 1fr; }
 }
-/* celular: o nome do jogo em cima e as 3 duplas embaixo, uma por linha */
+/* celular: a coluna do jogo fica só com o ícone e o nome curto */
 @media (max-width: 600px) {
-  html[data-skin="recreio"] .dg-row { grid-template-columns: 1fr; gap: 2px; padding: 8px; }
-  html[data-skin="recreio"] .dg-g { margin-bottom: 2px; }
-  html[data-skin="recreio"] .dg-g .dn b { font-size: var(--fs-sm); }
-  html[data-skin="recreio"] .dg-c .dn { flex: 1; flex-direction: row; align-items: baseline; justify-content: space-between; gap: .6em; }
-  html[data-skin="recreio"] .dg-c .dn small { flex: none; }
+  html[data-skin="recreio"] .mx-row { grid-template-columns: minmax(84px, 1.2fr) repeat(var(--n), minmax(0, 1fr)); }
+  html[data-skin="recreio"] .mx-row > span { padding: 0 3px; }
+  html[data-skin="recreio"] .mx-g b { font-size: var(--fs-xs); }
 }
 html[data-skin="recreio"] .duel-cols .err:empty { display: none; }
 
