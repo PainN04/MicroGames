@@ -704,10 +704,14 @@ function gatePopHtml() {
 }
 function toggleGatePop(open = $('#gatePop').hidden) {
   const pop = $('#gatePop');
-  if (open) { // fixo logo abaixo do selo, alinhado à direita dele, sem sair da tela
-    const r = $('#gatePill').getBoundingClientRect();
-    pop.style.top = r.bottom + 8 + 'px';
-    pop.style.right = Math.max(16, innerWidth - r.right) + 'px';
+  if (open) { // fixo junto do selo, sem sair da tela: abre pra cima quando o selo está embaixo (menu lateral) e pra baixo no topo
+    const r = $('#gatePill').getBoundingClientRect(), up = r.top > innerHeight / 2, w = Math.min(340, innerWidth - 32);
+    pop.style.top = up ? 'auto' : r.bottom + 8 + 'px';
+    pop.style.bottom = up ? innerHeight - r.top + 8 + 'px' : 'auto';
+    // alinhado pela borda do selo mais perto do meio da tela, preso entre as margens de 16px
+    const x = r.left < innerWidth / 2 ? r.left : r.right - w;
+    pop.style.left = Math.max(16, Math.min(x, innerWidth - 16 - w)) + 'px';
+    pop.style.right = 'auto';
   }
   pop.hidden = !open;
   $('#gatePill').setAttribute('aria-expanded', open);
