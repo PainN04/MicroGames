@@ -40,8 +40,16 @@ sideNav.innerHTML = `<button class="side-btn" data-go="home" title="Início">${i
   <button class="side-btn" data-go="daily" title="Jogos diários">${icon('calendar')}<span>Diários</span><span class="tab-dot" id="tabDot" hidden></span></button>
   <div class="hub side-hub" id="strip" hidden></div>`;
 $('header .logo').after(sideNav);
-sideNav.querySelector('[data-go="home"]').onclick = () => { if (currentView !== 'menu') showMenu(); else scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); };
-sideNav.querySelector('[data-go="daily"]').onclick = () => goRow('daily');
+// Início mostra o menu inteiro; Diários mostra só os jogos diários (e volta pra lá ao sair de uma partida)
+let menuOnly = null;
+function showMenuPart(only) {
+  menuOnly = only;
+  if (currentView !== 'menu') showMenu();
+  else { paintMenuPart(); scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); }
+}
+sideNav.querySelector('[data-go="home"]').onclick = () => showMenuPart(null);
+sideNav.querySelector('[data-go="daily"]').onclick = () => showMenuPart('daily');
+$('#home').addEventListener('click', () => { menuOnly = null; }, true); // o logo também volta pro menu inteiro
 // recolhido, os atalhos ficam só com o ícone: o nome vai pra dica
 new MutationObserver(() => sideNav.querySelectorAll('.hub-btn').forEach(b => { b.title = b.querySelector('b')?.textContent || ''; }))
   .observe($('#strip'), { childList: true });
@@ -69,11 +77,26 @@ paintMode();
 
 // acende o item da tela atual (nenhum durante a partida)
 function paintSideNav() {
-  sideNav.querySelectorAll('.side-btn').forEach(b => b.classList.toggle('on', currentView === 'menu' && b.dataset.go === 'home'));
+  sideNav.querySelectorAll('.side-btn').forEach(b => b.classList.toggle('on', currentView === 'menu' && b.dataset.go === (menuOnly || 'home')));
 }
-addEventListener('mg:fit', paintSideNav);
+// só os diários: o resto do menu some (CSS) e a fileira vira grade com todos os jogos
+function paintMenuPart() {
+  const only = currentView === 'menu' && menuOnly === 'daily';
+  main.classList.toggle('only-daily', only);
+  const sec = $('#row-daily');
+  if (sec) {
+    const track = sec.querySelector('.rc-track'), more = sec.querySelector('.rc-more');
+    track.classList.toggle('wrap', only);
+    sec.classList.toggle('open', only);
+    more.setAttribute('aria-expanded', only);
+    more.textContent = only ? 'Ver menos' : 'Ver todos';
+  }
+  paintSideNav();
+}
+addEventListener('mg:fit', paintMenuPart);
 // vai até uma fileira do menu (abre o menu antes, se estiver numa partida)
 function goRow(key) {
+  if (key === 'daily') return showMenuPart('daily');
   if (currentView !== 'menu') showMenu();
   let tries = 0;
   const go = () => {
@@ -115,7 +138,6 @@ function menuHtml() {
 }
 // depois de desenhar o menu: setas e "Ver todos" de cada fileira
 function bindMenuRows() {
-  paintSideNav();
   main.querySelectorAll('.rc-row').forEach(sec => {
     const track = sec.querySelector('.rc-track'), more = sec.querySelector('.rc-more');
     more.onclick = () => {
@@ -126,4 +148,5 @@ function bindMenuRows() {
     };
     sec.querySelectorAll('.rc-arr').forEach(b => b.onclick = () => track.scrollBy({ left: b.dataset.dir * track.clientWidth * 0.8, behavior: reduced ? 'auto' : 'smooth' }));
   });
+  paintMenuPart();
 }
