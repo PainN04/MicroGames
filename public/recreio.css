@@ -47,16 +47,21 @@ html[data-skin="recreio"] .link-btn { color: var(--primary); font-weight: 700; }
     transition: background var(--duration-fast); }
   html[data-skin="recreio"] .side-btn > .i { width: 20px; height: 20px; color: var(--muted); }
   html[data-skin="recreio"] .side-btn:hover, html[data-skin="recreio"] .side-hub .hub-btn:hover { background: var(--surface-2); }
-  html[data-skin="recreio"] .side-btn.on { background: var(--text); color: var(--bg); }
-  html[data-skin="recreio"] .side-btn.on > .i { color: var(--bg); }
+  /* item ativo: realce roxo suave (o fundo branco escondia os ícones) */
+  html[data-skin="recreio"] .side-btn.on { background: color-mix(in oklab, var(--primary) 18%, transparent); color: var(--text); }
+  html[data-skin="recreio"] .side-btn.on > .i { color: var(--primary); }
   html[data-skin="recreio"] .side-btn .tab-dot { margin-left: auto; box-shadow: none; }
   html[data-skin="recreio"] .side-hub .hub-btn .ic { width: 30px; height: 30px; border-radius: 10px; }
   html[data-skin="recreio"] .side-hub .hub-btn b { font-size: .95rem; font-weight: 600; }
   html[data-skin="recreio"] .side-hub .hub-btn small { font-size: .74rem; }
   /* conta, som e tema no pé do menu */
   html[data-skin="recreio"] .who { flex-wrap: wrap; gap: 6px; align-items: center; }
-  html[data-skin="recreio"] .who .acct { order: -1; width: 100%; }
-  html[data-skin="recreio"] .who .gate-wrap { order: -2; } /* fila de tickets em cima da conta */
+  /* conta e fila de tickets na mesma linha (recolhido, a fila fica em cima da conta) */
+  html[data-skin="recreio"] .who { flex-wrap: nowrap; }
+  html[data-skin="recreio"] .who .acct { order: -2; flex: 1 1 0; min-width: 0; }
+  html[data-skin="recreio"] .who .gate-wrap { order: -1; flex: none; }
+  html[data-skin="recreio"] .who .gate-pill { padding: 0 .7em; }
+  html[data-skin="recreio"] .who .acct-btn { padding-right: .6rem; }
   html[data-skin="recreio"] .acct-btn { width: 100%; justify-content: flex-start; min-height: 52px; padding: 0 .8rem 0 .45rem; border-radius: 16px; background: var(--surface-2); }
   html[data-skin="recreio"] .acct-btn .chev { margin-left: auto; }
   html[data-skin="recreio"] .acct-menu { top: auto; bottom: calc(100% + 8px); left: 0; right: auto; }
@@ -253,20 +258,23 @@ html[data-skin="recreio"] .side-fold { display: none; }
   html[data-skin="recreio"] .side-fold { display: grid; place-items: center; position: absolute; top: 24px; right: 12px; width: 34px; height: 34px; padding: 0; border-radius: 50%;
     border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; }
   html[data-skin="recreio"] .side-fold:hover { color: var(--text); background: var(--surface-2); }
+  /* invisível até o mouse passar pelo menu (ou o teclado chegar nele) */
+  html[data-skin="recreio"] .side-fold { opacity: 0; transition: opacity var(--duration-fast); }
+  html[data-skin="recreio"] header:hover .side-fold, html[data-skin="recreio"] .side-fold:focus-visible { opacity: 1; }
   html[data-skin="recreio"] .side-fold .i { width: 18px; height: 18px; }
   html.side-mini[data-skin="recreio"] { --rc-side: 80px; }
   html.side-mini[data-skin="recreio"] header { padding: 18px 12px 16px; align-items: center; overflow: visible; }
   html.side-mini[data-skin="recreio"] .logo { padding: 0; justify-content: center; }
   html.side-mini[data-skin="recreio"] .logo .wm { display: none; }
   html.side-mini[data-skin="recreio"] .logo::before { content: ''; width: 42px; height: 42px; border-radius: 12px; background: url("icons/icon.svg?v=6") center / contain no-repeat; }
-  html.side-mini[data-skin="recreio"] .side-fold { position: static; margin: -6px 0 0; }
+  html.side-mini[data-skin="recreio"] .side-fold { top: 26px; right: -17px; z-index: 1; box-shadow: var(--elev-1); } /* na borda do menu, sem ocupar espaço */
   html.side-mini[data-skin="recreio"] .side-nav { align-items: center; }
   html.side-mini[data-skin="recreio"] :is(.side-btn, .side-hub .hub-btn) { position: relative; width: 52px; justify-content: center; padding: 8px 0; }
   html.side-mini[data-skin="recreio"] .side-btn > span:not(.tab-dot), html.side-mini[data-skin="recreio"] .side-hub .hub-btn .tx { display: none; }
   html.side-mini[data-skin="recreio"] .side-btn .tab-dot { position: absolute; top: 2px; right: 0; margin: 0; }
   html.side-mini[data-skin="recreio"] .side-hub { align-items: center; width: 100%; }
   html.side-mini[data-skin="recreio"] .who { flex-direction: column; align-items: center; }
-  html.side-mini[data-skin="recreio"] .who .acct { width: auto; }
+  html.side-mini[data-skin="recreio"] .who .acct { flex: none; order: 0; }
   html.side-mini[data-skin="recreio"] .gate-pill { flex-direction: column; gap: 2px; width: 52px; min-height: 52px; padding: 6px 0; border-radius: 16px; font-size: .78rem; }
   html.side-mini[data-skin="recreio"] .acct-btn { width: 52px; min-height: 52px; padding: 0; justify-content: center; }
   html.side-mini[data-skin="recreio"] .acct-btn :is(#pname, .chev) { display: none; }
@@ -303,8 +311,7 @@ html[data-skin="recreio"] .stage-head :is(h1, h2) > .i { color: #fff; border: 0;
 
 /* ----- telas de competição: Rankings, Torneio, Duplas e Duelos ----- */
 @media (min-width: 901px) {
-  html[data-skin="recreio"] .side-hub .hub-btn.on { background: var(--text); color: var(--bg); }
-  html[data-skin="recreio"] .side-hub .hub-btn.on small { color: color-mix(in oklab, var(--bg) 70%, transparent); }
+  html[data-skin="recreio"] .side-hub .hub-btn.on { background: color-mix(in oklab, var(--primary) 18%, transparent); color: var(--text); }
 }
 @media (max-width: 900px) {
   html[data-skin="recreio"] .side-hub .hub-btn.on { opacity: 1; background: color-mix(in oklab, var(--primary) 18%, transparent); color: var(--primary); }
