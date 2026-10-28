@@ -37,7 +37,7 @@ GAMES.ritmo = {
       };
       const credits = meta.length ? `<p class="hint rt-credits">Músicas: ${meta.map(m => `<a href="${esc(m.source)}" target="_blank" rel="noopener">${esc(m.title)}</a> (${esc(m.artist)}, ${esc(m.license)})`).join(' · ')}</p>` : '';
       el.innerHTML = `<div class="rt-pick">
-        <div class="rt-head"><h3>${icon('music')} Escolha a música</h3>${localMode ? '' : `<span class="rt-total">Sua pontuação geral<b>${nf(total)}</b></span>`}</div>
+        <div class="rt-head"><h2>${icon('music')} Escolha a música</h2>${localMode ? '' : `<span class="rt-total">Sua pontuação geral<b>${nf(total)}</b></span>`}</div>
         <div class="rt-list">${songs.map(card).join('')}</div>${credits}</div>`;
       el.querySelectorAll('.rt-song').forEach(b => b.onclick = () => begin(songs.find(s => s.id === b.dataset.id)));
       el.querySelector('.rt-song')?.focus();

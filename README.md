@@ -429,7 +429,7 @@ Phaser, Zdog e Vanilla-Tilt ficam no próprio site (`public/vendor/`, com o jsde
 | Dicionário pt-BR do [LibreOffice](https://github.com/LibreOffice/dictionaries/tree/master/pt_BR) (VERO, MPL 2.0 / LGPL 3) | As palavras de 5 letras aceitas como tentativa no Termo, em `public/data/termo-validas.txt` (gerado com as flexões, sem acento). |
 | [Zdog 1.1](https://zzz.dog) e [Vanilla-Tilt 1.8](https://micku7zu.github.io/vanilla-tilt.js/) | Ilustração 3D e inclinação com brilho dos cards do menu. Carregam depois que o menu aparece e dá pra desligar no botão do topo. |
 | [web-vitals 6](https://github.com/GoogleChrome/web-vitals) | Mede LCP, INP, CLS, FCP e TTFB de quem joga e manda pra `/api/vitals`. Local: aparece no terminal do `server.js`. Vercel: em Logs do projeto (linhas `[web-vitals]`). |
-| [Lucide](https://lucide.dev) | Os ícones usados estão embutidos em `public/js/icons.js`, sem biblioteca nem requisição. |
+| [Phosphor Icons](https://phosphoricons.com) (MIT) | Os ícones usados (traço bold com o fundo do duotone) estão embutidos em `public/js/icons.js`, sem biblioteca nem requisição. Os ícones dos jogos que o Phosphor não tem foram desenhados no mesmo estilo. |
 | [DiceBear](https://www.dicebear.com) e [game-icons.net](https://game-icons.net) | Avatares do perfil, salvos como SVG em `public/img/avatars/`. DiceBear: Lorelei, Open Peeps e Pixel Art (CC0) e Bottts (Pablo Stanley, uso livre). Avatares de jogo: game-icons.net (Lorc, Delapouite e outros, [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/)). O macaco é desenho próprio. |
 
 No servidor, as únicas dependências são [`@neondatabase/serverless`](https://github.com/neondatabase/serverless) e [`jose`](https://github.com/panva/jose).

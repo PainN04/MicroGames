@@ -1,11 +1,29 @@
 // ---------- telas ----------
 function stop() { if (cleanup) { cleanup(); cleanup = null; } unseedDaily(); }
 function swap(render) {
+  // toda troca de tela passa por aqui: solta a cena 3D do título do jogo anterior
+  const run = () => { dropHeadScene(); render(); };
   if (document.startViewTransition && !reduced) {
     // o navegador cancela a transição (aba oculta, janela redimensionada...) e rejeita as promessas; a tela já foi trocada, então não é erro
-    const t = document.startViewTransition(render);
+    const t = document.startViewTransition(run);
     t.ready.catch(() => {}); t.finished.catch(() => {}); t.updateCallbackDone.catch(() => {});
-  } else render();
+  } else run();
+}
+// cena 3D do card no ladrilho do título do jogo: desenhada parada (move só nos primeiros instantes), pra não disputar atenção com a partida
+let headScene = null;
+function dropHeadScene() { if (headScene) { headScene(); headScene = null; } }
+function mountHeadScene(id) {
+  if (!fx3dOn || !SCENES_3D[id]) return;
+  loadLib(ZDOG_URL).then(() => {
+    const tile = $('#gtile');
+    if (!tile || currentView !== id || headScene) return;
+    const stopScene = mountScene3d(id, tile, SMALL.matches ? 64 : 80);
+    if (!stopScene) return;
+    tile.classList.add('has3d');
+    let done = false;
+    headScene = () => { if (!done) { done = true; stopScene(); } };
+    setTimeout(() => { if (!done) { done = true; stopScene(); } }, 2000); // congela: o canvas fica com o último quadro
+  }).catch(() => {});
 }
 function announce(msg) { $('#live').textContent = msg; }
 
@@ -13,7 +31,7 @@ function recHtml(id) {
   const g = GAMES[id], top = bestPerPlayer(id)[0];
   const fr = top && flair.frames[top[0]]; // nome do recordista: branco, ou na cor da moldura de avatar dele
   return top ? `${icon('trophy')} <b${fr ? ` class="fr-${fr}"` : ''}>${esc(top[0])}</b> · ${fmt(g, top[1])}`
-    : g.daily ? 'Ninguém jogou hoje' : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()}`;
+    : `<span class="rec-t">${g.daily ? 'Ninguém jogou hoje' : seasonMode === 'all' ? 'Sem recorde — seja o primeiro' : `Ninguém jogou em ${seasonLabel().toLowerCase()}`}</span>`;
 }
 function kingsHtml() {
   const kings = champions();
@@ -50,18 +68,17 @@ function weekInnerHtml(d = weekData) {
 }
 
 // quadro do desafio do dia (topo do menu)
-function dailyHtml() {
-  const id = dailyGame(), g = GAMES[id];
-  const hoursLeft = Math.max(1, Math.ceil((dayStart(dayIndex() + 1) - Date.now()) / 3_600_000));
-  return `<div class="daily-stage" data-id="${id}"><span class="icon">${icon(g.icon)}</span></div>
-    <div class="daily-info">
-      <span class="tag">${icon('star')} Desafio de hoje · acaba em ${hoursLeft}h</span>
-      <h2>${g.name}</h2>
+const dailyHoursLeft = () => Math.max(1, Math.ceil((dayStart(dayIndex() + 1) - Date.now()) / 3_600_000));
+// palco 3D do desafio; size = tamanho da cena em px (sem: o padrão do enhanceCards)
+const dailyStageHtml = size => `<div class="daily-stage" data-id="${dailyGame()}"${size ? ` data-size="${size}"` : ''}><span class="icon">${icon(GAMES[dailyGame()].icon)}</span></div>`;
+function dailyInfoHtml() {
+  return `<div class="daily-info">
+      <span class="tag">${icon('star')} Desafio de hoje · acaba em ${dailyHoursLeft()}h</span>
+      <h2>${GAMES[dailyGame()].name}</h2>
       <p class="hint">Vale a sua melhor partida de hoje. Amanhã é outro jogo.</p>
       <button class="btn" id="dailyPlay">${icon('play')} Jogar</button>
       <div class="pick-row" id="pickRow">${pickRowHtml()}</div>
-    </div>
-    <div class="daily-side">${dailySideHtml()}</div>`;
+    </div>`;
 }
 // top 3 do desafio de hoje (atualiza sozinho quando o placar chega, sem redesenhar o palco 3D); o resto fica na janela Rankings
 function dailySideHtml() {
@@ -104,15 +121,8 @@ main.addEventListener('click', e => { const b = e.target.closest('[data-rank]');
 // Jogos em destaque aparecem primeiro no menu; o resto segue a ordem do GAMES.
 const FEATURED = ['blocos', 'sinuca'];
 const menuOrder = () => [...FEATURED, ...Object.keys(GAMES).filter(id => !FEATURED.includes(id) && !GAMES[id].daily)].map(id => [id, GAMES[id]]);
-// aba "Jogos diários": uma partida por dia em cada um, a mesma pra todo mundo (DAILY_TAB em daily.js)
+// jogos diários: uma partida por dia em cada um, a mesma pra todo mundo (DAILY_TAB em daily.js)
 const dailyOrder = () => DAILY_TAB.filter(id => GAMES[id]).map(id => [id, GAMES[id]]);
-let menuTab = (() => { try { return localStorage.getItem('mg_tab') === 'daily' ? 'daily' : 'main'; } catch { return 'main'; } })();
-function setMenuTab(tab) {
-  menuTab = tab;
-  try { localStorage.setItem('mg_tab', tab); } catch {}
-  main.querySelectorAll('[data-tab]').forEach(b => { const on = b.dataset.tab === tab; b.setAttribute('aria-selected', on); b.tabIndex = on ? 0 : -1; });
-  main.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== tab; });
-}
 // como está cada jogo diário hoje pra quem está logado (GET /api/diarios)
 let dailyStatus = { day: null, games: {} };
 async function loadDailyStatus() {
@@ -180,7 +190,7 @@ function renderDailyRemind(left) {
   bar.innerHTML = `<span class="ic">${icon('hourglass')}</span><span class="tx"><span>${left === dailyOrder().length ? 'Você ainda não jogou os diários hoje' : `Faltam <b>${left}</b> jogo${left > 1 ? 's' : ''} diário${left > 1 ? 's' : ''}`} · o dia vira em <b>${h}h${String(m).padStart(2, '0')}</b></span>
     ${streak && !playedToday ? `<small>${icon('flame')} Jogue um pra não perder a sequência de ${streak} ${streak === 1 ? 'dia' : 'dias'}</small>` : ''}</span>
     <button class="btn" id="dtGo">Jogar</button><button class="dt-x" id="dtX" aria-label="Fechar lembrete por hoje">${icon('x')}</button>`;
-  bar.querySelector('#dtGo').onclick = () => { setMenuTab('daily'); $('#panel-daily')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+  bar.querySelector('#dtGo').onclick = () => goRow('daily');
   bar.querySelector('#dtX').onclick = () => { try { localStorage.setItem('mg_remind', key); } catch {} bar.hidden = true; };
 }
 // ranking à parte dos jogos diários: soma dos pontos de hoje em todos eles, zera à meia-noite
@@ -202,40 +212,19 @@ function dailyRankLine() {
   const lead = rows[0] ? `1º <b>${esc(rows[0].name)}</b> ${rows[0].pts.toLocaleString('pt-BR')}${mine > 0 ? ` · você ${mine + 1}º` : ''}` : 'Ranking do dia';
   return `<button class="dt-rank" data-rank="daily" title="Ver o ranking dos jogos diários">${icon('trophy')}<span>${lead}</span>${icon('chevron-right')}</button>`;
 }
-const cardHtml = (id, g, i, extra = '') => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
+const cardHtml = (id, g, i, extra = '') => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}">
         <span class="icon">${icon(g.icon)}</span>
+        <span class="desc"><span>${esc(g.desc)}</span></span>
         <h3>${g.name}</h3>
         <span class="rec">${recHtml(id)}</span>${extra}
       </button>`;
 function renderMenu() {
   main.classList.remove('game-view');
   main.replaceChildren(heroNode);
-  main.insertAdjacentHTML('beforeend', `
-    <div class="site-lock glass" id="siteLock" role="status" hidden></div>
-    <section class="daily glass" id="daily" data-game="${dailyGame()}" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
-    <nav class="hub glass" id="strip" aria-label="Competição"></nav>
-    <div class="dt-remind glass" id="dtRemind" hidden></div>
-    <div class="menu-bar">
-      <div class="tabs" role="tablist" aria-label="Jogos">
-        <button role="tab" id="tab-main" data-tab="main" aria-controls="panel-main">${icon('gamepad-2')} Jogos</button>
-        <button role="tab" id="tab-daily" data-tab="daily" aria-controls="panel-daily">${icon('calendar')} Jogos diários<span class="tab-dot" id="tabDot" hidden></span></button>
-      </div></div>
-    <section class="grid" id="panel-main" data-panel="main" role="tabpanel" aria-labelledby="tab-main">` +
-    menuOrder().map(([id, g], i) => cardHtml(id, g, i)).join('') + `</section>
-    <section id="panel-daily" data-panel="daily" role="tabpanel" aria-labelledby="tab-daily">
-      <div class="daily-head glass" id="dailyHead"></div>
-      <div class="grid daily-grid">` + dailyOrder().map(([id, g], i) => cardHtml(id, g, i, '<span class="ds-slot"></span>')).join('') + `</div>
-      <p class="hint daily-note">Uma partida por dia em cada jogo, a mesma pra todo mundo. A resposta muda à meia-noite.</p>
-    </section>
-`);
-  main.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { setMenuTab(b.dataset.tab); if (b.dataset.tab === 'daily') loadDailyStatus(); });
-  // setas trocam de aba (padrão de tablist)
-  main.querySelector('.tabs').onkeydown = e => {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    const next = menuTab === 'main' ? 'daily' : 'main';
-    setMenuTab(next); main.querySelector(`[data-tab="${next}"]`).focus();
-  };
-  setMenuTab(menuTab);
+  // aviso de bloqueio geral
+  main.insertAdjacentHTML('beforeend', '<div class="site-lock glass" id="siteLock" role="status" hidden></div>');
+  // menu do Recreio (js/recreio.js): desafio do dia em destaque e os jogos em fileiras por categoria
+  main.insertAdjacentHTML('beforeend', menuHtml());
   renderDailyStatus();
   renderStrip();
   main.querySelectorAll('.card').forEach(c => c.onclick = () => play(c.dataset.id));
@@ -245,6 +234,7 @@ function renderMenu() {
   if (dc) { dc.classList.add('is-daily'); dc.insertAdjacentHTML('beforeend', `<span class="daily-badge" title="Desafio de hoje">${icon('star')}</span>`); }
   renderGate();
   prefetchPhaser();
+  bindMenuRows();
   enhanceCards();
 }
 // Quando o ranking novo chega, só troca os textos (sem redesenhar nem reanimar os cards).
@@ -257,6 +247,7 @@ function refreshMenu() {
   refreshPickRow();
   applyMeFlair();
   renderDailyStatus();
+  refreshGreeting();
 }
 async function showMenu() {
   stop();
@@ -278,12 +269,12 @@ async function showMenu() {
 function boardHtml(id) {
   const g = GAMES[id], all = bestPerPlayer(id), rows = all.slice(0, 10);
   const mine = all.findIndex(([n]) => n === player);
-  const num = v => (g.decimals ? v.toFixed(g.decimals) : v.toLocaleString('pt-BR'));
+  const num = v => (g.decimals ? dec(v, g.decimals) : v.toLocaleString('pt-BR'));
   // a unidade (pontos, s, cliques...) aparece uma vez no topo da coluna; nas linhas fica só o número, e sobra espaço pro nome
   const row = ([n, s], k) => `<li class="${n === player ? 'me' : ''}${k < 3 ? ` top t${k + 1}` : ''}"><span class="pos">${rankBadge(k + 1)}</span>${nameHtml(n, { cls: 'name', extra: ticketStar(n) })}<span class="sc">${num(s)}</span>${rxButton(id, n)}${rxChips(id, n)}</li>`;
-  return (g.daily ? `<h3>${icon('trophy')} Ranking</h3><p class="hint board-reset">Só de hoje: zera à meia-noite</p>` : `<h3>${icon('trophy')} Ranking</h3>${seasonSeg()}`)
+  return (g.daily ? `<h2>${icon('trophy')} Ranking</h2><p class="hint board-reset">Só de hoje: zera à meia-noite</p>` : `<h2>${icon('trophy')} Ranking</h2>${seasonSeg()}`)
     + (g.boardNote ? `<p class="hint board-note">${g.boardNote}</p>` : '') + (rows.length
-    ? `<div class="bd-cols" aria-hidden="true"><span>${all.length} ${all.length > 1 ? 'jogadores' : 'jogador'}</span><span>${esc(g.unit)}</span></div>`
+    ? `<div class="bd-cols" aria-hidden="true"><span>${all.length} ${all.length > 1 ? 'jogadores' : 'jogador'}</span><span>${g.unit === 's' ? 'segundos' : esc(g.unit)}</span></div>`
       + '<ol>' + rows.map(row).join('') + '</ol>'
       // fora do top 10: a sua linha fica embaixo, separada
       + (mine >= 10 ? `<ol class="bd-me" start="${mine + 1}">${row(all[mine], mine)}</ol>` : '')
@@ -313,18 +304,21 @@ function play(id) {
       <section class="stage game-stage glass" style="--h:${g.hue};--art:${stageArt(id, g.hue)}">
         <div class="stage-head">
           <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-          <div class="title"><h2>${icon(g.icon)}${g.name}</h2><p title="${esc(g.desc)}">${firstSentence(g.desc)}</p></div>
-          <button class="btn ghost icon-btn" id="how" aria-label="Como jogar" title="Como jogar">?</button>
-          ${g.daily ? '' : `<button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>`}
+          <span class="gtile" id="gtile" aria-hidden="true">${icon(g.icon)}</span>
+          <div class="title"><h1>${g.name}</h1><p title="${esc(g.desc)}">${firstSentence(g.desc)}</p></div>
+          <div class="head-acts">
+            <button class="btn ghost" id="how" aria-label="Como jogar" title="Como jogar">${icon('circle-help')}<span>Como jogar</span></button>
+            ${g.daily ? '' : `<button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>`}
+          </div>
         </div>
-        <div class="game" id="game"></div>
+        <div class="screen"><div class="game" id="game"></div></div>
       </section>
       <aside class="board glass" id="board" style="--h:${g.hue}">${boardHtml(id)}</aside>
     </div>`;
     $('#back').onclick = showMenu;
-    if (g.daily) setMenuTab('daily'); // voltar ao menu cai na aba dos diários
-    else $('#restart').onclick = () => play(id);
+    if (!g.daily) $('#restart').onclick = () => play(id);
     $('#how').onclick = () => { if (!HOWTO[id]) return; stop(); const el = $('#game'); el.innerHTML = ''; cleanup = showHowto(id, el, () => play(id)); };
+    mountHeadScene(id);
     renderBoard(id);
     fetchScores().then(() => renderBoard(id));
     loadSocial().then(() => currentView === id && renderBoard(id));
@@ -526,7 +520,7 @@ function setUnread(n) {
 }
 async function openNotes() {
   let notes = [];
-  try { ({ notes } = await api('api/notifications')); } catch (err) { return modal(`<h2>Avisos</h2><p class="err">${esc(err.message)}</p><button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`); }
+  try { ({ notes } = await api('api/notifications')); } catch (err) { return modal(`<h2>Avisos</h2><p class="err">${esc(err.message)}</p><button class="btn" data-ok>Ok</button>`); }
   const rows = notes.filter(noteKnown);
   const { el, close } = modal(`<h2>${icon('bell')} Avisos</h2>
     ${rows.length ? `<div class="note-list">${rows.map((n, i) => `<button class="note-row${n.unread ? ' new' : ''}" data-i="${i}">
@@ -579,7 +573,12 @@ function modal(html, { locked = false, wide = false } = {}) {
   m.className = 'modal';
   m.innerHTML = `<div class="box glass${wide ? ' wide' : ''}" role="dialog" aria-modal="true">${html}</div>`;
   document.body.appendChild(m);
+  // nome da janela para leitores de tela: o primeiro título dentro dela
+  const ttl = m.querySelector('h1, h2, h3');
+  if (ttl) { ttl.id ||= 'modalTitle'; m.firstElementChild.setAttribute('aria-labelledby', ttl.id); }
   const close = () => m.remove();
+  // botão "Ok" que só fecha: data-ok no lugar de onclick inline (o CSP do site não deixa rodar script inline)
+  m.addEventListener('click', e => { if (e.target.closest('[data-ok]')) close(); });
   if (!locked) {
     m.addEventListener('click', e => { if (e.target === m) close(); });
     // no documento (não só na janela): trocar de aba dentro dela redesenha o botão focado e o foco volta pro <body>
@@ -637,7 +636,7 @@ async function saveUnsaved() {
   const g = GAMES[gameId];
   modal(`<h2>${status === 'ok' || status === 'queued' ? `${icon('circle-check')} Resultado salvo` : `${icon('triangle-alert')} Não deu pra salvar`}</h2>
     <p>${g.name}: <b>${fmt(g, score)}</b>${status === 'ok' || status === 'queued' ? ' — já está no ranking.' : ' — ' + esc(status)}</p>
-    <button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`);
+    <button class="btn" data-ok>Ok</button>`);
 }
 
 async function afterLogin(user) {
@@ -708,10 +707,14 @@ function gatePopHtml() {
 }
 function toggleGatePop(open = $('#gatePop').hidden) {
   const pop = $('#gatePop');
-  if (open) { // fixo logo abaixo do selo, alinhado à direita dele, sem sair da tela
-    const r = $('#gatePill').getBoundingClientRect();
-    pop.style.top = r.bottom + 8 + 'px';
-    pop.style.right = Math.max(16, innerWidth - r.right) + 'px';
+  if (open) { // fixo junto do selo, sem sair da tela: abre pra cima quando o selo está embaixo (menu lateral) e pra baixo no topo
+    const r = $('#gatePill').getBoundingClientRect(), up = r.top > innerHeight / 2, w = Math.min(340, innerWidth - 32);
+    pop.style.top = up ? 'auto' : r.bottom + 8 + 'px';
+    pop.style.bottom = up ? innerHeight - r.top + 8 + 'px' : 'auto';
+    // alinhado pela borda do selo mais perto do meio da tela, preso entre as margens de 16px
+    const x = r.left < innerWidth / 2 ? r.left : r.right - w;
+    pop.style.left = Math.max(16, Math.min(x, innerWidth - 16 - w)) + 'px';
+    pop.style.right = 'auto';
   }
   pop.hidden = !open;
   $('#gatePill').setAttribute('aria-expanded', open);

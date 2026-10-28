@@ -1,5 +1,5 @@
 GAMES.snake = {
-  name: 'Cobrinha', icon: 'worm', hue: 150, desc: 'Setas, WASD, deslize ou os botões. Acelera a cada fruta; a dourada vale 5 e a azul encolhe o rabo (−3)!',
+  name: 'Cobrinha', icon: 'cobrinha', hue: 150, desc: 'Setas, WASD, deslize ou os botões. Acelera a cada fruta; a dourada vale 5 e a azul encolhe o rabo (−3)!',
   better: 'high', unit: 'pontos', phaser: true,
   // Phaser. Lógica em grade (20×20); o desenho desliza entre as casas. Feita pra responder na hora:
   //  - a curva não espera o próximo passo: se já passou de ~45% da casa, o passo é antecipado (some o "delay");
@@ -9,8 +9,8 @@ GAMES.snake = {
   start(el, done) {
     const N = 20, S = 24, W = N * S;
     const STEP_START = 135, STEP_MIN = 68, STEP_DEC = 3;
-    const arrow = (d, rot) => `<button class="dbtn" data-d="${d}" aria-label="${d}" style="--r:${rot}deg">${icon('arrow-left')}</button>`;
-    el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Velocidade<b id="v">1.0x</b></span></div>
+    const arrow = (d, rot) => `<button class="dbtn" data-d="${d}" tabindex="-1" aria-label="${d}" style="--r:${rot}deg">${icon('arrow-left')}</button>`;
+    el.innerHTML = `<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Velocidade<b id="v">1,0x</b></span></div>
       <div class="phaser-wrap" id="pw"></div>
       <div class="dpad" aria-hidden="true">${arrow('up', 90)}${arrow('left', 0)}${arrow('right', 180)}${arrow('down', -90)}</div>
       <p class="hint">Setas, WASD ou deslize pra começar</p>`;
@@ -105,7 +105,7 @@ GAMES.snake = {
             hud.p.textContent = ++pts;
             eaten++;
             step = Math.max(STEP_MIN, step - STEP_DEC);
-            hud.v.textContent = (STEP_START / step).toFixed(1) + 'x';
+            hud.v.textContent = dec((STEP_START / step), 1) + 'x';
             burst.explode(16, foodDot.x, foodDot.y);
             floatText(this, foodDot.x, foodDot.y - 10, '+1', '#7cffb0');
             beep(660 + pts * 12, 70, 'triangle');

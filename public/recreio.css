@@ -1,0 +1,575 @@
+/* ================= visual do site: Recreio (js/recreio.js) =================
+   Por cima do style.css: <html data-skin="recreio" data-mode="light|dark">, e .side-mini com o menu lateral recolhido.
+   Tudo vem com html[data-skin="recreio"] na frente: ganha das regras do style.css sem precisar de !important. */
+.daily-head[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- Recreio ---------------------------------------------------------------- */
+html[data-skin="recreio"] {
+  --rc-side: 236px;
+  --font-display: 'Bricolage Grotesque', 'Space Grotesk', system-ui, sans-serif;
+  /* escuro: grafite quente, cartões sólidos (sem vidro) */
+  --bg: #15131d; --surface: #1f1c2a; --surface-2: #2a2637; --border: oklch(100% 0 0 / .08); --border-strong: oklch(100% 0 0 / .16);
+  --text: #f4f1fb; --muted: #a9a3bb;
+  --elev-1: 0 1px 2px oklch(0% 0 0 / .3); --elev-3: 0 10px 28px oklch(0% 0 0 / .3);
+  --tile-l: 36%; --tile-c: .1; --rc-hero-l: 52%;
+}
+html[data-skin="recreio"][data-mode="light"] {
+  color-scheme: light;
+  --bg: #f6f1e7; --surface: #ffffff; --surface-2: #f2ece1; --border: oklch(30% .03 280 / .1); --border-strong: oklch(30% .03 280 / .2);
+  --text: #1f1b2e; --muted: #6b6580;
+  --primary: oklch(55% .2 290); --accent: oklch(63% .18 35);
+  --green: oklch(54% .15 150); --red: oklch(55% .2 22); --yellow: oklch(60% .14 70); --blue: oklch(52% .16 250);
+  --elev-1: 0 1px 2px oklch(30% .03 280 / .08); --elev-3: 0 10px 30px oklch(30% .05 280 / .08);
+  --tile-l: 91%; --tile-c: .07; --rc-hero-l: 60%;
+  --veil: 30% .03 280;
+}
+html[data-skin="recreio"] body { font-family: 'DM Sans', 'Space Grotesk', system-ui, sans-serif; background: var(--bg); }
+html[data-skin="recreio"] :is(h1, h2, h3, .logo, .result .score) { font-family: var(--font-display); }
+html[data-skin="recreio"] .glass { background: var(--surface); border: 1px solid var(--border); border-radius: 22px; box-shadow: var(--elev-1);
+  backdrop-filter: none; -webkit-backdrop-filter: none; }
+html[data-skin="recreio"] .btn.ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); box-shadow: none; }
+html[data-skin="recreio"] .link-btn { color: var(--primary); font-weight: 700; }
+
+/* ----- menu lateral (PC) ----- */
+@media (min-width: 901px) {
+  html[data-skin="recreio"] body { padding-left: var(--rc-side); }
+  html[data-skin="recreio"] header { position: fixed; inset: 0 auto 0 0; width: var(--rc-side); z-index: 12; flex-direction: column; align-items: stretch; justify-content: flex-start;
+    flex-wrap: nowrap; gap: 18px; padding: 22px 14px 16px; overflow-y: auto; overscroll-behavior: contain;
+    background: var(--surface); border: 0; border-right: 1px solid var(--border); box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  /* nome com tamanho fixo e espaço pro botão de recolher; o respiro no fim evita que o "e" com degradê seja cortado */
+  html[data-skin="recreio"] .logo { padding: 0 44px 0 10px; justify-content: flex-start; font-size: 1.7rem; }
+  html[data-skin="recreio"] .logo .wm > span { padding-right: .1em; }
+  html[data-skin="recreio"] .side-nav { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+  html[data-skin="recreio"] .side-hub { display: flex; flex-direction: column; gap: 2px; margin: 10px 0 0; padding: 10px 0 0; border-top: 1px solid var(--border);
+    background: none; border-radius: 0; overflow: visible; box-shadow: none; }
+  html[data-skin="recreio"] .side-btn, html[data-skin="recreio"] .side-hub .hub-btn { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 46px; padding: 8px 12px;
+    border: 0; border-radius: 14px; background: none; color: var(--text); font: inherit; font-weight: 600; font-size: .98rem; text-align: left; cursor: pointer; box-shadow: none;
+    transition: background var(--duration-fast); }
+  html[data-skin="recreio"] .side-btn > .i { width: 20px; height: 20px; color: var(--muted); }
+  html[data-skin="recreio"] .side-btn:hover, html[data-skin="recreio"] .side-hub .hub-btn:hover { background: var(--surface-2); }
+  /* item ativo: realce roxo suave (o fundo branco escondia os ícones) */
+  html[data-skin="recreio"] .side-btn.on { background: color-mix(in oklab, var(--primary) 18%, transparent); color: var(--text); }
+  html[data-skin="recreio"] .side-btn.on > .i { color: var(--primary); }
+  html[data-skin="recreio"] .side-btn .tab-dot { margin-left: auto; box-shadow: none; }
+  html[data-skin="recreio"] .side-hub .hub-btn .ic { width: 30px; height: 30px; border-radius: 10px; }
+  html[data-skin="recreio"] .side-hub .hub-btn b { font-size: .95rem; font-weight: 600; }
+  html[data-skin="recreio"] .side-hub .hub-btn small { font-size: .74rem; }
+  /* conta, som e tema no pé do menu */
+  html[data-skin="recreio"] .who { flex-wrap: wrap; gap: 6px; align-items: center; }
+  /* conta e fila de tickets na mesma linha (recolhido, a fila fica em cima da conta) */
+  html[data-skin="recreio"] .who { flex-wrap: nowrap; }
+  html[data-skin="recreio"] .who .acct { order: -2; flex: 1 1 0; min-width: 0; }
+  html[data-skin="recreio"] .who .gate-wrap { order: -1; flex: none; }
+  html[data-skin="recreio"] .who .gate-pill { padding: 0 .7em; }
+  html[data-skin="recreio"] .who .acct-btn { padding-right: .6rem; }
+  html[data-skin="recreio"] .acct-btn { width: 100%; justify-content: flex-start; min-height: 52px; padding: 0 .8rem 0 .45rem; border-radius: 16px; background: var(--surface-2); }
+  html[data-skin="recreio"] .acct-btn .chev { margin-left: auto; }
+  html[data-skin="recreio"] .acct-menu { top: auto; bottom: calc(100% + 8px); left: 0; right: auto; }
+  html[data-skin="recreio"] .pill { width: auto; max-width: 100%; }
+  /* fila do Geiko do mesmo tamanho do som e do tema */
+  html[data-skin="recreio"] .gate-pill { min-height: 44px; padding: 0 1em; border-radius: 99px; font-size: .9rem; gap: .45em; }
+  html[data-skin="recreio"] .gate-pill .i { width: 18px; height: 18px; }
+  html[data-skin="recreio"] main { max-width: 1180px; }
+}
+/* ----- celular e tablet: barra no topo e navegação embaixo ----- */
+@media (max-width: 900px) {
+  /* sem backdrop-filter: com ele o header vira a referência do position: fixed e a barra de baixo ia parar no topo */
+  html[data-skin="recreio"] header { background: var(--surface); box-shadow: none; border-bottom: 1px solid var(--border); padding-inline: 14px;
+    backdrop-filter: none; -webkit-backdrop-filter: none; }
+  html[data-skin="recreio"] .side-nav { position: fixed; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); z-index: 12; display: flex; justify-content: space-around;
+    padding: 6px; border-radius: 22px; background: var(--surface); color: var(--text); border: 1px solid var(--border-strong); box-shadow: 0 10px 30px oklch(0% 0 0 / .25); }
+  html[data-skin="recreio"] .side-hub { display: contents; }
+  html[data-skin="recreio"] .side-btn, html[data-skin="recreio"] .side-hub .hub-btn { position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; min-height: 52px; padding: 4px 2px; border: 0; border-radius: 16px; background: none; color: inherit; font: inherit; font-size: .66rem; font-weight: 600; box-shadow: none; opacity: .72; }
+  html[data-skin="recreio"] .side-btn.on { opacity: 1; background: color-mix(in oklab, var(--primary) 18%, transparent); color: var(--primary); }
+  html[data-skin="recreio"] .side-btn > .i { width: 21px; height: 21px; }
+  html[data-skin="recreio"] .side-hub .hub-btn .ic { width: 22px; height: 22px; background: none !important; color: inherit !important; border-radius: 0; }
+  html[data-skin="recreio"] .side-hub .hub-btn .ic .i { width: 21px; height: 21px; }
+  html[data-skin="recreio"] .side-hub .hub-btn .tx { display: block; text-align: center; }
+  html[data-skin="recreio"] .side-hub .hub-btn b { font-size: .66rem; font-weight: 600; }
+  html[data-skin="recreio"] .side-hub .hub-btn small { display: none; }
+  html[data-skin="recreio"] .side-btn .tab-dot { position: absolute; top: 2px; left: calc(50% + 6px); box-shadow: none; }
+  html[data-skin="recreio"] body { padding-bottom: 86px; }
+  /* uma barra só: com a navegação embaixo, o topo deixa de ser barra (sem fundo, sem borda, rola junto com a página) */
+  html[data-skin="recreio"] body:not(:has(main.game-view)) header { position: relative; background: none; border-bottom: 0; }
+  /* na partida a barra sai: o jogo precisa da altura toda (o botão voltar leva ao menu) */
+  html[data-skin="recreio"] body:has(main.game-view) .side-nav { display: none; }
+  html[data-skin="recreio"] body:has(main.game-view) { padding-bottom: 0; }
+}
+html[data-skin="recreio"] .logo .wm { filter: none; }
+html[data-skin="recreio"] header .btn.ghost { background: var(--surface-2); border: 1px solid var(--border); box-shadow: none; color: var(--text); }
+html[data-skin="recreio"] .side-hub .hub-btn .ic { background: oklch(70% .15 290 / .14); color: oklch(55% .17 290); }
+html[data-skin="recreio"][data-mode="dark"] .side-hub .hub-btn .ic { color: oklch(82% .12 290); }
+html[data-skin="recreio"] .side-hub .hub-btn[data-act="rank"] .ic { background: oklch(80% .15 85 / .2); color: oklch(55% .13 70); }
+html[data-skin="recreio"][data-mode="dark"] .side-hub .hub-btn[data-act="rank"] .ic { color: var(--yellow); }
+
+/* ----- menu ----- */
+html[data-skin="recreio"] .hero { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; padding: 4px 0 20px; }
+html[data-skin="recreio"] .hero h1 { font-size: clamp(1.9rem, 1.4rem + 1.6vw, 2.6rem); letter-spacing: -0.035em; line-height: 1.05; font-weight: 800; }
+html[data-skin="recreio"] .hero h1 em { background: none; color: var(--primary); }
+html[data-skin="recreio"] .hero p { display: none; }
+html[data-skin="recreio"] .rc-streak { display: inline-flex; align-items: center; gap: .4em; padding: .45em .9em; border-radius: 999px; font-weight: 700; font-size: .9rem;
+  background: oklch(80% .14 50 / .18); color: oklch(55% .17 40); }
+html[data-skin="recreio"][data-mode="dark"] .rc-streak { color: oklch(80% .14 55); }
+
+/* desafio do dia: cartão grande na cor do jogo + "Na frente hoje" ao lado */
+html[data-skin="recreio"] .daily.rc-daily { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; padding: 0; margin: 0 0 6px;
+  background: none; border: 0; box-shadow: none; overflow: visible; align-items: stretch; }
+html[data-skin="recreio"] .rc-hero { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 250px;
+  padding: 26px 18px 26px 30px; border-radius: 26px; color: #fff; overflow: hidden; isolation: isolate;
+  background: radial-gradient(60% 90% at 85% 50%, oklch(80% .12 var(--h) / .45), transparent 70%), linear-gradient(135deg, oklch(var(--rc-hero-l) .17 var(--h)), oklch(calc(var(--rc-hero-l) - 12%) .17 calc(var(--h) + 30))); }
+html[data-skin="recreio"] .rc-hero .daily-info { padding: 0; gap: .4rem; }
+html[data-skin="recreio"] .rc-hero .tag { color: #fff; background: oklch(100% 0 0 / .2); padding: .35em .8em; border-radius: 999px; font-size: .8rem; }
+html[data-skin="recreio"] .rc-hero h2 { font-size: clamp(2.2rem, 1.6rem + 2.6vw, 3.6rem); font-weight: 800; letter-spacing: -0.04em; line-height: .95; margin: .15em 0 .05em; }
+html[data-skin="recreio"] .rc-hero .hint { color: oklch(100% 0 0 / .86); max-width: 34ch; }
+html[data-skin="recreio"] .rc-hero .btn:not(.ghost) { background: #fff; color: #1f1b2e; min-height: 48px; padding: 0 1.5rem; font-size: 1rem; box-shadow: 0 6px 18px oklch(0% 0 0 / .18); }
+html[data-skin="recreio"] .rc-hero .pick-row .chosen { color: oklch(100% 0 0 / .85); }
+html[data-skin="recreio"] .rc-hero .pick-row .chosen .i { color: #fff; }
+html[data-skin="recreio"] .rc-hero .pick-row .btn.ghost { background: oklch(100% 0 0 / .18); color: #fff; border-color: oklch(100% 0 0 / .3); }
+html[data-skin="recreio"] .rc-hero .daily-stage { width: 230px; height: 230px; min-height: 0; background: none; overflow: visible; }
+html[data-skin="recreio"] .rc-hero .daily-stage .z3d { -webkit-mask-image: none; mask-image: none; scale: 1; filter: drop-shadow(0 18px 24px oklch(0% 0 0 / .25)); }
+html[data-skin="recreio"] .rc-hero .daily-stage .icon .i { width: 110px; height: 110px; color: #fff; }
+html[data-skin="recreio"] .rc-daily .daily-side { padding: 20px; border-radius: 22px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--elev-1); justify-content: flex-start; gap: .55rem; }
+html[data-skin="recreio"] .rc-daily .daily-side h3 { font-size: 1.05rem; font-weight: 700; color: var(--text); text-transform: none; letter-spacing: -0.01em; }
+html[data-skin="recreio"] .rc-daily li { padding: .55em .7em; border-radius: 12px; background: var(--surface-2); }
+html[data-skin="recreio"] .rc-daily li.me { outline: 0; background: oklch(70% .15 290 / .16); }
+html[data-skin="recreio"] .rc-daily li b { color: var(--text); }
+html[data-skin="recreio"] .dt-remind { margin-top: 14px; }
+
+/* fileiras por categoria */
+html[data-skin="recreio"] .rc-row { margin-top: 30px; scroll-margin-top: 20px; }
+html[data-skin="recreio"] .rc-row-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+html[data-skin="recreio"] .rc-row-head h2 { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: -0.03em; display: flex; align-items: center; gap: .4em; }
+html[data-skin="recreio"] .rc-row-head h2 > .i { color: var(--primary); width: .95em; height: .95em; }
+html[data-skin="recreio"] .rc-count { color: var(--muted); font-size: .9rem; }
+html[data-skin="recreio"] .rc-arrows { margin-left: auto; display: flex; gap: 6px; align-self: center; }
+html[data-skin="recreio"] .rc-arr { width: 36px; height: 36px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--surface);
+  color: var(--text); cursor: pointer; }
+html[data-skin="recreio"] .rc-arr:hover { background: var(--surface-2); }
+html[data-skin="recreio"] .rc-row.open .rc-arrows { visibility: hidden; }
+html[data-skin="recreio"] .rc-more { align-self: center; font-size: .9rem; }
+html[data-skin="recreio"] .rc-row .daily-head { padding: 0; margin: -2px 0 10px; background: none; border: 0; box-shadow: none; }
+html[data-skin="recreio"] .rc-track { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x proximity; padding: 14px 14px 22px; margin: -8px -14px -6px; scroll-padding-inline: 14px; scrollbar-width: none; }
+/* a folga em volta (compensada na margem) é pro card inclinado com o mouse (Vanilla-Tilt) não bater na borda da faixa */
+html[data-skin="recreio"] .rc-track::-webkit-scrollbar { display: none; }
+/* pontas da faixa: em vez de cortar o card no seco, ele some num degradê (só do lado que ainda tem jogo) */
+@property --fade-l { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --fade-r { syntax: '<length>'; inherits: false; initial-value: 0px; }
+html[data-skin="recreio"] .rc-track { transition: --fade-l .25s, --fade-r .25s;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent); }
+html[data-skin="recreio"] .rc-track.fade-l { --fade-l: 48px; }
+html[data-skin="recreio"] .rc-track.fade-r { --fade-r: 48px; }
+html[data-skin="recreio"] .rc-track.wrap { -webkit-mask-image: none; mask-image: none; }
+html[data-skin="recreio"] .rc-arr:disabled { opacity: .35; cursor: default; background: var(--surface); }
+/* botão Diários: só a fileira dos jogos diários, aberta em grade */
+html[data-skin="recreio"] main.only-daily > :is(.hero, #daily, #dtRemind, .rc-row:not(#row-daily)) { display: none; }
+html[data-skin="recreio"] main:not(.only-daily) > #dailyPick { display: none; }
+html[data-skin="recreio"] main.only-daily #row-daily :is(.rc-arrows, .rc-more) { display: none; }
+html[data-skin="recreio"] main.only-daily #row-daily .rc-row-head h2 { font-size: clamp(1.7rem, 1.3rem + 1.2vw, 2.4rem); }
+html[data-skin="recreio"] .rc-track.wrap { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); overflow: visible; }
+/* card: arte numa área pastel na cor do jogo, nome e recorde embaixo */
+html[data-skin="recreio"] .rc-track .card { flex: 0 0 200px; scroll-snap-align: start; border-radius: 22px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--elev-1); }
+html[data-skin="recreio"] .rc-track .card::before { height: 150px; inset: 0 0 auto 0; border-radius: 21px 21px 0 0;
+  background: radial-gradient(60% 40% at 50% 92%, oklch(20% .05 var(--h) / .16), transparent 70%), oklch(var(--tile-l) var(--tile-c) var(--h)); }
+html[data-skin="recreio"] .rc-track .card .z3d { top: -20px; }
+html[data-skin="recreio"] .rc-track .card .icon { height: 150px; filter: none; }
+html[data-skin="recreio"] .rc-track .card .icon .i { color: oklch(48% .15 var(--h)); }
+html[data-skin="recreio"][data-mode="dark"] .rc-track .card .icon .i { color: oklch(88% .09 var(--h)); }
+html[data-skin="recreio"] .rc-track .card h3 { margin-top: 150px; padding: .75rem .95rem 0; border: 0; font-size: 1.06rem; font-weight: 700; letter-spacing: -0.02em; }
+html[data-skin="recreio"] .rc-track .card .rec { padding: .15rem .95rem .85rem; }
+html[data-skin="recreio"] .rc-track .card .ds-slot { padding: 0 .95rem .85rem; margin-top: -.3rem; }
+/* descrição do jogo no hover: sobe do nome num degradê da cor do card por cima da arte (nome e recorde ficam à vista) */
+html[data-skin="recreio"] .card .desc { position: absolute; inset: 0 0 auto 0; height: 150px; z-index: 1; pointer-events: none;
+  display: flex; align-items: flex-end; padding: 2.2rem .95rem .35rem; font-size: .8rem; line-height: 1.38; color: var(--text);
+  background: linear-gradient(to top, var(--surface) 0%, var(--surface) 52%, color-mix(in oklab, var(--surface) 80%, transparent) 72%, transparent);
+  opacity: 0; translate: 0 8px; transition: opacity .2s ease, translate .25s ease; }
+html[data-skin="recreio"] .card .desc > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; line-clamp: 5; overflow: hidden; }
+@media (hover: hover) {
+  html[data-skin="recreio"] .card:is(:hover, :focus-visible) .desc { opacity: 1; translate: 0 0; }
+}
+html[data-skin="recreio"] .tilt-on .card .desc { transform: translateZ(12px); }
+@media (prefers-reduced-motion: reduce) { html[data-skin="recreio"] .card .desc { translate: none; } }
+html[data-skin="recreio"] .rc-track .card:hover { border-color: oklch(60% .14 var(--h) / .5); box-shadow: 0 14px 30px oklch(30% .1 var(--h) / .16); }
+html[data-skin="recreio"] .rc-track .card.is-daily { border-color: oklch(75% .15 85 / .7); }
+html[data-skin="recreio"][data-mode="light"] .card .rec b:is(.fr-bronze, .fr-silver, .fr-gold) { color: var(--text); text-shadow: none; }
+
+/* ----- tela de jogo: painel claro com uma "tela" escura onde o jogo roda ----- */
+html[data-skin="recreio"] .game-stage.glass { border-radius: 26px; padding: 14px 16px 16px; background: var(--surface); border-color: var(--border); box-shadow: var(--elev-1); }
+html[data-skin="recreio"] .game-stage::before { background: radial-gradient(60% 120px at 50% 0%, oklch(70% .14 var(--h) / .16), transparent 100%); }
+html[data-skin="recreio"] .game-stage .stage-head { border-bottom: 0; padding-bottom: 6px; }
+html[data-skin="recreio"] .game-stage .stage-head :is(h1, h2) { font-weight: 800; }
+html[data-skin="recreio"] .game-stage .stage-head .btn.ghost { background: var(--surface-2); border: 1px solid var(--border); color: var(--text); box-shadow: 0 2px 0 var(--border-strong); }
+html[data-skin="recreio"] .head-acts #how .i { color: oklch(55% .15 var(--h)); }
+html[data-skin="recreio"][data-mode="dark"] .head-acts #how .i { color: oklch(82% .12 var(--h)); }
+html[data-skin="recreio"] .gtile { box-shadow: 0 3px 0 oklch(40% .1 var(--h) / .6); }
+html[data-skin="recreio"] .game-stage .screen { display: flex; flex-direction: column; flex: 1; gap: var(--space-sm); padding: 16px 12px; border-radius: 20px;
+  background: radial-gradient(80% 60% at 50% 0%, oklch(30% .06 var(--h)), transparent 70%), oklch(19% .03 var(--h)); box-shadow: inset 0 2px 10px oklch(0% 0 0 / .35); }
+html[data-skin="recreio"] .board.glass { border-radius: 24px; }
+html[data-skin="recreio"] .board :is(h2, h3) { font-weight: 800; }
+html[data-skin="recreio"][data-mode="light"] .board li.t1 > .sc { color: oklch(55% .13 70); }
+
+/* dentro da tela do jogo valem as cores escuras de sempre (os jogos foram feitos pra elas) */
+html[data-skin="recreio"][data-mode="light"] .screen {
+  color-scheme: dark; color: var(--text);
+  --bg: oklch(15% 0.02 275); --surface: oklch(22% 0.025 275 / 0.62); --surface-2: oklch(28% 0.03 275 / 0.7);
+  --border: oklch(100% 0 0 / 0.09); --border-strong: oklch(100% 0 0 / 0.18); --text: oklch(97% 0.01 275); --muted: oklch(76% 0.02 275);
+  --green: oklch(76% 0.18 150); --red: oklch(66% 0.22 18); --yellow: oklch(86% 0.17 92); --blue: oklch(70% 0.16 245);
+  --primary: oklch(70% 0.19 290); --accent: oklch(74% 0.17 35); --veil: 100% 0 0;
+}
+/* claro: campos, menus e janelas que tinham fundo escuro fixo */
+html[data-skin="recreio"][data-mode="light"] :is(input.txt, .admin input, .admin select, .admin textarea, .acc-role span, .tk-imgs button, .tk-imgs a):not(.screen *) { background: var(--surface-2); }
+html[data-skin="recreio"][data-mode="light"] :is(.gate-pop.glass, .acc-menu, .viz-tip) { background: var(--surface); box-shadow: 0 16px 40px oklch(30% .05 280 / .18); }
+html[data-skin="recreio"][data-mode="light"] #rulesForm.dirty .save-bar { background: oklch(100% 0 0 / .95); }
+html[data-skin="recreio"][data-mode="light"] .modal:not(.login-screen) { background: oklch(25% .03 280 / .35); }
+html[data-skin="recreio"][data-mode="light"] .modal .err { color: var(--red); }
+html[data-skin="recreio"][data-mode="light"] :is(.acct-menu .sw, .sw) { background: oklch(30% .03 280 / .14); }
+html[data-skin="recreio"][data-mode="light"] .admin select option, html[data-skin="recreio"][data-mode="light"] .title-sel option { background: #fff; }
+html[data-skin="recreio"][data-mode="light"] a[data-profile] { border-bottom-color: oklch(30% .03 280 / .3); }
+html[data-skin="recreio"][data-mode="light"] .ds.new { color: #fff; }
+html[data-skin="recreio"][data-mode="light"] .daily-head .dt-streak { color: oklch(52% .16 45); }
+html[data-skin="recreio"][data-mode="light"] .daily-head .dt-streak :is(b, .i) { color: oklch(52% .16 45); }
+html[data-skin="recreio"][data-mode="light"] .acct-btn .av { color: #fff; }
+
+/* celular */
+@media (max-width: 760px) {
+  html[data-skin="recreio"] .daily.rc-daily { grid-template-columns: 1fr; gap: 12px; }
+  html[data-skin="recreio"] .rc-hero { min-height: 0; padding: 20px 14px 20px 20px; border-radius: 22px; }
+  html[data-skin="recreio"] .rc-hero .daily-stage { display: grid; width: 120px; height: 120px; align-self: start; }
+  html[data-skin="recreio"] .rc-hero .daily-stage .icon .i { width: 64px; height: 64px; }
+  html[data-skin="recreio"] .rc-hero .hint { font-size: .88rem; }
+  html[data-skin="recreio"] .rc-hero .btn:not(.ghost) { width: auto; }
+  html[data-skin="recreio"] .rc-daily .daily-side { padding: 14px 16px; }
+  html[data-skin="recreio"] .rc-arrows { display: none; }
+  html[data-skin="recreio"] .rc-more { margin-left: auto; }
+  html[data-skin="recreio"] .rc-track { gap: 12px; margin: 0 -16px; padding: 4px 16px 14px; scroll-padding-inline: 16px; }
+  html[data-skin="recreio"] .rc-track.wrap { grid-template-columns: 1fr 1fr; margin: 0; padding: 4px 0 14px; }
+  html[data-skin="recreio"] .rc-track .card { flex-basis: 150px; }
+  html[data-skin="recreio"] .rc-track .card::before, html[data-skin="recreio"] .rc-track .card .icon, html[data-skin="recreio"] .card .desc { height: 118px; }
+  html[data-skin="recreio"] .card .desc { padding: 1.6rem .75rem .3rem; font-size: .74rem; }
+  html[data-skin="recreio"] .card .desc > span { -webkit-line-clamp: 4; line-clamp: 4; }
+  html[data-skin="recreio"] .rc-track .card .z3d { top: -22px; }
+  html[data-skin="recreio"] .rc-track .card h3 { margin-top: 118px; padding: .6rem .75rem 0; font-size: .95rem; }
+  html[data-skin="recreio"] .rc-track .card .rec { padding: .1rem .75rem .7rem; }
+  html[data-skin="recreio"] .rc-track .card .ds-slot { padding: 0 .75rem .7rem; }
+  html[data-skin="recreio"] .rc-row { margin-top: 24px; }
+  html[data-skin="recreio"] .rc-row-head h2 { font-size: 1.2rem; }
+  html[data-skin="recreio"] .game-stage .screen { padding: 12px 6px; border-radius: 16px; }
+  html[data-skin="recreio"] .game-stage.glass { padding: 10px 8px 8px; border-radius: 20px; }
+}
+/* celular pequeno: as grades miúdas (Minado 12x12, teclado do Termo, Sudoku) ganham a largura das bordas */
+@media (max-width: 420px) {
+  html[data-skin="recreio"] .game-stage.glass { padding: 8px 4px 6px; }
+  html[data-skin="recreio"] .game-stage .screen { padding: 12px 4px; }
+  html[data-skin="recreio"] .mines { gap: 2px; }
+  html[data-skin="recreio"] .tm-kb > div { gap: 3px; }
+}
+@media (max-width: 560px) {
+  /* o style.css esconde o palco 3D e mostra só o líder no celular; aqui o palco cabe ao lado do nome */
+  html[data-skin="recreio"] .rc-hero .daily-info { padding-top: 0; }
+  html[data-skin="recreio"] .daily-side ol li:nth-child(n+2) { display: flex; }
+  html[data-skin="recreio"] .daily-side ol li:nth-child(n+3) { display: none; }
+}
+
+/* o ranking ao lado do jogo gruda no topo da tela (não tem barra fixa em cima) */
+@media (min-width: 901px) { html[data-skin="recreio"] .board { top: 20px; max-height: calc(100dvh - 40px); } }
+
+/* ---------- menu lateral que recolhe (PC): o botão fica ao lado da marca; recolhido, só os ícones ---------- */
+html[data-skin="recreio"] .side-fold { display: none; }
+@media (min-width: 901px) {
+  html[data-skin="recreio"] body { transition: padding-left var(--duration) var(--ease); }
+  html[data-skin="recreio"] header { transition: width var(--duration) var(--ease), padding var(--duration) var(--ease); }
+  html[data-skin="recreio"] .side-fold { display: grid; place-items: center; position: absolute; top: 24px; right: 12px; width: 34px; height: 34px; padding: 0; border-radius: 50%;
+    border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; }
+  html[data-skin="recreio"] .side-fold:hover { color: var(--text); background: var(--surface-2); }
+  /* invisível até o mouse passar pelo menu (ou o teclado chegar nele) */
+  html[data-skin="recreio"] .side-fold { opacity: 0; transition: opacity var(--duration-fast); }
+  html[data-skin="recreio"] header:hover .side-fold, html[data-skin="recreio"] .side-fold:focus-visible { opacity: 1; }
+  html[data-skin="recreio"] .side-fold .i { width: 18px; height: 18px; }
+  html.side-mini[data-skin="recreio"] { --rc-side: 80px; }
+  html.side-mini[data-skin="recreio"] header { padding: 18px 12px 16px; align-items: center; overflow: visible; }
+  html.side-mini[data-skin="recreio"] .logo { padding: 0; justify-content: center; }
+  html.side-mini[data-skin="recreio"] .logo .wm { display: none; }
+  html.side-mini[data-skin="recreio"] .logo::before { content: ''; width: 42px; height: 42px; border-radius: 12px; background: url("icons/icon.svg?v=6") center / contain no-repeat; }
+  html.side-mini[data-skin="recreio"] .side-fold { top: 26px; right: -17px; z-index: 1; box-shadow: var(--elev-1); } /* na borda do menu, sem ocupar espaço */
+  html.side-mini[data-skin="recreio"] .side-nav { align-items: center; }
+  html.side-mini[data-skin="recreio"] :is(.side-btn, .side-hub .hub-btn) { position: relative; width: 52px; justify-content: center; padding: 8px 0; }
+  html.side-mini[data-skin="recreio"] .side-btn > span:not(.tab-dot), html.side-mini[data-skin="recreio"] .side-hub .hub-btn .tx { display: none; }
+  html.side-mini[data-skin="recreio"] .side-btn .tab-dot { position: absolute; top: 2px; right: 0; margin: 0; }
+  html.side-mini[data-skin="recreio"] .side-hub { align-items: center; width: 100%; }
+  html.side-mini[data-skin="recreio"] .who { flex-direction: column; align-items: center; }
+  html.side-mini[data-skin="recreio"] .who .acct { flex: none; order: 0; }
+  html.side-mini[data-skin="recreio"] .gate-pill { flex-direction: column; gap: 2px; width: 52px; min-height: 52px; padding: 6px 0; border-radius: 16px; font-size: .78rem; }
+  html.side-mini[data-skin="recreio"] .acct-btn { width: 52px; min-height: 52px; padding: 0; justify-content: center; }
+  html.side-mini[data-skin="recreio"] .acct-btn :is(#pname, .chev) { display: none; }
+  html.side-mini[data-skin="recreio"] .acct-btn .nbadge { position: absolute; top: 2px; right: 2px; }
+  html.side-mini[data-skin="recreio"] .acct-menu { left: calc(100% + 14px); bottom: 0; }
+}
+
+/* ---------- tela de entrar: formulário no fundo do site e a vitrine num cartão grande na cor do jogo ---------- */
+html[data-skin="recreio"] .modal.login-screen { background: var(--bg); }
+html[data-skin="recreio"] .login-screen h1 { font-weight: 800; }
+html[data-skin="recreio"] .ls-input input { background: var(--surface); border-color: var(--border-strong); }
+html[data-skin="recreio"] .ls-input input::placeholder { color: var(--muted); opacity: .8; }
+html[data-skin="recreio"] .ls-input input:hover { border-color: color-mix(in oklab, var(--primary) 50%, transparent); }
+html[data-skin="recreio"] .ls-foot { color: var(--muted); }
+html[data-skin="recreio"][data-mode="light"] .ls-err { color: var(--red); background: oklch(60% .2 22 / .08); }
+html[data-skin="recreio"] .ls-show { border: 0; color: #fff; transition: background .6s var(--ease);
+  background: radial-gradient(70% 55% at 50% 42%, oklch(82% .12 var(--h) / .45), transparent 70%),
+    linear-gradient(150deg, oklch(var(--rc-hero-l) .16 var(--h)), oklch(calc(var(--rc-hero-l) - 12%) .16 calc(var(--h) + 30)));
+  box-shadow: 0 24px 60px oklch(30% .08 var(--h) / .25); }
+html[data-skin="recreio"] .ls-show::before { display: none; }
+html[data-skin="recreio"] .ls-tag { color: #fff; background: oklch(100% 0 0 / .2); border: 0; font-weight: 700; }
+html[data-skin="recreio"] .ls-count { color: oklch(100% 0 0 / .85); }
+html[data-skin="recreio"] .ls-scene { background: none; border: 0; }
+html[data-skin="recreio"] .ls-caption b { font-family: var(--font-display); font-weight: 800; }
+html[data-skin="recreio"] .ls-caption span { color: oklch(100% 0 0 / .88); }
+html[data-skin="recreio"] .ls-fallback { color: #fff; }
+html[data-skin="recreio"] .ls-thumb { background: oklch(100% 0 0 / .16); border: 1px solid oklch(100% 0 0 / .22); }
+html[data-skin="recreio"] .ls-thumb:hover { border-color: oklch(100% 0 0 / .6); }
+html[data-skin="recreio"] .ls-thumb[aria-selected="true"] { background: oklch(100% 0 0 / .3); border-color: #fff; box-shadow: 0 0 0 3px oklch(100% 0 0 / .3); }
+
+/* ladrilho do ícone no título das páginas (administração, tickets...): cheio, igual ao do jogo */
+html[data-skin="recreio"] .stage-head :is(h1, h2) > .i { color: #fff; border: 0;
+  background: linear-gradient(160deg, oklch(68% .15 var(--h, 290)), oklch(50% .16 var(--h, 290))); box-shadow: 0 3px 0 oklch(38% .12 var(--h, 290) / .6); }
+
+/* ----- telas de competição: Rankings, Torneio, Duplas e Duelos ----- */
+@media (min-width: 901px) {
+  html[data-skin="recreio"] .side-hub .hub-btn.on { background: color-mix(in oklab, var(--primary) 18%, transparent); color: var(--text); }
+}
+@media (max-width: 900px) {
+  html[data-skin="recreio"] .side-hub .hub-btn.on { opacity: 1; background: color-mix(in oklab, var(--primary) 18%, transparent); color: var(--primary); }
+}
+html[data-skin="recreio"] .comp-page > section, html[data-skin="recreio"] .comp-page :is(.t-body, .duo-cols, .duel-cols, .duel-main) > section { margin: 0; }
+html[data-skin="recreio"] .comp-page .comp-sub { font-size: 1.15rem; margin: 0 0 var(--space-sm); }
+html[data-skin="recreio"] .comp-page .stage-head .btn:not(.back) { margin-left: auto; }
+html[data-skin="recreio"] .comp-page .rk-tabs { align-self: flex-start; }
+html[data-skin="recreio"] .comp-page .rk-body.kings { margin-top: 0; }
+html[data-skin="recreio"] .comp-page .duo-how { margin-top: var(--space-sm); }
+/* torneio: jogos da semana à esquerda, classificação à direita */
+html[data-skin="recreio"] .comp-torneio .t-body { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: start; }
+html[data-skin="recreio"] .comp-torneio .tgames { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+html[data-skin="recreio"] .comp-torneio .tgame { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 12px; padding: 12px 16px 12px 10px; border-radius: 18px; }
+html[data-skin="recreio"] .comp-torneio .tgame b { font-size: 1.05rem; }
+html[data-skin="recreio"] .comp-torneio .tgame small { flex-basis: auto; max-width: 100%; }
+/* a cena 3D do card do menu (ou, sem 3D, o ícone num ladrilho com volume, igual ao do resultado) */
+html[data-skin="recreio"] .tg-art { position: relative; z-index: 0; width: 96px; height: 96px; display: grid; place-items: center; }
+html[data-skin="recreio"] .tg-art::before { content: ''; position: absolute; inset: -6px; z-index: -1; border-radius: 50%; background: radial-gradient(closest-side, oklch(62% .16 var(--h) / .32), transparent); }
+html[data-skin="recreio"] .tg-art .z3d { display: block; border-radius: 16px; }
+html[data-skin="recreio"] .tg-tile { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 18px; color: #fff;
+  background: linear-gradient(160deg, oklch(72% .15 var(--h)), oklch(50% .16 var(--h))); border: 1px solid oklch(85% .1 var(--h) / .5);
+  box-shadow: 0 5px 0 oklch(34% .12 var(--h)), 0 12px 22px oklch(0% 0 0 / .35); }
+html[data-skin="recreio"] .tg-tile .i { width: 30px; height: 30px; stroke-width: 2; color: #fff; }
+html[data-skin="recreio"] .tg-tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+html[data-skin="recreio"] .tgame:hover .tg-art .z3d { transform: scale(1.06); }
+html[data-skin="recreio"] .tg-art .z3d { transition: transform var(--duration) var(--ease-spring); }
+@media (max-width: 560px) {
+  html[data-skin="recreio"] .tg-art { width: 76px; height: 76px; }
+  html[data-skin="recreio"] .tg-tile { width: 50px; height: 50px; border-radius: 15px; }
+  html[data-skin="recreio"] .tg-tile .i { width: 26px; height: 26px; }
+}
+/* duplas: classificação e os pontos de cada jogo */
+html[data-skin="recreio"] .duo-cols { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.7fr); gap: var(--space-md); align-items: start; }
+html[data-skin="recreio"] .duo-cols .teams { margin: 0; }
+html[data-skin="recreio"] .dg-mx { display: grid; font-size: var(--fs-sm); }
+html[data-skin="recreio"] .mx-row { display: grid; grid-template-columns: minmax(120px, 1.6fr) repeat(var(--n), minmax(0, 1fr)); align-items: center; min-height: 32px; border-bottom: 1px solid var(--border); }
+html[data-skin="recreio"] .mx-row > span { min-width: 0; padding: 0 6px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .mx-row > span:first-child { text-align: left; padding-left: 2px; }
+html[data-skin="recreio"] .mx-row > .me { background: oklch(70% .19 290 / .12); }
+html[data-skin="recreio"] .mx-head { min-height: 28px; color: var(--muted); font-size: var(--fs-xs); font-weight: 700; }
+html[data-skin="recreio"] .mx-head > .me { color: oklch(80% .14 290); border-radius: 8px 8px 0 0; }
+html[data-skin="recreio"] .mx-g { display: flex; align-items: center; gap: .5em; }
+html[data-skin="recreio"] .mx-g .i { width: 15px; height: 15px; flex: none; color: oklch(72% .15 var(--h)); }
+html[data-skin="recreio"] .mx-g b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .mx-p { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; font-style: normal; font-size: 11px; font-weight: 800; color: var(--muted); }
+html[data-skin="recreio"] .mx-p.r1 { color: #3a2a00; background: linear-gradient(135deg, #ffe58a, #f2b93b); }
+html[data-skin="recreio"] .mx-p.r2 { color: #23262f; background: linear-gradient(135deg, #f1f3f8, #b9bfcc); }
+html[data-skin="recreio"] .mx-p.r3 { color: #3b1d08; background: linear-gradient(135deg, #f3b98a, #c9783e); }
+html[data-skin="recreio"] .mx-total { border-bottom: 0; font-family: var(--font-display); font-weight: 800; color: var(--yellow); }
+html[data-skin="recreio"] .mx-total > span:first-child { color: var(--muted); font-family: inherit; font-size: var(--fs-xs); }
+html[data-skin="recreio"] .mx-total > .me { border-radius: 0 0 8px 8px; }
+html[data-skin="recreio"] .dg-idle { text-align: left; margin: var(--space-sm) 0 0; font-size: var(--fs-xs); }
+/* duelos: em andamento e resultados à esquerda, novo duelo à direita */
+html[data-skin="recreio"] .duel-cols { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: var(--space-md); align-items: start; }
+html[data-skin="recreio"] .duel-main { display: grid; gap: var(--space-md); }
+html[data-skin="recreio"] .duel-cols .duel + .duel { margin-top: 6px; }
+html[data-skin="recreio"] .duel-cols .duel-form { margin: 0; }
+html[data-skin="recreio"] .duel-cols .empty-state { margin: 0; }
+@media (max-width: 900px) {
+  html[data-skin="recreio"] :is(.comp-torneio .t-body, .duo-cols, .duel-cols) { grid-template-columns: 1fr; }
+}
+/* celular: a coluna do jogo fica só com o ícone e o nome curto */
+@media (max-width: 600px) {
+  html[data-skin="recreio"] .mx-row { grid-template-columns: minmax(84px, 1.2fr) repeat(var(--n), minmax(0, 1fr)); }
+  html[data-skin="recreio"] .mx-row > span { padding: 0 3px; }
+  html[data-skin="recreio"] .mx-g b { font-size: var(--fs-xs); }
+}
+html[data-skin="recreio"] .duel-cols .err:empty { display: none; }
+
+/* ----- pódio, números do topo e listas com barra (Rankings, Torneio, Duplas e Duelos) ----- */
+html[data-skin="recreio"] .comp-page { --gold: oklch(82% .15 85); --silver: oklch(80% .02 260); --bronze: oklch(68% .11 55); }
+html[data-skin="recreio"] .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-sm); }
+html[data-skin="recreio"] .kpi { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 18px; background: var(--surface); border: 1px solid var(--border); min-width: 0; }
+html[data-skin="recreio"] .kpi .ic { width: 42px; height: 42px; flex: none; display: grid; place-items: center; border-radius: 13px; color: #fff;
+  background: linear-gradient(160deg, oklch(70% .15 var(--h)), oklch(52% .16 var(--h))); box-shadow: 0 3px 0 oklch(40% .12 var(--h) / .55); }
+html[data-skin="recreio"] .kpi .ic .i { width: 21px; height: 21px; }
+html[data-skin="recreio"] .kpi > span:last-child { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+html[data-skin="recreio"] .kpi b { font-family: var(--font-display); font-size: 1.35rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .kpi small { color: var(--muted); font-size: var(--fs-xs); }
+
+html[data-skin="recreio"] .podium { padding: 18px 20px 20px; }
+html[data-skin="recreio"] .pd-head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 12px; margin-bottom: 6px; }
+html[data-skin="recreio"] .pd-head .comp-sub { margin: 0; }
+html[data-skin="recreio"] .pd-head .hint { margin: 0; text-align: left; font-size: var(--fs-xs); }
+html[data-skin="recreio"] .pd-row { display: grid; grid-template-columns: 1fr 1.12fr 1fr; gap: 14px; align-items: end; padding-top: 70px; }
+html[data-skin="recreio"] .pd { --c: var(--silver); position: relative; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; text-align: center;
+  padding: 44px 14px 16px; border-radius: 20px; background: linear-gradient(180deg, color-mix(in oklab, var(--c) 16%, var(--surface-2)), var(--surface-2) 70%);
+  border: 1px solid color-mix(in oklab, var(--c) 40%, transparent); }
+html[data-skin="recreio"] .pd.p1 { --c: var(--gold); padding-top: 54px; padding-bottom: 22px; box-shadow: 0 0 0 1px color-mix(in oklab, var(--gold) 30%, transparent), 0 14px 40px color-mix(in oklab, var(--gold) 22%, transparent); }
+html[data-skin="recreio"] .pd.p3 { --c: var(--bronze); }
+html[data-skin="recreio"] .pd.empty { visibility: hidden; }
+html[data-skin="recreio"] .pd.me { outline: 2px solid color-mix(in oklab, var(--primary) 70%, transparent); outline-offset: 2px; }
+html[data-skin="recreio"] .pd-crown { position: absolute; top: -66px; left: 50%; translate: -50% 0; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 12px;
+  color: #3a2a00; background: linear-gradient(135deg, #ffe58a, #f2b93b); box-shadow: 0 3px 0 #b8861e; }
+html[data-skin="recreio"] .pd-crown .i { width: 20px; height: 20px; }
+html[data-skin="recreio"] .pd-top { position: absolute; top: -32px; left: 50%; translate: -50% 0; }
+html[data-skin="recreio"] .pd-av { width: 64px; height: 64px; display: grid; place-items: center; overflow: hidden; border-radius: 50%; flex: none;
+  background: oklch(72% .12 var(--h)); border: 3px solid var(--c, var(--surface)); box-shadow: 0 4px 12px oklch(0% 0 0 / .25); }
+html[data-skin="recreio"] .pd.p1 .pd-av { width: 76px; height: 76px; }
+html[data-skin="recreio"] .pd-av img { width: 100%; height: 100%; object-fit: cover; }
+html[data-skin="recreio"] .pd-av.ini { color: #fff; font-weight: 800; font-size: 1.3rem; font-family: var(--font-display); background: oklch(55% .13 var(--h)); }
+html[data-skin="recreio"] .pd-top .rank { position: absolute; right: -6px; bottom: -2px; font-size: .85rem; box-shadow: 0 2px 6px oklch(0% 0 0 / .3); }
+html[data-skin="recreio"] .pd-duo { display: flex; }
+html[data-skin="recreio"] .pd-duo .pd-av + .pd-av { margin-left: -18px; }
+html[data-skin="recreio"] .pd-duo .pd-av { width: 54px; height: 54px; }
+html[data-skin="recreio"] .pd.p1 .pd-duo .pd-av { width: 62px; height: 62px; }
+html[data-skin="recreio"] .pd-n { max-width: 100%; font-family: var(--font-display); font-weight: 800; font-size: 1.08rem; color: var(--text); text-decoration: none;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .pd.p1 .pd-n { font-size: 1.25rem; }
+html[data-skin="recreio"] a.pd-n:hover { text-decoration: underline; }
+html[data-skin="recreio"] .pd-sub { color: var(--muted); font-size: var(--fs-xs); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .pd-lead { margin-top: 2px; padding: 3px 10px; border-radius: 999px; font-size: .7rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase;
+  color: #3a2a00; background: linear-gradient(135deg, #ffe58a, #f2b93b); }
+html[data-skin="recreio"] .pd-cells { display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); gap: 4px; width: 100%; margin-top: 8px; }
+html[data-skin="recreio"] .pd-cells > span { display: flex; flex-direction: column; gap: 1px; padding: 6px 4px; border-radius: 10px; background: var(--surface); min-width: 0; }
+html[data-skin="recreio"] .pd-cells small { color: var(--muted); font-size: .68rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .pd-cells b { font-size: .9rem; color: var(--primary); white-space: nowrap; }
+html[data-skin="recreio"] .pd-total { margin-top: 8px; }
+html[data-skin="recreio"] .pd-total b { font-family: var(--font-display); font-size: 1.7rem; font-weight: 800; color: var(--c); }
+html[data-skin="recreio"][data-mode="light"] .pd-total b { color: color-mix(in oklab, var(--c) 70%, #000); }
+html[data-skin="recreio"] .pd.p1 .pd-total b { font-size: 2.2rem; }
+html[data-skin="recreio"] .pd-total small { color: var(--muted); font-size: var(--fs-xs); }
+
+/* lista depois do pódio, com barra */
+html[data-skin="recreio"] .rest { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+html[data-skin="recreio"] .rest li { display: grid; grid-template-columns: auto minmax(0, 1.4fr) minmax(60px, 1fr) auto; align-items: center; gap: 12px; padding: 8px 12px; border-radius: 14px; background: var(--surface-2); }
+html[data-skin="recreio"] .rest li.me { outline: 1px solid oklch(70% .19 290 / .5); background: oklch(70% .19 290 / .14); }
+html[data-skin="recreio"] .rs-n { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+html[data-skin="recreio"] .rs-n > :first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .rs-n small { color: var(--muted); font-size: var(--fs-xs); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .rs-bar { height: 8px; border-radius: 99px; background: var(--surface); overflow: hidden; }
+html[data-skin="recreio"] .rs-bar i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--primary), var(--accent)); }
+html[data-skin="recreio"] .rest li > b { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right; }
+html[data-skin="recreio"] .rest li > b small { color: var(--muted); font-weight: 500; }
+
+/* Rankings: conteúdo da aba à esquerda, cartões menores à direita */
+html[data-skin="recreio"] .rk-body { display: grid; gap: var(--space-md); }
+html[data-skin="recreio"] .rk-body > section { margin: 0; }
+html[data-skin="recreio"] .rk-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--space-md); align-items: start; }
+html[data-skin="recreio"] .rk-main, html[data-skin="recreio"] .rk-side { display: grid; gap: var(--space-md); min-width: 0; }
+html[data-skin="recreio"] .rk-main > section, html[data-skin="recreio"] .rk-side > section { margin: 0; }
+html[data-skin="recreio"] .rk-main .season-seg { justify-self: start; margin: 0; }
+html[data-skin="recreio"] .mini-card { padding: 16px; }
+html[data-skin="recreio"] .mini-card h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font-size: 1rem; }
+html[data-skin="recreio"] .comp-page .mini-card h3 > .i { width: 28px; height: 28px; padding: 6px; color: var(--primary); }
+html[data-skin="recreio"] .mini-card .hint { text-align: left; margin: 0; }
+html[data-skin="recreio"] .mini-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+html[data-skin="recreio"] .mini-list li { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; padding: 6px 10px; border-radius: 12px; background: var(--surface-2); font-size: var(--fs-sm); }
+html[data-skin="recreio"] .mini-list li.me { outline: 1px solid oklch(70% .19 290 / .5); }
+html[data-skin="recreio"] .mini-list li > .nm { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-skin="recreio"] .mini-list li > b { margin-left: auto; white-space: nowrap; }
+html[data-skin="recreio"] .mini-list li > small { flex-basis: 100%; color: var(--muted); font-size: var(--fs-xs); }
+html[data-skin="recreio"] .mini-list li > small:empty { display: none; }
+html[data-skin="recreio"] .mini-list b.fire { color: var(--accent); }
+html[data-skin="recreio"] .mini-list b.up { color: var(--green); }
+html[data-skin="recreio"] .bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+html[data-skin="recreio"] .bars li { display: flex; align-items: center; gap: 10px; font-size: var(--fs-sm); }
+html[data-skin="recreio"] .bars .ic { width: 28px; height: 28px; flex: none; display: grid; place-items: center; border-radius: 9px; color: #fff; background: linear-gradient(160deg, oklch(68% .15 var(--h)), oklch(50% .16 var(--h))); }
+html[data-skin="recreio"] .bars .ic .i { width: 15px; height: 15px; }
+html[data-skin="recreio"] .bars .bn { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+html[data-skin="recreio"] .bars .bn i { display: block; height: 6px; border-radius: 99px; background: oklch(65% .15 var(--h)); }
+html[data-skin="recreio"] .bars b { font-variant-numeric: tabular-nums; }
+html[data-skin="recreio"] .champs-card .champs { padding: 0; margin: 0; }
+
+/* Torneio: os 3 jogos em cima da classificação em tabela, com os pontos de cada jogo */
+html[data-skin="recreio"] .comp-torneio .t-body { grid-template-columns: 1fr; }
+html[data-skin="recreio"] .comp-torneio .tgames { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+html[data-skin="recreio"] .t-table { display: grid; gap: 4px; }
+html[data-skin="recreio"] .tt-row { display: grid; grid-template-columns: 40px minmax(140px, 1.6fr) repeat(var(--n), minmax(0, 1fr)) 70px; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 14px; background: var(--surface-2); }
+html[data-skin="recreio"] .tt-row.me { outline: 1px solid oklch(70% .19 290 / .5); background: oklch(70% .19 290 / .14); }
+html[data-skin="recreio"] .tt-head { background: none; padding-block: 0 4px; color: var(--muted); font-size: var(--fs-xs); font-weight: 700; }
+html[data-skin="recreio"] .tt-head .i { color: oklch(68% .15 var(--h)); width: 14px; height: 14px; vertical-align: -2px; }
+html[data-skin="recreio"] .tt-row > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-skin="recreio"] .tt-g { display: flex; flex-direction: column; line-height: 1.2; }
+html[data-skin="recreio"] .tt-g small { color: var(--muted); font-size: var(--fs-xs); overflow: hidden; text-overflow: ellipsis; }
+html[data-skin="recreio"] .tt-t, html[data-skin="recreio"] .tt-head > :last-child { text-align: right; }
+html[data-skin="recreio"] .tt-t { font-family: var(--font-display); font-weight: 800; font-size: 1.15rem; color: var(--yellow); }
+html[data-skin="recreio"] .tstand > .t-table + .hint { margin-top: var(--space-sm); }
+
+@media (max-width: 1100px) {
+  html[data-skin="recreio"] .rk-grid { grid-template-columns: 1fr; }
+  html[data-skin="recreio"] .rk-side { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+}
+@media (max-width: 900px) {
+  html[data-skin="recreio"] .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  html[data-skin="recreio"] .kpi { padding: 10px 12px; gap: 10px; }
+  html[data-skin="recreio"] .kpi .ic { width: 34px; height: 34px; border-radius: 11px; }
+  html[data-skin="recreio"] .kpi b { font-size: 1.1rem; }
+  html[data-skin="recreio"] .comp-torneio .tgames { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  html[data-skin="recreio"] .podium { padding: 14px 10px 14px; }
+  html[data-skin="recreio"] .pd-row { gap: 6px; grid-template-columns: 1fr 1.08fr 1fr; padding-top: 64px; }
+  html[data-skin="recreio"] .pd { padding: 34px 6px 12px; border-radius: 16px; }
+  html[data-skin="recreio"] .pd.p1 { padding-top: 42px; }
+  html[data-skin="recreio"] .pd-av { width: 50px; height: 50px; }
+  html[data-skin="recreio"] .pd.p1 .pd-av { width: 60px; height: 60px; }
+  html[data-skin="recreio"] .pd-top { top: -26px; }
+  html[data-skin="recreio"] .pd-crown { top: -58px; width: 30px; height: 30px; }
+  html[data-skin="recreio"] .pd-duo .pd-av { width: 40px; height: 40px; }
+  html[data-skin="recreio"] .pd.p1 .pd-duo .pd-av { width: 46px; height: 46px; }
+  html[data-skin="recreio"] .pd-duo .pd-av + .pd-av { margin-left: -14px; }
+  html[data-skin="recreio"] .pd-n, html[data-skin="recreio"] .pd.p1 .pd-n { font-size: .9rem; white-space: normal; line-height: 1.15; overflow-wrap: anywhere; }
+  html[data-skin="recreio"] .pd-sub { white-space: normal; line-height: 1.2; }
+  html[data-skin="recreio"] .pd-lead { font-size: .58rem; padding: 2px 6px; letter-spacing: .02em; }
+  html[data-skin="recreio"] .pd-cells { grid-template-columns: 1fr; gap: 3px; }
+  html[data-skin="recreio"] .pd-cells > span { flex-direction: row; justify-content: space-between; gap: 4px; padding: 4px 6px; }
+  html[data-skin="recreio"] .pd-cells b { font-size: .78rem; }
+  html[data-skin="recreio"] .pd-total b { font-size: 1.3rem; }
+  html[data-skin="recreio"] .pd.p1 .pd-total b { font-size: 1.6rem; }
+  html[data-skin="recreio"] .pd-total small { display: block; font-size: .65rem; }
+  html[data-skin="recreio"] .rest li { grid-template-columns: auto minmax(0, 1fr) auto; }
+  html[data-skin="recreio"] .rs-bar { display: none; }
+  /* tabela do torneio: só jogador, pontos de cada jogo e total */
+  html[data-skin="recreio"] .tt-row { grid-template-columns: 26px minmax(0, 1fr) repeat(var(--n), 34px) 38px; gap: 6px; padding: 8px; }
+  html[data-skin="recreio"] .tt-g small { display: none; }
+  html[data-skin="recreio"] .tt-head > span:not(:nth-child(2)) { font-size: 0; }
+  html[data-skin="recreio"] .tt-head > span .i { width: 16px; height: 16px; }
+  html[data-skin="recreio"] .tt-head > :first-child::after { content: '#'; font-size: var(--fs-xs); }
+  html[data-skin="recreio"] .tt-head > :last-child::after { content: 'Total'; font-size: var(--fs-xs); }
+  html[data-skin="recreio"] .tt-g { align-items: center; }
+}
+html[data-skin="recreio"] .teams .rest li { grid-template-columns: auto minmax(0, 1fr) auto; }
+html[data-skin="recreio"] .teams .rs-bar { display: none; }
+
+/* ----- números do Resumo no perfil: rótulo em cima, número grande inteiro, detalhe embaixo ----- */
+/* (os .kpi das telas de competição são em linha com ícone; aqui o número precisa da largura toda do cartão) */
+html[data-skin="recreio"] .profile .kpis { grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
+html[data-skin="recreio"] .profile .kpi { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; }
+html[data-skin="recreio"] .profile .kpi .v { max-width: 100%; overflow: visible; text-overflow: clip; font-variant-numeric: tabular-nums; }
+html[data-skin="recreio"] .profile .kpi .v small { font-size: .5em; font-weight: 600; color: var(--muted); }
+html[data-skin="recreio"] .profile .kpi .d, html[data-skin="recreio"] .profile .kpi > span:last-child { display: block; line-height: 1.3; }
+@media (max-width: 900px) {
+  html[data-skin="recreio"] .profile .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html[data-skin="recreio"] .profile .kpi .v { font-size: var(--fs-lg, 1.5rem); }
+}

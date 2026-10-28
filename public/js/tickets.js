@@ -7,7 +7,7 @@ const TICKET_KINDS = [
   ['outro', 'ellipsis', 'Outra coisa', 'Qualquer outro assunto'],
 ];
 const ticketKind = k => TICKET_KINDS.find(t => t[0] === k) || TICKET_KINDS[4];
-const viewName = v => (GAMES[v]?.name || { menu: 'Menu', admin: 'Administração', records: 'Recordes', profile: 'Perfil' }[v] || '');
+const viewName = v => (GAMES[v]?.name || { menu: 'Menu', admin: 'Administração', records: 'Recordes', profile: 'Perfil', rankings: 'Rankings', torneio: 'Torneio', duplas: 'Duplas', duelos: 'Duelos' }[v] || '');
 const ticketWhen = at => new Date(at).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 const TK_IMG_MAX = 3;
 const tkImg = id => `api/tickets/image?id=${id}`;
@@ -100,7 +100,7 @@ function showReportPage() {
     main.innerHTML = `<div class="admin tk-page">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2>${icon('report')} Reportar um problema</h2><p>Só o administrador do site lê. Quando ele resolver, você recebe um aviso.</p></div>
+        <div class="title"><h1>${icon('report')} Reportar um problema</h1><p>Só o administrador do site lê. Quando ele resolver, você recebe um aviso.</p></div>
       </div>
       <div class="tk-cols">
       <section class="glass tk-main">
@@ -116,7 +116,7 @@ function showReportPage() {
       <div class="acc-actions"><button type="button" class="btn ghost" data-cancel>Cancelar</button><button class="btn">${icon('send')} Enviar</button></div>
     </form>
       </section>
-      <section class="glass tk-side"><h3>${icon('inbox')} Seus tickets</h3><div class="tk-mine" id="tkMine"><p class="hint" style="text-align:left">Carregando...</p></div></section>
+      <section class="glass tk-side"><h2>${icon('inbox')} Seus tickets</h2><div class="tk-mine" id="tkMine"><p class="hint" style="text-align:left">Carregando...</p></div></section>
       </div>
     </div>`;
     bindReportForm(main, view);

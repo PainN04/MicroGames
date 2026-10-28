@@ -55,7 +55,7 @@ function showHowto(id, el, then) {
   box.className = 'howto';
   box.innerHTML = `<div class="howto-card glass" style="--h:${g.hue};--art:${stageArt(id, g.hue)}" role="dialog" aria-label="Como jogar ${esc(g.name)}">
       <div class="howto-art">${icon(g.icon)}</div>
-      <h3>Como jogar <span>${esc(g.name)}</span></h3>
+      <h2>Como jogar <span>${esc(g.name)}</span></h2>
       <ol>${h.steps.map(s => `<li>${esc(s)}</li>`).join('')}</ol>
       <div class="howto-keys">${h.keys.map(k => `<kbd>${esc(k)}</kbd>`).join('')}</div>
       <button class="btn" id="howGo">${icon('play')} Jogar</button>
@@ -121,7 +121,7 @@ function seedDaily(id) {
   dailySeeded = true;
   const tag = document.createElement('span');
   tag.className = 'daily-tag';
-  tag.innerHTML = `${icon('calendar')} Desafio do dia<span class="dt-more">: partida ${n + 1} igual pra todo mundo</span>`;
+  tag.innerHTML = `${icon('calendar')}<span>Desafio do dia<span class="dt-more">: partida ${n + 1}, igual pra todo mundo</span></span>`;
   document.querySelector('.stage-head .title')?.append(tag);
 }
 function unseedDaily() {

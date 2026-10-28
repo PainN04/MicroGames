@@ -23,3 +23,22 @@ test('build: junta os scripts num arquivo só, sem nada solto no window e sem o 
     assert.ok(fs.existsSync(path.join(out, 'vendor', 'phaser.min.js')));
   } finally { fs.rmSync(out, { recursive: true, force: true }); }
 });
+
+test('CSP: o script-src do vercel.json libera os scripts inline do index.html (pelo hash) e nada de unsafe-inline', () => {
+  const crypto = require('node:crypto');
+  const root = path.join(__dirname, '..');
+  const html = fs.readFileSync(path.join(root, 'public', 'index.html'), 'utf8');
+  const headers = JSON.parse(fs.readFileSync(path.join(root, 'vercel.json'), 'utf8')).headers.flatMap(h => h.headers);
+  const csp = headers.find(h => h.key === 'Content-Security-Policy').value;
+  const src = csp.split(';').map(s => s.trim()).find(s => s.startsWith('script-src '));
+  assert.ok(src, 'tem script-src');
+  assert.ok(!src.includes('unsafe-inline') && !src.includes('unsafe-eval'));
+  // mudou um <script> inline do index.html? recalcule o hash e troque no vercel.json, senão ele para de rodar no ar
+  for (const [, code] of html.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+    const hash = `'sha256-${crypto.createHash('sha256').update(code).digest('base64')}'`;
+    assert.ok(src.includes(hash), `hash do script inline ${code.slice(0, 40)}… fora do CSP`);
+  }
+  for (const dir of ['public/js', 'public/js/games']) for (const f of fs.readdirSync(path.join(root, dir)).filter(f => f.endsWith('.js'))) {
+    assert.ok(!/\son(click|load|error|input|change|submit)="/.test(fs.readFileSync(path.join(root, dir, f), 'utf8')), `${dir}/${f}: atributo on*="" inline é barrado pelo CSP`);
+  }
+});

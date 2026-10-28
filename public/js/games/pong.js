@@ -3,7 +3,7 @@ GAMES.pong = {
   better: 'high', unit: 'pontos', phaser: true,
   start(el, done) {
     const W = 420, H = 560, PW = 80, PH = 12, R = 8, PY = H - 36, AY = 36;
-    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Vidas<b id="v" class="lives">' + hearts(3) + '</b></span><span class="stat">Bola<b id="s">1.0x</b></span></div><div class="phaser-wrap" id="pw"></div>';
+    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Vidas<b id="v" class="lives">' + hearts(3) + '</b></span><span class="stat">Bola<b id="s">1,0x</b></span></div><div class="phaser-wrap" id="pw"></div>';
     const hud = { p: el.querySelector('#p'), v: el.querySelector('#v'), s: el.querySelector('#s') };
     const col = { me: 0xe8eaf6, cpu: hex('--red'), ball: hex('--yellow'), line: 0x34384f };
     const BASE = 300, MAX = 640;
@@ -42,7 +42,7 @@ GAMES.pong = {
           waiting = false;
         };
         const reset = () => { waiting = true; vx = vy = 0; spin = 0; bx = W / 2; by = H / 2; serveIn = 700; hist.length = 0; };
-        const speedHud = () => { hud.s.textContent = (Math.hypot(vx, vy) / BASE).toFixed(1) + 'x'; };
+        const speedHud = () => { hud.s.textContent = dec((Math.hypot(vx, vy) / BASE), 1) + 'x'; };
         const point = who => {
           if (who === 'me') {
             score++; hud.p.textContent = score; big.setText(score);

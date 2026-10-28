@@ -33,7 +33,7 @@ const isDailyTabChamp = name => !!name && dailyTabChampOf(dayIndex() - 1)?.name 
 /** Nome clicável (abre o perfil), com a cor da moldura e a coroa de quem ganhou ontem. `extra` entra dentro do link. */
 function nameHtml(n, { cls = '', extra = '' } = {}) {
   const fr = flair.frames[n];
-  return `<a href="#" class="nm ${cls}${fr ? ' fr-' + fr : ''}" data-profile="${esc(n)}">${avatarHtml(flair.avatars?.[n])}${esc(n)}${isCrowned(n) ? ` <span class="crown" title="Ganhou o desafio de ontem">${icon('crown')}</span>` : ''}${isDailyTabChamp(n) ? ` <span class="dt-seal" title="Campeão dos jogos diários de ontem">${icon('calendar')}</span>` : ''}${monthBadge(n)}${extra}</a>`;
+  return `<a href="#" class="nm ${cls}${fr ? ' fr-' + fr : ''}" data-profile="${esc(n)}">${avatarHtml(flair.avatars?.[n])}<span class="nm-t">${esc(n)}</span>${isCrowned(n) ? ` <span class="crown" title="Ganhou o desafio de ontem">${icon('crown')}</span>` : ''}${isDailyTabChamp(n) ? ` <span class="dt-seal" title="Campeão dos jogos diários de ontem">${icon('calendar')}</span>` : ''}${monthBadge(n)}${extra}</a>`;
 }
 // selo fixo de quem já foi campeão do mês (com quantas vezes, se foi mais de uma)
 function monthBadge(n) {
@@ -102,7 +102,7 @@ function pickModal() {
       flair.picks[tomorrow] = pick;
       try { localStorage.setItem('mg_flair', JSON.stringify(flair)); } catch {}
       close(); refreshPickRow();
-      modal(`<h2>${icon('circle-check')} Combinado!</h2><p>Amanhã o desafio do dia é <b>${GAMES[pick.game].name}</b>, escolha sua.</p><button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`);
+      modal(`<h2>${icon('circle-check')} Combinado!</h2><p>Amanhã o desafio do dia é <b>${GAMES[pick.game].name}</b>, escolha sua.</p><button class="btn" data-ok>Ok</button>`);
     } catch (err) { el.querySelector('#pickErr').textContent = err.message; }
   });
 }
@@ -188,7 +188,7 @@ const LOOK_TABS = [['avatar', 'smile', 'Avatar'], ['molduras', 'sparkles', 'Mold
 let lookTab = 'avatar';
 function lookHtml(s) {
   const tabs = `<div class="seg view-tabs sub" role="tablist" aria-label="Personalizar">${LOOK_TABS.map(([k, ic, l]) =>
-    `<button role="tab" data-look="${k}" aria-selected="${lookTab === k}" aria-pressed="${lookTab === k}">${icon(ic)} ${l}</button>`).join('')}</div>`;
+    `<button role="tab" data-look="${k}" aria-selected="${lookTab === k}">${icon(ic)} ${l}</button>`).join('')}</div>`;
   const body = lookTab === 'molduras' ? framesHtml(s) : lookTab === 'destaques' ? lookHighlightsHtml(s) : lookTab === 'cor' ? lookThemeHtml() : lookAvatarHtml(s);
   return tabs + body;
 }

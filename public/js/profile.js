@@ -94,7 +94,7 @@ const ACHIEVEMENTS = [
   { id: 'sinuca500', icon: 'target', name: 'Taco de ouro', desc: 'Fez 500 pontos na Sinuca', test: s => (s.best('sinuca') ?? 0) >= 500, progress: s => [Math.min(500, s.best('sinuca') ?? 0), 500] },
   { id: 'corre1000', icon: 'zap', name: 'Sem freio', desc: 'Fez 1000 pontos no Corredor', test: s => (s.best('corredor') ?? 0) >= 1000, progress: s => [Math.min(1000, s.best('corredor') ?? 0), 1000] },
   { id: 'come5000', icon: 'ghost', name: 'Comilão', desc: 'Fez 5000 pontos no Come-Come', test: s => (s.best('comecome') ?? 0) >= 5000, progress: s => [Math.min(5000, s.best('comecome') ?? 0), 5000] },
-  { id: 'cobra', icon: 'worm', name: 'Cobra criada', desc: '30 pontos na Cobrinha', test: s => (s.best('snake') || 0) >= 30, progress: s => [s.best('snake') || 0, 30] },
+  { id: 'cobra', icon: 'cobrinha', name: 'Cobra criada', desc: '30 pontos na Cobrinha', test: s => (s.best('snake') || 0) >= 30, progress: s => [s.best('snake') || 0, 30] },
   { id: 'gatilho', icon: 'target', name: 'Gatilho rápido', desc: 'Reflexo em até 220 ms', test: s => { const b = s.best('reflexo'); return b !== null && b <= 220; } },
 ];
 const unlockedFor = name => { const s = statsFor(name); return new Set(ACHIEVEMENTS.filter(a => a.test(s)).map(a => a.id)); };
@@ -122,7 +122,7 @@ function showProfile(name = player, tab = 'resumo') {
     main.innerHTML = `<div class="admin profile">
       <div class="stage-head">
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
-        <div class="title"><h2><span id="profAv">${avatarHtml(flair.avatars?.[name], 'big') || icon('user')}</span> ${esc(name)}<span id="profTitle"></span>${duoOfName(name) ? ` <span class="tag team-tag" title="Dupla de ${esc(duoOfName(name).aName)} e ${esc(duoOfName(name).bName)}">${icon('users')} ${esc(duoOfName(name).name)}</span>` : ''}</h2><p class="pbio" id="profBio" hidden></p><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p><div class="mtitles" id="mtitles"></div></div>
+        <div class="title"><h1><span id="profAv">${avatarHtml(flair.avatars?.[name], 'big') || icon('user')}</span> ${esc(name)}<span id="profTitle"></span>${duoOfName(name) ? ` <span class="tag team-tag" title="Dupla de ${esc(duoOfName(name).aName)} e ${esc(duoOfName(name).bName)}">${icon('users')} ${esc(duoOfName(name).name)}</span>` : ''}</h1><p class="pbio" id="profBio" hidden></p><p>${name === player ? 'Seu perfil' : 'Perfil'} — recordes, posições e conquistas.</p><div class="mtitles" id="mtitles"></div></div>
         ${name !== player && me ? `${social?.myDuo?.state === 'none' && social.people.find(p => p.name === name)?.free ? `<button class="btn ghost" id="profDuo">${icon('users')} <span>Chamar pra dupla</span></button>` : ''}<button class="btn ghost" id="profDuel">${icon('swords')} <span>Desafiar</span></button>` : name === player ? `<button class="btn ghost" id="profRecap">${icon('calendar')} <span>Minha semana</span></button>` : ''}
       </div>
       <div id="prof"><p class="hint" style="text-align:left">Carregando...</p></div>
@@ -194,7 +194,7 @@ function renderProfile(name) {
     resumo: () => kpis + showcaseHtml(name, s) + chart,
     conquistas: () => `<section class="glass"><h2>${icon('award')} Conquistas <small class="hint">${unlocked}/${ACHIEVEMENTS.length}</small></h2>${achievementsHtml(s)}</section>`,
     recordes: () => `<section class="glass"><h2>${icon('trophy')} Recordes</h2>
-      <table class="tickets users prof-table"><thead><tr><th>Jogo</th><th>Melhor</th><th>Geral</th><th>${monthName(monthKey(now))}</th><th>Partidas</th></tr></thead><tbody>${rows}</tbody></table></section>`,
+      <table class="tickets users prof-table"><thead><tr><th>Jogo</th><th>Melhor</th><th>Geral</th><th>${monthName(monthKey(Date.now()))}</th><th>Partidas</th></tr></thead><tbody>${rows}</tbody></table></section>`,
     personalizar: () => lookHtml(s),
   }[profTab] || (() => '');
   box.innerHTML = profTabsHtml(own) + body();
@@ -215,7 +215,7 @@ const PROF_TABS = [['resumo', 'chart-column', 'Resumo'], ['conquistas', 'award',
 function profTabsHtml(own, only) {
   const tabs = PROF_TABS.filter(([k]) => (own || k !== 'personalizar') && (!only || only.includes(k)));
   return `<div class="seg view-tabs" role="tablist" aria-label="Perfil">${tabs.map(([k, ic, l]) =>
-    `<button role="tab" data-ptab="${k}" aria-selected="${profTab === k}" aria-pressed="${profTab === k}">${icon(ic)} ${l}</button>`).join('')}</div>`;
+    `<button role="tab" data-ptab="${k}" aria-selected="${profTab === k}">${icon(ic)} ${l}</button>`).join('')}</div>`;
 }
 function bindProfTabs(name) {
   document.querySelectorAll('[data-ptab]').forEach(b => b.onclick = () => { profTab = b.dataset.ptab; renderProfile(name); });

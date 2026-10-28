@@ -248,7 +248,9 @@ async function saveScore(gameId, score, proof, pass) {
     return 'queued';
   }
 }
-function fmt(g, v) { return (g.decimals ? v.toFixed(g.decimals) : v) + ' ' + g.unit; }
+// número com vírgula, como se escreve em português (2,5 e não 2.5)
+function dec(v, d = 1) { return (+v).toLocaleString('pt-BR', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmt(g, v) { return (g.decimals ? dec(v, g.decimals) : v) + ' ' + g.unit; }
 
 // ---------- som ----------
 // Bipes sintetizados (Web Audio), sem arquivos. Botão de som no topo liga/desliga.
@@ -305,8 +307,7 @@ const sfx = {
   power: () => { [440, 554, 659, 880].forEach((f, i) => setTimeout(() => beep(f, 90, 'square', 0.03), i * 55)); buzz([20, 30, 20]); },
 };
 function renderMute() {
-  $('#mute').innerHTML = icon(muted ? 'volume-x' : 'volume-2');
-  $('#mute').setAttribute('aria-label', muted ? 'Ligar som' : 'Desligar som');
+  $('#mute').setAttribute('aria-checked', !muted); // chave "Som" no menu da conta
 }
 
 // "+3" subindo e sumindo em cima de um elemento (jogos de tela, como o floatText dos de Phaser). kind: 'bad' = vermelho
@@ -468,9 +469,45 @@ function mountPhaser(wrap, width, height, scene, { res = 1, tall = false } = {})
 function fitGame() {
   const el = $('#game');
   if (!el) return;
+  el.style.zoom = ''; growZ = 1;
   const top = el.getBoundingClientRect().top + scrollY;
-  el.style.setProperty('--avail', Math.max(240, Math.floor(innerHeight - top - 40)) + 'px');
+  availPx = Math.max(240, Math.floor(innerHeight - top - 40));
+  el.style.setProperty('--avail', availPx + 'px');
+  // no PC o cartão do jogo vai até o fim da tela, e o jogo fica no meio do espaço que sobra
+  const stage = el.closest('.game-stage');
+  if (stage) stage.style.minHeight = wideScreen() ? Math.floor(innerHeight - (stage.getBoundingClientRect().top + scrollY) - 16) + 'px' : '';
   dispatchEvent(new Event('mg:fit'));
+  watchGrow(el);
+}
+// Jogos em HTML ficavam pequenos no PC, com metade do cartão vazia. Aqui o jogo inteiro cresce (CSS zoom) até
+// ocupar a altura que sobra, no máximo 1,4×. Os de Phaser já se ajustam sozinhos (mountPhaser) e ficam de fora.
+let availPx = 520, growZ = 1, growTimer = 0, growObs = null, growMut = null;
+const wideScreen = () => innerWidth > 820 && innerHeight >= 560;
+function growGame() {
+  const el = $('#game');
+  if (!el || !el.firstElementChild) return;
+  const g = GAMES[currentView];
+  let z = 1;
+  if (wideScreen() && g && !g.phaser && !el.querySelector('.howto, canvas')) {
+    const r = el.getBoundingClientRect();
+    const h = r.height / growZ, w = Math.max(...[...el.children].map(c => c.getBoundingClientRect().width)) / growZ;
+    const roomW = el.parentElement.clientWidth - 8;
+    z = Math.min(el.querySelector(':scope > .result') ? 1.15 : 1.4, availPx / h, roomW / w);
+  }
+  z = Math.max(1, Math.round(z * 20) / 20);
+  if (Math.abs(z - growZ) < 0.05) return;
+  growZ = z;
+  el.style.zoom = z === 1 ? '' : z;
+  el.style.setProperty('--avail', Math.floor(availPx / z) + 'px');
+}
+function watchGrow(el) {
+  growObs?.disconnect(); growMut?.disconnect();
+  const again = () => { clearTimeout(growTimer); growTimer = setTimeout(growGame, 160); };
+  growObs = new ResizeObserver(again);
+  growObs.observe(el);
+  growMut = new MutationObserver(again);
+  growMut.observe(el, { childList: true });
+  again();
 }
 let fitTimer = 0;
 addEventListener('resize', () => { clearTimeout(fitTimer); fitTimer = setTimeout(fitGame, 120); });

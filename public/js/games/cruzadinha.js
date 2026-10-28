@@ -11,7 +11,7 @@ GAMES.cruzadinha = {
     let queue = Promise.resolve();
     el.innerHTML = `<div class="hud"><span class="stat">Tempo<b id="wt">0:00</b></span><span class="stat">Conferidas<b id="wc">0</b></span></div>
       <div class="cw-clue" id="wq"><button class="cw-nav" id="wprev" aria-label="Dica anterior">${icon('chevron-left')}</button><p aria-live="polite"><b></b><span></span></p><button class="cw-nav" id="wnext" aria-label="Próxima dica">${icon('chevron-right')}</button></div>
-      <div class="cw-grid" id="wg" role="grid" aria-label="Grade da cruzadinha"></div>
+      <div class="cw-grid" id="wg" role="group" aria-label="Grade da cruzadinha"></div>
       <p class="hint" id="wmsg" aria-live="polite"></p>
       <div class="tm-kb" id="kb">${['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM⌫'].map(r => `<div>${[...r].map(k => `<button class="tm-k${k === '⌫' ? ' wide' : ''}" data-k="${k}" ${k === '⌫' ? 'aria-label="Apagar"' : ''}>${k}</button>`).join('')}</div>`).join('')}</div>
       <div class="row-btns" id="wbtns"><button class="btn ghost" id="wchk">${icon('circle-check')} Conferir</button><button class="btn ghost" id="wgive">${icon('flag')} Desistir</button></div>
@@ -128,8 +128,8 @@ GAMES.cruzadinha = {
       L = [...v.letters]; lastSent = word(); wrong = new Set(v.wrong);
       grid.style.setProperty('--n', S);
       grid.innerHTML = L.map((_, i) => (black(i) ? '<div class="cw-c blk" aria-hidden="true"></div>'
-        : `<div class="cw-c" data-i="${i}" role="gridcell">${v.nums[i] ? `<small>${v.nums[i]}</small>` : ''}<i></i></div>`)).join('');
-      const list = (t, arr, d) => `<div><h4>${t}</h4><ol>${arr.map(s => `<li data-k="${d}${s.n}"><b>${s.n}</b> ${esc(s.clue)}</li>`).join('')}</ol></div>`;
+        : `<div class="cw-c" data-i="${i}">${v.nums[i] ? `<small>${v.nums[i]}</small>` : ''}<i></i></div>`)).join('');
+      const list = (t, arr, d) => `<div><h2>${t}</h2><ol>${arr.map(s => `<li data-k="${d}${s.n}"><b>${s.n}</b> ${esc(s.clue)}</li>`).join('')}</ol></div>`;
       el.querySelector('#wl').innerHTML = list('Horizontais', v.across, 'A') + list('Verticais', v.down, 'D');
       el.querySelectorAll('#wl li').forEach(li => li.onclick = () => { if (!v.over) goSlot(slots().find(s => s.dir + s.n === li.dataset.k)); });
       if (v.over) return endPanel();

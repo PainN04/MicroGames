@@ -1,32 +1,34 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-skin="recreio" data-mode="dark">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MicroGame</title>
-<meta name="theme-color" content="#161625">
+<meta name="theme-color" content="#16141f">
 <!-- use-credentials: nas versões de teste da Vercel (protegidas por login) o navegador baixa o manifesto sem cookie e leva 401; aí o Chrome diz "não é possível instalar" -->
 <link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=6">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=11">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="MicroGame">
 <!-- ?v=N: o navegador guarda o ícone da aba pelo endereço; troque o número sempre que mudar a marca -->
-<link rel="icon" href="favicon.ico?v=6" sizes="32x32">
-<link rel="icon" type="image/svg+xml" href="icons/icon.svg?v=6">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=optional" rel="stylesheet">
+<link rel="icon" href="favicon.ico?v=11" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="icons/icon.svg?v=11">
+<link rel="preload" href="fonts/dm-sans-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/bricolage-grotesque-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
 <!-- modo leve (js/perf.js) já no primeiro desenho: sem isso o PC fraco engasga com o fundo animado antes do JS carregar -->
 <script>try{(function(s){var p=s.getItem('mg_perf');if(p==='lite'||(p!=='full'&&s.getItem('mg_perf_auto')==='lite'))document.documentElement.classList.add('lite')})(localStorage)}catch(e){}</script>
+<!-- tema claro/escuro (mg_mode) e menu lateral recolhido (mg_side) também antes do CSS, sem piscar. Sem escolha salva, segue o sistema -->
+<script>try{(function(s,d){var m=s.getItem('mg_mode');if(m!=='light'&&m!=='dark')m=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.dataset.mode=m;if(s.getItem('mg_side')==='mini')d.classList.add('side-mini')})(localStorage,document.documentElement)}catch(e){}</script>
+<link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="recreio.css">
 </head>
 <body>
-<div class="backdrop" aria-hidden="true"><i></i><i></i><i></i></div>
+<a class="skip" href="#main">Pular para o conteúdo</a>
 <header>
   <button class="logo" id="home" aria-label="MicroGame: voltar ao menu"><span class="wm">Micro<span>Game</span></span></button>
   <div class="who">
     <span class="pill compact" id="db" title="conectando..."><span class="dot"></span><span id="dbtxt">conectando...</span></span>
-    <button class="btn ghost icon-btn" id="mute" aria-label="Desligar som"></button>
     <span class="gate-wrap" id="gateWrap" hidden>
       <button class="gate-pill" id="gatePill" aria-haspopup="dialog" aria-expanded="false" aria-controls="gatePop"></button>
       <span class="gate-pop glass" id="gatePop" role="dialog" aria-label="Sua fila no Geiko" hidden></span>
@@ -44,6 +46,8 @@
         <!-- desempenho: ficavam no topo, como dois botões a mais; aqui são chaves (o estado aparece na própria linha) -->
         <button role="menuitemcheckbox" id="fx3d" aria-checked="true"><span data-ic="sparkles"></span>Animações 3D<span class="sw" aria-hidden="true"></span></button>
         <button role="menuitemcheckbox" id="lite" aria-checked="false"><span data-ic="gauge"></span>Modo leve<span class="sw" aria-hidden="true"></span></button>
+        <button role="menuitemcheckbox" id="mute" aria-checked="true"><span data-ic="volume-2"></span>Som<span class="sw" aria-hidden="true"></span></button>
+        <button role="menuitemcheckbox" id="mDark" aria-checked="false"><span data-ic="moon"></span>Tema escuro<span class="sw" aria-hidden="true"></span></button>
         <span class="acct-sep" role="separator"></span>
         <button role="menuitem" id="mReport"><span data-ic="report"></span>Reportar problema</button>
         <button role="menuitem" id="mPass"><span data-ic="key-round"></span>Trocar senha</button>
@@ -52,7 +56,7 @@
     </span>
   </div>
 </header>
-<main id="main">
+<main id="main" tabindex="-1">
   <!-- já vem no HTML: é o maior elemento da tela (LCP) e aparece antes de qualquer JS -->
   <section class="hero">
     <h1>Hora do <em>intervalo</em>.</h1>
@@ -111,6 +115,7 @@
 <script src="js/flair.js"></script>
 <script src="js/social.js"></script>
 <script src="js/app.js"></script>
+<script src="js/recreio.js"></script>
 <script src="js/login.js"></script>
 <script src="js/profile.js"></script>
 <script src="js/admin.js"></script>

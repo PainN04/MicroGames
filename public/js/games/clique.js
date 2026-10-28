@@ -13,21 +13,21 @@ GAMES.clique = {
   },
   start(el, done) {
     let n = 0, t0 = 0, last = 0, iv; const gaps = [], stamps = [];
-    el.innerHTML = '<div class="hud"><span class="stat">Cliques<b id="n">0</b></span><span class="stat">Tempo<b id="t">10.0s</b></span></div><button class="bigbtn" id="b">CLIQUE<br>PRA COMEÇAR</button><div class="cps-bar" id="cps" aria-hidden="true"><i></i><span id="cpsv">0/s</span></div>';
+    el.innerHTML = '<div class="hud"><span class="stat">Cliques<b id="n">0</b></span><span class="stat">Tempo<b id="t">10,0s</b></span></div><button class="bigbtn" id="b">CLIQUE<br>PRA COMEÇAR</button><div class="cps-bar" id="cps" aria-hidden="true"><i></i><span id="cpsv">0/s</span></div>';
     const b = el.querySelector('#b');
     b.onpointerdown = () => {
       if (!t0) {
         t0 = performance.now(); b.innerHTML = 'CLIQUE!';
         iv = setInterval(() => {
           const left = 10 - (performance.now() - t0) / 1000;
-          el.querySelector('#t').textContent = Math.max(0, left).toFixed(1) + 's';
+          el.querySelector('#t').textContent = dec(Math.max(0, left), 1) + 's';
           if (left <= 0) {
             clearInterval(iv);
             // cliques em cada segundo: mostra se cansou no meio
             const per = Array(10).fill(0);
             for (const t of stamps) per[Math.min(9, Math.floor(t / 1000))]++;
             const top = Math.max(1, ...per);
-            summarize([['Por segundo', (n / 10).toFixed(1)], ['Pico', Math.max(...per) + '/s'],
+            summarize([['Por segundo', dec(n / 10)], ['Pico', Math.max(...per) + '/s'],
               ['Ritmo (1s a 10s)', `<span class="bars">${per.map(v => `<i style="height:${4 + v / top * 30}px" title="${v}"></i>`).join('')}</span>`]]);
             done(n, gaps);
           }

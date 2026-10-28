@@ -5,7 +5,7 @@ GAMES.corredor = {
     const W = 480, H = 300, GY = 250, GRAV = 2300, JUMP = -820, ZOOM = 1.5;
     // texto nítido com o zoom; no canvas 2D (modo leve) o Phaser desenha o texto de alta resolução grande demais, então lá fica 1x
     const TEXT_RES = perf.lite ? 1 : 2 * ZOOM;
-    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Velocidade<b id="v">1.0x</b></span></div><div class="phaser-wrap" id="pw"></div><p class="hint">Espaço/toque = pular (segure pra ir mais alto) · ↓ ou parte de baixo da tela = abaixar</p>';
+    el.innerHTML = '<div class="hud"><span class="stat">Pontos<b id="p">0</b></span><span class="stat">Velocidade<b id="v">1,0x</b></span></div><div class="phaser-wrap" id="pw"></div><p class="hint">Espaço/toque = pular (segure pra ir mais alto) · ↓ ou parte de baixo da tela = abaixar</p>';
     const hud = { p: el.querySelector('#p'), v: el.querySelector('#v') };
     // O mundo continua 480x300; a câmera dá zoom e as texturas são pintadas no dobro da resolução, pra ficar nítido.
     return mountPhaser(el.querySelector('#pw'), W * ZOOM, H * ZOOM, {
@@ -126,7 +126,7 @@ GAMES.corredor = {
             obs = obs.filter(o => o.x > -60 || drop(o));
             const pts = Math.floor(dist / 10);
             hud.p.textContent = score();
-            hud.v.textContent = (speed / 300).toFixed(1) + 'x';
+            hud.v.textContent = dec((speed / 300), 1) + 'x';
             if (pts >= milestone) {
               const t = txt(70, milestone + '!', 26);
               scene.tweens.add({ targets: t, y: 50, alpha: 0, duration: 900, ease: 'Cubic.Out', onComplete: () => t.destroy() });

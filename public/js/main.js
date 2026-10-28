@@ -13,11 +13,11 @@ function reportVitals() {
   };
   for (const fn of ['onLCP', 'onINP', 'onCLS', 'onFCP', 'onTTFB']) webVitals[fn](record);
 }
-// carregada daqui (e não com onload="..." no index.html): os scripts não deixam nada no window pra o HTML chamar
+// carregada daqui (e não com um onload inline no index.html): os scripts não deixam nada no window pra o HTML chamar
 if (!localMode) {
   const wv = document.createElement('script');
   wv.async = true;
-  wv.src = 'https://cdn.jsdelivr.net/npm/web-vitals@6.2.3/dist/web-vitals.attribution.iife.js';
+  wv.src = 'vendor/web-vitals.attribution.iife.js'; // 6.2.3, servido daqui: sem depender do CDN (e de bloqueador de anúncio)
   wv.onload = reportVitals;
   document.head.append(wv);
 }
@@ -52,6 +52,8 @@ $('#mPass').onclick = () => { toggleAcct(false); passwordModal(false); };
 $('#mLogout').onclick = () => { toggleAcct(false); logout(); };
 $('#mAdmin').onclick = () => { toggleAcct(false); showAdmin(); };
 $('#mReport').onclick = () => { toggleAcct(false); showReportPage(); };
+// link de pular: foca o conteúdo sem mexer no #hash (o #recordes usa o hash)
+$('.skip').addEventListener('click', e => { e.preventDefault(); $('#main').focus(); });
 addEventListener('hashchange', () => { if (location.hash === '#recordes' && me?.canEditRecords) showRecords(); });
 $('#mute').onclick = () => { muted = !muted; localStorage.setItem('mg_mute', muted ? '1' : '0'); renderMute(); if (!muted) sfx.good(); };
 renderMute();

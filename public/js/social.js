@@ -45,42 +45,156 @@ function bindReactions(root, id) {
   });
 }
 
-/* ---------- torneio semanal (abre numa janela; o menu só mostra o atalho) ---------- */
+/* ---------- telas de competição: Rankings, Torneio, Duplas e Duelos abrem como telas inteiras (igual ao perfil) ---------- */
+// head = título e botões ao lado do voltar; bind(el) liga os botões depois de desenhar. Abrir de novo a mesma tela só redesenha.
+function compPage(view, head, body, bind) {
+  const again = currentView === view;
+  stop();
+  currentView = view;
+  if (!again) setTimeout(pingSession, 0);
+  const render = () => {
+    main.classList.remove('game-view');
+    main.innerHTML = `<div class="admin comp-page comp-${view}">
+      <div class="stage-head"><button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>${head}</div>
+      ${body}</div>`;
+    $('#back').onclick = showMenu;
+    bind?.(main.firstElementChild);
+    paintSideNav();
+  };
+  if (again) render();
+  else { swap(render); scrollTo(0, 0); }
+}
+const compTitle = (ic, title, sub) => `<div class="title"><h1>${icon(ic)} ${title}</h1>${sub ? `<p>${sub}</p>` : ''}</div>`;
+
+/* ---------- peças das telas de competição: pódio, números do topo e listas com barra ---------- */
+// avatar grande do pódio: o escolhido, ou as iniciais num círculo com a cor tirada do nome
+function podAvatar(name) {
+  const a = parseAvatar(flair.avatars?.[name]);
+  if (a) return `<span class="pd-av" style="--h:${a.hue}">${avatarImg(a)}</span>`;
+  let h = 0;
+  for (const c of name) h = (h * 31 + c.charCodeAt(0)) % 360;
+  const ini = name.trim().split(/\s+/).map(w => w[0]).filter(Boolean);
+  return `<span class="pd-av ini" style="--h:${h}" aria-hidden="true">${esc(((ini[0] || '?') + (ini.length > 1 ? ini[ini.length - 1] : '')).toUpperCase())}</span>`;
+}
+/** Pódio (2º, 1º, 3º). rows: [{ name, av?, title?, sub?, cells?: [[rótulo, valor]], big, unit, me? }] — `av` troca o avatar (ex.: os dois da dupla). */
+function podiumHtml(rows, { title, ic = 'trophy', note = '', lead = '' } = {}) {
+  if (!rows.length) return '';
+  const card = (r, k) => r ? `<div class="pd p${k + 1}${r.me ? ' me' : ''}">
+      ${k === 0 ? `<span class="pd-crown">${icon('crown')}</span>` : ''}
+      <div class="pd-top">${r.av ?? podAvatar(r.name)}<span class="rank r${k + 1}">${k + 1}</span></div>
+      ${r.title ? `<b class="pd-n">${r.title}</b>` : `<a href="#" class="pd-n" data-profile="${esc(r.name)}">${esc(r.name)}</a>`}
+      ${r.sub ? `<small class="pd-sub">${r.sub}</small>` : ''}
+      ${k === 0 && lead ? `<span class="pd-lead">${lead}</span>` : ''}
+      ${r.cells?.length ? `<div class="pd-cells" style="--n:${r.cells.length}">${r.cells.map(([l, v]) => `<span><small>${l}</small><b>${v}</b></span>`).join('')}</div>` : ''}
+      <div class="pd-total"><b>${r.big}</b> <small>${r.unit}</small></div>
+    </div>` : '<div class="pd empty"></div>';
+  return `<section class="glass podium"><div class="pd-head"><h2 class="comp-sub">${icon(ic)} ${title}</h2>${note ? `<span class="hint">${note}</span>` : ''}</div>
+    <div class="pd-row">${card(rows[1], 1)}${card(rows[0], 0)}${card(rows[2], 2)}</div></section>`;
+}
+/** Números do topo da tela: [[ícone, número, rótulo, cor (matiz)]] */
+const statTiles = items => `<div class="kpis">${items.map(([ic, v, l, h = 290]) => `<div class="kpi" style="--h:${h}"><span class="ic">${icon(ic)}</span><span><b>${v}</b><small>${l}</small></span></div>`).join('')}</div>`;
+/** Classificação depois do pódio (do 4º em diante), com barra proporcional ao 1º. rows: [{ name, val, sub?, pct, me? }] */
+function restListHtml(rows, from = 4) {
+  if (!rows.length) return '';
+  return `<ol class="rest" start="${from}">${rows.map((r, k) => `<li class="${r.me ? 'me' : ''}">${rankBadge(from + k)}<span class="rs-n">${r.label ?? nameHtml(r.name)}${r.sub ? `<small>${r.sub}</small>` : ''}</span>
+    <span class="rs-bar"><i style="width:${Math.max(4, Math.round(r.pct * 100))}%"></i></span><b>${r.val}</b></li>`).join('')}</ol>`;
+}
+const plural = (n, um, varios) => `${n.toLocaleString('pt-BR')} ${n === 1 ? um : varios}`;
+// partidas no período (só jogos principais): quantas no total, por jogo e por pessoa
+function playStats(range = currentRange()) {
+  const since = range.since || 0, until = range.until ?? Infinity, byGame = {}, byName = {};
+  let total = 0;
+  for (const id of mainGames()) for (const s of scores[id] || []) {
+    if (s.date < since || s.date >= until) continue;
+    total++; byGame[id] = (byGame[id] || 0) + 1; byName[s.name] = (byName[s.name] || 0) + 1;
+  }
+  return { total, byGame, byName, players: Object.keys(byName).length };
+}
+// dias seguidos jogando qualquer coisa (vale até ontem: a sequência só quebra se passar um dia inteiro sem jogar)
+function playStreaks() {
+  const days = {};
+  for (const id in GAMES) for (const s of scores[id] || []) (days[s.name] ||= new Set()).add(dayIndex(s.date));
+  const today = dayIndex(), out = [];
+  for (const [name, set] of Object.entries(days)) {
+    let d = set.has(today) ? today : today - 1, n = 0;
+    while (set.has(d)) { n++; d--; }
+    if (n >= 2) out.push({ name, n, today: set.has(today) });
+  }
+  return out.sort((a, b) => b.n - a.n || a.name.localeCompare(b.name, 'pt-BR'));
+}
+// quem subiu nos recordes em 7 dias: posição de hoje × posição de uma semana atrás (no mesmo período)
+function climbers(range = currentRange()) {
+  const weekAgo = Date.now() - 7 * DAY_MS;
+  const now = champions(range), before = champions({ since: range.since || 0, until: weekAgo });
+  const pos = list => new Map(list.map(([n], i) => [n, i + 1]));
+  const pb = pos(before);
+  return now.map(([n, w], i) => ({ name: n, pos: i + 1, was: pb.get(n) || null, w, gained: w - (before.find(x => x[0] === n)?.[1] || 0) }))
+    .filter(r => r.gained > 0 || (r.was && r.was > r.pos))
+    .sort((a, b) => ((b.was || 99) - b.pos) - ((a.was || 99) - a.pos) || b.gained - a.gained).slice(0, 5);
+}
+
+/* ---------- torneio semanal ---------- */
 function tourneyBodyHtml() {
   const t = social?.tourney;
-  if (!t || !t.on) return '<p>O torneio semanal ainda não começou.</p>';
+  if (!t || !t.on) return `<section class="glass"><div class="empty-state">${icon('trophy')}<b>O torneio semanal ainda não começou</b><span>Quando começar, os 3 jogos da semana aparecem aqui.</span></div></section>`;
   const range = { since: t.start, until: t.end };
   const games = t.games.filter(id => GAMES[id]).map(id => {
     const g = GAMES[id], list = bestPerPlayer(id, range), top = list[0], mineIdx = list.findIndex(([n]) => n === player);
     return `<button class="tgame" data-id="${id}" style="--h:${g.hue}">
-      <span class="ic">${icon(g.icon)}</span><b>${g.name}</b>
+      <span class="tg-art" aria-hidden="true"><span class="tg-tile">${icon(g.icon)}</span></span>
+      <span class="tg-tx"><b>${g.name}</b>
       <small>${top ? `${icon('crown')} ${esc(top[0])} · ${fmt(g, top[1])}` : 'ninguém jogou ainda'}</small>
-      <small class="you">${mineIdx >= 0 ? `você: ${mineIdx + 1}º · ${fmt(g, list[mineIdx][1])}` : 'você ainda não jogou'}</small></button>`;
+      <small class="you">${mineIdx >= 0 ? `você: ${mineIdx + 1}º · ${fmt(g, list[mineIdx][1])}` : 'você ainda não jogou'}</small></span></button>`;
   }).join('');
-  const stand = t.standings.slice(0, 5), lastTop = t.last?.top?.[0];
-  return `<div class="t-head"><h2>${icon('trophy')} Torneio da semana</h2>
-      <span class="tag">${dayLabelBR(t.start)} – ${dayLabelBR(t.end - 1)} · acaba em ${leftText(t.end - Date.now())}</span></div>
+  const stand = t.standings.slice(0, 10), lastTop = t.last?.top?.[0], ids = t.games.filter(id => GAMES[id]);
+  // pontos de cada pessoa em cada jogo (pela posição dela no jogo)
+  const ptsIn = (r, id) => (r.ranks?.[id] ? t.points[r.ranks[id] - 1] ?? 1 : null);
+  const short = id => GAMES[id].name.split(' ')[0];
+  const rows = stand.map(r => ({ name: r.name, big: r.points, unit: 'pts totais', me: r.name === player, sub: `${r.played} de ${ids.length} jogos`,
+    cells: ids.map(id => [short(id), ptsIn(r, id) != null ? `${ptsIn(r, id)} pts` : '—']) }));
+  const gap = stand.length > 1 ? stand[0].points - stand[1].points : 0;
+  const lead = stand.length > 1 ? (gap ? `Líder isolado · +${gap} pts` : 'Empatado na frente') : '';
+  const leftDays = Math.max(0, Math.ceil((t.end - Date.now()) / DAY_MS));
+  const table = stand.length ? `<div class="t-table" role="table" aria-label="Classificação do torneio" style="--n:${ids.length}">
+      <div class="tt-row tt-head" role="row"><span role="columnheader">#</span><span role="columnheader">Jogador</span>${ids.map(id => `<span role="columnheader" style="--h:${GAMES[id].hue}">${icon(GAMES[id].icon)} ${short(id)}</span>`).join('')}<span role="columnheader">Total</span></div>
+      ${stand.map((r, k) => `<div class="tt-row${r.name === player ? ' me' : ''}" role="row"><span role="cell">${rankBadge(k + 1)}</span><span role="cell">${nameHtml(r.name)}</span>
+        ${ids.map(id => `<span role="cell" class="tt-g">${r.ranks?.[id] ? `<b>${ptsIn(r, id)}</b><small>${r.ranks[id]}º · ${fmt(GAMES[id], r.scores[id])}</small>` : '<small>—</small>'}</span>`).join('')}
+        <span role="cell" class="tt-t">${r.points}</span></div>`).join('')}</div>`
+    : '<p class="hint" style="text-align:left;margin:0">Ninguém pontuou ainda. Jogue um dos 3 jogos e saia na frente.</p>';
+  return `${statTiles([['hourglass', leftDays === 1 ? '1 dia' : `${leftDays} dias`, `pra acabar · ${dayLabelBR(t.end - 1)}`, 30], ['users', t.players, 'jogadores pontuando', 210],
+      ['medal', t.mineRank ? `${t.mineRank}º` : '—', t.mine ? `você · ${t.mine.points} pts` : 'você ainda não pontuou', 70],
+      ['crown', lastTop ? esc(lastTop.name) : '—', lastTop ? `campeão da semana passada · ${lastTop.points} pts` : 'campeão da semana passada', 290]])}
+    ${rows.length ? podiumHtml(rows.slice(0, 3), { title: 'Pódio provisório da semana', ic: 'trophy', note: `${plural(t.players, 'jogador pontuando', 'jogadores pontuando')}`, lead }) : ''}
     <div class="t-body">
-      <div class="tgames">${games}</div>
-      <div class="tstand">
-        <h3>Classificação</h3>
-        ${stand.length ? `<ol>${stand.map((r, k) => `<li class="${r.name === player ? 'me' : ''}">${rankBadge(k + 1)} ${nameHtml(r.name)} <b>${r.points} pts</b></li>`).join('')}</ol>`
-          : '<p class="hint" style="text-align:left;margin:0">Ninguém pontuou ainda — jogue um dos 3 jogos e saia na frente.</p>'}
-        ${t.mineRank && t.mineRank > 5 ? `<p class="hint">Você está em ${t.mineRank}º com ${t.mine.points} pts.</p>` : ''}
-      </div>
-    </div>
-    ${lastTop ? `<p class="hint t-rules">${icon('crown')} Semana passada: <b>${esc(lastTop.name)}</b> (${lastTop.points} pts).</p>` : ''}
-    <details class="duo-how"><summary>Como pontua</summary><p>Vale a sua melhor partida da semana em cada jogo. Por jogo: 1º ${t.points[0]} pts, 2º ${t.points[1]}, 3º ${t.points[2]}, 4º ${t.points[3]}, 5º ${t.points[4]}, 6º ${t.points[5]}, depois 1 ponto. Quem somar mais leva o troféu.</p></details>`;
+      <section class="glass"><h2 class="comp-sub">${icon('gamepad-2')} Jogos da semana</h2><div class="tgames">${games}</div>
+        <details class="duo-how"><summary>Como pontua</summary><p>Vale a sua melhor partida da semana em cada jogo. Por jogo: 1º ${t.points[0]} pts, 2º ${t.points[1]}, 3º ${t.points[2]}, 4º ${t.points[3]}, 5º ${t.points[4]}, 6º ${t.points[5]}, depois 1 ponto. Quem somar mais leva o troféu.</p></details></section>
+      <section class="glass tstand">
+        <h2 class="comp-sub">${icon('trophy')} Classificação</h2>
+        ${table}
+        ${t.mineRank && t.mineRank > 10 ? `<p class="hint">Você está em ${t.mineRank}º com ${t.mine.points} pts.</p>` : ''}
+      </section>
+    </div>`;
 }
 async function tourneyModal() {
   if (!me) return loginModal();
   await loadSocial();
-  const { el, close } = modal(`<div class="tourney-body">${tourneyBodyHtml()}</div><button class="btn ghost" id="tClose">Fechar</button>`, { wide: true });
-  el.querySelector('#tClose').onclick = close;
-  el.querySelectorAll('.tgame').forEach(b => b.onclick = () => { close(); play(b.dataset.id); });
+  const t = social?.tourney;
+  compPage('torneio', compTitle('trophy', 'Torneio da semana', t?.on ? `${dayLabelBR(t.start)} a ${dayLabelBR(t.end - 1)} · acaba em ${leftText(t.end - Date.now())}` : 'Três jogos por semana, quem somar mais leva o troféu.'),
+    tourneyBodyHtml(), el => { el.querySelectorAll('.tgame').forEach(b => b.onclick = () => play(b.dataset.id)); mountTourneyArt(el); });
+}
+// os jogos da semana ganham a cena 3D do card do menu (cards3d.js); sem 3D (ou sem internet), fica o ícone num ladrilho com volume
+async function mountTourneyArt(el) {
+  if (!fx3dOn) return;
+  try { await loadLib(ZDOG_URL); } catch { return; }
+  if (currentView !== 'torneio' || !el.isConnected) return;
+  const size = SMALL.matches ? 76 : 96;
+  const offs = [...el.querySelectorAll('.tgame')].map(b => mountScene3d(b.dataset.id, b.querySelector('.tg-art'), size)).filter(Boolean);
+  if (!offs.length) return;
+  const prev = cleanup;
+  cleanup = () => { offs.forEach(f => f()); prev?.(); };
 }
 
-/* ---------- barra de competição (menu): atalhos sem listas — os rankings ficam todos na janela "Rankings" ---------- */
+/* ---------- barra de competição (menu): atalhos sem listas — os rankings ficam todos na tela "Rankings" ---------- */
 function renderStrip() {
   const box = $('#strip');
   if (!box) return;
@@ -103,33 +217,98 @@ function renderStrip() {
   box.querySelectorAll('[data-act]').forEach(b => { b.onclick = go[b.dataset.act]; });
 }
 
-/* ---------- rankings (janela): tudo que é placar geral fica aqui, em abas ---------- */
+/* ---------- rankings (tela): tudo que é placar geral fica aqui, em abas ---------- */
 let rankTab = 'kings';
 function rankingsModal(tab = rankTab) {
   const hall = hallHtml(), week = weekInnerHtml();
   const tabs = [['kings', 'crown', 'Recordes'], ['challenge', 'star', 'Desafio do dia'], ['daily', 'calendar', 'Jogos diários'],
     hall && ['hall', 'landmark', 'Hall da fama'], week && ['week', 'ticket', 'Tickets']].filter(Boolean);
-  const bodyOf = t => t === 'kings' ? `${seasonSeg()}${kingsHtml()}` : t === 'challenge' ? challengeRankHtml() : t === 'daily' ? `<div class="daily-rank">${dailyRankHtml()}</div>`
-    : t === 'hall' ? hall : `<div class="week">${week}</div>`;
+  const bodyOf = t => t === 'kings' ? kingsTabHtml() : t === 'challenge' ? challengeTabHtml() : t === 'daily' ? dailyTabHtml()
+    : t === 'hall' ? `<section class="glass">${hall}</section>` : `<section class="glass"><div class="week">${week}</div></section>`;
   if (!tabs.some(([t]) => t === tab)) tab = 'kings';
   rankTab = tab;
-  const { el, close } = modal(`<h2>${icon('crown')} Rankings</h2>
-    <div class="seg rk-tabs" role="tablist" aria-label="Rankings">${tabs.map(([t, ic, l]) => `<button role="tab" data-rk="${t}" aria-selected="${tab === t}" aria-pressed="${tab === t}">${icon(ic)} ${l}</button>`).join('')}</div>
-    <div class="rk-body kings"></div><button class="btn ghost" id="rkClose">Fechar</button>`, { wide: true });
-  const body = el.querySelector('.rk-body');
-  // troca de aba / de período só refaz o miolo — a janela fica no lugar (recriar faria a animação de entrada piscar)
-  const paint = () => {
-    body.innerHTML = bodyOf(rankTab);
-    bindSeasonSeg(body, () => { refreshMenu(); paint(); });
-  };
-  el.querySelectorAll('[data-rk]').forEach(b => b.onclick = () => {
-    rankTab = b.dataset.rk;
-    el.querySelectorAll('[data-rk]').forEach(x => { const on = x === b; x.setAttribute('aria-selected', on); x.setAttribute('aria-pressed', on); });
-    paint();
-  });
-  el.querySelector('#rkClose').onclick = close;
-  el.addEventListener('click', e => { if (e.target.closest('[data-profile]')) close(); }); // abrir um perfil fecha a janela
-  paint();
+  compPage('rankings', compTitle('crown', 'Rankings', 'Recordes, desafio do dia, jogos diários e campeões.'),
+    `<div class="seg rk-tabs" role="tablist" aria-label="Rankings">${tabs.map(([t, ic, l]) => `<button role="tab" data-rk="${t}" aria-selected="${tab === t}">${icon(ic)} ${l}</button>`).join('')}</div>
+    <div class="rk-body"></div>`, el => {
+      const body = el.querySelector('.rk-body');
+      // troca de aba / de período só refaz o miolo
+      const paint = () => {
+        body.innerHTML = bodyOf(rankTab);
+        bindSeasonSeg(body, paint);
+        body.querySelectorAll('[data-play]').forEach(b => b.onclick = () => play(b.dataset.play));
+      };
+      el.querySelectorAll('[data-rk]').forEach(b => b.onclick = () => {
+        rankTab = b.dataset.rk;
+        el.querySelectorAll('[data-rk]').forEach(x => x.setAttribute('aria-selected', x === b));
+        paint();
+      });
+      paint();
+    });
+}
+
+// aba Recordes: números do período, pódio de quem tem mais recordes, o resto da lista e, ao lado, os mais jogados, as sequências e quem subiu
+function kingsTabHtml() {
+  const range = currentRange(), kings = champions(range), st = playStats(range), per = seasonMode === 'all' ? 'no geral' : `em ${seasonLabel().toLowerCase()}`;
+  const top = Object.entries(st.byGame).sort((a, b) => b[1] - a[1]), streaks = playStreaks(), up = climbers(range);
+  const week = Date.now() - 7 * DAY_MS;
+  const fresh = mainGames().filter(id => { const [b] = bestPerPlayer(id, range); return b && (scores[id] || []).some(s => s.name === b[0] && s.score === b[1] && s.date >= week); }).length;
+  const rows = kings.map(([n, w, v]) => ({ name: n, big: w, unit: w === 1 ? 'recorde' : 'recordes', me: n === player,
+    sub: `${plural(st.byName[n] || 0, 'partida', 'partidas')} ${per}`, cells: [['Recordes', w], ['2º lugares', v], ['Partidas', st.byName[n] || 0]] }));
+  const lead = kings.length > 1 ? (kings[0][1] > kings[1][1] ? `Líder isolado · +${kings[0][1] - kings[1][1]}` : 'Empatado na frente') : '';
+  const side = `<div class="rk-side">
+      <section class="glass mini-card"><h3>${icon('chart-column')} Mais jogados ${per}</h3>
+        ${top.length ? `<ol class="bars">${top.slice(0, 6).map(([id, n]) => `<li style="--h:${GAMES[id].hue}"><span class="ic">${icon(GAMES[id].icon)}</span><span class="bn">${GAMES[id].name}<i style="width:${Math.round(n / top[0][1] * 100)}%"></i></span><b>${n}</b></li>`).join('')}</ol>`
+          : '<p class="hint">Ninguém jogou ainda.</p>'}</section>
+      <section class="glass mini-card"><h3>${icon('flame')} Em sequência</h3>
+        ${streaks.length ? `<ol class="mini-list">${streaks.slice(0, 5).map(r => `<li class="${r.name === player ? 'me' : ''}">${nameHtml(r.name)}<b class="fire">${r.n} dias</b>${r.today ? '' : `<small title="Ainda não jogou hoje">em risco</small>`}</li>`).join('')}</ol>`
+          : '<p class="hint">Jogue dois dias seguidos pra aparecer aqui.</p>'}</section>
+      <section class="glass mini-card"><h3>${icon('trending-up')} Quem subiu na semana</h3>
+        ${up.length ? `<ol class="mini-list">${up.map(r => `<li class="${r.name === player ? 'me' : ''}">${nameHtml(r.name)}<b class="up">${r.was ? (r.was > r.pos ? `${r.was}º → ${r.pos}º` : `${r.pos}º`) : `entrou em ${r.pos}º`}</b><small>${r.gained > 0 ? `+${r.gained} recorde${r.gained > 1 ? 's' : ''}` : ''}</small></li>`).join('')}</ol>`
+          : '<p class="hint">Ninguém mudou de posição nos últimos 7 dias.</p>'}</section>
+    </div>`;
+  return `${statTiles([['gamepad-2', st.total.toLocaleString('pt-BR'), `partidas ${per}`, 290], ['users', st.players, 'jogadores', 210],
+      ['star', fresh, 'recordes batidos em 7 dias', 70], ['flame', streaks[0] ? `${streaks[0].n} dias` : '—', streaks[0] ? `maior sequência: ${esc(streaks[0].name)}` : 'maior sequência', 30]])}
+    <div class="rk-grid"><div class="rk-main">${seasonSeg()}
+      ${rows.length ? podiumHtml(rows.slice(0, 3), { title: `Pódio dos recordes`, ic: 'crown', note: `quem é o 1º em mais jogos ${per}`, lead })
+        + (rows.length > 3 ? `<section class="glass">${restListHtml(rows.slice(3, 10).map(r => ({ ...r, val: `${r.big} <small>${r.unit}</small>`, sub: `${r.cells[1][1]} em 2º · ${r.sub}`, pct: r.big / rows[0].big })))}</section>` : '')
+        : `<section class="glass"><div class="empty-state">${icon('crown')}<b>Ninguém tem recorde ${per}</b><span>Jogue qualquer jogo e saia na frente.</span></div></section>`}
+    </div>${side}</div>`;
+}
+// aba Desafio do dia: pódio de hoje, o resto, as vitórias do mês e os campeões dos últimos dias
+function challengeTabHtml() {
+  const id = dailyGame(), g = GAMES[id], list = bestPerPlayer(id, dayRange()), r = dayRange(), plays = {};
+  for (const s of scores[id] || []) if (s.date >= r.since && s.date < r.until) plays[s.name] = (plays[s.name] || 0) + 1;
+  const wins = dailyWinsThisMonth(), winsOf = Object.fromEntries(wins), mine = list.findIndex(([n]) => n === player);
+  const rows = list.map(([n, s]) => ({ name: n, big: (g.decimals ? dec(s, g.decimals) : s.toLocaleString('pt-BR')), unit: g.unit, me: n === player,
+    sub: `${plural(plays[n] || 0, 'tentativa', 'tentativas')} hoje`, cells: [['Tentativas', plays[n] || 0], ['Vitórias no mês', winsOf[n] || 0]] }));
+  const total = Object.values(plays).reduce((a, b) => a + b, 0);
+  return `${statTiles([[g.icon, g.name, 'jogo de hoje', g.hue], ['hourglass', `${dailyHoursLeft()}h`, 'pra acabar', 30], ['users', list.length, 'jogando hoje', 210],
+      ['medal', mine >= 0 ? `${mine + 1}º` : '—', mine >= 0 ? 'sua posição' : 'você ainda não jogou', 70]])}
+    <div class="rk-grid"><div class="rk-main">
+      ${rows.length ? podiumHtml(rows.slice(0, 3), { title: `Pódio de hoje · ${g.name}`, ic: 'star', note: `${plural(total, 'partida', 'partidas')} hoje · vale a melhor de cada um`, lead: 'Ganha a coroa amanhã' })
+        + (rows.length > 3 ? `<section class="glass">${restListHtml(rows.slice(3, 10).map((x, k) => ({ ...x, val: fmt(g, list[k + 3][1]), pct: g.better === 'low' ? list[0][1] / list[k + 3][1] : list[k + 3][1] / list[0][1] })))}</section>` : '')
+        : `<section class="glass"><div class="empty-state">${icon('star')}<b>Ninguém jogou o desafio hoje</b><span>Quem fizer a melhor partida até meia-noite ganha a coroa.</span><button class="btn" data-play="${id}">${icon('play')} Jogar ${g.name}</button></div></section>`}
+      ${champsHtml() ? `<section class="glass champs-card">${champsHtml()}</section>` : ''}
+    </div><div class="rk-side">
+      ${wins.length ? `<section class="glass mini-card"><h3>${icon('medal')} Vitórias em ${monthName(monthKey(Date.now())).toLowerCase()}</h3><ol class="mini-list">${wins.slice(0, 6).map(([n, c]) => `<li class="${n === player ? 'me' : ''}">${nameHtml(n)}<b>${c}</b></li>`).join('')}</ol></section>` : ''}
+    </div></div>`;
+}
+// aba Jogos diários: pódio da soma de hoje, o resto, o campeão de ontem e quem joga todo dia
+function dailyTabHtml() {
+  const list = dailyTabStandings(), total = dailyOrder().length, [champ] = dailyTabStandings(dayIndex() - 1), mine = list.findIndex(r => r.name === player);
+  const rows = list.map(r => ({ name: r.name, big: r.pts.toLocaleString('pt-BR'), unit: 'pts', me: r.name === player, sub: `${r.games}/${total} jogos feitos`,
+    cells: [['Jogos', `${r.games}/${total}`], ['Sequência', `${dailyTabStreak(r.name)} d`]] }));
+  const streaks = [...new Set([...list.map(r => r.name), ...dailyTabStandings(dayIndex() - 1).map(r => r.name)])].map(n => ({ n, d: dailyTabStreak(n) })).filter(x => x.d > 1).sort((a, b) => b.d - a.d).slice(0, 5);
+  return `${statTiles([['calendar', total, 'jogos diários hoje', 290], ['users', list.length, 'jogando hoje', 210],
+      ['medal', mine >= 0 ? `${mine + 1}º` : '—', mine >= 0 ? `você · ${list[mine].pts.toLocaleString('pt-BR')} pts` : 'você ainda não jogou', 70], ['flame', me ? `${dailyTabStreak(player)} d` : '—', 'sua sequência nos diários', 30]])}
+    <div class="rk-grid"><div class="rk-main">
+      ${rows.length ? podiumHtml(rows.slice(0, 3), { title: 'Pódio dos diários de hoje', ic: 'calendar', note: 'soma dos pontos em todos os diários · zera à meia-noite', lead: 'Campeão do dia' })
+        + (rows.length > 3 ? `<section class="glass">${restListHtml(rows.slice(3, 10).map(x => ({ ...x, val: `${x.big} <small>pts</small>`, pct: list[rows.indexOf(x)].pts / list[0].pts })))}</section>` : '')
+        : `<section class="glass"><div class="empty-state">${icon('calendar')}<b>Ninguém jogou os diários hoje</b><span>Cada jogo diário vale pontos; quem somar mais até meia-noite é o campeão.</span></div></section>`}
+    </div><div class="rk-side">
+      ${champ ? `<section class="glass mini-card"><h3>${icon('crown')} Campeão de ontem</h3><ol class="mini-list"><li>${nameHtml(champ.name)}<b>${champ.pts.toLocaleString('pt-BR')} pts</b></li></ol></section>` : ''}
+      <section class="glass mini-card"><h3>${icon('flame')} Joga todo dia</h3>${streaks.length ? `<ol class="mini-list">${streaks.map(x => `<li class="${x.n === player ? 'me' : ''}">${nameHtml(x.n)}<b class="fire">${x.d} dias</b></li>`).join('')}</ol>` : '<p class="hint">Ninguém com sequência ainda.</p>'}</section>
+    </div></div>`;
 }
 
 /* ---------- duplas ---------- */
@@ -143,38 +322,73 @@ function bestIn(id, name, since, until = Infinity) {
 }
 // Por jogo: a dupla só entra se OS DOIS jogaram (depois de formada); a nota é a média das melhores partidas dos dois.
 // As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos. Conta o período escolhido (mês ou geral).
-function duoStandings(range = currentRange()) {
-  const duos = (social?.duos || []).map(d => ({ ...d, pts: 0, podiums: 0, firsts: 0 }));
-  if (!duos.length) return [];
+// games = [{ id, entries: [{ d, v, pts }] }] (as duplas que entraram em cada jogo, da melhor pra pior)
+function duoBoard(range = currentRange()) {
+  const duos = (social?.duos || []).map(d => ({ ...d, pts: 0, podiums: 0, firsts: 0 })), games = [];
+  if (!duos.length) return { duos, games };
   for (const id of mainGames()) {
     const g = GAMES[id], entries = [];
     for (const d of duos) {
       const since = Math.max(range.since || 0, d.since ?? d.formedAt ?? 0);
       const x = bestIn(id, d.aName, since, range.until), y = bestIn(id, d.bName, since, range.until);
-      if (x != null && y != null) entries.push({ d, v: (x + y) / 2 });
+      if (x != null && y != null) entries.push({ d, v: (x + y) / 2, pts: 0 });
     }
     entries.sort((p, q) => (p.v === q.v ? 0 : better(g, p.v, q.v) ? -1 : 1));
-    entries.slice(0, 3).forEach((e, i) => { e.d.pts += 3 - i; e.d.podiums++; if (!i) e.d.firsts++; });
+    entries.slice(0, 3).forEach((e, i) => { e.pts = 3 - i; e.d.pts += e.pts; e.d.podiums++; if (!i) e.d.firsts++; });
+    games.push({ id, entries });
   }
-  return duos.sort((p, q) => q.pts - p.pts || q.firsts - p.firsts || p.name.localeCompare(q.name, 'pt-BR'));
+  duos.sort((p, q) => q.pts - p.pts || q.firsts - p.firsts || p.name.localeCompare(q.name, 'pt-BR'));
+  return { duos, games };
 }
+const duoStandings = range => duoBoard(range).duos;
+// a média dos dois pode ter meio ponto
+const fmtAvg = (g, v) => (g.decimals ? dec(v, g.decimals) : v.toLocaleString('pt-BR', { maximumFractionDigits: 1 })) + ' ' + g.unit;
 function duosBodyHtml() {
-  const rows = duoStandings().slice(0, 10), my = social.myDuo;
-  const cta = { none: 'Formar dupla', out: 'Convite enviado', in: 'Convite pra você!', active: 'Minha dupla' }[my.state];
-  return `<div class="kings-head"><h2>${icon('users')} Duplas <small class="hint">${seasonMode === 'all' ? 'geral' : seasonLabel().toLowerCase()}</small></h2>
-      <button class="btn ${my.state === 'in' ? '' : 'ghost'}" id="duoOpen">${cta}</button></div>
-    ${rows.length ? `<ol>${rows.map((r, k) => `<li class="${my.state === 'active' && r.id === my.id ? 'me' : ''}">${rankBadge(k + 1)} <b class="tn">${esc(r.name)}</b> <span class="tp">${r.pts} pts</span>
-      <small>${esc(r.aName)} & ${esc(r.bName)} · ${r.firsts} jogo${r.firsts === 1 ? '' : 's'} em 1º · ${r.podiums} pódio${r.podiums === 1 ? '' : 's'}</small></li>`).join('')}</ol>`
+  const { duos, games } = duoBoard(), my = social.myDuo, mine = d => my.state === 'active' && d.id === my.id;
+  const rows = duos.slice(0, 10);
+  const played = games.filter(x => x.entries.length).sort((a, b) => b.entries.length - a.entries.length || GAMES[a.id].name.localeCompare(GAMES[b.id].name, 'pt-BR'));
+  const idle = games.filter(x => !x.entries.length);
+  const pod = duos.filter(d => d.pts > 0).slice(0, 3).map(d => ({ name: d.aName, title: esc(d.name), av: `<span class="pd-duo">${podAvatar(d.aName)}${podAvatar(d.bName)}</span>`,
+    sub: `${esc(d.aName)} & ${esc(d.bName)}`, me: mine(d), big: d.pts, unit: 'pts',
+    cells: [['Jogos em 1º', d.firsts], ['Pódios', d.podiums], ['Jogos', games.filter(x => x.entries.some(e => e.d.id === d.id)).length]] }));
+  const myPos = my.state === 'active' ? duos.findIndex(mine) + 1 : 0;
+  const gap = duos.length > 1 ? duos[0].pts - duos[1].pts : 0;
+  const head = statTiles([['users', duos.length, duos.length === 1 ? 'dupla formada' : 'duplas formadas', 210], ['gamepad-2', `${played.length}/${games.length}`, 'jogos com dupla pontuando', 290],
+    ['medal', myPos ? `${myPos}º` : '—', myPos ? `${esc(my.name)} · ${duos[myPos - 1].pts} pts` : 'você não tem dupla', 70],
+    ['trophy', duos[0]?.pts ? esc(duos[0].name) : '—', duos[0]?.pts ? `lidera com ${duos[0].pts} pts` : 'ninguém pontuou', 30]])
+    + podiumHtml(pod, { title: `Pódio das duplas ${seasonMode === 'all' ? 'no geral' : `em ${seasonLabel().toLowerCase()}`}`, ic: 'users', note: '3, 2 e 1 pontos pras 3 melhores duplas de cada jogo', lead: pod.length > 1 ? (gap ? `Na frente por ${gap} pts` : 'Empatadas na frente') : '' });
+  // quadro enxuto: uma linha fina por jogo e uma coluna por dupla (as que pontuaram, até 6), com a medalha de quem ganhou ponto ali
+  const cols = duos.filter(d => d.pts > 0).slice(0, 6);
+  const matrix = () => `<div class="dg-mx" role="table" aria-label="Pontos de cada dupla em cada jogo" style="--n:${cols.length}">
+    <div class="mx-row mx-head" role="row"><span role="columnheader">Jogo</span>${cols.map(d => `<span role="columnheader" class="${mine(d) ? 'me' : ''}" title="${esc(d.name)}">${esc(d.name)}</span>`).join('')}</div>
+    ${played.map(({ id, entries }) => {
+      const g = GAMES[id];
+      return `<div class="mx-row" role="row" style="--h:${g.hue}"><span role="cell" class="mx-g">${icon(g.icon)}<b>${g.name}</b></span>${cols.map(d => {
+        const k = entries.findIndex(e => e.d.id === d.id), e = entries[k];
+        return `<span role="cell" class="${mine(d) ? 'me' : ''}">${e?.pts ? `<i class="mx-p r${k + 1}" title="${k + 1}º · média ${fmtAvg(g, e.v)}">${e.pts}</i>` : '<i class="mx-p">·</i>'}</span>`;
+      }).join('')}</div>`;
+    }).join('')}
+    <div class="mx-row mx-total" role="row"><span role="cell">Total</span>${cols.map(d => `<span role="cell" class="${mine(d) ? 'me' : ''}">${d.pts}</span>`).join('')}</div></div>`;
+  return `${head}<div class="duo-cols">
+    <section class="glass teams"><h2 class="comp-sub">${icon('trophy')} Classificação</h2>
+    ${rows.length ? restListHtml(rows.map(r => ({ label: `<b class="tn">${esc(r.name)}</b>`, me: mine(r), val: `${r.pts} <small>pts</small>`, pct: rows[0].pts ? r.pts / rows[0].pts : 0,
+      sub: `${esc(r.aName)} & ${esc(r.bName)} · ${r.firsts} em 1º · ${r.podiums} pódio${r.podiums === 1 ? '' : 's'}` })), 1)
       : '<p class="hint" style="text-align:left;margin:0">Ninguém formou dupla ainda. Chame um colega e escolham um nome!</p>'}
-    <details class="duo-how"><summary>Como funciona</summary><p>Cada um chama quem quiser e dá o nome que quiser à dupla. Em cada jogo, a dupla só pontua se <b>os dois</b> jogaram (depois de formada, ou desde quando o admin definiu); vale a média das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos. Vale o período escolhido em Rankings (mês ou geral).</p></details>`;
+    <details class="duo-how"><summary>Como funciona</summary><p>Cada um chama quem quiser e dá o nome que quiser à dupla. Em cada jogo, a dupla só pontua se <b>os dois</b> jogaram (depois de formada, ou desde quando o admin definiu); vale a média das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos. Vale o período escolhido em Rankings (mês ou geral).</p></details>
+    </section>
+    <section class="glass duo-games"><h2 class="comp-sub">${icon('gamepad-2')} Pontos em cada jogo</h2>
+      ${played.length ? matrix() : '<p class="hint" style="text-align:left;margin:0">Nenhuma dupla pontuou ainda: a dupla entra num jogo quando os dois jogam.</p>'}
+      ${played.length && idle.length ? `<p class="hint dg-idle">Sem dupla pontuando: ${idle.map(x => GAMES[x.id].name).join(', ')}.</p>` : ''}
+    </section></div>`;
 }
 async function duosModal() {
   if (!me) return loginModal();
   await loadSocial();
   if (!social) return duoModal();
-  const { el, close } = modal(`<div class="teams">${duosBodyHtml()}</div><button class="btn ghost" id="dsClose">Fechar</button>`, { wide: true });
-  el.querySelector('#dsClose').onclick = close;
-  el.querySelector('#duoOpen').onclick = () => { close(); duoModal(); };
+  const my = social.myDuo, cta = { none: 'Formar dupla', out: 'Convite enviado', in: 'Convite pra você!', active: 'Minha dupla' }[my.state];
+  compPage('duplas', compTitle('users', 'Duplas', `Ranking das duplas ${seasonMode === 'all' ? 'no geral' : `em ${seasonLabel().toLowerCase()}`}: os pontos de cada dupla em cada jogo.`)
+    + `<button class="btn ${my.state === 'in' ? '' : 'ghost'}" id="duoOpen">${icon('users')} <span>${cta}</span></button>`,
+    duosBodyHtml(), el => { el.querySelector('#duoOpen').onclick = () => duoModal(); });
 }
 function setDuoBadge() {
   const b = $('#duoCnt');
@@ -183,7 +397,7 @@ function setDuoBadge() {
 async function duoModal(pre = {}) {
   if (!me) return loginModal();
   await loadSocial();
-  if (!social) return modal(`<h2>${icon('users')} Dupla</h2><p>Não deu pra carregar agora. Tente de novo em instantes.</p><button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`);
+  if (!social) return modal(`<h2>${icon('users')} Dupla</h2><p>Não deu pra carregar agora. Tente de novo em instantes.</p><button class="btn" data-ok>Ok</button>`);
   const my = social.myDuo, partner = my.state === 'none' ? null : (my.aId === me.id ? my.bName : my.aName);
   let body;
   if (my.state === 'active') {
@@ -212,7 +426,7 @@ async function duoModal(pre = {}) {
   const call = async (path, bodyObj, after) => {
     const err = el.querySelector('#duoErr');
     if (err) err.textContent = '';
-    try { await api(path, { method: 'POST', body: bodyObj || {} }); await loadSocial(); setDuoBadge(); if (currentView === 'menu') refreshMenu(); after ? after() : (close(), duoModal()); }
+    try { await api(path, { method: 'POST', body: bodyObj || {} }); await loadSocial(); setDuoBadge(); if (currentView === 'menu') refreshMenu(); if (currentView === 'duplas') duosModal(); after ? after() : (close(), duoModal()); }
     catch (e) { if (err) err.textContent = e.message; else announce(e.message); }
   };
   el.querySelector('#duoForm')?.addEventListener('submit', e => { e.preventDefault(); const f = new FormData(e.target); call('api/duos', { partnerId: Number(f.get('partner')), name: f.get('name') }); });
@@ -243,47 +457,69 @@ function duelDoneHtml(d) {
     <div><b>${RESULT_TXT[d.result]}</b> contra ${esc(d.vs)} · ${g.name}<small>${d.mine != null ? fmt(g, d.mine) : '—'} × ${d.theirs != null ? fmt(g, d.theirs) : '—'}</small></div>
     ${d.vsId != null && duelGames().includes(d.game) ? `<div class="acts"><button class="btn ghost" data-rematch="${d.vsId}" data-game="${d.game}">${icon('rotate-ccw')} Revanche</button></div>` : ''}</div>`;
 }
+// números dos meus duelos (dos últimos resultados que o servidor manda), o maior rival e o pódio de quem mais ganhou
+function duelsHeadHtml() {
+  const recent = social.duels.recent, all = [...social.duels.open, ...recent];
+  const n = k => recent.filter(d => d.result === k).length, w = n('win'), l = n('lose'), e = n('draw');
+  const vs = {};
+  for (const d of all) vs[d.vs] = (vs[d.vs] || 0) + 1;
+  const [rival] = Object.entries(vs).sort((a, b) => b[1] - a[1]);
+  const rivalScore = rival && recent.filter(d => d.vs === rival[0]).reduce((s, d) => (d.result === 'win' ? [s[0] + 1, s[1]] : d.result === 'lose' ? [s[0], s[1] + 1] : s), [0, 0]);
+  const wins = Object.entries(social.duelWins || {}).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'pt-BR'));
+  const pod = wins.slice(0, 3).map(([name, c]) => ({ name, big: c, unit: c === 1 ? 'vitória' : 'vitórias', me: name === player, sub: 'em duelos' }));
+  return statTiles([['trophy', social.duelWins?.[player] || 0, 'vitórias no total', 150],
+      ['swords', recent.length ? `${w}-${e}-${l}` : '—', recent.length ? `vitórias, empates e derrotas nos últimos ${recent.length}` : 'nenhum duelo terminado', 290],
+      ['gauge', recent.length ? `${Math.round(w / recent.length * 100)}%` : '—', 'aproveitamento', 70],
+      ['target', rival ? esc(rival[0]) : '—', rival ? `maior rival · ${rivalScore[0]} a ${rivalScore[1]}` : 'maior rival', 20]])
+    + (pod.length ? podiumHtml(pod, { title: 'Quem mais ganhou duelos', ic: 'swords', note: 'vitórias somadas de todos os duelos', lead: wins.length > 1 && wins[0][1] > wins[1][1] ? `+${wins[0][1] - wins[1][1]} de vantagem` : '' }) : '');
+}
 async function duelsModal(pre = {}) {
   if (!me) return loginModal();
+  const from = currentView; // o jogo de onde veio (pra já deixar escolhido)
   await loadSocial();
-  if (!social) return modal(`<h2>${icon('swords')} Duelos</h2><p>Não deu pra carregar agora. Tente de novo em instantes.</p><button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`);
+  if (!social) return modal(`<h2>${icon('swords')} Duelos</h2><p>Não deu pra carregar agora. Tente de novo em instantes.</p><button class="btn" data-ok>Ok</button>`);
   const others = social.people.filter(p => p.id !== me.id).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
-  const defGame = pre.game && GAMES[pre.game] ? pre.game : GAMES[currentView] ? currentView : dailyGame();
+  const defGame = pre.game && GAMES[pre.game] ? pre.game : GAMES[from] && !GAMES[from].daily ? from : dailyGame();
   const wins = social.duelWins?.[player] || 0;
-  const { el, close } = modal(`<h2>${icon('swords')} Duelos</h2>
-    <p class="hint" style="text-align:left">Desafie alguém num jogo. Por 24 horas, vale a <b>melhor partida de cada um</b> naquele jogo (só conta jogar depois do desafio). Quem fizer mais leva. ${wins ? `Você já ganhou <b>${wins}</b>.` : ''}</p>
-    <div id="dOpen">${social.duels.open.length ? social.duels.open.map(duelRowHtml).join('') : `<div class="empty-state">${icon('swords')}<b>Nenhum duelo em andamento</b><span>Escolha alguém e um jogo aqui embaixo.</span></div>`}</div>
-    <form id="dForm" class="admin duel-form">
-      <label>Contra quem<select name="opp" required><option value="">Escolha…</option>${others.map(p => `<option value="${p.id}"${pre.opponent === p.name ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
-      <label>Jogo<select name="game">${duelGames().map(id => `<option value="${id}"${id === defGame ? ' selected' : ''}>${esc(GAMES[id].name)}</option>`).join('')}</select></label>
-      <p class="err" id="dErr"></p>
-      <button class="btn">${icon('swords')} Desafiar</button>
-    </form>
-    ${social.duels.recent.length ? `<h3 class="d-sub">Últimos resultados</h3><div id="dDone">${social.duels.recent.map(duelDoneHtml).join('')}</div>` : ''}
-    <button class="btn ghost" id="dClose">Fechar</button>`, { wide: true });
-  el.querySelector('#dClose').onclick = close;
-  el.querySelectorAll('[data-play]').forEach(b => b.onclick = () => { close(); play(b.dataset.play); });
-  el.querySelectorAll('[data-cancel]').forEach(b => b.onclick = async () => {
-    if (!confirm('Cancelar esse duelo? A outra pessoa é avisada.')) return;
-    try { await api(`api/duels/${b.dataset.cancel}/cancel`, { method: 'POST', body: {} }); close(); duelsModal(pre); } catch (err) { el.querySelector('#dErr').textContent = err.message; }
-  });
-  // revanche com um toque: mesmo jogo, mesma pessoa
-  el.querySelectorAll('[data-rematch]').forEach(b => b.onclick = async () => {
-    b.disabled = true; el.querySelector('#dErr').textContent = '';
-    try {
-      await api('api/duels', { method: 'POST', body: { opponentId: Number(b.dataset.rematch), game: b.dataset.game } });
-      sfx.good(); close(); duelsModal(pre);
-    } catch (err) { el.querySelector('#dErr').textContent = err.message; b.disabled = false; }
-  });
-  el.querySelector('#dForm').onsubmit = async e => {
-    e.preventDefault();
-    const f = new FormData(e.target), btn = e.target.querySelector('button');
-    btn.disabled = true; el.querySelector('#dErr').textContent = '';
-    try {
-      await api('api/duels', { method: 'POST', body: { opponentId: Number(f.get('opp')), game: f.get('game') } });
-      sfx.good(); close(); duelsModal(pre);
-    } catch (err) { el.querySelector('#dErr').textContent = err.message; btn.disabled = false; }
-  };
+  compPage('duelos', compTitle('swords', 'Duelos', `Desafie alguém num jogo: por 24 horas vale a melhor partida de cada um (só conta jogar depois do desafio).${wins ? ` Você já ganhou ${wins}.` : ''}`),
+    duelsHeadHtml() + `<div class="duel-cols">
+      <div class="duel-main">
+        <section class="glass"><h2 class="comp-sub">${icon('swords')} Em andamento</h2>
+          <div id="dOpen">${social.duels.open.length ? social.duels.open.map(duelRowHtml).join('') : `<div class="empty-state">${icon('swords')}<b>Nenhum duelo em andamento</b><span>Escolha alguém e um jogo em Novo duelo.</span></div>`}</div></section>
+        ${social.duels.recent.length ? `<section class="glass"><h2 class="comp-sub">${icon('trophy')} Últimos resultados</h2><div id="dDone">${social.duels.recent.map(duelDoneHtml).join('')}</div></section>` : ''}
+      </div>
+      <section class="glass"><h2 class="comp-sub">${icon('target')} Novo duelo</h2>
+        <form id="dForm" class="admin duel-form">
+          <label>Contra quem<select name="opp" required><option value="">Escolha…</option>${others.map(p => `<option value="${p.id}"${pre.opponent === p.name ? ' selected' : ''}>${esc(p.name)}</option>`).join('')}</select></label>
+          <label>Jogo<select name="game">${duelGames().map(id => `<option value="${id}"${id === defGame ? ' selected' : ''}>${esc(GAMES[id].name)}</option>`).join('')}</select></label>
+          <p class="err" id="dErr"></p>
+          <button class="btn">${icon('swords')} Desafiar</button>
+        </form></section>
+    </div>`, el => {
+      const err = el.querySelector('#dErr'), again = () => duelsModal(pre);
+      el.querySelectorAll('[data-play]').forEach(b => b.onclick = () => play(b.dataset.play));
+      el.querySelectorAll('[data-cancel]').forEach(b => b.onclick = async () => {
+        if (!confirm('Cancelar esse duelo? A outra pessoa é avisada.')) return;
+        try { await api(`api/duels/${b.dataset.cancel}/cancel`, { method: 'POST', body: {} }); again(); } catch (e) { err.textContent = e.message; }
+      });
+      // revanche com um toque: mesmo jogo, mesma pessoa
+      el.querySelectorAll('[data-rematch]').forEach(b => b.onclick = async () => {
+        b.disabled = true; err.textContent = '';
+        try {
+          await api('api/duels', { method: 'POST', body: { opponentId: Number(b.dataset.rematch), game: b.dataset.game } });
+          sfx.good(); again();
+        } catch (e) { err.textContent = e.message; b.disabled = false; }
+      });
+      el.querySelector('#dForm').onsubmit = async e => {
+        e.preventDefault();
+        const f = new FormData(e.target), btn = e.target.querySelector('button');
+        btn.disabled = true; err.textContent = '';
+        try {
+          await api('api/duels', { method: 'POST', body: { opponentId: Number(f.get('opp')), game: f.get('game') } });
+          sfx.good(); again();
+        } catch (e2) { err.textContent = e2.message; btn.disabled = false; }
+      };
+    });
 }
 
 /* ---------- resumo da semana (com imagem pra compartilhar) ---------- */
