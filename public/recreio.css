@@ -151,6 +151,16 @@ html[data-skin="recreio"] .rc-more { align-self: center; font-size: .9rem; }
 html[data-skin="recreio"] .rc-row .daily-head { padding: 0; margin: -2px 0 10px; background: none; border: 0; box-shadow: none; }
 html[data-skin="recreio"] .rc-track { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x proximity; padding: 6px 6px 16px; margin: 0 -6px; scrollbar-width: none; }
 html[data-skin="recreio"] .rc-track::-webkit-scrollbar { display: none; }
+/* pontas da faixa: em vez de cortar o card no seco, ele some num degradê (só do lado que ainda tem jogo) */
+@property --fade-l { syntax: '<length>'; inherits: false; initial-value: 0px; }
+@property --fade-r { syntax: '<length>'; inherits: false; initial-value: 0px; }
+html[data-skin="recreio"] .rc-track { transition: --fade-l .25s, --fade-r .25s;
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent);
+  mask-image: linear-gradient(to right, transparent, #000 var(--fade-l), #000 calc(100% - var(--fade-r)), transparent); }
+html[data-skin="recreio"] .rc-track.fade-l { --fade-l: 48px; }
+html[data-skin="recreio"] .rc-track.fade-r { --fade-r: 48px; }
+html[data-skin="recreio"] .rc-track.wrap { -webkit-mask-image: none; mask-image: none; }
+html[data-skin="recreio"] .rc-arr:disabled { opacity: .35; cursor: default; background: var(--surface); }
 /* botão Diários: só a fileira dos jogos diários, aberta em grade */
 html[data-skin="recreio"] main.only-daily > :is(.hero, #daily, #dtRemind, .rc-row:not(#row-daily)) { display: none; }
 html[data-skin="recreio"] main:not(.only-daily) > #dailyPick { display: none; }
@@ -168,6 +178,17 @@ html[data-skin="recreio"][data-mode="dark"] .rc-track .card .icon .i { color: ok
 html[data-skin="recreio"] .rc-track .card h3 { margin-top: 150px; padding: .75rem .95rem 0; border: 0; font-size: 1.06rem; font-weight: 700; letter-spacing: -0.02em; }
 html[data-skin="recreio"] .rc-track .card .rec { padding: .15rem .95rem .85rem; }
 html[data-skin="recreio"] .rc-track .card .ds-slot { padding: 0 .95rem .85rem; margin-top: -.3rem; }
+/* descrição do jogo no hover: sobe do nome num degradê da cor do card por cima da arte (nome e recorde ficam à vista) */
+html[data-skin="recreio"] .card .desc { position: absolute; inset: 0 0 auto 0; height: 150px; z-index: 1; pointer-events: none;
+  display: flex; align-items: flex-end; padding: 2.2rem .95rem .35rem; font-size: .8rem; line-height: 1.38; color: var(--text);
+  background: linear-gradient(to top, var(--surface) 0%, var(--surface) 52%, color-mix(in oklab, var(--surface) 80%, transparent) 72%, transparent);
+  opacity: 0; translate: 0 8px; transition: opacity .2s ease, translate .25s ease; }
+html[data-skin="recreio"] .card .desc > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 5; line-clamp: 5; overflow: hidden; }
+@media (hover: hover) {
+  html[data-skin="recreio"] .card:is(:hover, :focus-visible) .desc { opacity: 1; translate: 0 0; }
+}
+html[data-skin="recreio"] .tilt-on .card .desc { transform: translateZ(12px); }
+@media (prefers-reduced-motion: reduce) { html[data-skin="recreio"] .card .desc { translate: none; } }
 html[data-skin="recreio"] .rc-track .card:hover { border-color: oklch(60% .14 var(--h) / .5); box-shadow: 0 14px 30px oklch(30% .1 var(--h) / .16); }
 html[data-skin="recreio"] .rc-track .card.is-daily { border-color: oklch(75% .15 85 / .7); }
 html[data-skin="recreio"][data-mode="light"] .card .rec b:is(.fr-bronze, .fr-silver, .fr-gold) { color: var(--text); text-shadow: none; }
@@ -223,7 +244,9 @@ html[data-skin="recreio"][data-mode="light"] .acct-btn .av { color: #fff; }
   html[data-skin="recreio"] .rc-track { gap: 12px; margin: 0 -16px; padding: 4px 16px 14px; scroll-padding-inline: 16px; }
   html[data-skin="recreio"] .rc-track.wrap { grid-template-columns: 1fr 1fr; margin: 0; padding: 4px 0 14px; }
   html[data-skin="recreio"] .rc-track .card { flex-basis: 150px; }
-  html[data-skin="recreio"] .rc-track .card::before, html[data-skin="recreio"] .rc-track .card .icon { height: 118px; }
+  html[data-skin="recreio"] .rc-track .card::before, html[data-skin="recreio"] .rc-track .card .icon, html[data-skin="recreio"] .card .desc { height: 118px; }
+  html[data-skin="recreio"] .card .desc { padding: 1.6rem .75rem .3rem; font-size: .74rem; }
+  html[data-skin="recreio"] .card .desc > span { -webkit-line-clamp: 4; line-clamp: 4; }
   html[data-skin="recreio"] .rc-track .card .z3d { top: -22px; }
   html[data-skin="recreio"] .rc-track .card h3 { margin-top: 118px; padding: .6rem .75rem 0; font-size: .95rem; }
   html[data-skin="recreio"] .rc-track .card .rec { padding: .1rem .75rem .7rem; }

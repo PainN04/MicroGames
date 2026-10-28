@@ -176,16 +176,30 @@ function menuHtml() {
     ${GAME_CATS.map(([key, label, ic]) => row(key, label, ic, catOrder(key))).join('')}`;
 }
 // depois de desenhar o menu: setas e "Ver todos" de cada fileira
+let rowEdges = [];
+addEventListener('resize', () => rowEdges.forEach(f => f()));
 function bindMenuRows() {
+  rowEdges = [];
   main.querySelectorAll('.rc-row').forEach(sec => {
-    const track = sec.querySelector('.rc-track'), more = sec.querySelector('.rc-more');
+    const track = sec.querySelector('.rc-track'), more = sec.querySelector('.rc-more'), arrs = sec.querySelectorAll('.rc-arr');
+    // bordas da faixa somem num degradê só do lado que ainda tem jogo pra ver; nas pontas, a seta apaga
+    const edges = () => {
+      const max = track.scrollWidth - track.clientWidth, x = track.scrollLeft;
+      track.classList.toggle('fade-l', x > 12); // o snap pode parar uns px depois do 0
+      track.classList.toggle('fade-r', x < max - 12);
+      arrs[0].disabled = x <= 12; arrs[1].disabled = x >= max - 12;
+    };
+    track.addEventListener('scroll', edges, { passive: true });
+    rowEdges.push(edges);
     more.onclick = () => {
       const open = track.classList.toggle('wrap');
       more.setAttribute('aria-expanded', open);
       more.textContent = open ? 'Ver menos' : 'Ver todos';
       sec.classList.toggle('open', open);
+      edges();
     };
-    sec.querySelectorAll('.rc-arr').forEach(b => b.onclick = () => track.scrollBy({ left: b.dataset.dir * track.clientWidth * 0.8, behavior: reduced ? 'auto' : 'smooth' }));
+    arrs.forEach(b => b.onclick = () => track.scrollBy({ left: b.dataset.dir * track.clientWidth * 0.8, behavior: reduced ? 'auto' : 'smooth' }));
+    edges();
   });
   const pp = $('#pickPlay');
   if (pp) pp.onclick = () => play(dailyPick.id);
