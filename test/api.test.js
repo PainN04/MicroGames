@@ -639,6 +639,16 @@ test('campo minado: vencer em menos de 1s vale (sem tempo mínimo), mas acima de
   assert.equal((await play(bia, 'minado', -1)).status, 422);
 });
 
+test('jogos de cronômetro (Mira, Números, Campo Minado): o tempo dito não passa do tempo que a partida ficou aberta', async () => {
+  const bia = await login('bia', 'senha-bia-123');
+  for (const game of ['mira', 'numeros', 'minado']) {
+    const p = await openPlay(bia, game, 10_000); // aberta há 10s
+    const r = await bia('/api/scores', { method: 'POST', body: { game, score: 90, play: p.id } });
+    assert.equal(r.status, 422, `${game}: 90s numa partida de 10s`);
+    assert.equal((await play(bia, game, 12)).status, 201, `${game}: partida aberta há 30 min vale 12s`);
+  }
+});
+
 test('jogos novos entram no sorteio do dia só a partir do lançamento (dias antigos não mudam)', () => {
   const { scheduledGame, DAILY_SINCE } = require('../public/js/daily.js');
   const { GAMES } = require('../lib/rules');

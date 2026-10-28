@@ -13,19 +13,17 @@
 <!-- ?v=N: o navegador guarda o ícone da aba pelo endereço; troque o número sempre que mudar a marca -->
 <link rel="icon" href="favicon.ico?v=7" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="icons/icon.svg?v=7">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=optional" rel="stylesheet">
+<link rel="preload" href="fonts/dm-sans-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/bricolage-grotesque-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
 <!-- modo leve (js/perf.js) já no primeiro desenho: sem isso o PC fraco engasga com o fundo animado antes do JS carregar -->
 <script>try{(function(s){var p=s.getItem('mg_perf');if(p==='lite'||(p!=='full'&&s.getItem('mg_perf_auto')==='lite'))document.documentElement.classList.add('lite')})(localStorage)}catch(e){}</script>
 <!-- tema claro/escuro (mg_mode) e menu lateral recolhido (mg_side) também antes do CSS, sem piscar. Sem escolha salva, segue o sistema -->
 <script>try{(function(s,d){var m=s.getItem('mg_mode');if(m!=='light'&&m!=='dark')m=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';d.dataset.mode=m;if(s.getItem('mg_side')==='mini')d.classList.add('side-mini')})(localStorage,document.documentElement)}catch(e){}</script>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=DM+Sans:opsz,wght@9..40,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fonts/fonts.css">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="recreio.css">
 </head>
 <body>
-<div class="backdrop" aria-hidden="true"><i></i><i></i><i></i></div>
 <a class="skip" href="#main">Pular para o conteúdo</a>
 <header>
   <button class="logo" id="home" aria-label="MicroGame: voltar ao menu"><span class="wm">Micro<span>Game</span></span></button>

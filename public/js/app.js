@@ -519,7 +519,7 @@ function setUnread(n) {
 }
 async function openNotes() {
   let notes = [];
-  try { ({ notes } = await api('api/notifications')); } catch (err) { return modal(`<h2>Avisos</h2><p class="err">${esc(err.message)}</p><button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`); }
+  try { ({ notes } = await api('api/notifications')); } catch (err) { return modal(`<h2>Avisos</h2><p class="err">${esc(err.message)}</p><button class="btn" data-ok>Ok</button>`); }
   const rows = notes.filter(noteKnown);
   const { el, close } = modal(`<h2>${icon('bell')} Avisos</h2>
     ${rows.length ? `<div class="note-list">${rows.map((n, i) => `<button class="note-row${n.unread ? ' new' : ''}" data-i="${i}">
@@ -576,6 +576,8 @@ function modal(html, { locked = false, wide = false } = {}) {
   const ttl = m.querySelector('h1, h2, h3');
   if (ttl) { ttl.id ||= 'modalTitle'; m.firstElementChild.setAttribute('aria-labelledby', ttl.id); }
   const close = () => m.remove();
+  // botão "Ok" que só fecha: data-ok no lugar de onclick inline (o CSP do site não deixa rodar script inline)
+  m.addEventListener('click', e => { if (e.target.closest('[data-ok]')) close(); });
   if (!locked) {
     m.addEventListener('click', e => { if (e.target === m) close(); });
     // no documento (não só na janela): trocar de aba dentro dela redesenha o botão focado e o foco volta pro <body>
@@ -633,7 +635,7 @@ async function saveUnsaved() {
   const g = GAMES[gameId];
   modal(`<h2>${status === 'ok' || status === 'queued' ? `${icon('circle-check')} Resultado salvo` : `${icon('triangle-alert')} Não deu pra salvar`}</h2>
     <p>${g.name}: <b>${fmt(g, score)}</b>${status === 'ok' || status === 'queued' ? ' — já está no ranking.' : ' — ' + esc(status)}</p>
-    <button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`);
+    <button class="btn" data-ok>Ok</button>`);
 }
 
 async function afterLogin(user) {

@@ -102,7 +102,7 @@ function pickModal() {
       flair.picks[tomorrow] = pick;
       try { localStorage.setItem('mg_flair', JSON.stringify(flair)); } catch {}
       close(); refreshPickRow();
-      modal(`<h2>${icon('circle-check')} Combinado!</h2><p>Amanhã o desafio do dia é <b>${GAMES[pick.game].name}</b>, escolha sua.</p><button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`);
+      modal(`<h2>${icon('circle-check')} Combinado!</h2><p>Amanhã o desafio do dia é <b>${GAMES[pick.game].name}</b>, escolha sua.</p><button class="btn" data-ok>Ok</button>`);
     } catch (err) { el.querySelector('#pickErr').textContent = err.message; }
   });
 }
