@@ -718,7 +718,7 @@ function gatePillHtml() {
 function gatePopHtml() {
   if (gate.site) {
     return `<b>${icon('lock')} Site em manutenção</b>
-      <p>Os jogos estão fechados pra todo mundo até o admin liberar.</p>${siteReason()}
+      <p>Os jogos estão fechados pra todo mundo ${untilText(gate.site.until)}.</p>${siteReason()}
       <div class="acts"><button class="btn ghost" id="gateRefresh">${icon('refresh-cw')} Atualizar</button></div>`;
   }
   if (gate.manual) {
@@ -791,7 +791,7 @@ function renderSiteLock() {
   if (!bar) return;
   bar.hidden = !gate?.site;
   if (gate?.site) bar.innerHTML = `<span class="ic">${icon('lock')}</span><span class="tx"><b>Site em manutenção</b>
-    <span>Os jogos estão fechados pra todo mundo até o admin liberar.${gate.site.reason ? ` Motivo: ${esc(gate.site.reason)}` : ''}</span></span>`;
+    <span>Os jogos estão fechados pra todo mundo ${untilText(gate.site.until)}.${gate.site.reason ? ` Motivo: ${esc(gate.site.reason)}` : ''}</span></span>`;
 }
 
 function ticketsTable(tickets) {
@@ -804,7 +804,7 @@ function gateDialog() {
   if (!gate) return;
   if (gate.site) {
     const { el, close } = modal(`<h2>${icon('lock')} Site em manutenção</h2>
-      <p>Os jogos estão fechados pra todo mundo agora. Assim que o admin liberar, é só voltar.</p>${siteReason()}
+      <p>Os jogos estão fechados pra todo mundo ${untilText(gate.site.until)}. Assim que liberar, é só voltar.</p>${siteReason()}
       <button class="btn" id="gclose">Ok</button>`);
     return (el.querySelector('#gclose').onclick = close);
   }
