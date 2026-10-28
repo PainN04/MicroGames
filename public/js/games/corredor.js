@@ -362,39 +362,96 @@ GAMES.corredor = {
       });
 
       // ---------- urubu (de frente pro corredor) ----------
-      // 3 quadros de asa: 0 = em cima, 1 = meio, 2 = embaixo. Centro do corpo em (30, 24).
-      // cinza-azulado frio + borda clara: não some no céu da noite nem se confunde com a areia e as mesas
-      const VK = '#1c2230';
-      const vulture = (c, tipY) => {
-        c.translate(30, 24);
-        const wing = (dy, fill, under) => {
-          c.beginPath(); c.moveTo(-4, -2);
-          c.quadraticCurveTo(2, tipY * 0.6 + dy - 3, 6, tipY + dy);
-          for (let k = 0; k < 3; k++) { const fx = 8 + k * 3.2, fy = tipY + dy + (tipY < 0 ? 2 : -2) * k; c.lineTo(fx, fy); c.lineTo(fx + 1.4, fy + (tipY < 0 ? 4 : -4)); }
-          c.quadraticCurveTo(14, tipY * 0.35 + dy, 11, 0); c.closePath();
-          paint(c, fill, VK, 1.1);
-          if (under) { c.save(); c.clip(); c.strokeStyle = 'rgba(225,235,250,.9)'; c.lineWidth = 2.6; c.beginPath(); c.moveTo(9, 0); c.quadraticCurveTo(13, tipY * 0.4, 12, tipY + 1); c.stroke(); c.restore(); }
+      // 3 quadros de asa: 0 = em cima, 1 = planando, 2 = embaixo. Corpo no centro do canvas 70x70.
+      // Direção de arte: silhueta clássica de urubu (asa larga com as penas da ponta abertas como dedos, rabo em leque,
+      // cabeça careca vermelha), corpo ameixa-escuro com penas de voo prateadas (contraste dentro do próprio desenho)
+      // e uma borda creme em volta: lê bem no céu da noite, no pôr do sol e na areia, e não lembra o corredor azul.
+      const VK = INK;
+      // asas desenhadas à mão por quadro: ombro, punho, pontas dos 5 "dedos" e onde a borda de trás encontra o corpo
+      const WINGS = [
+        { sh: [-2, -3], wr: [1, -16], tips: [[-2, -27], [3, -29.5], [8, -28.5], [12, -25], [15, -20.5]], end: [12, -3] },
+        { sh: [-2, -3], wr: [9, -9], tips: [[19, -15.5], [23, -13.5], [26, -10], [26.5, -6], [24.5, -2.5]], end: [11, 2] },
+        { sh: [-2, -1], wr: [2, 12], tips: [[-1, 22.5], [4, 25], [9, 24.5], [13, 21.5], [15.5, 17]], end: [12, 1] },
+      ];
+      const vulture = (c, fr) => {
+        c.translate(35, 35);
+        const mix = (p, q, t) => [p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t];
+        const wing = (off, far) => {
+          const w = WINGS[fr], P = pt => [pt[0] + off[0], pt[1] + off[1]];
+          const S0 = P(w.sh), Wr = P(w.wr), E = P(w.end), T = w.tips.map(P);
+          // penas de voo: borda da frente até o punho, dedos abertos na ponta, borda de trás em escamas até o corpo
+          c.beginPath(); c.moveTo(S0[0], S0[1]);
+          const lead = mix(S0, Wr, 0.5);
+          c.quadraticCurveTo(lead[0] - (Wr[1] - S0[1]) * 0.12, lead[1] + (Wr[0] - S0[0]) * 0.12, Wr[0], Wr[1]);
+          let prev = Wr;
+          T.forEach((t, k) => { // cada dedo com a ponta arredondada
+            const nt = k < T.length - 1 ? mix(mix(t, T[k + 1], 0.5), Wr, 0.24) : null, a0 = mix(prev, t, 0.75);
+            c.lineTo(a0[0], a0[1]);
+            const b0 = nt ? mix(t, nt, 0.3) : t; c.quadraticCurveTo(t[0], t[1], b0[0], b0[1]);
+            if (nt) c.lineTo(nt[0], nt[1]);
+            prev = nt || t;
+          });
+          const last = T[T.length - 1];
+          for (let j = 1; j <= 4; j++) { const p0 = mix(last, E, (j - 1) / 4), p1 = mix(last, E, j / 4), m = mix(p0, p1, 0.5), dx = p1[0] - p0[0], dy = p1[1] - p0[1], l = Math.hypot(dx, dy) || 1;
+            const side = (E[0] - Wr[0]) * dy - (E[1] - Wr[1]) * dx > 0 ? 1 : -1;
+            c.quadraticCurveTo(m[0] + dy / l * 2 * side, m[1] - dx / l * 2 * side, p1[0], p1[1]); }
+          c.closePath();
+          const tc = mix(T[0], T[4], 0.5);
+          paint(c, lin(c, S0[0], S0[1], tc[0], tc[1], far ? [[0, '#7d7690'], [1, '#a9a2bd']] : [[0, '#c4bed6'], [1, '#f6f3fb']]), VK, 1.1);
+          // riscos entre as penas
+          c.strokeStyle = far ? 'rgba(50,40,70,.45)' : 'rgba(90,80,120,.45)'; c.lineWidth = 0.7;
+          T.slice(0, 4).forEach((t, k) => { const nt = mix(mix(t, T[k + 1], 0.5), Wr, 0.24), a0 = mix(nt, Wr, 0.6); c.beginPath(); c.moveTo(a0[0], a0[1]); c.lineTo(nt[0], nt[1]); c.stroke(); });
+          for (let j = 1; j < 4; j++) { const e = mix(last, E, j / 4), a0 = mix(e, mix(S0, Wr, 0.5 + j * 0.1), 0.45); c.beginPath(); c.moveTo(a0[0], a0[1]); c.lineTo(e[0], e[1]); c.stroke(); }
+          // coberteiras escuras: do ombro ao punho, terminando em escamas no meio da asa
+          let px = Wr[1] - S0[1], py = S0[0] - Wr[0]; const pl = Math.hypot(px, py); px /= pl; py /= pl;
+          if ((E[0] - S0[0]) * px + (E[1] - S0[1]) * py < 0) { px = -px; py = -py; } // aponta pro lado de trás da asa
+          const C1 = [Wr[0] + px * 7 + (Wr[0] - S0[0]) * 0.12, Wr[1] + py * 7 + (Wr[1] - S0[1]) * 0.12], C3 = [S0[0] + px * 9.5, S0[1] + py * 9.5];
+          c.beginPath(); c.moveTo(S0[0], S0[1]);
+          c.quadraticCurveTo(lead[0] - (Wr[1] - S0[1]) * 0.12, lead[1] + (Wr[0] - S0[0]) * 0.12, Wr[0], Wr[1]);
+          c.quadraticCurveTo(Wr[0] + px * 1.5 + (Wr[0] - S0[0]) * 0.15, Wr[1] + py * 1.5 + (Wr[1] - S0[1]) * 0.15, C1[0], C1[1]);
+          for (let j = 1; j <= 4; j++) { const p0 = mix(C1, C3, (j - 1) / 4), p1 = mix(C1, C3, j / 4), m = mix(p0, p1, 0.5); c.quadraticCurveTo(m[0] + px * 2, m[1] + py * 2, p1[0], p1[1]); }
+          c.closePath();
+          paint(c, far ? '#3a3044' : lin(c, S0[0], S0[1], C3[0], C3[1], [[0, '#8a79a0'], [1, '#4f405f']]), VK, 1.1);
+          if (!far) { const h0 = mix(S0, Wr, 0.15), h1 = mix(S0, Wr, 0.85); c.strokeStyle = 'rgba(240,230,255,.55)'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(h0[0] + 0.8, h0[1] + 0.3); c.lineTo(h1[0] + 0.8, h1[1] + 0.3); c.stroke(); }
         };
-        wing(-1, '#3c4658'); // asa de trás
-        c.beginPath(); c.moveTo(13, -3); c.lineTo(25, -2); c.lineTo(24, 2); c.lineTo(13, 3); c.closePath(); paint(c, '#46516a', VK, 1.1); // rabo
-        ell(c, 3, 0, 13.5, 6.8); paint(c, lin(c, 0, -7, 0, 7, [[0, '#7d8aa6'], [1, '#3a4358']]), VK, 1.2);
-        wing(1, lin(c, 0, tipY, 0, 0, [[0, '#465270'], [1, '#7a88a8']]), true);
-        // gola branca fofinha
-        c.beginPath(); for (let k = 0; k < 6; k++) c.arc(-9 + Math.cos(k) * 2.5, -1.5 + Math.sin(k * 1.3) * 2.5, 2.6, 0, TAU); paint(c, '#efe7dc', null);
-        // cabeça careca e bico curvo
-        c.beginPath(); c.moveTo(-10, -2); c.quadraticCurveTo(-13, -6, -15, -6); c.lineTo(-13, -1); c.closePath(); paint(c, '#d77468', VK, 1);
-        ell(c, -16, -6, 4.6, 4.1); paint(c, rad(c, -17, -7.5, 0.5, 5, [[0, '#f3a196'], [1, '#c45e57']]), VK, 1.1);
-        c.beginPath(); c.moveTo(-19.5, -7.5); c.quadraticCurveTo(-25, -7, -25.5, -3.5); c.quadraticCurveTo(-23, -4.6, -20, -4); c.closePath(); paint(c, '#f1e2c4', VK, 1);
-        ell(c, -17, -7, 1.5, 1.5); c.fillStyle = '#fff'; c.fill(); ell(c, -17.4, -7, 0.8, 0.8); c.fillStyle = VK; c.fill();
+        wing([2.5, -0.5], true); // asa de trás
+        // rabo em leque
+        [[-0.28, '#4a3e58'], [0.32, '#4a3e58'], [0.02, '#5d4f6d']].forEach(([a, f]) => feather(c, 10, 0.5, 10 + Math.cos(a) * 13, 0.5 + Math.sin(a) * 13, 3.4, f));
+        // corpo
+        ell(c, 2, 0.5, 12.5, 7, 0.06); paint(c, lin(c, 0, -7, 0, 8, [[0, '#7c6c88'], [0.5, '#54465f'], [1, '#2f2638']]), VK, 1.2);
+        c.save(); ell(c, 2, 0.5, 12.5, 7, 0.06); c.clip(); c.strokeStyle = 'rgba(225,215,240,.28)'; c.lineWidth = 0.8;
+        [[-1, -2], [4, -3], [8, -1], [2, 2], [7, 3]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 2.2, 0.2, Math.PI - 0.2); c.stroke(); });
+        c.restore();
+        // pés recolhidos
+        c.strokeStyle = '#e9b5a6'; c.lineWidth = 1.6; c.lineCap = 'round';
+        c.beginPath(); c.moveTo(5, 6); c.lineTo(9, 8.2); c.moveTo(7.5, 5.5); c.lineTo(11, 7.4); c.stroke(); c.lineCap = 'butt';
+        wing([0, 0], false);
+        // gola creme fofinha
+        c.beginPath(); for (let k = 0; k < 7; k++) c.arc(-9 + Math.cos(k * 0.9) * 2.6, -2 + Math.sin(k * 0.9) * 2.4, 2.5, 0, TAU);
+        paint(c, rad(c, -9, -3, 0.5, 5, [[0, '#fffaf0'], [1, '#e2d6c6']]), null);
+        // pescoço e cabeça careca, com rugas
+        c.beginPath(); c.moveTo(-10, -2.5); c.quadraticCurveTo(-13, -7, -16, -7.5); c.lineTo(-14.5, -2.5); c.closePath(); paint(c, '#d46a5f', VK, 1);
+        ell(c, -17, -7.5, 4.8, 4.2, -0.15); paint(c, rad(c, -18, -9, 0.5, 5.2, [[0, '#ffb3a4'], [0.6, '#e2776b'], [1, '#b9504b']]), VK, 1.1);
+        c.strokeStyle = 'rgba(140,40,40,.55)'; c.lineWidth = 0.7;
+        c.beginPath(); c.moveTo(-15, -10); c.quadraticCurveTo(-14, -8, -15, -6); c.moveTo(-13.6, -9); c.quadraticCurveTo(-12.8, -7.5, -13.6, -6); c.stroke();
+        // bico curvo cor de marfim, ponta escura
+        c.beginPath(); c.moveTo(-20.6, -9.2); c.quadraticCurveTo(-26, -9, -27, -5.4); c.quadraticCurveTo(-24.4, -6.4, -21, -5.6); c.closePath(); paint(c, '#f4e6c8', VK, 1);
+        c.beginPath(); c.moveTo(-25.4, -7.6); c.quadraticCurveTo(-26.8, -6.8, -27, -5.4); c.lineTo(-25.2, -6); c.closePath(); c.fillStyle = '#6b5a4a'; c.fill();
+        ell(c, -21.3, -7.6, 0.8, 0.5); c.fillStyle = '#7a3a36'; c.fill(); // narina
+        // olho com brilho e sobrancelha brava
+        ell(c, -18.2, -8.8, 1.7, 1.8); paint(c, '#fff', VK, 0.8);
+        ell(c, -18.7, -8.7, 0.95, 1.05); c.fillStyle = VK; c.fill();
+        ell(c, -18.4, -9.3, 0.35, 0.35); c.fillStyle = '#fff'; c.fill();
+        c.strokeStyle = VK; c.lineWidth = 1.1; c.beginPath(); c.moveTo(-20.4, -11.2); c.lineTo(-16.4, -10.2); c.stroke();
       };
-      [-20, -3, 15].forEach((tipY, fr) => tex('cr_vul' + fr, 60, 50, c => {
-        // desenha num canvas à parte e carimba a silhueta clara em volta antes (borda de "adesivo")
-        const art = document.createElement('canvas'); art.width = 60 * R; art.height = 50 * R;
-        const a = art.getContext('2d'); a.scale(R, R); vulture(a, tipY);
+      [0, 1, 2].forEach(fr => tex('cr_vul' + fr, 70, 70, c => {
+        // desenha num canvas à parte e carimba a silhueta creme em volta antes (borda de "adesivo")
+        const art = document.createElement('canvas'); art.width = 70 * R; art.height = 70 * R;
+        const a = art.getContext('2d'); a.scale(R, R); vulture(a, fr);
         const halo = document.createElement('canvas'); halo.width = art.width; halo.height = art.height;
-        const h = halo.getContext('2d'); h.drawImage(art, 0, 0); h.globalCompositeOperation = 'source-in'; h.fillStyle = '#fff6e6'; h.fillRect(0, 0, halo.width, halo.height);
+        const h = halo.getContext('2d'); h.drawImage(art, 0, 0); h.globalCompositeOperation = 'source-in'; h.fillStyle = '#fff4e2'; h.fillRect(0, 0, halo.width, halo.height);
         c.save(); c.setTransform(1, 0, 0, 1, 0, 0);
-        for (let k = 0; k < 12; k++) c.drawImage(halo, Math.cos(k * TAU / 12) * 1.6 * R, Math.sin(k * TAU / 12) * 1.6 * R);
+        for (let k = 0; k < 12; k++) c.drawImage(halo, Math.cos(k * TAU / 12) * 1.5 * R, Math.sin(k * TAU / 12) * 1.5 * R);
         c.drawImage(art, 0, 0); c.restore();
       }));
 
