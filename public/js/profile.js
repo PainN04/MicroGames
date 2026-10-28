@@ -194,7 +194,7 @@ function renderProfile(name) {
     resumo: () => kpis + showcaseHtml(name, s) + chart,
     conquistas: () => `<section class="glass"><h2>${icon('award')} Conquistas <small class="hint">${unlocked}/${ACHIEVEMENTS.length}</small></h2>${achievementsHtml(s)}</section>`,
     recordes: () => `<section class="glass"><h2>${icon('trophy')} Recordes</h2>
-      <table class="tickets users prof-table"><thead><tr><th>Jogo</th><th>Melhor</th><th>Geral</th><th>${monthName(monthKey(now))}</th><th>Partidas</th></tr></thead><tbody>${rows}</tbody></table></section>`,
+      <table class="tickets users prof-table"><thead><tr><th>Jogo</th><th>Melhor</th><th>Geral</th><th>${monthName(monthKey(Date.now()))}</th><th>Partidas</th></tr></thead><tbody>${rows}</tbody></table></section>`,
     personalizar: () => lookHtml(s),
   }[profTab] || (() => '');
   box.innerHTML = profTabsHtml(own) + body();

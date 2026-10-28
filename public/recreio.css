@@ -537,3 +537,15 @@ html[data-skin="recreio"] .tstand > .t-table + .hint { margin-top: var(--space-s
 }
 html[data-skin="recreio"] .teams .rest li { grid-template-columns: auto minmax(0, 1fr) auto; }
 html[data-skin="recreio"] .teams .rs-bar { display: none; }
+
+/* ----- números do Resumo no perfil: rótulo em cima, número grande inteiro, detalhe embaixo ----- */
+/* (os .kpi das telas de competição são em linha com ícone; aqui o número precisa da largura toda do cartão) */
+html[data-skin="recreio"] .profile .kpis { grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
+html[data-skin="recreio"] .profile .kpi { flex-direction: column; align-items: flex-start; justify-content: center; gap: 2px; }
+html[data-skin="recreio"] .profile .kpi .v { max-width: 100%; overflow: visible; text-overflow: clip; font-variant-numeric: tabular-nums; }
+html[data-skin="recreio"] .profile .kpi .v small { font-size: .5em; font-weight: 600; color: var(--muted); }
+html[data-skin="recreio"] .profile .kpi .d, html[data-skin="recreio"] .profile .kpi > span:last-child { display: block; line-height: 1.3; }
+@media (max-width: 900px) {
+  html[data-skin="recreio"] .profile .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html[data-skin="recreio"] .profile .kpi .v { font-size: var(--fs-lg, 1.5rem); }
+}
