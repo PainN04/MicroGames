@@ -27,10 +27,6 @@ const toggleMode = () => setMode(modeNow() === 'dark' ? 'light' : 'dark');
 function paintMode() {
   const dark = modeNow() === 'dark';
   $('#mDark').setAttribute('aria-checked', dark);
-  const b = $('#modeBtn');
-  b.innerHTML = icon(dark ? 'sun' : 'moon');
-  b.setAttribute('aria-label', dark ? 'Tema claro' : 'Tema escuro');
-  b.title = b.getAttribute('aria-label');
   $('meta[name="theme-color"]')?.setAttribute('content', dark ? '#16141f' : '#f6f1e7'); // barra do navegador no celular
 }
 
@@ -76,9 +72,7 @@ $('#sideFold').onclick = () => {
   if (currentView !== 'menu') setTimeout(fitGame, 320); // o jogo ganha (ou perde) a largura do menu, depois da animação
 };
 paintFold();
-// botão de claro/escuro ao lado do som (e a chave "Tema escuro" no menu da conta)
-$('#mute').insertAdjacentHTML('afterend', '<button class="btn ghost icon-btn" id="modeBtn"></button>');
-$('#modeBtn').onclick = toggleMode;
+// claro/escuro e som ficam só no menu da conta (chaves "Tema escuro" e "Som")
 $('#mDark').onclick = toggleMode;
 paintMode();
 

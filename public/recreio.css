@@ -56,6 +56,7 @@ html[data-skin="recreio"] .link-btn { color: var(--primary); font-weight: 700; }
   /* conta, som e tema no pé do menu */
   html[data-skin="recreio"] .who { flex-wrap: wrap; gap: 6px; align-items: center; }
   html[data-skin="recreio"] .who .acct { order: -1; width: 100%; }
+  html[data-skin="recreio"] .who .gate-wrap { order: -2; } /* fila de tickets em cima da conta */
   html[data-skin="recreio"] .acct-btn { width: 100%; justify-content: flex-start; min-height: 52px; padding: 0 .8rem 0 .45rem; border-radius: 16px; background: var(--surface-2); }
   html[data-skin="recreio"] .acct-btn .chev { margin-left: auto; }
   html[data-skin="recreio"] .acct-menu { top: auto; bottom: calc(100% + 8px); left: 0; right: auto; }
