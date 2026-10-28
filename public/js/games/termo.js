@@ -23,8 +23,29 @@ function termoStats(name, today) {
   ];
 }
 
+// Edita a linha atual do Termo (e do Dueto, Quarteto e Octeto): cells tem os quadrados ('' = vazio) e sel o escolhido.
+// Tocar num quadrado escolhe onde a próxima letra entra; escrever põe a letra ali e pula pro próximo vazio.
+function termoEdit({ cells, sel }, k) {
+  const n = cells.length, c = cells.slice();
+  if (k === '←') return { cells: c, sel: Math.max(0, sel - 1) };
+  if (k === '→') return { cells: c, sel: Math.min(n - 1, sel + 1) };
+  if (k === 'home') return { cells: c, sel: 0 };
+  if (k === 'end') return { cells: c, sel: n - 1 };
+  if (k === 'del') { c[sel] = ''; return { cells: c, sel }; }
+  if (k === '⌫') {
+    if (c[sel]) { c[sel] = ''; return { cells: c, sel }; }
+    const p = Math.max(0, sel - 1); c[p] = ''; return { cells: c, sel: p };
+  }
+  if (!/^[A-Z]$/.test(k)) return { cells: c, sel };
+  c[sel] = k;
+  for (let d = 1; d < n; d++) { const i = (sel + d) % n; if (!c[i]) return { cells: c, sel: i }; }
+  return { cells: c, sel: Math.min(n - 1, sel + 1) };
+}
+// Teclas do teclado físico que mexem no quadrado escolhido (setas, Home, End, Delete).
+const TERMO_NAV = { ArrowLeft: '←', ArrowRight: '→', Home: 'home', End: 'end', Delete: 'del' };
+
 GAMES.termo = {
-  name: 'Termo', icon: 'termo', hue: 150, daily: true, desc: 'A palavra do dia: 5 letras, 6 tentativas, igual pra todo mundo. Verde = letra certa no lugar certo, amarelo = existe em outro lugar, cinza = não tem. Só vale a primeira partida de cada dia. Acertar rápido e em poucas tentativas rende mais pontos.',
+  name: 'Termo', icon: 'termo', hue: 150, daily: true, desc: 'A palavra do dia: 5 letras, 6 tentativas, igual pra todo mundo. Verde = letra certa no lugar certo, amarelo = existe em outro lugar, cinza = não tem. Toque em qualquer quadrado da linha pra pôr a letra ali. Só vale a primeira partida de cada dia. Acertar rápido e em poucas tentativas rende mais pontos.',
   better: 'high', unit: 'pontos',
   start(el, done) {
     // a palavra do dia fica no servidor: cada tentativa vai pra lá e volta com as cores (a palavra só aparece no fim)
@@ -38,7 +59,8 @@ GAMES.termo = {
     const save = () => { try { localStorage.setItem(KEY(), JSON.stringify(st)); } catch {} };
     const fromView = v => { view = v; day = v.day; st = { guesses: v.guesses.map(g => g.guess), over: v.over, won: v.won, score: v.score, sent: true }; save(); };
 
-    let cur = '', busy = false, timers = [];
+    let cells = Array(LEN).fill(''), sel = 0, busy = false, timers = [];
+    const cur = () => cells.join('');
     const tryNo = () => (st.over ? st.guesses.length : Math.min(st.guesses.length + 1, ROWS));
     el.innerHTML = `<div class="hud"><span class="stat">Tentativa<b id="n">1/${ROWS}</b></span><span class="stat">Palavra nº<b id="dn">…</b></span></div>
       <div class="tm" id="tm" aria-live="polite">${Array.from({ length: ROWS * LEN }, () => '<div class="tm-t"></div>').join('')}</div>
@@ -62,7 +84,13 @@ GAMES.termo = {
     };
     const showCur = () => {
       const r = st.guesses.length;
-      for (let i = 0; i < LEN; i++) { const t = tiles[r * LEN + i]; if (!t) return; t.textContent = cur[i] || ''; t.classList.toggle('on', !!cur[i]); }
+      tiles.forEach(t => { t.classList.remove('sel'); t.removeAttribute('role'); t.removeAttribute('aria-label'); });
+      if (st.over) return;
+      for (let i = 0; i < LEN; i++) {
+        const t = tiles[r * LEN + i]; if (!t) return;
+        t.textContent = cells[i]; t.classList.toggle('on', !!cells[i]); t.classList.toggle('sel', i === sel);
+        t.setAttribute('role', 'button'); t.setAttribute('aria-label', `Quadrado ${i + 1}${cells[i] ? ': ' + cells[i] : ', vazio'}`);
+      }
     };
     const shareText = () => `Termo MicroGame ${st.won ? st.guesses.length : 'X'}/${ROWS}\n` + view.guesses.map(g => g.res.map(c => EMOJI[c]).join('')).join('\n');
     const endPanel = () => {
@@ -94,15 +122,15 @@ GAMES.termo = {
 
     const submit = async () => {
       if (busy) return;
-      if (cur.length < LEN) { say('Faltam letras'); shake(); return; }
-      const guess = cur;
+      if (cells.some(c => !c)) { say('Faltam letras'); shake(); return; }
+      const guess = cur();
       busy = true;
       let v;
       try { v = await api('api/termo/guess', { method: 'POST', body: { guess } }); }
       catch (err) { if (!alive) return; busy = false; say(err.message); if (err.status === 422 || err.status === 400) shake(); return; }
       if (!alive) return;
       const r = st.guesses.length;
-      fromView(v); cur = '';
+      fromView(v); cells = Array(LEN).fill(''); sel = 0; showCur();
       if (v.saved) saved = v.saved;
       paintRow(r, v.guesses[r], true);
       say('');
@@ -115,22 +143,28 @@ GAMES.termo = {
           timers.push(setTimeout(send, 900));
         }
         else if (st.over) { sfx.bad(); endPanel(); }
-        else busy = false;
+        else { busy = false; showCur(); }
       }, LEN * 220 + 350));
     };
     const shake = () => { const row = tiles.slice(st.guesses.length * LEN, st.guesses.length * LEN + LEN); row.forEach(t => { t.classList.remove('nope'); void t.offsetWidth; t.classList.add('nope'); }); beep(160, 100, 'square', 0.03); };
     const press = k => {
       if (busy || st.over) return;
       if (k === '↵') return submit();
-      if (k === '⌫') cur = cur.slice(0, -1);
-      else if (/^[A-Z]$/.test(k) && cur.length < LEN) cur += k;
+      ({ cells, sel } = termoEdit({ cells, sel }, k));
       say(''); showCur();
     };
     el.querySelectorAll('.tm-k').forEach(b => b.onclick = () => press(b.dataset.k));
+    // tocar num quadrado da linha atual escolhe onde a próxima letra entra
+    el.querySelector('#tm').onclick = e => {
+      if (busy || st.over) return;
+      const i = tiles.indexOf(e.target.closest('.tm-t')) - st.guesses.length * LEN;
+      if (i >= 0 && i < LEN) { sel = i; showCur(); }
+    };
     const onKey = e => {
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === 'Enter') { e.preventDefault(); press('↵'); }
       else if (e.key === 'Backspace') press('⌫');
+      else if (TERMO_NAV[e.key]) { e.preventDefault(); press(TERMO_NAV[e.key]); }
       else { const l = norm(e.key); if (l.length === 1 && /[A-Z]/.test(l)) press(l); }
     };
     addEventListener('keydown', onKey);

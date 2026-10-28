@@ -4,13 +4,13 @@
 function multiTermo(id, n, rows) {
   return {
     name: { 2: 'Dueto', 4: 'Quarteto', 8: 'Octeto' }[n], icon: id, hue: { 2: 190, 4: 285, 8: 25 }[n], daily: true,
-    desc: `${n} palavras de 5 letras ao mesmo tempo, ${rows} tentativas, iguais pra todo mundo. Cada palpite vale pra todos os quadros. Uma partida por dia: menos tentativas e mais rápido rende mais pontos.`,
+    desc: `${n} palavras de 5 letras ao mesmo tempo, ${rows} tentativas, iguais pra todo mundo. Cada palpite vale pra todos os quadros; toque em qualquer quadrado da linha pra pôr a letra ali. Uma partida por dia: menos tentativas e mais rápido rende mais pontos.`,
     better: 'high', unit: 'pontos',
     start(el, done) {
       if (needsServer(el)) return;
       const LEN = 5, EMOJI = { g: '🟩', y: '🟨', x: '⬛' }, COLOR = { g: 'var(--green)', y: 'var(--yellow)', x: 'oklch(40% .02 270)' };
       const norm = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase();
-      let v = null, cur = '', busy = true, alive = true, timers = [], saved = 'ok';
+      let v = null, cells = Array(LEN).fill(''), sel = 0, busy = true, alive = true, timers = [], saved = 'ok';
       el.innerHTML = `<div class="hud"><span class="stat">Tentativa<b id="n">1/${rows}</b></span><span class="stat">Acertos<b id="ok">0/${n}</b></span></div>
         <div class="mt-wrap"><div class="mt mt${n}" id="mt">${Array.from({ length: n }, (_, b) => `<div class="mt-b" data-b="${b}"><div class="tm">${Array.from({ length: rows * LEN }, () => '<div class="tm-t"></div>').join('')}</div><div class="mt-w" hidden></div></div>`).join('')}</div></div>
         <p class="hint" id="tmsg" aria-live="polite"></p>
@@ -56,7 +56,13 @@ function multiTermo(id, n, rows) {
         v.boards.forEach((bd, b) => {
           if (bd.solved) return;
           const r = bd.rows.length;
-          for (let i = 0; i < LEN; i++) { const t = boards[b].tiles[r * LEN + i]; if (!t) return; t.textContent = cur[i] || ''; t.classList.toggle('on', !!cur[i]); }
+          boards[b].tiles.forEach(t => { t.classList.remove('sel'); t.removeAttribute('role'); t.removeAttribute('aria-label'); });
+          if (v.over) return;
+          for (let i = 0; i < LEN; i++) {
+            const t = boards[b].tiles[r * LEN + i]; if (!t) return;
+            t.textContent = cells[i]; t.classList.toggle('on', !!cells[i]); t.classList.toggle('sel', i === sel);
+            t.setAttribute('role', 'button'); t.setAttribute('aria-label', `Quadrado ${i + 1}${cells[i] ? ': ' + cells[i] : ', vazio'}`);
+          }
         });
       };
       const paintHud = () => {
@@ -100,14 +106,14 @@ function multiTermo(id, n, rows) {
       };
       const submit = async () => {
         if (busy) return;
-        if (cur.length < LEN) { say('Faltam letras'); shake(); return; }
+        if (cells.some(c => !c)) { say('Faltam letras'); shake(); return; }
         busy = true;
         const before = v.boards.map(bd => bd.rows.length);
         let nv;
-        try { nv = await api('api/diarios/' + id, { method: 'POST', body: { guess: cur } }); }
+        try { nv = await api('api/diarios/' + id, { method: 'POST', body: { guess: cells.join('') } }); }
         catch (err) { if (!alive) return; busy = false; say(err.message); if (err.status === 422 || err.status === 400) shake(); return; }
         if (!alive) return;
-        v = nv; cur = '';
+        v = nv; cells = Array(LEN).fill(''); sel = 0;
         if (v.saved) saved = v.saved;
         v.boards.forEach((bd, b) => { if (bd.rows.length > before[b]) paintRow(b, before[b], true); });
         say('');
@@ -126,15 +132,23 @@ function multiTermo(id, n, rows) {
       const press = k => {
         if (busy || !v || v.over) return;
         if (k === '↵') return submit();
-        if (k === '⌫') cur = cur.slice(0, -1);
-        else if (/^[A-Z]$/.test(k) && cur.length < LEN) cur += k;
+        ({ cells, sel } = termoEdit({ cells, sel }, k));
         say(''); showCur();
       };
       el.querySelectorAll('.tm-k').forEach(b => b.onclick = () => press(b.dataset.k));
+      // tocar num quadrado da linha atual (em qualquer quadro ainda aberto) escolhe onde a próxima letra entra
+      el.querySelector('#mt').onclick = e => {
+        if (busy || !v || v.over) return;
+        const t = e.target.closest('.tm-t'), b = boards.findIndex(bd => bd.tiles.includes(t));
+        if (b < 0 || v.boards[b].solved) return;
+        const i = boards[b].tiles.indexOf(t) - v.boards[b].rows.length * LEN;
+        if (i >= 0 && i < LEN) { sel = i; showCur(); }
+      };
       const onKey = e => {
         if (e.ctrlKey || e.metaKey || e.altKey) return;
         if (e.key === 'Enter') { e.preventDefault(); press('↵'); }
         else if (e.key === 'Backspace') press('⌫');
+        else if (TERMO_NAV[e.key]) { e.preventDefault(); press(TERMO_NAV[e.key]); }
         else { const l = norm(e.key); if (l.length === 1 && /[A-Z]/.test(l)) press(l); }
       };
       addEventListener('keydown', onKey);
