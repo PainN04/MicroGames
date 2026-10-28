@@ -871,8 +871,9 @@
   .pa.big { width: 1.7em; height: 1.7em; font-size: 1em; margin-right: .1em; }
   .pa.none { background: var(--surface); color: var(--muted); -webkit-text-fill-color: currentColor; }
   .pa .i { width: .9em; height: .9em; }
-  .acct-btn .av.has-pa { background: oklch(62% 0.14 var(--h)); overflow: hidden; }
-  .acct-btn .av.has-pa img { width: 100%; height: 100%; display: block; }
+  /* sem overflow: hidden no avatar: ele cortava a coroa, que fica acima da bolinha; quem é redonda é a imagem */
+  .acct-btn .av.has-pa { background: oklch(62% 0.14 var(--h)); }
+  .acct-btn .av.has-pa img { width: 100%; height: 100%; display: block; border-radius: 50%; }
   .ptitle { font-size: var(--fs-xs); vertical-align: middle; display: inline-flex; align-items: center; gap: .35em; color: var(--yellow); }
   .ptitle .i { width: 1em; height: 1em; }
   .hue-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }

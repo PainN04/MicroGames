@@ -593,7 +593,9 @@ function setMe(user) {
   me = user;
   if (!user) setUnread(0);
   player = user?.name || '';
-  $('#pname').textContent = player || '—';
+  // no botão da conta vai só o primeiro nome (com a fila de tickets ao lado, o nome inteiro virava "Eduard..."); o nome inteiro fica no topo do menu
+  $('#pname').textContent = player.split(/\s+/)[0] || '—';
+  $('#pname').title = player;
   $('#acctWho').innerHTML = user ? `<b>${esc(user.name)}</b>${user.role === 'admin' ? 'Administrador' : 'Jogador'}` : '';
   $('#mAdmin').hidden = $('#sepAdmin').hidden = user?.role !== 'admin';
   $('#mReport').hidden = !user;
