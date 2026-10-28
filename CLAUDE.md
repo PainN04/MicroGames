@@ -19,11 +19,11 @@ Each agent owns a specific domain, enforcing separation of concerns and quality.
 
 ## Technology Stack
 
-- **Engine**: [CHOOSE: Godot 4 / Unity / Unreal Engine 5]
-- **Language**: [CHOOSE: GDScript / C# / C++ / Blueprint]
-- **Version Control**: Git with trunk-based development
-- **Build System**: [SPECIFY after choosing engine]
-- **Asset Pipeline**: [SPECIFY after choosing engine]
+- **Engine**: nenhuma (site web). Phaser 3 nos jogos de ação e Zdog na arte 3D dos cards
+- **Language**: JavaScript (front em `public/js/`, API Node em `api/` e `lib/`)
+- **Version Control**: Git; mudanças entram na `dev` por PR, a `main` é produção
+- **Build System**: `npm run build` (esbuild, gera `dist/`); testes com `npm test`
+- **Asset Pipeline**: arquivos em `public/` (ícones em `public/icons/`, avatares em `public/img/avatars/`)
 
 > **Note**: Engine-specialist agents exist for Godot, Unity, and Unreal with
 > dedicated sub-specialists. Use the set matching your engine.
@@ -34,14 +34,8 @@ Each agent owns a specific domain, enforcing separation of concerns and quality.
 
 ## Engine Version Reference
 
-<!-- ENGINE-REFERENCE-IMPORT: the line below is engine-specific. /setup-engine
-     rewrites it to @docs/engine-reference/<engine>/VERSION.md for the chosen
-     engine, so a Unity or Unreal project stops loading the Godot reference every
-     session. It defaults to Godot (the template's example engine); skills that
-     need the pinned version read docs/engine-reference/<engine>/VERSION.md on
-     demand regardless of this import. -->
-@docs/engine-reference/godot/VERSION.md
-
+Sem engine: o MicroGames não usa Godot, Unity nem Unreal, então nenhuma referência
+de engine é carregada. Resumo do projeto: `design/game-brief.md`.
 
 ## Technical Preferences
 
@@ -76,8 +70,9 @@ Every task follows: **Question -> Options -> Decision -> Draft -> Approval**
 
 See `docs/COLLABORATIVE-DESIGN-PRINCIPLE.md` for full protocol and examples.
 
-> **First session?** If the project has no engine configured and no game concept,
-> run `/start` to begin the guided onboarding flow.
+> **Configurado (2026-10-28):** `project.yaml` tem `modes.rigor: minimal` e
+> `modes.automation: autonomous`, e o resumo está em `design/game-brief.md`. Não
+> precisa rodar `/start`.
 
 ## Coding Standards
 

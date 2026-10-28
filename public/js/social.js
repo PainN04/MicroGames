@@ -183,7 +183,7 @@ function setDuoBadge() {
 async function duoModal(pre = {}) {
   if (!me) return loginModal();
   await loadSocial();
-  if (!social) return modal(`<h2>${icon('users')} Dupla</h2><p>Não deu pra carregar agora. Tente de novo em instantes.</p><button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`);
+  if (!social) return modal(`<h2>${icon('users')} Dupla</h2><p>Não deu pra carregar agora. Tente de novo em instantes.</p><button class="btn" data-ok>Ok</button>`);
   const my = social.myDuo, partner = my.state === 'none' ? null : (my.aId === me.id ? my.bName : my.aName);
   let body;
   if (my.state === 'active') {
@@ -246,7 +246,7 @@ function duelDoneHtml(d) {
 async function duelsModal(pre = {}) {
   if (!me) return loginModal();
   await loadSocial();
-  if (!social) return modal(`<h2>${icon('swords')} Duelos</h2><p>Não deu pra carregar agora. Tente de novo em instantes.</p><button class="btn" onclick="this.closest('.modal').remove()">Ok</button>`);
+  if (!social) return modal(`<h2>${icon('swords')} Duelos</h2><p>Não deu pra carregar agora. Tente de novo em instantes.</p><button class="btn" data-ok>Ok</button>`);
   const others = social.people.filter(p => p.id !== me.id).sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   const defGame = pre.game && GAMES[pre.game] ? pre.game : GAMES[currentView] ? currentView : dailyGame();
   const wins = social.duelWins?.[player] || 0;

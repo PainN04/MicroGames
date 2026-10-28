@@ -13,7 +13,7 @@ function reportVitals() {
   };
   for (const fn of ['onLCP', 'onINP', 'onCLS', 'onFCP', 'onTTFB']) webVitals[fn](record);
 }
-// carregada daqui (e não com onload="..." no index.html): os scripts não deixam nada no window pra o HTML chamar
+// carregada daqui (e não com um onload inline no index.html): os scripts não deixam nada no window pra o HTML chamar
 if (!localMode) {
   const wv = document.createElement('script');
   wv.async = true;

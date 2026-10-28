@@ -26,7 +26,7 @@ const PORT = Number(process.env.PORT) || 8080;
 const PUBLIC = path.join(__dirname, process.env.MICROGAME_DIST ? 'dist' : 'public');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.svg': 'image/svg+xml', '.txt': 'text/plain; charset=utf-8', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json; charset=utf-8',
-  '.webmanifest': 'application/manifest+json; charset=utf-8', '.mp3': 'audio/mpeg' };
+  '.webmanifest': 'application/manifest+json; charset=utf-8', '.mp3': 'audio/mpeg', '.woff2': 'font/woff2' };
 
 // A página compara essa versão pra se recarregar sozinha quando algum arquivo de public/ muda.
 function newestMtime(dir) {

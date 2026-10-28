@@ -25,7 +25,6 @@ html[data-skin="recreio"][data-mode="light"] {
 }
 html[data-skin="recreio"] body { font-family: 'DM Sans', 'Space Grotesk', system-ui, sans-serif; background: var(--bg); }
 html[data-skin="recreio"] :is(h1, h2, h3, .logo, .result .score) { font-family: var(--font-display); }
-html[data-skin="recreio"] .backdrop { display: none; }
 html[data-skin="recreio"] .glass { background: var(--surface); border: 1px solid var(--border); border-radius: 22px; box-shadow: var(--elev-1);
   backdrop-filter: none; -webkit-backdrop-filter: none; }
 html[data-skin="recreio"] .btn.ghost { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); box-shadow: none; }
@@ -225,6 +224,13 @@ html[data-skin="recreio"][data-mode="light"] .acct-btn .av { color: #fff; }
   html[data-skin="recreio"] .rc-row-head h2 { font-size: 1.2rem; }
   html[data-skin="recreio"] .game-stage .screen { padding: 12px 6px; border-radius: 16px; }
   html[data-skin="recreio"] .game-stage.glass { padding: 10px 8px 8px; border-radius: 20px; }
+}
+/* celular pequeno: as grades miúdas (Minado 12x12, teclado do Termo, Sudoku) ganham a largura das bordas */
+@media (max-width: 420px) {
+  html[data-skin="recreio"] .game-stage.glass { padding: 8px 4px 6px; }
+  html[data-skin="recreio"] .game-stage .screen { padding: 12px 4px; }
+  html[data-skin="recreio"] .mines { gap: 2px; }
+  html[data-skin="recreio"] .tm-kb > div { gap: 3px; }
 }
 @media (max-width: 560px) {
   /* o style.css esconde o palco 3D e mostra só o líder no celular; aqui o palco cabe ao lado do nome */
