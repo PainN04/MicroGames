@@ -17,7 +17,7 @@ function reportVitals() {
 if (!localMode) {
   const wv = document.createElement('script');
   wv.async = true;
-  wv.src = 'https://cdn.jsdelivr.net/npm/web-vitals@6.2.3/dist/web-vitals.attribution.iife.js';
+  wv.src = 'vendor/web-vitals.attribution.iife.js'; // 6.2.3, servido daqui: sem depender do CDN (e de bloqueador de anúncio)
   wv.onload = reportVitals;
   document.head.append(wv);
 }
