@@ -85,8 +85,9 @@ function backdrop(Z, addTo, level = 0, { sort = true, ...opts } = {}) {
 
 // Cada cena recebe (Z, illo) e devolve update(t) — t em segundos.
 const SCENES_3D = {
-  // chuva de peças: as 7 peças do Tetris caem girando em profundidades diferentes, cada uma no seu ritmo, e voltam
-  // pro alto quando saem do card. Cada peça é um Group (as faces se ordenam dentro dela, sem misturar com as outras).
+  // chuva de peças: as 7 peças do Tetris caem girando, com rastro de velocidade, e encaixam na pilha do fundo:
+  // a peça dá um tranco, some num estouro de faíscas e o bloco da pilha embaixo dela pisca. Cada peça é um Group
+  // (as faces se ordenam dentro dela); a pilha é desenhada à mão, de baixo pra cima, antes de tudo.
   blocos(Z, illo) {
     const C = 13;
     const SHAPES = {
@@ -95,33 +96,86 @@ const SCENES_3D = {
       J: [[-1, 0.5], [0, 0.5], [1, 0.5], [-1, -0.5]], S: [[-1, 0.5], [0, 0.5], [0, -0.5], [1, -0.5]],
       Z: [[-1, -0.5], [0, -0.5], [0, 0.5], [1, 0.5]],
     };
-    const COLOR = { I: '#4dc3ff', O: '#ffd34d', T: '#8b6cff', L: '#ff8a5c', J: '#5b7cff', S: '#3ddc97', Z: '#ff6b8a' };
-    // x (coluna), z (profundidade: as de trás menores), atraso, velocidade e giro de cada peça
-    const RAIN = [['T', -42, -26, 0, 1, 0.9], ['I', 6, 10, 0.55, 0.85, -0.6], ['O', 44, -10, 0.25, 1.1, 0.7], ['S', -16, 24, 0.8, 0.95, -0.8],
-      ['L', 32, 30, 0.1, 1.05, 0.5], ['Z', -46, 4, 0.45, 0.9, -0.7], ['J', 12, -34, 0.7, 1, 0.8], ['O', -10, -40, 0.95, 0.8, -0.5],
-      ['T', 40, -30, 0.62, 0.9, -0.6], ['I', -34, 18, 0.33, 1.1, 0.5]];
+    const COLOR = { I: '#4dc3ff', O: '#ffd34d', T: '#a77bff', L: '#ff8a5c', J: '#5b7cff', S: '#3ddc97', Z: '#ff6b8a' };
+    // bloco "de bala": caixa sombreada + quadrado de dentro mais claro (o chanfro) + brilho no canto
+    const gem = (addTo, size, color, translate) => {
+      const g = new Z.Anchor({ addTo, translate });
+      cube(Z, g, size, color, { stroke: 1.2 });
+      const f = size / 2 + 0.25;
+      new Z.Rect({ addTo: g, width: size * 0.6, height: size * 0.6, stroke: 1.2, fill: true, color: shade(color, 0.22), backface: false, translate: { z: f } });
+      new Z.Shape({ addTo: g, path: [{ x: -size * 0.3, y: -size * 0.3 }, { x: -size * 0.02, y: -size * 0.3 }], stroke: 1.6, color: 'rgba(255,255,255,.8)', backface: false, translate: { z: f + 0.1 } });
+      return g;
+    };
+
+    // pilha do fundo: duas fileiras com buracos; só as faces que aparecem (frente, topo livre e as pontas)
+    const H = 12, HX = c => (c - 5.5) * H, HY = r => 44 - r * H;
+    const HEAP = ['ZZOOTTTSSLLI', '.J..T.SS..I.'];
+    const heap = backdrop(Z, illo, 0, { sort: false });
+    const cells = [];
+    HEAP.forEach((row, r) => [...row].forEach((k, c) => {
+      if (k === '.') return;
+      const color = COLOR[k], x = HX(c), y = HY(r), up = HEAP[r + 1]?.[c];
+      const g = new Z.Group({ addTo: heap, translate: { x, y } });
+      const faces = [];
+      if (!up || up === '.') faces.push(new Z.Rect({ addTo: g, width: H - 1, height: H - 1, stroke: 1, fill: true, color: shade(color, 0.3), translate: { y: -H / 2 + 0.5 }, rotate: { x: Z.TAU / 4 } }));
+      faces.push(new Z.Rect({ addTo: g, width: H - 1, height: H - 1, stroke: 1, fill: true, color, translate: { z: H / 2 } }));
+      new Z.Rect({ addTo: g, width: (H - 1) * 0.55, height: (H - 1) * 0.55, stroke: 1, fill: true, color: shade(color, 0.22), translate: { z: H / 2 + 0.2 } });
+      cells.push({ g, faces, color, x, r });
+    }));
+    const flashCell = x => cells.filter(c => c.r === 0 || HEAP[1][Math.round(c.x / H + 5.5)] !== '.').reduce((best, c) => (Math.abs(c.x - x) < Math.abs(best.x - x) ? c : best), cells[0]);
+
+    // x, z (profundidade), atraso, velocidade e giro de cada peça
+    const RAIN = [['T', -42, -20, 0, 1, 0.9], ['I', 8, 12, 0.55, 0.85, -0.6], ['O', 44, -8, 0.25, 1.1, 0.7], ['S', -14, 22, 0.8, 0.95, -0.8],
+      ['L', 30, 28, 0.12, 1.05, 0.5], ['Z', -46, 6, 0.42, 0.9, -0.7], ['J', 14, -30, 0.7, 1, 0.8], ['T', -6, -34, 0.95, 0.8, -0.5]];
     const pieces = RAIN.map(([k, x, z, delay, speed, spin]) => {
       const g = new Z.Group({ addTo: illo, updateSort: true, translate: { x, z } });
-      for (const [cx, cy] of SHAPES[k]) cube(Z, g, C - 1, COLOR[k], { translate: { x: cx * C, y: cy * C } });
-      return { g, x, delay, speed, spin, tilt: (k.charCodeAt(0) % 3) - 1 };
+      for (const [cx, cy] of SHAPES[k]) gem(g, C - 1, COLOR[k], { x: cx * C, y: cy * C });
+      // rastro: três riscos na cor da peça, atrás dela
+      const trail = [-1, 0, 1].map(i => new Z.Shape({ addTo: illo, path: [{ y: 0 }, { y: -1 }], stroke: 2.2 - Math.abs(i) * 0.6, color: shade(COLOR[k], 0.35) }));
+      const sparks = Array.from({ length: 7 }, (_, i) => ({ s: new Z.Shape({ addTo: illo, stroke: 2.4, color: i % 3 ? COLOR[k] : '#ffffff' }), a: -Math.PI * (0.08 + (i / 6) * 0.84) }));
+      return { g, k, x, z, delay, speed, spin, trail, sparks, cell: flashCell(x) };
     });
-    // brilhinhos que ficam pra trás da peça mais rápida
-    const sparks = Array.from({ length: 5 }, (_, i) => new Z.Shape({ addTo: illo, stroke: 2.2, color: i % 2 ? '#ffffff' : '#ffe68a' }));
+    const FALL = 2.6, POP = 0.35, CYCLE = FALL + POP + 0.5, LAND = 16;
     return t => {
-      const FALL = 3.4; // segundos pra atravessar o card
+      const flashes = new Map();
       pieces.forEach(p => {
-        const k = ((t * p.speed) / FALL + p.delay) % 1;
-        p.g.translate.y = -105 + k * 210;
-        p.g.translate.x = p.x + Math.sin(t * 0.9 + p.delay * 6) * 4;
-        p.g.rotate.z = p.spin * (t + p.delay * 5);
-        p.g.rotate.x = 0.35 + Math.sin(t * 0.7 + p.delay * 4) * 0.25 * p.tilt;
-        p.g.rotate.y = 0.4 * Math.sin(t * 0.5 + p.delay * 3);
+        const local = ((t * p.speed + p.delay * CYCLE) % CYCLE), f = Math.min(1, local / FALL);
+        // cai acelerando, girando no ar; no fim do giro ela "assenta" reta pra encaixar
+        const y = -105 + (LAND + 105) * (f * f * 0.55 + f * 0.45);
+        const settle = smooth(Math.min(1, Math.max(0, (f - 0.75) / 0.25)));
+        const air = p.spin * (t * p.speed + p.delay * 7);
+        p.g.translate.set({ x: p.x + Math.sin(t * 0.9 + p.delay * 6) * 4 * (1 - settle), y, z: p.z });
+        p.g.rotate.z = air * (1 - settle) + Math.round(air / (Math.PI / 2)) * (Math.PI / 2) * settle;
+        p.g.rotate.x = (0.35 + Math.sin(t * 0.7 + p.delay * 4) * 0.25) * (1 - settle);
+        p.g.rotate.y = 0.4 * Math.sin(t * 0.5 + p.delay * 3) * (1 - settle);
+        // encaixe: tranco (achata e estica) e some num estouro
+        const pk = (local - FALL) / POP;
+        const landed = pk >= 0;
+        p.g.scale = !landed ? 1 : pk < 0.35 ? { x: 1 + 0.18 * Math.sin(pk / 0.35 * Math.PI), y: 1 - 0.15 * Math.sin(pk / 0.35 * Math.PI), z: 1 } : Math.max(0.01, 1 - smooth((pk - 0.35) / 0.65));
+        p.g.visible = !landed || pk < 1;
+        // rastro: mais longo quanto mais rápido, some no encaixe
+        const v = 0.55 + f * 0.9;
+        p.trail.forEach((s, i) => {
+          s.visible = !landed && f > 0.1;
+          const tx = p.g.translate.x + (i - 1) * 9, len = (16 + (i === 1 ? 10 : 0)) * v;
+          s.translate.set({ x: tx, y: y - 14, z: p.z - 8 });
+          s.scale = { x: 1, y: len, z: 1 };
+        });
+        p.sparks.forEach(({ s, a }) => {
+          const sk = (pk - 0.2) / 0.8;
+          s.visible = sk > 0 && sk < 1;
+          s.translate.set({ x: p.x + Math.cos(a) * (8 + sk * 30), y: LAND + 10 + Math.sin(a) * (6 + sk * 22) + sk * sk * 14, z: p.z + 6 });
+          s.stroke = 2.8 * (1 - sk) + 0.3;
+        });
+        if (landed && pk < 0.8) flashes.set(p.cell, 1 - pk / 0.8);
       });
-      const lead = pieces[1];
-      sparks.forEach((s, i) => s.translate.set({ x: lead.g.translate.x + Math.sin(t * 3 + i * 2) * 10, y: lead.g.translate.y - 22 - i * 8, z: lead.g.translate.z }));
-      sparks.forEach((s, i) => { s.stroke = 2.4 - i * 0.4; });
-      illo.rotate.x = -0.15;
-      illo.rotate.y = Math.sin(t * 0.4) * 0.3;
+      // o bloco da pilha que levou o encaixe pisca em branco
+      cells.forEach(c => {
+        const w = flashes.get(c) || 0;
+        c.faces.forEach((fc, i) => { fc.color = w > 0.05 ? shade(i === c.faces.length - 1 ? c.color : shade(c.color, 0.3), w * 0.85) : i === c.faces.length - 1 ? c.color : shade(c.color, 0.3); });
+      });
+      illo.rotate.x = -0.18;
+      illo.rotate.y = Math.sin(t * 0.4) * 0.28;
     };
   },
   // tabuleiro quadriculado: a cobrinha anda pelas casas, come a maçã (o bocado desce pelo corpo como um caroço)
