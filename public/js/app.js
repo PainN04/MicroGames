@@ -212,8 +212,9 @@ function dailyRankLine() {
   const lead = rows[0] ? `1º <b>${esc(rows[0].name)}</b> ${rows[0].pts.toLocaleString('pt-BR')}${mine > 0 ? ` · você ${mine + 1}º` : ''}` : 'Ranking do dia';
   return `<button class="dt-rank" data-rank="daily" title="Ver o ranking dos jogos diários">${icon('trophy')}<span>${lead}</span>${icon('chevron-right')}</button>`;
 }
-const cardHtml = (id, g, i, extra = '') => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}" title="${esc(g.desc)}">
+const cardHtml = (id, g, i, extra = '') => `<button class="card glass" data-id="${id}" style="--h:${g.hue};--i:${i}">
         <span class="icon">${icon(g.icon)}</span>
+        <span class="desc"><span>${esc(g.desc)}</span></span>
         <h3>${g.name}</h3>
         <span class="rec">${recHtml(id)}</span>${extra}
       </button>`;
