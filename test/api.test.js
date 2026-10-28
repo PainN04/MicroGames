@@ -213,6 +213,46 @@ test('bloqueio manual do admin impede salvar pontuação', async () => {
   assert.equal((await play(c, 'snake', 5)).status, 201);
 });
 
+test('bloqueio geral: só a dona liga; ninguém mais joga até ela liberar', async () => {
+  const owner = await login('paulo', 'senha-dono-123');
+  const adm = await login('outroadm', 'senha-adm-123');
+  const c = await login('ana', 'senha-ana-123');
+  assert.equal((await adm('/api/admin/site-lock', { method: 'PUT', body: { on: true } })).status, 403);
+  assert.equal((await c('/api/admin/site-lock', { method: 'PUT', body: { on: true } })).status, 403);
+  const on = await owner('/api/admin/site-lock', { method: 'PUT', body: { on: true, reason: 'manutenção' } });
+  assert.equal(on.status, 200);
+  assert.equal(on.body.lock.reason, 'manutenção');
+  // jogador e outro admin: bloqueados (gravar, abrir partida, rodada do servidor) e a página fica sabendo
+  assert.equal((await play(c, 'snake', 5)).status, 423);
+  assert.equal((await c('/api/rounds', { method: 'POST', body: { game: 'quiz' } })).status, 423);
+  assert.equal((await play(adm, 'snake', 5)).status, 423);
+  const gate = (await c('/api/gate')).body;
+  assert.equal(gate.blocked, true);
+  assert.equal(gate.site.reason, 'manutenção');
+  assert.equal((await c('/api/auth/me')).body.gate.site.reason, 'manutenção');
+  assert.ok((await c('/api/auth/ping')).body.site);
+  // a dona continua jogando pra conferir o site
+  assert.equal((await owner('/api/gate')).body.site, undefined);
+  assert.equal((await play(owner, 'snake', 5)).status, 201);
+  assert.equal((await owner('/api/admin/site-lock')).body.lock.reason, 'manutenção');
+  // liberou: volta ao normal
+  assert.equal((await owner('/api/admin/site-lock', { method: 'PUT', body: { on: false } })).body.lock, null);
+  assert.equal((await c('/api/auth/ping')).body.site, null);
+  assert.equal((await play(c, 'snake', 5)).status, 201);
+  // com tempo: fecha agora e libera sozinho quando o tempo acaba
+  const timed = await owner('/api/admin/site-lock', { method: 'PUT', body: { on: true, minutes: 30 } });
+  assert.ok(timed.body.lock.until > Date.now() + 29 * 60_000);
+  assert.equal((await play(c, 'snake', 5)).status, 423);
+  assert.equal((await c('/api/gate')).body.site.until, timed.body.lock.until);
+  const [row] = await sql`SELECT value FROM settings WHERE key = 'site_lock'`;
+  const expired = { ...JSON.parse(row.value), until: Date.now() - 1000 };
+  await sql`UPDATE settings SET value = ${JSON.stringify(expired)} WHERE key = 'site_lock'`;
+  assert.equal((await c('/api/gate')).body.site, undefined);
+  assert.equal((await play(c, 'snake', 5)).status, 201);
+  assert.equal((await owner('/api/admin/site-lock', { method: 'PUT', body: { on: true, minutes: -5 } })).status, 400);
+  await owner('/api/admin/site-lock', { method: 'PUT', body: { on: false } });
+});
+
 /* ---------- permissões ---------- */
 
 test('permissões: jogador não entra no admin; só o dono edita recordes', async () => {
