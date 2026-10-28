@@ -9,9 +9,17 @@ node_modules/
 *.db-shm
 
 # ferramentas locais (Claude Code, skills de agente do Neon)
-# .claude/skills fica versionado pra as skills valerem em qualquer sessão
-.claude/*
-!.claude/skills/
+# .claude fica versionado pra as skills, agentes e hooks valerem em qualquer sessão
+# (Claude Code Game Studios); só o que é local de cada sessão fica de fora
+.claude/settings.local.json
+.claude/agent-memory/
+.claude/worktrees/
+CLAUDE.local.md
+project.local.yaml
+production/session-logs/
+production/session-state/*
+!production/session-state/.gitkeep
+.scratch/
 .agents/
 skills-lock.json
 
