@@ -85,98 +85,43 @@ function backdrop(Z, addTo, level = 0, { sort = true, ...opts } = {}) {
 
 // Cada cena recebe (Z, illo) e devolve update(t) — t em segundos.
 const SCENES_3D = {
-  // poço do Tetris com pilha colorida: a peça I cai girando, encaixa no buraco, a linha pisca, some e a pilha desce.
-  // Tudo fica num Group com a ordem de desenho feita à mão (fundo, chão e paredes de dentro, cubos de baixo pra cima
-  // e de trás pra frente, frente das paredes por último) — a ordenação automática da Zdog misturava as faces.
+  // chuva de peças: as 7 peças do Tetris caem girando em profundidades diferentes, cada uma no seu ritmo, e voltam
+  // pro alto quando saem do card. Cada peça é um Group (as faces se ordenam dentro dela, sem misturar com as outras).
   blocos(Z, illo) {
-    const C = 11, COLS = 8, X = c => (c - (COLS - 1) / 2) * C, Y = r => 40 - r * C;
-    const stage = new Z.Group({ addTo: illo });
-    // bloco só com as faces que a câmera chega a ver (as de trás nunca aparecem); as laterais somem quando viram de costas
-    const SIDES = {
-      front: (w, h, d) => ({ width: w, height: h, translate: { z: d / 2 } }),
-      top: (w, h, d) => ({ width: w, height: d, translate: { y: -h / 2 }, rotate: { x: Z.TAU / 4 } }),
-      left: (w, h, d) => ({ width: d, height: h, translate: { x: -w / 2 }, rotate: { y: Z.TAU / 4 } }),
-      right: (w, h, d) => ({ width: d, height: h, translate: { x: w / 2 }, rotate: { y: -Z.TAU / 4 } }),
+    const C = 13;
+    const SHAPES = {
+      I: [[-1.5, 0], [-0.5, 0], [0.5, 0], [1.5, 0]], O: [[-0.5, -0.5], [0.5, -0.5], [-0.5, 0.5], [0.5, 0.5]],
+      T: [[-1, 0.5], [0, 0.5], [1, 0.5], [0, -0.5]], L: [[-1, 0.5], [0, 0.5], [1, 0.5], [1, -0.5]],
+      J: [[-1, 0.5], [0, 0.5], [1, 0.5], [-1, -0.5]], S: [[-1, 0.5], [0, 0.5], [0, -0.5], [1, -0.5]],
+      Z: [[-1, -0.5], [0, -0.5], [0, 0.5], [1, 0.5]],
     };
-    const TONE = { front: 0, top: 0.3, left: -0.15, right: -0.3 };
-    const block = (addTo, w, h, d, color, translate, sides, stroke = 1.5) => {
-      const g = new Z.Group({ addTo, translate });
-      const faces = {};
-      for (const s of sides) faces[s] = new Z.Rect({ addTo: g, ...SIDES[s](w, h, d), stroke, fill: true, backface: false, color: shade(color, TONE[s]) });
-      g.paint = c => { for (const s of sides) faces[s].color = shade(c, TONE[s]); };
-      return g;
-    };
-    // fundo do poço com a grade apagada
-    const back = new Z.Group({ addTo: stage, translate: { z: -6 } });
-    new Z.Rect({ addTo: back, width: COLS * C, height: 100, stroke: 1, fill: true, color: '#161a2e', translate: { y: -5 } });
-    for (let c = 1; c < COLS; c++) new Z.Shape({ addTo: back, path: [{ x: X(c) - C / 2, y: -55 }, { x: X(c) - C / 2, y: 45 }], stroke: 0.5, color: '#262b48' });
-    for (let r = 0; r < 9; r++) new Z.Shape({ addTo: back, path: [{ x: -COLS * C / 2, y: Y(r) - C / 2 }, { x: COLS * C / 2, y: Y(r) - C / 2 }], stroke: 0.5, color: '#262b48' });
-    // chão e paredes: a face de dentro vai antes dos cubos, a frente e o topo vão depois
-    const WALL = '#3b4166', WX = COLS * C / 2 + 3, D = 12;
-    const floor = block(stage, COLS * C, 6, D, WALL, { y: 48.5 }, ['top', 'front'], 2);
-    const inner = [block(stage, 6, 109, D, WALL, { x: -WX, y: -3 }, ['right'], 2), block(stage, 6, 109, D, WALL, { x: WX, y: -3 }, ['left'], 2)];
-    const outer = [block(stage, 6, 109, D, WALL, { x: -WX, y: -3 }, ['left', 'top', 'front'], 2), block(stage, 6, 109, D, WALL, { x: WX, y: -3 }, ['right', 'top', 'front'], 2)];
-    // pilha nas cores do jogo
-    const CYAN = '#4dc3ff';
-    const ROWS = [['#ff6b8a', '#ffd34d', '#8b6cff', '#3ddc97', '#ff8a5c', '#4dc3ff', null, '#ffd34d'],
-      ['#8b6cff', '#8b6cff', null, '#ff8a5c', '#ff8a5c', null, null, '#3ddc97'],
-      ['#8b6cff', null, null, null, '#ff8a5c', null, null, null]];
-    const ALL = ['front', 'top', 'left', 'right'];
-    const stack = ROWS.flatMap((row, r) => row.map((color, c) => color && { g: block(stage, C - 1, C - 1, C - 1, color, { x: X(c), y: Y(r) }, ALL), r, color }).filter(Boolean));
-    // peça I: 4 cubos num Anchor que cai girando; o contorno mostra onde ela vai encaixar
-    const piece = new Z.Anchor({ addTo: stage });
-    const pieceCubes = [0, 1, 2, 3].map(i => block(piece, C - 1, C - 1, C - 1, CYAN, { y: (1.5 - i) * C }, ALL));
-    const ghost = new Z.Rect({ addTo: stage, width: C - 1, height: C * 4 - 1, stroke: 1, color: 'rgba(77,195,255,0.55)', translate: { x: X(6), y: Y(0) - 1.5 * C, z: C / 2 } });
-    // faíscas quando a linha some
-    const sparks = Array.from({ length: 10 }, (_, i) => ({ s: new Z.Rect({ addTo: stage, width: 2.6, height: 2.6, stroke: 0.8, fill: true, color: i % 2 ? '#ffffff' : '#ffe68a' }), x: X(i % COLS) + (i > 7 ? 5 : 0), v: 0.6 + (i % 3) * 0.3, a: i % 2 ? 1 : -1 }));
-    const LAND = Y(0) - 1.5 * C;
-    // ordem de desenho: refeita a cada quadro, depois que a Zdog calcula a profundidade de cada peça
-    const cubes = [...stack.map(s => s.g), ...pieceCubes];
-    const baseSort = stage.updateSortValue;
-    stage.updateSortValue = function () {
-      this.flatGraph = cubes;
-      baseSort.call(this);
-      const row = g => Math.round((40 - g.renderOrigin.y) / C);
-      const sorted = cubes.filter(g => g.visible).sort((a, b) => row(a) - row(b) || a.sortValue - b.sortValue);
-      this.flatGraph = [back, floor, ...inner, ...sorted, ghost, ...sparks.map(s => s.s), ...outer];
-    };
+    const COLOR = { I: '#4dc3ff', O: '#ffd34d', T: '#8b6cff', L: '#ff8a5c', J: '#5b7cff', S: '#3ddc97', Z: '#ff6b8a' };
+    // x (coluna), z (profundidade: as de trás menores), atraso, velocidade e giro de cada peça
+    const RAIN = [['T', -42, -26, 0, 1, 0.9], ['I', 6, 10, 0.55, 0.85, -0.6], ['O', 44, -10, 0.25, 1.1, 0.7], ['S', -16, 24, 0.8, 0.95, -0.8],
+      ['L', 32, 30, 0.1, 1.05, 0.5], ['Z', -46, 4, 0.45, 0.9, -0.7], ['J', 12, -34, 0.7, 1, 0.8], ['O', -10, -40, 0.95, 0.8, -0.5],
+      ['T', 40, -30, 0.62, 0.9, -0.6], ['I', -34, 18, 0.33, 1.1, 0.5]];
+    const pieces = RAIN.map(([k, x, z, delay, speed, spin]) => {
+      const g = new Z.Group({ addTo: illo, updateSort: true, translate: { x, z } });
+      for (const [cx, cy] of SHAPES[k]) cube(Z, g, C - 1, COLOR[k], { translate: { x: cx * C, y: cy * C } });
+      return { g, x, delay, speed, spin, tilt: (k.charCodeAt(0) % 3) - 1 };
+    });
+    // brilhinhos que ficam pra trás da peça mais rápida
+    const sparks = Array.from({ length: 5 }, (_, i) => new Z.Shape({ addTo: illo, stroke: 2.2, color: i % 2 ? '#ffffff' : '#ffe68a' }));
     return t => {
-      const k = (t / 3.2) % 1;
-      // 0–0,55: cai do alto deitada, vai pra coluna 6 e gira pra ficar em pé (acelerando no fim, como no jogo)
-      const f = Math.min(1, k / 0.55);
-      const turn = smooth(Math.min(1, f * 1.5));
-      piece.translate.x = X(2) + (X(6) - X(2)) * smooth(Math.min(1, f * 1.3));
-      piece.translate.y = -46 + (LAND + 46) * f * f;
-      piece.rotate.z = (1 - turn) * (Math.PI / 2);
-      ghost.visible = k < 0.55;
-      // 0,55–0,8: a linha de baixo (agora completa) pisca em branco; 0,8: some e o que estava em cima desce uma casa
-      const blink = k >= 0.55 && k < 0.8 && Math.floor((k - 0.55) * 32) % 2 === 0;
-      const gone = k >= 0.8;
-      const drop = gone ? smooth(Math.min(1, (k - 0.8) / 0.08)) : 0;
-      // volta ao começo: a linha de baixo renasce crescendo e a pilha sobe junto
-      const regrow = k < 0.12 ? smooth(k / 0.12) : 1;
-      stack.forEach(s => {
-        s.g.paint(blink && s.r === 0 ? '#ffffff' : s.color);
-        if (s.r === 0) { s.g.visible = !gone && regrow > 0.15; s.g.scale = regrow; }
-        else s.g.translate.y = Y(s.r) + (drop + (1 - regrow)) * C;
+      const FALL = 3.4; // segundos pra atravessar o card
+      pieces.forEach(p => {
+        const k = ((t * p.speed) / FALL + p.delay) % 1;
+        p.g.translate.y = -105 + k * 210;
+        p.g.translate.x = p.x + Math.sin(t * 0.9 + p.delay * 6) * 4;
+        p.g.rotate.z = p.spin * (t + p.delay * 5);
+        p.g.rotate.x = 0.35 + Math.sin(t * 0.7 + p.delay * 4) * 0.25 * p.tilt;
+        p.g.rotate.y = 0.4 * Math.sin(t * 0.5 + p.delay * 3);
       });
-      // a peça: o cubo de baixo some com a linha e os outros 3 descem; no fim do ciclo eles encolhem e somem
-      pieceCubes.forEach((pc, i) => {
-        pc.paint(blink && i === 0 ? '#ffffff' : CYAN);
-        const shrink = k > 0.9 ? 1 - smooth(Math.min(1, (k - 0.9) / 0.08)) : 1;
-        pc.visible = !(gone && i === 0) && shrink > 0.15;
-        pc.scale = shrink;
-      });
-      if (gone) piece.translate.y = LAND + drop * C;
-      const sk = (k - 0.8) / 0.14;
-      sparks.forEach(({ s, x, v, a }) => {
-        s.visible = sk > 0 && sk < 1;
-        s.translate.set({ x: x + a * sk * 14 * v, y: Y(0) - sk * 26 * v + sk * sk * 22, z: C / 2 + 1 });
-        s.rotate.z = sk * 5 * v;
-        s.scale = 1 - sk * 0.6;
-      });
-      illo.rotate.x = -0.22;
-      illo.rotate.y = Math.sin(t * 0.45) * 0.4;
+      const lead = pieces[1];
+      sparks.forEach((s, i) => s.translate.set({ x: lead.g.translate.x + Math.sin(t * 3 + i * 2) * 10, y: lead.g.translate.y - 22 - i * 8, z: lead.g.translate.z }));
+      sparks.forEach((s, i) => { s.stroke = 2.4 - i * 0.4; });
+      illo.rotate.x = -0.15;
+      illo.rotate.y = Math.sin(t * 0.4) * 0.3;
     };
   },
   // tabuleiro quadriculado: a cobrinha anda pelas casas, come a maçã (o bocado desce pelo corpo como um caroço)
@@ -1388,148 +1333,69 @@ const SCENES_3D = {
       illo.rotate.y = Math.sin(t * 0.45) * 0.3;
     };
   },
-  // close no canto da mesa: o taco recua e bate, a branca acerta a 8 e a 8 rola até a caçapa e cai.
-  // Pano, tabelas e caçapa ficam no fundo (desenhados primeiro); cada bola é um disco virado pra câmera
-  // com camadas de luz (borda escura, corpo, brilho), e o círculo do número desliza conforme ela rola.
+  // bola 8 grande na frente de dois tacos cruzados (o emblema da sinuca): a bola balança no lugar (o círculo
+  // do 8 vai de um lado pro outro), os tacos balançam e de vez em quando dão uma tacadinha, com brilho na ponta
   sinuca(Z, illo) {
-    const R = 11, PX = 50, PY = -50, U = { x: Math.SQRT1_2, y: -Math.SQRT1_2 }; // caçapa no canto de trás à direita
-    const cloth = backdrop(Z, illo, 0, { sort: false });
-    new Z.Rect({ addTo: cloth, width: 300, height: 300, stroke: 0, fill: true, color: '#11663a' });
-    // luz da luminária no pano
-    [[230, '#147340'], [170, '#188049'], [120, '#1c8c51'], [74, '#22985a']].forEach(([d, color]) => new Z.Ellipse({ addTo: cloth, width: d, height: d * 0.9, stroke: 0, fill: true, color, translate: { x: -8, y: 4 } }));
-    const shadows = new Z.Group({ addTo: cloth });
-    const ring = new Z.Ellipse({ addTo: cloth, diameter: 10, stroke: 1.2, color: 'rgba(255,255,255,0)' });
-    // tabelas: borracha verde (com a quina mais clara) e madeira por fora, com os diamantes
-    const rails = backdrop(Z, illo, 1);
-    slab(Z, rails, 200, 8, 6, '#0d5c33', { translate: { x: -66, y: PY - 2, z: 3 } });
-    slab(Z, rails, 8, 200, 6, '#0d5c33', { translate: { x: PX + 2, y: PY + 112, z: 3 } });
-    slab(Z, rails, 220, 18, 9, '#7a3d17', { translate: { x: -60, y: PY - 14, z: 4.5 } });
-    slab(Z, rails, 18, 220, 9, '#7a3d17', { translate: { x: PX + 14, y: PY + 106, z: 4.5 } });
-    slab(Z, rails, 22, 22, 9, '#5a2b10', { translate: { x: PX + 12, y: PY - 12, z: 4.5 } });
-    const deck = backdrop(Z, illo, 2, { sort: false });
-    new Z.Shape({ addTo: deck, path: [{ x: -170, y: PY - 6 }, { x: PX - 14, y: PY - 6 }], stroke: 1.2, color: '#2fb56d', translate: { z: 6.2 } });
-    new Z.Shape({ addTo: deck, path: [{ x: PX + 6, y: PY + 14 }, { x: PX + 6, y: 200 }], stroke: 1.2, color: '#2fb56d', translate: { z: 6.2 } });
-    new Z.Shape({ addTo: deck, path: [{ x: -170, y: PY - 22 }, { x: PX + 22, y: PY - 22 }, { x: PX + 22, y: 220 }], closed: false, stroke: 1, color: '#9c5a2c', translate: { z: 9.2 } });
-    // veios da madeira nas tabelas
-    for (const [o, c] of [[-26, 'rgba(50,20,6,.35)'], [-17, 'rgba(255,200,140,.12)'], [-11, 'rgba(50,20,6,.3)']]) {
-      new Z.Shape({ addTo: deck, path: [{ x: -170, y: PY + o + 3 }, { x: PX + o + 6, y: PY + o + 3 }], stroke: 0.7, color: c, translate: { z: 9.15 } });
-      new Z.Shape({ addTo: deck, path: [{ x: PX - o - 3, y: PY - o + 2 }, { x: PX - o - 3, y: 220 }], stroke: 0.7, color: c, translate: { z: 9.15 } });
-    }
-    for (const k of [0, 1, 2]) {
-      new Z.Rect({ addTo: deck, width: 3, height: 3, stroke: 0.6, fill: true, color: '#f1e3c0', rotate: { z: Z.TAU / 8 }, translate: { x: PX - 42 - k * 46, y: PY - 14, z: 9.2 } });
-      new Z.Rect({ addTo: deck, width: 3, height: 3, stroke: 0.6, fill: true, color: '#f1e3c0', rotate: { z: Z.TAU / 8 }, translate: { x: PX + 14, y: PY + 42 + k * 46, z: 9.2 } });
-    }
-    // giz azul em cima da tabela, com a boca gasta
-    const chalk = backdrop(Z, illo, 2.5, { translate: { x: -24, y: PY - 15, z: 12.5 }, rotate: { z: 0.35 } });
-    slab(Z, chalk, 9, 9, 7, '#2d6fd6');
-    new Z.Rect({ addTo: chalk, width: 5.4, height: 5.4, stroke: 0.8, fill: true, color: '#173f86', translate: { z: 3.6 } });
-    // caçapa: couro em volta e o buraco escurecendo pro fundo
-    const pocket = backdrop(Z, illo, 3, { sort: false, translate: { x: PX, y: PY, z: 0.3 } });
-    new Z.Ellipse({ addTo: pocket, diameter: 33, stroke: 0, fill: true, color: '#2a1408' });
-    new Z.Ellipse({ addTo: pocket, diameter: 30, stroke: 1.4, color: '#4a2410', translate: { z: 9 } });
-    [[27, '#120a06'], [22, '#0a0604'], [16, '#050302'], [10, '#000000']].forEach(([d, color], i) => new Z.Ellipse({ addTo: pocket, diameter: d, stroke: 0, fill: true, color, translate: { x: i * 0.6, y: -i * 0.6 } }));
-
-    // bola: âncora na mesa → gira contra a câmera (y e depois x) → camadas em ordem, sempre redondas
-    const ball = (color, { stripe = false, num = 0 } = {}) => {
-      const a = new Z.Anchor({ addTo: illo }), by = new Z.Anchor({ addTo: a }), g = new Z.Group({ addTo: by });
-      const body = stripe ? '#f4efe2' : color;
-      new Z.Shape({ addTo: g, stroke: R * 2, color: shade(body, -0.45) });
-      new Z.Shape({ addTo: g, stroke: R * 1.84, color: shade(body, -0.12), translate: { x: -R * 0.06, y: -R * 0.07 } });
-      new Z.Shape({ addTo: g, stroke: R * 1.5, color: body, translate: { x: -R * 0.16, y: -R * 0.2 } });
-      if (stripe) {
-        // faixa: o pedaço do círculo entre ±0,5R, pintado na cor e com o mesmo sombreado por cima
-        const band = [];
-        for (let k = 0; k <= 12; k++) { const y = -0.5 + k / 12; band.push({ x: -Math.sqrt(1 - y * y) * R * 0.97, y: y * R }); }
-        for (let k = 12; k >= 0; k--) { const y = -0.5 + k / 12; band.push({ x: Math.sqrt(1 - y * y) * R * 0.97, y: y * R }); }
-        new Z.Shape({ addTo: g, path: band, stroke: 0, fill: true, color: shade(color, -0.1) });
-        new Z.Shape({ addTo: g, path: band.map(p => ({ x: p.x * 0.72 - R * 0.18, y: p.y * 0.85 - R * 0.16 })), stroke: 0, fill: true, color });
-      }
-      const disc = num ? new Z.Group({ addTo: g }) : null;
-      if (disc) {
-        new Z.Ellipse({ addTo: disc, diameter: R * 0.98, stroke: 0, fill: true, color: '#fbf7ea' });
-        const ink = num === 8 ? '#141414' : shade(color, -0.35);
-        if (num === 8) {
-          new Z.Ellipse({ addTo: disc, diameter: 3, stroke: 1.15, color: ink, translate: { y: -1.75 } });
-          new Z.Ellipse({ addTo: disc, diameter: 3.6, stroke: 1.15, color: ink, translate: { y: 1.55 } });
-        } else [...String(num)].forEach((d, i, all) => glyph(Z, disc, (d === '1' ? [[[-2.5, -4.5], [0.5, -7], [0.5, 7]]] : digitLines(+d)).map(l => l.map(([x, y]) => [x + (i - (all.length - 1) / 2) * 8, y])), { color: ink, stroke: 1.2, scale: 0.3 }));
-      }
-      new Z.Shape({ addTo: g, stroke: R * 0.95, color: 'rgba(255,255,255,.16)', translate: { x: -R * 0.36, y: -R * 0.42 } });
-      new Z.Shape({ addTo: g, stroke: R * 0.42, color: 'rgba(255,255,255,.92)', translate: { x: -R * 0.42, y: -R * 0.5 } });
-      new Z.Shape({ addTo: g, path: [{ x: R * 0.2, y: R * 0.78 }, { arc: [{ x: R * 0.78, y: R * 0.78 }, { x: R * 0.8, y: R * 0.15 }] }], closed: false, stroke: 1, color: 'rgba(255,255,255,.18)' });
-      const sink = new Z.Shape({ addTo: g, stroke: R * 2, color: 'rgba(0,0,0,0)' }); // escurece ao cair na caçapa
-      const sh = new Z.Ellipse({ addTo: shadows, diameter: R * 2.1, stroke: 0, fill: true, color: 'rgba(0,0,0,.34)' });
-      const sh2 = new Z.Ellipse({ addTo: shadows, diameter: R * 1.3, stroke: 0, fill: true, color: 'rgba(0,0,0,.3)' });
-      // roll: ângulo do giro; o círculo do número anda na direção do movimento (na tela) e some atrás
-      const place = (x, y, s = 1, roll = 0, dir = 0, dark = 0) => {
-        a.translate.set({ x, y, z: R * s }); a.scale = s;
-        by.rotate.y = -illo.rotate.y; g.rotate.x = -illo.rotate.x;
-        sh.translate.set({ x: x + 4, y: y + 4 }); sh2.translate.set({ x: x + 2.4, y: y + 2.4 }); sh.scale = sh2.scale = s;
-        sh.visible = sh2.visible = s > 0.6;
-        sink.color = `rgba(0,0,0,${dark.toFixed(3)})`;
-        if (disc) {
-          const c = Math.cos(roll), off = Math.sin(roll) * R * 0.62;
-          disc.visible = c > 0.15;
-          disc.translate.set({ x: Math.cos(dir) * off - R * 0.08, y: Math.sin(dir) * off - R * 0.1 });
-          disc.rotate.z = dir; disc.scale = { x: 0.25 + 0.75 * c, y: 1, z: 1 };
+    const R = 32;
+    // tacos: ponta azul, virola branca, madeira clara afinando, anel e cabo escuro; desenhados antes da bola
+    const sticks = backdrop(Z, illo, 0, { sort: false, translate: { z: -24 } });
+    const L = 150, Xs = p => -L / 2 + p * L; // p = 0 na ponta, 1 no cabo
+    const cues = [-1, 1].map(side => {
+      const a = new Z.Anchor({ addTo: sticks, rotate: { z: side * (Math.PI / 4) + Math.PI / 2 } });
+      [[0, 0.025, '#3d6fd6', 4, 4], [0.025, 0.06, '#f3efe4', 4.2, 4.4], [0.06, 0.5, '#ecd29e', 4.4, 6.4], [0.5, 0.53, '#d3d7de', 6.5, 6.5],
+        [0.53, 0.68, '#7a3416', 6.6, 7.2], [0.68, 0.72, '#e9d7a8', 7.2, 7.3], [0.72, 1, '#1e1c22', 7.3, 8.2]].forEach(([p0, p1, color, s0, s1]) => {
+        const n = Math.max(1, Math.round((p1 - p0) * 12));
+        for (let k = 0; k < n; k++) {
+          const p = p0 + ((p1 - p0) * k) / n, q = p0 + ((p1 - p0) * (k + 1)) / n, w = s0 + (s1 - s0) * (k / n);
+          new Z.Shape({ addTo: a, path: [{ x: Xs(p) }, { x: Xs(q) }], stroke: w, color: shade(color, -0.15) });
+          new Z.Shape({ addTo: a, path: [{ x: Xs(p), y: -w * 0.22 }, { x: Xs(q), y: -w * 0.22 }], stroke: w * 0.38, color: shade(color, 0.3) });
         }
-        a.visible = s > 0.02;
-      };
-      return place;
-    };
-    const eight = ball('#151515', { num: 8 }), cueBall = ball('#f6f2e6');
-    const one = ball('#f2b705', { num: 1 }), eleven = ball('#d4232c', { stripe: true, num: 11 });
-    // taco: ponta azul, virola branca, madeira clara afinando, anel e cabo escuro (mais alto atrás)
-    const cue = new Z.Anchor({ addTo: illo, rotate: { z: Math.atan2(U.y, U.x) } });
-    const X = s => -R - 2 - s * 150, Zc = s => s * 26;
-    [[0, 0.02, '#3d6fd6', 3.2, 3.2], [0.02, 0.05, '#f3efe4', 3.3, 3.4], [0.05, 0.5, '#ecd29e', 3.4, 5], [0.5, 0.53, '#d3d7de', 5.1, 5.1],
-      [0.53, 0.66, '#5b2610', 5.2, 5.8], [0.66, 0.7, '#e9d7a8', 5.8, 5.9], [0.7, 1, '#1e1c22', 5.9, 6.6]].forEach(([p0, p1, color, s0, s1]) => {
-      const n = Math.max(1, Math.round((p1 - p0) * 14));
-      for (let k = 0; k < n; k++) {
-        const p = p0 + ((p1 - p0) * k) / n, q = p0 + ((p1 - p0) * (k + 1)) / n, s = s0 + (s1 - s0) * (k / n);
-        new Z.Shape({ addTo: cue, path: [{ x: X(p), z: Zc(p) }, { x: X(q), z: Zc(q) }], stroke: s, color });
-        new Z.Shape({ addTo: cue, path: [{ x: X(p), y: -s * 0.18, z: Zc(p) + s * 0.3 }, { x: X(q), y: -s * 0.18, z: Zc(q) + s * 0.3 }], stroke: s * 0.3, color: shade(color, 0.35) });
-      }
+      });
+      const tip = new Z.Shape({ addTo: a, stroke: 0, color: '#ffffff', translate: { x: Xs(0) - 3 } });
+      return { a, side, tip };
     });
-    const cueSh = new Z.Shape({ addTo: shadows, path: [{ x: X(0) }, { x: X(1) }], stroke: 3, color: 'rgba(0,0,0,.2)', rotate: { z: Math.atan2(U.y, U.x) } });
-    // posições: a 8 na linha da caçapa, a branca atrás dela na mesma linha
-    const E0 = { x: 10, y: -10 }, C0 = { x: -30, y: 30 }, MOUTH = { x: PX - 9, y: PY + 9 }, HIT = { x: E0.x - U.x * 2 * R, y: E0.y - U.y * 2 * R };
-    const lerp = (p, q, k) => ({ x: p.x + (q.x - p.x) * k, y: p.y + (q.y - p.y) * k });
-    const clamp = k => Math.min(1, Math.max(0, k)), out = (k, p = 2.2) => 1 - (1 - clamp(k)) ** p;
-    const dist = (p, q) => Math.hypot(q.x - p.x, q.y - p.y);
+    // sombra macia embaixo da bola
+    const shadow = backdrop(Z, illo, 1, { sort: false });
+    new Z.Ellipse({ addTo: shadow, width: R * 2.1, height: R * 0.5, stroke: 0, fill: true, color: 'rgba(0,0,0,.18)', translate: { y: R + 12 } });
+    // bola: camadas sempre redondas (pontos da Zdog), da sombra pro brilho, num Group que desenha em ordem
+    const ball = new Z.Group({ addTo: illo, translate: { z: 10 } });
+    new Z.Shape({ addTo: ball, stroke: R * 2, color: '#050507' });
+    new Z.Shape({ addTo: ball, stroke: R * 1.86, color: '#16161c', translate: { x: -R * 0.06, y: -R * 0.07 } });
+    new Z.Shape({ addTo: ball, stroke: R * 1.5, color: '#24242d', translate: { x: -R * 0.17, y: -R * 0.2 } });
+    new Z.Shape({ addTo: ball, stroke: R * 0.9, color: '#30303b', translate: { x: -R * 0.3, y: -R * 0.36 } });
+    // círculo branco com o 8
+    const disc = new Z.Group({ addTo: ball });
+    new Z.Ellipse({ addTo: disc, diameter: R * 0.98, stroke: 0, fill: true, color: '#d9d4c6' });
+    new Z.Ellipse({ addTo: disc, diameter: R * 0.9, stroke: 0, fill: true, color: '#fbf7ea', translate: { x: -0.6, y: -0.6 } });
+    new Z.Ellipse({ addTo: disc, diameter: 8.4, stroke: 2.8, color: '#141414', translate: { y: -5 } });
+    new Z.Ellipse({ addTo: disc, diameter: 10, stroke: 2.8, color: '#141414', translate: { y: 4.4 } });
+    // reflexo da luminária e borda de luz embaixo
+    new Z.Shape({ addTo: ball, stroke: R * 0.8, color: 'rgba(255,255,255,.12)', translate: { x: -R * 0.38, y: -R * 0.44 } });
+    new Z.Shape({ addTo: ball, stroke: R * 0.34, color: 'rgba(255,255,255,.9)', translate: { x: -R * 0.44, y: -R * 0.52 } });
+    new Z.Shape({ addTo: ball, path: [{ x: R * 0.2, y: R * 0.8 }, { arc: [{ x: R * 0.8, y: R * 0.8 }, { x: R * 0.82, y: R * 0.15 }] }], closed: false, stroke: 2, color: 'rgba(255,255,255,.2)' });
+    const sparks = Array.from({ length: 8 }, (_, i) => ({ s: new Z.Shape({ addTo: illo, stroke: 2.4, color: i % 2 ? '#ffffff' : '#ffe68a' }), a: (i / 8) * Z.TAU }));
     return t => {
-      illo.translate.set({ x: -2, y: 4 });
-      illo.rotate.x = 0.62 + Math.sin(t * 0.3) * 0.03;
-      illo.rotate.y = Math.sin(t * 0.35) * 0.12;
-      const k = t % 5.4, dir = Math.atan2(U.y * Math.cos(illo.rotate.x), U.x);
-      // taco: mira (ensaios), recua, bate e segue um pouco; depois sai e volta pra próxima
-      const pull = k < 1.1 ? 4 + Math.sin(k * Math.PI * 2.4) * 2.5 : k < 1.45 ? 4 + ((k - 1.1) / 0.35) * 14 : k < 1.53 ? 18 - ((k - 1.45) / 0.08) * 19 : k < 2.6 ? -1 - out((k - 1.53) / 0.3) * 4 : k < 3.3 ? -5 + out((k - 2.6) / 0.7) * 70 : k < 4.6 ? 65 : 65 - out((k - 4.6) / 0.8, 3) * 59;
-      // branca: sai no toque (1,53s), encosta na 8 (1,85s) e anda mais um pouco
-      let cb = C0, croll = 0;
-      if (k >= 1.53 && k < 1.85) cb = lerp(C0, HIT, (k - 1.53) / 0.32);
-      else if (k >= 1.85) cb = lerp(HIT, { x: HIT.x + U.x * 12, y: HIT.y + U.y * 12 }, out((k - 1.85) / 0.9));
-      croll = dist(C0, cb) / R;
-      // 8: rola até a boca, afunda (encolhe e escurece) e volta pro lugar no fim
-      let ep = E0, es = 1, ed = 0;
-      if (k >= 1.85) {
-        const f = out((k - 1.85) / 0.95, 1.6);
-        ep = lerp(E0, MOUTH, f);
-        const drop = clamp((k - 2.75) / 0.35);
-        if (drop > 0) { ep = lerp(MOUTH, { x: PX + 1, y: PY - 1 }, drop); es = 1 - drop * 0.55; ed = drop * 0.85; if (drop >= 1) es = 0; }
-      }
-      // volta: a branca desliza de volta (3,9–4,5s) e depois a 8 reaparece no lugar
-      const back = clamp((k - 3.9) / 0.6), pop = clamp((k - 4.5) / 0.4);
-      if (back > 0) cb = lerp(cb, C0, out(back, 2));
-      if (pop > 0) { ep = E0; es = out(pop, 3); ed = 0; }
-      eight(ep.x, ep.y, es, pop > 0 ? 0.5 : dist(E0, ep) / R + 0.5, dir, ed);
-      cueBall(cb.x, cb.y, 1, croll, dir);
-      one(-46, -28, 1, 0.35, 0.4);
-      eleven(32, 38, 1, -0.3, 0.2);
-      // anel de luz no toque das bolas
-      const ri = clamp((k - 1.85) / 0.4);
-      ring.translate.set({ x: E0.x - U.x * R, y: E0.y - U.y * R }); ring.diameter = 8 + ri * 30;
-      ring.color = `rgba(255,255,255,${(ri > 0 && ri < 1 ? (1 - ri) * 0.5 : 0).toFixed(3)})`;
-      cue.translate.set({ x: C0.x - U.x * pull, y: C0.y - U.y * pull, z: R * 0.55 });
-      cueSh.translate.set({ x: C0.x - U.x * pull + 5, y: C0.y - U.y * pull + 6 });
+      // a bola gira no lugar: o círculo do 8 dá a volta pela frente e some por trás
+      const roll = Math.sin(t * 0.8) * 0.9, c = Math.cos(roll);
+      disc.visible = c > 0.1;
+      disc.translate.set({ x: Math.sin(roll) * R * 0.55 - R * 0.06, y: Math.sin(roll * 0.5) * R * 0.18 - R * 0.06 });
+      disc.scale = { x: 0.3 + 0.7 * c, y: 1, z: 1 };
+      ball.translate.y = Math.sin(t * 1.6) * 2.5;
+      // tacadinha: a cada 2,6s um taco recua e avança (alternando os dois); brilho na ponta no fim
+      const k = t % 5.2, who = k < 2.6 ? 0 : 1, f = (k % 2.6) / 2.6;
+      cues.forEach((cu, i) => {
+        const mine = i === who, push = mine ? (f < 0.35 ? -smooth(f / 0.35) * 10 : f < 0.45 ? -10 + smooth((f - 0.35) / 0.1) * 16 : 6 * (1 - smooth(Math.min(1, (f - 0.45) / 0.4)))) : 0;
+        cu.a.translate.set({ x: Math.cos(cu.a.rotate.z) * push, y: Math.sin(cu.a.rotate.z) * push });
+        cu.a.rotate.z = cu.side * (Math.PI / 4) + Math.PI / 2 + Math.sin(t * 0.8 + i) * 0.04;
+      });
+      const sk = (f - 0.42) / 0.4, cu = cues[who], tipAt = { x: cu.a.translate.x + Math.cos(cu.a.rotate.z) * (Xs(0) - 3), y: cu.a.translate.y + Math.sin(cu.a.rotate.z) * (Xs(0) - 3) };
+      sparks.forEach(({ s, a }) => {
+        s.visible = sk > 0 && sk < 1;
+        s.translate.set({ x: tipAt.x + Math.cos(a) * (4 + sk * 14), y: tipAt.y + Math.sin(a) * (4 + sk * 14), z: -20 });
+        s.stroke = 2.6 * (1 - sk) + 0.3;
+      });
+      illo.rotate.x = -0.1;
+      illo.rotate.y = Math.sin(t * 0.45) * 0.25;
     };
   },
   // forca de madeira num tablado, boneco balançando na corda e a palavra TELA aparecendo letra por letra
