@@ -94,7 +94,7 @@ const ACHIEVEMENTS = [
   { id: 'sinuca500', icon: 'target', name: 'Taco de ouro', desc: 'Fez 500 pontos na Sinuca', test: s => (s.best('sinuca') ?? 0) >= 500, progress: s => [Math.min(500, s.best('sinuca') ?? 0), 500] },
   { id: 'corre1000', icon: 'zap', name: 'Sem freio', desc: 'Fez 1000 pontos no Corredor', test: s => (s.best('corredor') ?? 0) >= 1000, progress: s => [Math.min(1000, s.best('corredor') ?? 0), 1000] },
   { id: 'come5000', icon: 'ghost', name: 'Comilão', desc: 'Fez 5000 pontos no Come-Come', test: s => (s.best('comecome') ?? 0) >= 5000, progress: s => [Math.min(5000, s.best('comecome') ?? 0), 5000] },
-  { id: 'cobra', icon: 'worm', name: 'Cobra criada', desc: '30 pontos na Cobrinha', test: s => (s.best('snake') || 0) >= 30, progress: s => [s.best('snake') || 0, 30] },
+  { id: 'cobra', icon: 'cobrinha', name: 'Cobra criada', desc: '30 pontos na Cobrinha', test: s => (s.best('snake') || 0) >= 30, progress: s => [s.best('snake') || 0, 30] },
   { id: 'gatilho', icon: 'target', name: 'Gatilho rápido', desc: 'Reflexo em até 220 ms', test: s => { const b = s.best('reflexo'); return b !== null && b <= 220; } },
 ];
 const unlockedFor = name => { const s = statsFor(name); return new Set(ACHIEVEMENTS.filter(a => a.test(s)).map(a => a.id)); };

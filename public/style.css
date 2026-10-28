@@ -52,7 +52,13 @@
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
   /* ---------- ícones (public/js/icons.js) ---------- */
-  .i { width: 1.1em; height: 1.1em; flex: none; vertical-align: -0.18em; stroke-width: 2; }
+  .i { width: 1.1em; height: 1.1em; flex: none; vertical-align: -0.18em; }
+  /* segundo tom dos ícones (preenchimento suave atrás do traço); --i2 troca a cor dele */
+  .i .i2 { fill: var(--i2, currentColor); opacity: var(--i2o, .22); }
+  /* prêmios com fundo dourado, fogo laranja e coração cheio, em qualquer lugar do site */
+  :is(.i-trophy, .i-crown, .i-medal, .i-award, .i-star, .i-sparkles) { --i2: #ffc531; --i2o: .7; }
+  .i-flame { --i2: #ff8a3d; --i2o: .7; }
+  .i-heart { --i2o: .55; }
   h1 > .i, h2 > .i, h3 > .i { color: var(--muted); margin-right: .15em; }
   /* selo de posição: 1º ouro, 2º prata, 3º bronze */
   .rank { display: inline-grid; place-items: center; min-width: 1.6em; height: 1.6em; padding: 0 .35em; border-radius: 999px; flex: none;
@@ -381,10 +387,10 @@
   .hole .spark { transform-origin: 46px 9px; animation: spark .5s ease-in-out infinite alternate; }
   @keyframes spark { from { transform: scale(.7) rotate(0); } to { transform: scale(1.15) rotate(25deg); } }
   .mc .i { width: 70%; height: 70%; }
-  .mc .flag { color: #ff6b8a; fill: oklch(66% 0.22 18 / .35); }
-  .mc .bomb { color: #10131c; fill: #2a2d3d; }
+  .mc .flag { color: #ff6b8a; --i2o: .4; }
+  .mc .bomb { color: #10131c; --i2: #2a2d3d; --i2o: 1; }
   .lives { display: inline-flex; gap: 2px; align-items: center; }
-  .i.heart { color: #ff5c6c; fill: #ff5c6c; width: .95em; height: .95em; }
+  .i.heart { color: #ff5c6c; --i2o: 1; width: .95em; height: .95em; }
   .hole.hit { background: radial-gradient(ellipse at 50% 70%, oklch(40% 0.12 150) 0 45%, var(--surface-2) 46%); }
   .hole.boom { background: radial-gradient(ellipse at 50% 70%, oklch(45% 0.18 18) 0 45%, var(--surface-2) 46%); }
   /* 2048 */
@@ -768,7 +774,7 @@
 
   /* ---- prêmios do desafio do dia ---- */
   .crown { display: inline-flex; vertical-align: -0.12em; color: var(--yellow); }
-  .crown .i { width: .95em; height: .95em; fill: oklch(86% 0.17 92 / .35); }
+  .crown .i { width: .95em; height: .95em; --i2o: .4; }
   a.nm { color: inherit; text-decoration: none; }
   a.nm:hover { text-decoration: underline; }
   a.nm.fr-bronze { color: #e0aa7c; }
@@ -783,7 +789,7 @@
   a.nm.fr-aurora { background: linear-gradient(90deg, #5ff0ac, #4dc3ff, #b79bff, #5ff0ac); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shimmer 5s linear infinite; }
   a.nm.fr-brasa { color: #ffb36b; text-shadow: 0 0 10px #ff6a1f99; }
   .dt-seal { display: inline-flex; vertical-align: -0.12em; color: #5ff0ac; }
-  .dt-seal .i { width: .95em; height: .95em; fill: oklch(84% 0.16 160 / .25); }
+  .dt-seal .i { width: .95em; height: .95em; --i2o: .3; }
   @keyframes shimmer { to { background-position: 200% 0; } }
   /* avatar do cabeçalho: moldura e coroa */
   .acct-btn .av { position: relative; }
@@ -2380,3 +2386,6 @@ header .acct-btn .av { box-shadow: inset 0 -2px 0 oklch(0% 0 0 / .2); }
 .site-lock-adm .sl-form input { flex: 1 1 200px; min-width: 0; }
 .site-lock-adm .sl-form select { flex: 0 1 auto; min-width: 0; }
 .site-lock-adm .sl-form .hint:empty { display: none; }
+
+/* ícones brancos em ladrilho colorido: o segundo tom aparece mais */
+:is(.gtile, .tg-tile, .res-tile, .kpi .ic, .stage-head :is(h1, h2), .daily-stage .icon, .ls-fallback, .howto-art) .i { --i2o: .34; }

@@ -1,5 +1,5 @@
 GAMES.invasores = {
-  name: 'Invasores', icon: 'ghost', hue: 285, desc: 'Desvie dos tiros e destrua as naves. ←→ / A D ou arraste — o tiro é automático. Se esconda atrás das barreiras (elas se desgastam) e acerte a nave-mãe lá em cima pra ganhar bônus. 3 vidas.',
+  name: 'Invasores', icon: 'invasores', hue: 285, desc: 'Desvie dos tiros e destrua as naves. ←→ / A D ou arraste — o tiro é automático. Se esconda atrás das barreiras (elas se desgastam) e acerte a nave-mãe lá em cima pra ganhar bônus. 3 vidas.',
   better: 'high', unit: 'pontos', phaser: true,
   start(el, done) {
     const W = 480, H = 560, PY = H - 40, COLS = 8, ROWS = 4, SX = 46, SY = 40, BLK = 6;
