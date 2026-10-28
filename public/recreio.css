@@ -149,7 +149,8 @@ html[data-skin="recreio"] .rc-arr:hover { background: var(--surface-2); }
 html[data-skin="recreio"] .rc-row.open .rc-arrows { visibility: hidden; }
 html[data-skin="recreio"] .rc-more { align-self: center; font-size: .9rem; }
 html[data-skin="recreio"] .rc-row .daily-head { padding: 0; margin: -2px 0 10px; background: none; border: 0; box-shadow: none; }
-html[data-skin="recreio"] .rc-track { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x proximity; padding: 6px 6px 16px; margin: 0 -6px; scrollbar-width: none; }
+html[data-skin="recreio"] .rc-track { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x proximity; padding: 14px 14px 22px; margin: -8px -14px -6px; scroll-padding-inline: 14px; scrollbar-width: none; }
+/* a folga em volta (compensada na margem) é pro card inclinado com o mouse (Vanilla-Tilt) não bater na borda da faixa */
 html[data-skin="recreio"] .rc-track::-webkit-scrollbar { display: none; }
 /* pontas da faixa: em vez de cortar o card no seco, ele some num degradê (só do lado que ainda tem jogo) */
 @property --fade-l { syntax: '<length>'; inherits: false; initial-value: 0px; }
