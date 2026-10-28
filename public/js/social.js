@@ -357,10 +357,14 @@ function duosBodyHtml() {
     ['medal', myPos ? `${myPos}º` : '—', myPos ? `${esc(my.name)} · ${duos[myPos - 1].pts} pts` : 'você não tem dupla', 70],
     ['trophy', duos[0]?.pts ? esc(duos[0].name) : '—', duos[0]?.pts ? `lidera com ${duos[0].pts} pts` : 'ninguém pontuou', 30]])
     + podiumHtml(pod, { title: `Pódio das duplas ${seasonMode === 'all' ? 'no geral' : `em ${seasonLabel().toLowerCase()}`}`, ic: 'users', note: '3, 2 e 1 pontos pras 3 melhores duplas de cada jogo', lead: pod.length > 1 ? (gap ? `Na frente por ${gap} pts` : 'Empatadas na frente') : '' });
-  const gameCard = ({ id, entries }) => {
-    const g = GAMES[id];
-    return `<div class="dg" style="--h:${g.hue}"><div class="dg-head"><span class="ic">${icon(g.icon)}</span><b>${g.name}</b></div>
-      <ol>${entries.map((e, k) => `<li class="${mine(e.d) ? 'me' : ''}">${rankBadge(k + 1)}<span class="dn">${esc(e.d.name)}<small>média ${fmtAvg(g, e.v)}</small></span><b class="${e.pts ? '' : 'zero'}">${e.pts ? `+${e.pts}` : '0'} pts</b></li>`).join('')}</ol></div>`;
+  // uma linha por jogo: as 3 duplas que pontuaram (1º +3, 2º +2, 3º +1); a sua dupla fora do pódio aparece embaixo do nome do jogo
+  const gameRow = ({ id, entries }) => {
+    const g = GAMES[id], k = entries.findIndex(e => mine(e.d));
+    const cells = [0, 1, 2].map(i => {
+      const e = entries[i];
+      return e ? `<span class="dg-c${mine(e.d) ? ' me' : ''}">${rankBadge(i + 1)}<span class="dn"><b title="${esc(e.d.name)}">${esc(e.d.name)}</b><small title="média ${fmtAvg(g, e.v)}">+${e.pts} · ${fmtAvg(g, e.v).replace(` ${g.unit}`, '')}</small></span></span>` : '<span class="dg-c empty">—</span>';
+    }).join('');
+    return `<div class="dg-row" style="--h:${g.hue}"><span class="dg-g"><span class="ic">${icon(g.icon)}</span><span class="dn"><b>${g.name}</b>${k > 2 ? `<small>vocês: ${k + 1}º</small>` : ''}</span></span>${cells}</div>`;
   };
   return `${head}<div class="duo-cols">
     <section class="glass teams"><h2 class="comp-sub">${icon('trophy')} Classificação</h2>
@@ -370,7 +374,7 @@ function duosBodyHtml() {
     <details class="duo-how"><summary>Como funciona</summary><p>Cada um chama quem quiser e dá o nome que quiser à dupla. Em cada jogo, a dupla só pontua se <b>os dois</b> jogaram (depois de formada, ou desde quando o admin definiu); vale a média das melhores partidas dos dois. As 3 melhores duplas do jogo ganham 3, 2 e 1 pontos. Vale o período escolhido em Rankings (mês ou geral).</p></details>
     </section>
     <section class="glass duo-games"><h2 class="comp-sub">${icon('gamepad-2')} Pontos em cada jogo</h2>
-      ${played.length ? `<div class="dg-grid">${played.map(gameCard).join('')}</div>` : '<p class="hint" style="text-align:left;margin:0">Nenhuma dupla pontuou ainda: a dupla entra num jogo quando os dois jogam.</p>'}
+      ${played.length ? `<div class="dg-table">${played.map(gameRow).join('')}</div>` : '<p class="hint" style="text-align:left;margin:0">Nenhuma dupla pontuou ainda: a dupla entra num jogo quando os dois jogam.</p>'}
       ${played.length && idle.length ? `<p class="hint dg-idle">Sem dupla pontuando: ${idle.map(x => GAMES[x.id].name).join(', ')}.</p>` : ''}
     </section></div>`;
 }
