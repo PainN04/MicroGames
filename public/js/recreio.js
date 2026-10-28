@@ -45,7 +45,11 @@ let menuOnly = null;
 function showMenuPart(only) {
   menuOnly = only;
   if (currentView !== 'menu') showMenu();
-  else { paintMenuPart(); scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); }
+  else {
+    if (only === 'daily') renderMenu(); // redesenha pra sortear de novo o diário em destaque
+    else paintMenuPart();
+    scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' });
+  }
 }
 sideNav.querySelector('[data-go="home"]').onclick = () => showMenuPart(null);
 sideNav.querySelector('[data-go="daily"]').onclick = () => showMenuPart('daily');
@@ -115,7 +119,43 @@ function greetHtml() {
     ${streak ? `<span class="rc-streak" title="Dias seguidos jogando os jogos diários">${icon('flame')} ${streak} ${streak === 1 ? 'dia seguido' : 'dias seguidos'}</span>` : ''}`;
 }
 // quando o login ou o ranking chegam (refreshMenu)
-function refreshGreeting() { if (heroNode.isConnected) heroNode.innerHTML = greetHtml(); }
+function refreshGreeting() {
+  if (heroNode.isConnected) heroNode.innerHTML = greetHtml();
+  const side = $('#pickSide');
+  if (side && dailyPick) side.innerHTML = pickSideHtml(dailyPick.id);
+}
+
+/* ---------- tela "só os diários": cartão grande com um diário em destaque ---------- */
+// o diário mais jogado hoje (empate: sorteia entre eles); se ninguém jogou ainda, sorteia um a cada vez que a tela abre
+let dailyPick = null;
+function pickDaily() {
+  const counts = dailyOrder().map(([id]) => [id, bestPerPlayer(id).length]);
+  const max = Math.max(0, ...counts.map(([, n]) => n));
+  const pool = counts.filter(([, n]) => n === max);
+  const [id, n] = pool[Math.floor(Math.random() * pool.length)];
+  return { id, n, top: max > 0 };
+}
+function pickSideHtml(id) {
+  const g = GAMES[id], list = bestPerPlayer(id), mine = list.findIndex(([n]) => n === player);
+  return `<h3>Na frente hoje</h3>
+      ${list.length ? '<ol>' + list.slice(0, 3).map(([n, s], k) => `<li class="${n === player ? 'me' : ''}">${rankBadge(k + 1)} ${nameHtml(n)} <b>${fmt(g, s)}</b></li>`).join('') + '</ol>'
+        : '<p class="hint" style="text-align:left;margin:0">Ninguém jogou ainda. Saia na frente.</p>'}
+      ${mine >= 3 ? `<p class="hint dmine">Você: ${mine + 1}º · ${fmt(g, list[mine][1])}</p>` : ''}
+      <button class="link-btn" data-rank="daily">Ranking dos diários</button>`;
+}
+function pickHtml() {
+  const { id, n, top } = dailyPick = pickDaily(), g = GAMES[id], over = dailyStatus.games[id]?.over;
+  return `<section class="daily rc-daily rc-pick" id="dailyPick" data-game="${id}" style="--h:${g.hue}">
+      <div class="rc-hero"><div class="daily-info">
+          <span class="tag">${top ? `${icon('flame')} Mais jogado hoje · ${n} ${n === 1 ? 'pessoa' : 'pessoas'}` : `${icon('sparkles')} Diário em destaque`}</span>
+          <h2>${g.name}</h2>
+          <p class="hint">${over ? 'Você já jogou hoje. Amanhã tem outro.' : esc(g.desc.split('. ')[0].replace(/\.$/, '')) + '.'}</p>
+          <button class="btn" id="pickPlay">${icon('play')} ${over ? 'Ver meu jogo' : 'Jogar'}</button>
+        </div>
+        <div class="daily-stage" data-id="${id}" data-size="${SMALL.matches ? 120 : 220}"><span class="icon">${icon(g.icon)}</span></div></div>
+      <div class="daily-side" id="pickSide">${pickSideHtml(id)}</div>
+    </section>`;
+}
 
 function menuHtml() {
   heroNode.innerHTML = greetHtml();
@@ -132,6 +172,7 @@ function menuHtml() {
       <div class="rc-hero">${dailyInfoHtml()}${dailyStageHtml(SMALL.matches ? 120 : 220)}</div>
       <div class="daily-side">${dailySideHtml()}</div>
     </section>
+    ${menuOnly === 'daily' ? pickHtml() : ''}
     <div class="dt-remind glass" id="dtRemind" hidden></div>
     ${row('daily', 'Jogos diários', 'calendar', dailyOrder(), true)}
     ${GAME_CATS.map(([key, label, ic]) => row(key, label, ic, catOrder(key))).join('')}`;
@@ -148,5 +189,7 @@ function bindMenuRows() {
     };
     sec.querySelectorAll('.rc-arr').forEach(b => b.onclick = () => track.scrollBy({ left: b.dataset.dir * track.clientWidth * 0.8, behavior: reduced ? 'auto' : 'smooth' }));
   });
+  const pp = $('#pickPlay');
+  if (pp) pp.onclick = () => play(dailyPick.id);
   paintMenuPart();
 }
