@@ -2219,3 +2219,18 @@ html.lite .ls-show { box-shadow: none; }
 .tk-sent-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: var(--space-xs); max-width: none !important; }
 .tk-sent-actions .btn { margin-top: 0; }
 @media (max-width: 860px) { .tk-cols { grid-template-columns: 1fr; } .tk-side .tk-list.compact { max-height: none; } }
+
+/* bloqueio geral: aviso no topo do menu e o interruptor da conta dona no painel */
+.site-lock { display: flex; align-items: center; gap: .8em; padding: .7em 1em; margin: 0 0 var(--space-sm); border-radius: 16px;
+  border: 1px solid oklch(66% 0.22 18 / .6); background: linear-gradient(90deg, oklch(45% 0.16 20 / .35), oklch(35% 0.1 300 / .15)); }
+.site-lock[hidden] { display: none; }
+.site-lock .ic { display: grid; place-items: center; width: 36px; height: 36px; flex: none; border-radius: 10px; background: oklch(66% 0.22 18 / .3); color: oklch(85% 0.1 18); }
+.site-lock .tx { display: grid; gap: 2px; font-size: var(--fs-sm); min-width: 0; }
+.site-lock-adm { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-sm) var(--space-md); }
+.site-lock-adm.on { border-color: oklch(66% 0.22 18 / .6); background: linear-gradient(90deg, oklch(40% 0.14 20 / .35), transparent); }
+.site-lock-adm .sl-txt { flex: 2 1 420px; min-width: 0; }
+.site-lock-adm h2 { margin: 0 0 .2em; }
+.site-lock-adm .note { margin: 0; }
+.site-lock-adm .sl-form { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-sm); flex: 1 1 300px; }
+.site-lock-adm .sl-form input { flex: 1 1 200px; min-width: 0; }
+.site-lock-adm .sl-form .hint:empty { display: none; }

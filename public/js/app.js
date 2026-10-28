@@ -211,6 +211,7 @@ function renderMenu() {
   main.classList.remove('game-view');
   main.replaceChildren(heroNode);
   main.insertAdjacentHTML('beforeend', `
+    <div class="site-lock glass" id="siteLock" role="status" hidden></div>
     <section class="daily glass" id="daily" data-game="${dailyGame()}" style="--h:${GAMES[dailyGame()].hue}">${dailyHtml()}</section>
     <nav class="hub glass" id="strip" aria-label="Competição"></nav>
     <div class="dt-remind glass" id="dtRemind" hidden></div>
@@ -555,14 +556,15 @@ function showNotes(notes) {
 async function pingSession() {
   if (!me || document.hidden) return;
   try {
-    const { block, notes, unread } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' || currentView === 'report' ? 'admin' : currentView));
+    const { block, site, notes, unread } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' || currentView === 'report' ? 'admin' : currentView));
     if (notes?.length) { showNotes(notes); loadSocial().then(() => currentView === 'menu' && refreshMenu()); }
     setUnread(unread);
-    // admin bloqueou (ou liberou): atualiza; se estava jogando, encerra a partida
-    if (!!block !== !!gate?.manual) {
+    // admin bloqueou (ou liberou) a conta ou o site inteiro: atualiza; se estava jogando, encerra a partida
+    if (!!block !== !!gate?.manual || !!site !== !!gate?.site) {
       const playing = GAMES[currentView];
       await refreshGate(true);
-      if (block && playing) { stop(); showMenu(); gateDialog(); }
+      if ((block || site) && playing) { stop(); showMenu(); gateDialog(); }
+      else if (currentView === 'menu') renderSiteLock();
     }
   }
   catch (err) { if (err.status === 401) kicked(err.reason === 'other-device' ? err.message : 'Sua sessão expirou. Entre de novo.'); }
@@ -672,13 +674,20 @@ function untilText(ms) {
 }
 // Status da fila do Geiko: selo pequeno no header (só pra quem tem ID do Geiko ou foi bloqueado pelo admin);
 // clicar abre o painel com os detalhes.
-const gateVisible = () => !!gate && (!!gate.manual || (gate.linked && gate.enabled));
+const gateVisible = () => !!gate && (!!gate.site || !!gate.manual || (gate.linked && gate.enabled));
+const siteReason = () => gate.site.reason ? `<p><b>Motivo:</b> ${esc(gate.site.reason)}</p>` : '';
 function gatePillHtml() {
+  if (gate.site) return `${icon('lock')} <span>Manutenção</span>`;
   if (gate.manual) return `${icon('lock')} <span>Bloqueado</span>`;
   if (gate.error) return `${icon('triangle-alert')} <span>Geiko</span>`;
   return `${icon(gate.blocked ? 'lock' : 'circle-check')} <span>${fmtW(gate.total)}<small>/${fmtW(gate.limit)}</small></span>`;
 }
 function gatePopHtml() {
+  if (gate.site) {
+    return `<b>${icon('lock')} Site em manutenção</b>
+      <p>Os jogos estão fechados pra todo mundo até o admin liberar.</p>${siteReason()}
+      <div class="acts"><button class="btn ghost" id="gateRefresh">${icon('refresh-cw')} Atualizar</button></div>`;
+  }
   if (gate.manual) {
     return `<b>${icon('lock')} Jogos bloqueados pelo admin</b>
       <p>Bloqueado ${untilText(gate.manual.until)}.${gate.manual.reason ? ` Motivo: ${esc(gate.manual.reason)}` : ''}</p>
@@ -732,7 +741,7 @@ function renderGate() {
     const pill = $('#gatePill');
     pill.className = `gate-pill ${gate.blocked ? 'blocked' : gate.error ? 'warn' : 'ok'}`;
     pill.innerHTML = gatePillHtml();
-    pill.title = gate.blocked ? 'Jogos bloqueados — clique pra ver' : gate.free ? 'Horário livre — clique pra ver' : 'Sua fila no Geiko — clique pra ver';
+    pill.title = gate.site ? 'Site em manutenção — clique pra ver' : gate.blocked ? 'Jogos bloqueados — clique pra ver' : gate.free ? 'Horário livre — clique pra ver' : 'Sua fila no Geiko — clique pra ver';
     pill.onclick = () => toggleGatePop();
     const pop = $('#gatePop');
     pop.className = `gate-pop glass ${gate.blocked ? 'blocked' : 'ok'}`;
@@ -741,6 +750,15 @@ function renderGate() {
     $('#gateRefresh')?.addEventListener('click', async e => { e.stopPropagation(); e.target.disabled = true; await refreshGate(true); toggleGatePop(true); });
   } else toggleGatePop(false);
   document.querySelectorAll('.card').forEach(c => c.classList.toggle('locked', !!gate?.blocked));
+  renderSiteLock();
+}
+// aviso no topo do menu enquanto o bloqueio geral estiver ligado
+function renderSiteLock() {
+  const bar = $('#siteLock');
+  if (!bar) return;
+  bar.hidden = !gate?.site;
+  if (gate?.site) bar.innerHTML = `<span class="ic">${icon('lock')}</span><span class="tx"><b>Site em manutenção</b>
+    <span>Os jogos estão fechados pra todo mundo até o admin liberar.${gate.site.reason ? ` Motivo: ${esc(gate.site.reason)}` : ''}</span></span>`;
 }
 
 function ticketsTable(tickets) {
@@ -751,6 +769,12 @@ function ticketsTable(tickets) {
 }
 function gateDialog() {
   if (!gate) return;
+  if (gate.site) {
+    const { el, close } = modal(`<h2>${icon('lock')} Site em manutenção</h2>
+      <p>Os jogos estão fechados pra todo mundo agora. Assim que o admin liberar, é só voltar.</p>${siteReason()}
+      <button class="btn" id="gclose">Ok</button>`);
+    return (el.querySelector('#gclose').onclick = close);
+  }
   if (gate.manual) {
     const { el, close } = modal(`<h2>${icon('lock')} Jogos bloqueados</h2>
       <p>O admin bloqueou seus jogos ${untilText(gate.manual.until)}.</p>

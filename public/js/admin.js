@@ -18,6 +18,7 @@ function showAdmin() {
         <button class="btn ghost icon-btn back" id="back" aria-label="Voltar ao menu">${icon('arrow-left')}</button>
         <div class="title"><h2>${icon('settings')} Administração</h2><p>Contas de quem joga, vínculo com o Geiko e a regra de bloqueio por fila.</p></div>
       </div>
+      ${me?.canEditRecords ? '<section class="glass site-lock-adm" id="siteLockAdm"><p class="hint" style="text-align:left">Carregando...</p></section>' : ''}
       ${adminTabsHtml(adminPane)}
       <section class="glass" data-pane="online"${adminPane === 'online' ? '' : ' hidden'}>
         <div class="acc-head">
@@ -75,7 +76,7 @@ function showAdmin() {
     $('#ansNext').onclick = () => loadAnswers(ansDay + 1);
     $('#ansToday').onclick = () => loadAnswers(null);
     if (adminPane === 'respostas') loadAnswers(ansDay);
-    if (me?.canEditRecords) { bindTicketsPane(); if (adminPane === 'tickets') loadTickets(); }
+    if (me?.canEditRecords) { bindTicketsPane(); if (adminPane === 'tickets') loadTickets(); loadSiteLock(); }
     $('#accNew').onclick = () => accountModal();
     $('#accQ').oninput = renderUsers;
     main.querySelectorAll('[data-accf]').forEach(b => b.onclick = () => {
@@ -94,6 +95,32 @@ function showAdmin() {
     loadOnline();
     loadAdminDuos();
   });
+}
+
+// ---------- bloqueio geral (só a conta dona): fecha os jogos pra todo mundo, sem deploy ----------
+async function loadSiteLock(lock) {
+  const box = $('#siteLockAdm');
+  if (!box) return;
+  if (lock === undefined) {
+    try { ({ lock } = await api('api/admin/site-lock')); } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; return; }
+  }
+  box.classList.toggle('on', !!lock);
+  const since = lock && new Date(lock.since).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  box.innerHTML = lock
+    ? `<div class="sl-txt"><h2>${icon('lock')} Jogos bloqueados pra todo mundo</h2>
+        <p class="note">Desde ${since}. Ninguém consegue jogar, só você.${lock.reason ? ` Motivo mostrado: <b>${esc(lock.reason)}</b>` : ''}</p></div>
+      <div class="sl-form"><span id="slMsg" class="hint" role="status"></span><button class="btn" id="slOff">${icon('lock-open')} Liberar os jogos</button></div>`
+    : `<div class="sl-txt"><h2>${icon('lock-open')} Bloqueio geral</h2>
+        <p class="note">Fecha todos os jogos pra todo mundo (menos você) na hora, sem deploy. Quem estiver jogando sai da partida em até 20s.</p></div>
+      <form class="sl-form" id="slForm"><input name="reason" maxlength="200" placeholder="Motivo (opcional, aparece pra todos)" aria-label="Motivo do bloqueio">
+        <span id="slMsg" class="hint" role="status"></span><button class="btn danger">${icon('lock')} Bloquear todos os jogos</button></form>`;
+  const save = async (on, reason = '') => {
+    box.querySelectorAll('button').forEach(b => { b.disabled = true; });
+    try { loadSiteLock((await api('api/admin/site-lock', { method: 'PUT', body: { on, reason } })).lock); }
+    catch (err) { $('#slMsg').textContent = err.message; box.querySelectorAll('button').forEach(b => { b.disabled = false; }); }
+  };
+  if (lock) $('#slOff').onclick = () => save(false);
+  else $('#slForm').onsubmit = e => { e.preventDefault(); save(true, new FormData(e.target).get('reason')); };
 }
 
 // ---------- duplas (moderação) ----------
