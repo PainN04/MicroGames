@@ -11,7 +11,7 @@ GAMES.cacapalavras = {
     let v = null, S = 10, busy = true, alive = true, saved = 'ok', timers = [], tick = 0, a = null, b = null, dragging = false, moved = false;
     el.innerHTML = `<div class="hud"><span class="stat">Tempo<b id="ct">0:00</b></span><span class="stat">Achadas<b id="cf">0/8</b></span></div>
       <div class="cp-temas" id="ctm"></div>
-      <div class="cp-box"><div class="cp-grid" id="cg" role="group" aria-label="Quadro de letras"></div><svg class="cp-lines" id="cl" viewBox="0 0 10 10" aria-hidden="true"></svg></div>
+      <div class="cp-box"><div class="cp-grid" id="cg" role="group" aria-label="Quadro de letras"></div><svg class="cp-lines" id="cpl" viewBox="0 0 10 10" aria-hidden="true"></svg></div>
       <ul class="cp-words" id="cw"></ul>
       <p class="hint" id="cmsg" aria-live="polite"></p>
       <div class="row-btns" id="cbtns"><button class="btn ghost" id="cgive">${icon('flag')} Desistir</button></div>`;
@@ -31,7 +31,7 @@ GAMES.cacapalavras = {
         ...(v.over && v.place ? v.place.filter(p => !found.includes(p.word)).map(p => seg(p.from, p.to, 'miss')) : [])];
       const sel = a !== null && (b !== null ? line(a, b) : [a]);
       if (sel) marks.push(seg(sel[0], sel.at(-1), 'sel'));
-      el.querySelector('#cl').innerHTML = marks.join('');
+      el.querySelector('#cpl').innerHTML = marks.join('');
       grid.querySelectorAll('.cp-c').forEach((c, i) => c.classList.toggle('on', !!sel && sel.includes(i)));
       el.querySelector('#cw').innerHTML = v.words.map((w, k) => `<li class="${found.includes(w) ? 'ok' : ''}" style="--h:${HUES[k]}">${w}</li>`).join('');
       el.querySelector('#cf').textContent = `${found.length}/${v.words.length}`;
@@ -53,7 +53,7 @@ GAMES.cacapalavras = {
     api('api/diarios/cacapalavras').then(nv => {
       if (!alive) return;
       v = nv; S = v.size; busy = false; say('');
-      grid.style.setProperty('--n', S);
+      grid.style.setProperty('--n', S); el.querySelector('#cpl').setAttribute('viewBox', `0 0 ${S} ${S}`);
       grid.innerHTML = [...v.grid].map((ch, i) => `<div class="cp-c" data-i="${i}">${ch}</div>`).join('');
       el.querySelector('#ctm').innerHTML = v.temas.map(t => `<span class="mtitle">${esc(t)}</span>`).join('');
       paint();
