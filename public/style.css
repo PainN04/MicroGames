@@ -1298,7 +1298,7 @@
 .cx-in:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .cx-form .btn span { display: inline; }
 .cx-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; width: min(100%, 460px); }
-#cl { max-height: 46vh; overflow-y: auto; padding-right: 4px; }
+.cx-list#cl { max-height: 46vh; overflow-y: auto; padding-right: 4px; }
 .cx-last, .cx-end { width: min(100%, 460px); }
 .cx-last[hidden], .cx-end[hidden] { display: none; }
 .cx-last .cx-row { outline: 2px solid var(--text); }
@@ -1486,7 +1486,7 @@
   border-radius: 14px; background: var(--surface); border: 1px solid var(--border-strong); touch-action: none; user-select: none; -webkit-user-select: none; }
 .cp-c { display: grid; place-items: center; font-weight: 700; font-size: clamp(.9rem, 4vw, 1.25rem); cursor: pointer; border-radius: 6px; z-index: 2; }
 .cp-c.on { color: #fff; }
-.cp-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+.cp-lines { position: absolute; inset: 0; width: 100%; height: 100%; max-height: none; overflow: visible; pointer-events: none; z-index: 1; }
 .cp-lines line { stroke-linecap: round; stroke-width: .78; }
 .cp-lines .f { stroke: oklch(70% 0.16 var(--h) / .55); }
 .cp-lines .sel { stroke: oklch(70% 0.19 290 / .75); }
