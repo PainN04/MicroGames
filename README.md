@@ -208,6 +208,7 @@ flowchart LR
 - Contas com **ID do Geiko** vinculado têm os jogos bloqueados quando a fila passa do limite. Quem não tem ID do Geiko nunca é bloqueado, e se o Geiko cair a regra libera em vez de travar todo mundo.
 - **Horário livre:** das 18h às 8h (horário de Brasília) nos dias úteis e o sábado e domingo inteiros, ninguém é bloqueado pela fila, mesmo com ticket aberto. O selo continua mostrando a fila, e o bloqueio manual do admin continua valendo nesse horário.
 - A consulta é a mesma do GeikoDashboard: `POST /attendance/search` com `attendantIds` + `openAttendance`.
+- **Chat aberto com cliente também bloqueia**, até no horário livre. A API pública não tem isso, então o servidor lê o mesmo serviço do Monitor Chat (`wschat.geiko.com.br`, sem chave): `GET /attendant/allAttendants` acha a pessoa pelo ID do Geiko (ou pelo nome de usuário) e `GET /attendances` traz os chats abertos dela. Empresa e sala ficam no painel admin (padrão 94 e 1); se o chat cair, libera.
 - **A regra é editável no painel admin** e fica na tabela `settings`. Os valores padrão:
 
 | Parâmetro | Padrão | O que faz |
