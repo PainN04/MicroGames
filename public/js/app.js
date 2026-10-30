@@ -684,12 +684,22 @@ function chatList() {
 }
 const chatBlockText = () => `Você está com ${chatCount() > 1 ? `${chatCount()} chats abertos` : 'um chat aberto'} com cliente no Geiko. Os jogos voltam quando o atendimento terminar.`;
 const siteReason = () => gate.site.reason ? `<p><b>Motivo:</b> ${esc(gate.site.reason)}</p>` : '';
+// Bloqueado: só o ícone do motivo, pra não apertar o botão da conta (chat, tickets, os dois, admin ou manutenção)
+function gateBlockIcon() {
+  if (gate.site) return 'wrench';
+  if (gate.manual) return 'shield';
+  const chat = chatCount() > 0, queue = gate.linked && gate.enabled && gate.total > gate.limit;
+  if (chat && queue) return 'lock';
+  if (chat) return 'message-circle';
+  return gate.blocked ? 'ticket' : null;
+}
+const BLOCK_LABEL = { wrench: 'Site em manutenção', shield: 'Bloqueado pelo admin', lock: 'Chat aberto e fila cheia', 'message-circle': 'Em atendimento no chat', ticket: 'Fila de tickets cheia' };
 function gatePillHtml() {
-  if (gate.site) return `${icon('lock')} <span>Manutenção</span>`;
-  if (gate.manual) return `${icon('lock')} <span>Bloqueado</span>`;
-  if (chatCount()) return `${icon('message-circle')} <span>Em chat</span>`;
+  const block = gateBlockIcon();
+  if (block) return icon(block);
   if (gate.error) return `${icon('triangle-alert')} <span>Geiko</span>`;
-  return `${icon(gate.blocked ? 'lock' : 'circle-check')} <span>${fmtW(gate.total)}<small>/${fmtW(gate.limit)}</small></span>`;
+  if (!gate.linked || !gate.enabled) return icon('circle-check');
+  return `${icon('circle-check')} <span>${fmtW(gate.total)}<small>/${fmtW(gate.limit)}</small></span>`;
 }
 function gatePopHtml() {
   if (gate.site) {
@@ -762,9 +772,11 @@ function renderGate() {
   $('#gateWrap').hidden = !show;
   if (show) {
     const pill = $('#gatePill');
-    pill.className = `gate-pill ${gate.blocked ? 'blocked' : gate.error ? 'warn' : 'ok'}`;
+    const block = gateBlockIcon();
+    pill.className = `gate-pill ${gate.blocked || block ? 'blocked' : gate.error ? 'warn' : 'ok'}${block || (!gate.error && !(gate.linked && gate.enabled)) ? ' icon-only' : ''}`;
     pill.innerHTML = gatePillHtml();
-    pill.title = gate.site ? 'Site em manutenção — clique pra ver' : chatCount() ? 'Em atendimento no chat — clique pra ver' : gate.blocked ? 'Jogos bloqueados — clique pra ver' : gate.free ? 'Horário livre — clique pra ver' : 'Sua fila no Geiko — clique pra ver';
+    pill.title = `${BLOCK_LABEL[block] || (gate.free ? 'Horário livre' : 'Sua fila no Geiko')} — clique pra ver`;
+    pill.setAttribute('aria-label', pill.title);
     pill.onclick = () => toggleGatePop();
     const pop = $('#gatePop');
     pop.className = `gate-pop glass ${gate.blocked ? 'blocked' : 'ok'}`;
