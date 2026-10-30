@@ -675,11 +675,19 @@ function untilText(ms) {
 }
 // Status da fila do Geiko: selo pequeno no header (só pra quem tem ID do Geiko ou foi bloqueado pelo admin);
 // clicar abre o painel com os detalhes.
-const gateVisible = () => !!gate && (!!gate.site || !!gate.manual || (gate.linked && gate.enabled));
+const gateVisible = () => !!gate && (!!gate.site || !!gate.manual || !!gate.chat || (gate.linked && gate.enabled));
+const chatCount = () => gate?.chat?.chats.length || 0;
+const hhmm = iso => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+// chats abertos com cliente no Monitor Chat do Geiko (bloqueiam até no horário livre)
+function chatList() {
+  return `<ul class="gate-chats">${gate.chat.chats.map(c => `<li>${icon('message-circle')}<span><b>${esc(c.customer)}</b>${c.product ? ` · ${esc(c.product)}` : ''}${c.since ? ` <small>desde ${hhmm(c.since)}</small>` : ''}</span></li>`).join('')}</ul>`;
+}
+const chatBlockText = () => `Você está com ${chatCount() > 1 ? `${chatCount()} chats abertos` : 'um chat aberto'} com cliente no Geiko. Os jogos voltam quando o atendimento terminar.`;
 const siteReason = () => gate.site.reason ? `<p><b>Motivo:</b> ${esc(gate.site.reason)}</p>` : '';
 function gatePillHtml() {
   if (gate.site) return `${icon('lock')} <span>Manutenção</span>`;
   if (gate.manual) return `${icon('lock')} <span>Bloqueado</span>`;
+  if (chatCount()) return `${icon('message-circle')} <span>Em chat</span>`;
   if (gate.error) return `${icon('triangle-alert')} <span>Geiko</span>`;
   return `${icon(gate.blocked ? 'lock' : 'circle-check')} <span>${fmtW(gate.total)}<small>/${fmtW(gate.limit)}</small></span>`;
 }
@@ -692,6 +700,16 @@ function gatePopHtml() {
   if (gate.manual) {
     return `<b>${icon('lock')} Jogos bloqueados pelo admin</b>
       <p>Bloqueado ${untilText(gate.manual.until)}.${gate.manual.reason ? ` Motivo: ${esc(gate.manual.reason)}` : ''}</p>
+      <div class="acts"><button class="btn ghost" id="gateRefresh">${icon('refresh-cw')} Atualizar</button></div>`;
+  }
+  if (chatCount()) {
+    return `<b>${icon('message-circle')} Em atendimento no chat</b>
+      <p>${chatBlockText()}</p>${chatList()}
+      <div class="acts">${gate.linked && gate.enabled ? `<button class="btn ghost" id="gateSee">Ver tickets</button>` : ''}<button class="btn ghost" id="gateRefresh">${icon('refresh-cw')} Atualizar</button></div>`;
+  }
+  if (!gate.linked || !gate.enabled) {
+    return `<b>${icon('circle-check')} Liberado pra jogar</b>
+      <p>Nenhum chat aberto com cliente no Geiko.</p>
       <div class="acts"><button class="btn ghost" id="gateRefresh">${icon('refresh-cw')} Atualizar</button></div>`;
   }
   const pct = Math.min(100, gate.limit ? (gate.total / gate.limit) * 100 : 100);
@@ -746,7 +764,7 @@ function renderGate() {
     const pill = $('#gatePill');
     pill.className = `gate-pill ${gate.blocked ? 'blocked' : gate.error ? 'warn' : 'ok'}`;
     pill.innerHTML = gatePillHtml();
-    pill.title = gate.site ? 'Site em manutenção — clique pra ver' : gate.blocked ? 'Jogos bloqueados — clique pra ver' : gate.free ? 'Horário livre — clique pra ver' : 'Sua fila no Geiko — clique pra ver';
+    pill.title = gate.site ? 'Site em manutenção — clique pra ver' : chatCount() ? 'Em atendimento no chat — clique pra ver' : gate.blocked ? 'Jogos bloqueados — clique pra ver' : gate.free ? 'Horário livre — clique pra ver' : 'Sua fila no Geiko — clique pra ver';
     pill.onclick = () => toggleGatePop();
     const pop = $('#gatePop');
     pop.className = `gate-pop glass ${gate.blocked ? 'blocked' : 'ok'}`;
@@ -787,8 +805,14 @@ function gateDialog() {
       <button class="btn" id="gclose">Ok</button>`);
     return (el.querySelector('#gclose').onclick = close);
   }
+  if (chatCount() && !(gate.linked && gate.enabled)) {
+    const { el, close } = modal(`<h2>${icon('message-circle')} Em atendimento no chat</h2><p>${chatBlockText()}</p>${chatList()}
+      <button class="btn" id="gclose">Ok</button>`);
+    return (el.querySelector('#gclose').onclick = close);
+  }
   const { el, close } = modal(`
-    <h2>${gate.blocked ? icon('lock') + ' Fila cheia' : 'Sua fila no Geiko'}</h2>
+    <h2>${chatCount() ? icon('message-circle') + ' Em atendimento no chat' : gate.blocked ? icon('lock') + ' Fila cheia' : 'Sua fila no Geiko'}</h2>
+    ${chatCount() ? `<p>${chatBlockText()}</p>${chatList()}` : ''}
     <p>Cada ticket tem um peso: sem prioridade ou sem interação pesa mais; aguardando o cliente pesa menos.
       Soma atual <b>${fmtW(gate.total)}</b>, limite <b>${fmtW(gate.limit)}</b>.${gate.free ? ` Agora é horário livre: liberado ${untilText(gate.free.until)}.` : ''}</p>
     ${ticketsTable(gate.tickets)}

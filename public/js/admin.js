@@ -840,6 +840,10 @@ async function loadRules() {
               : '<span class="hint">Não consegui buscar os status no Geiko agora.</span>'}
           </fieldset>
         </div>
+        <div class="set-card">
+          ${ruleSwitch('chat_enabled', rules.chat.enabled, 'Bloqueio por chat', 'Quem está com chat aberto com cliente no Monitor Chat do Geiko fica sem jogar, até no horário livre.')}
+          <div class="set-inline set-dep"><label>Empresa <input type="text" name="chat_company" inputmode="numeric" pattern="\\d{1,9}" value="${esc(rules.chat.company)}" aria-label="Código da empresa no chat"></label><label>Sala <input type="text" name="chat_room" inputmode="numeric" pattern="\\d{1,9}" value="${esc(rules.chat.room)}" aria-label="Código da sala do chat"></label></div>
+        </div>
         <div class="set-card wide">
           ${ruleSwitch('weeklyPublic', rules.weeklyPublic, 'Ranking de tickets da semana pra todos', 'Desligado: todo mundo vê só quem mais resolveu; os números de cada um ficam no Relatório.')}
         </div>
@@ -863,6 +867,7 @@ async function loadRules() {
         noInteractionMult: f.get('noInteractionMult'),
         waitingClientMult: f.get('waitingClientMult'),
         freeHours: { enabled: f.get('fh_enabled') === 'on', weekends: f.get('fh_weekends') === 'on', from: f.get('fh_from'), to: f.get('fh_to') },
+        chat: { enabled: f.get('chat_enabled') === 'on', company: f.get('chat_company'), room: f.get('chat_room') },
         // sem a lista do Geiko na tela, mantém a que já estava salva
         waitingClientSituationIds: sitEntries.length ? f.getAll('sit').map(Number) : rules.waitingClientSituationIds,
       };
