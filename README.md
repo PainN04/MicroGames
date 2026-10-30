@@ -1,6 +1,6 @@
 <div align="center">
 
-# MicroGame
+# 🎮 MicroGame
 
 **41 minigames de navegador pra jogar com o pessoal do trabalho: 28 pra jogar quando quiser e 13 diários.**
 Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas, conquistas e integração com a fila do Geiko.
@@ -20,44 +20,44 @@ Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas, conquist
 
 <br>
 
-## Sumário
+## 📑 Sumário
 
-- [Destaques](#destaques)
-- [Telas](#telas)
-- [Os jogos](#os-jogos)
-- [Competição e social](#competição-e-social)
-- [Login e bloqueio pelo Geiko](#login-e-bloqueio-pelo-geiko)
-- [Reportar problema (tickets)](#reportar-problema-tickets)
-- [Painel admin](#painel-admin)
-- [Arquitetura](#arquitetura)
-- [Rodando no seu PC](#rodando-no-seu-pc)
-- [Deploy e ambientes](#deploy-e-ambientes)
-- [Variáveis de ambiente](#variáveis-de-ambiente)
-- [Scripts](#scripts)
-- [Testes](#testes)
-- [Backups](#backups)
-- [Estrutura de pastas](#estrutura-de-pastas)
-- [Bibliotecas e créditos](#bibliotecas-e-créditos)
+- [✨ Destaques](#-destaques)
+- [🖼️ Telas](#️-telas)
+- [🕹️ Os jogos](#️-os-jogos)
+- [🏆 Competição e social](#-competição-e-social)
+- [🚦 Login e bloqueio pelo Geiko](#-login-e-bloqueio-pelo-geiko)
+- [🐞 Reportar problema (tickets)](#-reportar-problema-tickets)
+- [🛠️ Painel admin](#️-painel-admin)
+- [🧱 Arquitetura](#-arquitetura)
+- [🚀 Rodando no seu PC](#-rodando-no-seu-pc)
+- [☁️ Deploy e ambientes](#️-deploy-e-ambientes)
+- [🔐 Variáveis de ambiente](#-variáveis-de-ambiente)
+- [📜 Scripts](#-scripts)
+- [🧪 Testes](#-testes)
+- [💾 Backups](#-backups)
+- [🗂️ Estrutura de pastas](#️-estrutura-de-pastas)
+- [📦 Bibliotecas e créditos](#-bibliotecas-e-créditos)
 
 <br>
 
-## Destaques
+## ✨ Destaques
 
 | | |
 | --- | --- |
-| **41 jogos rápidos** | De 10 segundos a poucos minutos por partida, no computador ou no celular (teclado, mouse, toque, deslize ou botões na tela). Antes da 1ª partida de cada jogo aparece um "Como jogar" com 3 passos e as teclas. |
-| **Visual Recreio** | Tema claro e escuro, menu lateral que recolhe no PC e barra de navegação embaixo no celular. Cada jogo tem uma cena 3D (Zdog) no card e na tela de jogo. |
-| **Ranking de verdade** | Por jogo, do mês e geral. O servidor confere cada pontuação antes de gravar: nos jogos de arcade a partida é aberta no servidor e vale uma vez só, no relógio dele (`lib/plays.js`); o 2048 é refeito no servidor a partir dos movimentos; as respostas do Termo, Forca, Anagrama, Quiz e dos diários ficam só no servidor; mais a faixa válida de cada jogo e a trava anti-autoclicker. |
-| **Desafio do dia** | Um jogo sorteado por dia, igual pra todo mundo. Quem ganha leva a coroa e escolhe o jogo de amanhã. |
-| **Competição** | Telas de Rankings, Torneio semanal, Duplas e Duelos, com pódio, reações nos recordes e avisos. |
-| **49 conquistas** | Calculadas na página a partir do histórico de partidas, sem nada extra no banco. Algumas liberam avatares e títulos. |
-| **Integração com o Geiko** | Quem está com a fila de tickets cheia, ou com chat aberto com cliente, fica sem jogar até resolver. |
-| **Instalável** | No celular ou no Chrome, "Instalar app" põe o MicroGame na tela inicial e abre em tela cheia. |
-| **Leve** | Sem framework: um arquivo JS por jogo, e a biblioteca de jogos (Phaser) só baixa quando alguém abre um deles. Em PC fraco o site entra sozinho no modo leve (sem 3D nem fundo animado). |
+| 🎯 **41 jogos rápidos** | De 10 segundos a poucos minutos por partida, no computador ou no celular (teclado, mouse, toque, deslize ou botões na tela). Antes da 1ª partida de cada jogo aparece um "Como jogar" com 3 passos e as teclas. |
+| 🎨 **Visual Recreio** | Tema claro e escuro, menu lateral que recolhe no PC e barra de navegação embaixo no celular. Cada jogo tem uma cena 3D (Zdog) no card e na tela de jogo. |
+| 🏅 **Ranking de verdade** | Por jogo, do mês e geral. O servidor confere cada pontuação antes de gravar: nos jogos de arcade a partida é aberta no servidor e vale uma vez só, no relógio dele (`lib/plays.js`); o 2048 é refeito no servidor a partir dos movimentos; as respostas do Termo, Forca, Anagrama, Quiz e dos diários ficam só no servidor; mais a faixa válida de cada jogo e a trava anti-autoclicker. |
+| 📅 **Desafio do dia** | Um jogo sorteado por dia, igual pra todo mundo. Quem ganha leva a coroa e escolhe o jogo de amanhã. |
+| ⚔️ **Competição** | Telas de Rankings, Torneio semanal, Duplas e Duelos, com pódio, reações nos recordes e avisos. |
+| 🎖️ **49 conquistas** | Calculadas na página a partir do histórico de partidas, sem nada extra no banco. Algumas liberam avatares e títulos. |
+| 🚦 **Integração com o Geiko** | Quem está com a fila de tickets cheia, ou com chat aberto com cliente, fica sem jogar até resolver. |
+| 📱 **Instalável** | No celular ou no Chrome, "Instalar app" põe o MicroGame na tela inicial e abre em tela cheia. |
+| ⚡ **Leve** | Sem framework: um arquivo JS por jogo, e a biblioteca de jogos (Phaser) só baixa quando alguém abre um deles. Em PC fraco o site entra sozinho no modo leve (sem 3D nem fundo animado). |
 
 <br>
 
-## Telas
+## 🖼️ Telas
 
 <table>
   <tr>
@@ -76,16 +76,16 @@ Ranking compartilhado, desafio do dia, torneio semanal, duelos, duplas, conquist
 
 <div align="center">
 <img src="docs/img/celular.webp" alt="Menu no celular com a barra de navegação embaixo" width="300">
-<br><sub><b>No celular:</b> uma barra só, embaixo (Início, Diários, Rankings, Torneio, Duplas e Duelos).</sub>
+<br><sub>📱 <b>No celular:</b> uma barra só, embaixo (Início, Diários, Rankings, Torneio, Duplas e Duelos).</sub>
 </div>
 
 <br>
 
-## Os jogos
+## 🕹️ Os jogos
 
 Cada jogo é um arquivo em [`public/js/games/`](public/js/games) (o Dueto, o Quarteto e o Octeto dividem o `dueto.js`). Os marcados com 🎨 usam **Phaser**; os outros são DOM puro. Os jogos Phaser pausam sozinhos quando você troca de aba ou de janela. No menu, os 28 jogos ficam em 3 fileiras, as mesmas de `GAME_CATS` em `public/js/recreio.js`.
 
-### Arcade (12)
+### 🕹️ Arcade (12)
 
 | Jogo | Como joga |
 | --- | --- |
@@ -102,7 +102,7 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games) (o Dueto, o Qua
 | **Torre** 🎨 | Solte o bloco na torre; o que passa da borda é cortado e os acertos perfeitos aumentam o bloco. |
 | **Ritmo** 🎨 | Escolha uma das 5 músicas e aperte D F J K (ou toque na faixa) quando a nota cruzar a linha. Bom 50, Ótimo 100, Perfeito 200; notas compridas e combo. Cada música tem ranking próprio, e o do jogo soma o melhor de cada uma (`lib/ritmo.js`). |
 
-### Rapidinhos (8)
+### ⚡ Rapidinhos (8)
 
 | Jogo | Como joga |
 | --- | --- |
@@ -115,7 +115,7 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games) (o Dueto, o Qua
 | **Toupeira** | Acerte as toupeiras em 30s. Estrela vale 3, a dourada (rara e rápida) vale 5, bomba tira 3. Combo até x4. |
 | **Conta Rápida** | Resolva o máximo de contas em 30s. Combo até x4. |
 
-### Pra pensar (8)
+### 🧠 Pra pensar (8)
 
 | Jogo | Como joga |
 | --- | --- |
@@ -128,7 +128,7 @@ Cada jogo é um arquivo em [`public/js/games/`](public/js/games) (o Dueto, o Qua
 | **Quiz de TI** | Mais de 150 perguntas de TI e de escritório, 4 alternativas, 60s. Combo até x4; errou, perde 1 ponto e vê a certa. |
 | **Anagrama** | Desembaralhe palavras em 60s com uma dica do tema. Palavra maior vale mais; pular não custa ponto e o botão Letra revela uma letra. |
 
-### Jogos diários (13)
+### 📆 Jogos diários (13)
 
 Uma partida por dia em cada um, o mesmo desafio pra todo mundo. A resposta fica só no servidor (`lib/rounds.js` pro Termo, `lib/diarios.js` pros outros): a página manda cada jogada e recebe o resultado dela, e a pontuação é gravada pelo servidor. Ficam fora do desafio do dia, dos duelos e do torneio.
 
@@ -151,61 +151,61 @@ Uma partida por dia em cada um, o mesmo desafio pra todo mundo. A resposta fica 
 Os dados vêm de scripts que rodam uma vez, fora do app: `scripts/build-diarios.js` (Bandeira e Soletra), `scripts/build-soletra.py`, `scripts/build-contexto.py` e `scripts/build-cruzadinha.js` (grades a partir de `lib/data/cruzadinha-dicas.txt`).
 
 Na aba Diários:
-- **Ranking de hoje**: soma os pontos de todos os diários do dia e zera à meia-noite (cada diário também tem ranking só do dia). Os diários ficam fora de recordes, campeões do mês e duplas.
-- **Campeão dos diários**: quem fecha o dia em 1º no Ranking de hoje ganha um selo ao lado do nome no dia seguinte (com confete) e libera a moldura *Aurora*.
-- **Sequência**: dias seguidos jogando pelo menos um diário. Aparece no menu (com o contador de diários que faltam no menu lateral) e no perfil, com o recorde; 7 dias liberam a moldura *Brasa*.
-- **Compartilhar meu dia**: um resumo com os pontos, a posição, a sequência e o que foi jogado (no celular abre o compartilhar do sistema; no PC copia).
-- **Lembrete**: a partir das 18h, se ainda falta jogar algum, uma faixa avisa quanto tempo falta pra virar o dia.
+- 🏁 **Ranking de hoje**: soma os pontos de todos os diários do dia e zera à meia-noite (cada diário também tem ranking só do dia). Os diários ficam fora de recordes, campeões do mês e duplas.
+- 👑 **Campeão dos diários**: quem fecha o dia em 1º no Ranking de hoje ganha um selo ao lado do nome no dia seguinte (com confete) e libera a moldura *Aurora*.
+- 🔥 **Sequência**: dias seguidos jogando pelo menos um diário. Aparece no menu (com o contador de diários que faltam no menu lateral) e no perfil, com o recorde; 7 dias liberam a moldura *Brasa*.
+- 📤 **Compartilhar meu dia**: um resumo com os pontos, a posição, a sequência e o que foi jogado (no celular abre o compartilhar do sistema; no PC copia).
+- ⏰ **Lembrete**: a partir das 18h, se ainda falta jogar algum, uma faixa avisa quanto tempo falta pra virar o dia.
 
 <br>
 
-## Competição e social
+## 🏆 Competição e social
 
 Quase tudo sai das **partidas** (tabela `scores`): só o que não dá pra deduzir delas ganha tabela própria. O menu mostra só o líder do desafio de hoje e o recorde em cada card; o resto fica nas telas **Rankings**, **Torneio**, **Duplas** e **Duelos** do menu lateral (ou da barra de baixo no celular). Cada uma abre com 4 números do período e um pódio (1º no centro, 2º à esquerda, 3º à direita).
 
-### Desafio do dia
+### 📅 Desafio do dia
 - Um jogo por dia, sorteado de forma determinística (`public/js/daily.js`, usado pela página e pelo servidor, então os dois sempre concordam). A cada ciclo passa por todos os jogos numa ordem embaralhada. Jogo novo só entra a partir do dia em que foi lançado.
 - Vale a melhor partida do dia. Quem ganha:
-  - leva a **coroa** ao lado do nome no dia seguinte, com aviso de parabéns e confete;
-  - **escolhe o jogo de amanhã**;
-  - acumula vitórias que liberam **molduras de avatar**:
+  - 👑 leva a **coroa** ao lado do nome no dia seguinte, com aviso de parabéns e confete;
+  - 🎯 **escolhe o jogo de amanhã**;
+  - 🖼️ acumula vitórias que liberam **molduras de avatar**:
 
 | Moldura | Desafios ganhos |
 | --- | --- |
-| Bronze | 1 |
-| Prata | 3 |
-| Ouro | 7 |
-| Diamante | 15 |
+| 🥉 Bronze | 1 |
+| 🥈 Prata | 3 |
+| 🥇 Ouro | 7 |
+| 💎 Diamante | 15 |
 
-### Rankings
+### 🏅 Rankings
 Abas **Recordes**, **Desafio do dia** e **Jogos diários**, cada uma com Mês ou Geral. Mostra o pódio de quem tem mais 1º lugares, a lista do 4º em diante, os mais jogados do mês, as maiores sequências, os campeões dos meses que já acabaram e, se o Geiko estiver configurado, o destaque de tickets resolvidos na semana.
 
-**Campeão do mês:** quem termina o mês com mais recordes de 1º lugar ganha um selo fixo, uma medalha ao lado do nome em todos os rankings (com o número, se ganhou mais de uma vez) e o título *Campeão de setembro de 2026* no perfil.
+🏅 **Campeão do mês:** quem termina o mês com mais recordes de 1º lugar ganha um selo fixo, uma medalha ao lado do nome em todos os rankings (com o número, se ganhou mais de uma vez) e o título *Campeão de setembro de 2026* no perfil.
 
-### Torneio semanal
+### 🗓️ Torneio semanal
 - Semana de segunda a domingo, no horário de Brasília. Cada semana sorteia **3 jogos**, iguais pra todo mundo, e a soma das posições vira pontos.
 - Pontos por posição em cada jogo: **10, 7, 5, 4, 3, 2** do 1º ao 6º, e **1 ponto** do 7º em diante.
 - A tela mostra o pódio provisório, os pontos de cada pessoa em cada jogo e os 3 jogos da semana com a cena 3D.
 - Os jogos diários não entram (só vale 1 partida por dia). Os 3 jogos da semana ficam guardados, então não mudam se entrar jogo novo no meio.
 
-### Duelos
+### ⚔️ Duelos
 Desafie alguém num jogo. O duelo dura **24h**, com no máximo **5 abertos** por pessoa. Nos últimos resultados tem o botão **Revanche** (mesmo jogo, mesma pessoa, num toque), e o aviso de duelo encerrado já abre com a revanche preenchida.
 
-### Duplas
+### 🤝 Duplas
 Duas pessoas formam uma dupla com o nome que quiserem. Quem convida escolhe o nome (2 a 24 caracteres); o convidado tem **48h** pra aceitar ou recusar. Cada pessoa só pode estar numa dupla (ou convite aberto) por vez, e a pontuação da dupla é calculada na página a partir das partidas. A tela mostra uma matriz jogo × dupla com medalhas. Quando alguém da dupla toma o 1º lugar (geral ou do mês) de outra pessoa num jogo, o parceiro recebe um aviso.
 
-### Reações e avisos
+### 👏 Reações e avisos
 - Reaja ao recorde de alguém direto na linha do ranking.
 - O sino avisa quando alguém **toma seu recorde**, reage, te desafia, quando o torneio muda ou quando um ticket seu foi respondido.
 
-### Perfil e conquistas
+### 🎖️ Perfil e conquistas
 Clique no nome de qualquer pessoa pra abrir o perfil: avatar, moldura, título, uma frase curta, resumo de partidas e as conquistas. São **49 conquistas**, como *Estreia*, *Explorador* (10 jogos diferentes), *Zerou o menu*, *Rei de um jogo*, *Campeão da semana*, *Tricampeão*, *Dobradinha*, *Constância* (5 dias úteis seguidos), *Madrugador*, *Hora do almoço*, *Veterano* (500 partidas) e *Lenda da firma* (1000 partidas). Tudo é calculado na página a partir do ranking (`public/js/profile.js`).
 
 Os **avatares** são desenhos (DiceBear e game-icons.net) salvos em `public/img/avatars/`, com 9 cores de fundo. Alguns liberam com uma conquista, e cada jogo tem um avatar próprio que libera depois da 1ª partida.
 
 <br>
 
-## Login e bloqueio pelo Geiko
+## 🚦 Login e bloqueio pelo Geiko
 
 ```mermaid
 flowchart LR
@@ -247,7 +247,7 @@ flowchart LR
 
 <br>
 
-## Reportar problema (tickets)
+## 🐞 Reportar problema (tickets)
 
 - No menu da conta, **Reportar problema** abre uma tela com o formulário (tipo: algo quebrou, problema num jogo, minha conta, sugestão ou outra coisa), até 3 imagens (reduzidas no navegador) e a lista **Seus tickets**. Cada pessoa manda até 10 por dia.
 - Só a conta dona lê os tickets, em **Administração > Tickets**, com o contador de abertos. Ela responde (com até 3 imagens) e resolve; quem mandou recebe um aviso e vê a resposta em Seus tickets.
@@ -255,26 +255,26 @@ flowchart LR
 
 <br>
 
-## Painel admin
+## 🛠️ Painel admin
 
 Só pra contas com papel de admin:
 
-- **Bloqueio geral:** liga e desliga o modo manutenção (só a conta dona).
-- **Quem está online.**
-- **Contas:** criar, editar, desativar, vincular ID do Geiko, liberar ou bloquear manualmente, apagar a frase do perfil de alguém.
-- **Duplas:** ver as duplas e montar uma dupla manualmente.
-- **Regra de bloqueio do Geiko:** limite, pesos, multiplicadores, horário livre e chat, mais um teste de ID do Geiko.
-- **Respostas do dia:** as respostas dos jogos diários de um dia e o que cada pessoa mandou.
-- **Relatório:** partidas por pessoa × jogo, por dia e por hora.
-- **Jogo × trabalho:** na semana, quantas partidas cada pessoa jogou comparado aos tickets que fechou e à fila atual.
-- **Editor de recordes:** só a conta dona (`RECORDS_OWNER`) mexe em recorde, mesmo sendo admin. Dá pra apagar uma partida, zerar o ranking de um jogo ou todos os pontos de uma pessoa.
-- **Tickets:** os problemas reportados (só a conta dona).
-- **Backups:** baixar, importar e restaurar.
-- **Erros de JavaScript** dos jogadores (no máximo 5 por página, sem repetir).
+- ⛔ **Bloqueio geral:** liga e desliga o modo manutenção (só a conta dona).
+- 🟢 **Quem está online.**
+- 👥 **Contas:** criar, editar, desativar, vincular ID do Geiko, liberar ou bloquear manualmente, apagar a frase do perfil de alguém.
+- 🤝 **Duplas:** ver as duplas e montar uma dupla manualmente.
+- 🚦 **Regra de bloqueio do Geiko:** limite, pesos, multiplicadores, horário livre e chat, mais um teste de ID do Geiko.
+- 📝 **Respostas do dia:** as respostas dos jogos diários de um dia e o que cada pessoa mandou.
+- 📊 **Relatório:** partidas por pessoa × jogo, por dia e por hora.
+- 🧑‍💻 **Jogo × trabalho:** na semana, quantas partidas cada pessoa jogou comparado aos tickets que fechou e à fila atual.
+- ✏️ **Editor de recordes:** só a conta dona (`RECORDS_OWNER`) mexe em recorde, mesmo sendo admin. Dá pra apagar uma partida, zerar o ranking de um jogo ou todos os pontos de uma pessoa.
+- 🐞 **Tickets:** os problemas reportados (só a conta dona).
+- 💾 **Backups:** baixar, importar e restaurar.
+- 🐛 **Erros de JavaScript** dos jogadores (no máximo 5 por página, sem repetir).
 
 <br>
 
-## Arquitetura
+## 🧱 Arquitetura
 
 ```mermaid
 flowchart TB
@@ -298,7 +298,7 @@ A ideia central é que **o código das rotas é um só** (`lib/router.js`): a Ve
 
 No front não tem framework: cada arquivo de `public/js/` é um script comum carregado pelo `index.html`. No deploy, `npm run build` junta tudo num arquivo só com o esbuild.
 
-### Rotas da API
+### 🔌 Rotas da API
 
 | Grupo | Rotas |
 | --- | --- |
@@ -314,13 +314,13 @@ No front não tem framework: cada arquivo de `public/js/` é um script comum car
 | Admin | `/api/admin/users` · `rules` · `site-lock` · `records` · `records/clear` · `records/delete` · `report` · `workplay` · `backups` · `errors` · `online` · `duos` · `bio` · `daily-answers` · `tickets` · `preview` |
 | Infra | `/api/cron/backup` · `/api/homolog/bootstrap` (só nos previews) |
 
-### Tabelas
+### 🗃️ Tabelas
 
 `scores` · `users` · `settings` · `notifications` · `client_errors` · `reactions` · `duels` · `duos` · `termo_plays` · `daily_plays` · `game_rounds` · `arcade_plays` · `ritmo_scores` · `login_fails` · `backups` · `tickets` · `ticket_images` (criadas e atualizadas de forma idempotente por `lib/schema.js`).
 
 <br>
 
-## Rodando no seu PC
+## 🚀 Rodando no seu PC
 
 Precisa de **Node 22 ou mais novo** (o banco local usa `node:sqlite`).
 
@@ -344,7 +344,7 @@ Pra mudar a porta, defina `PORT` antes (no PowerShell: `$env:PORT=3000`). O serv
 
 <br>
 
-## Deploy e ambientes
+## ☁️ Deploy e ambientes
 
 | Ambiente | Branch | Banco | Como publica |
 | --- | --- | --- | --- |
@@ -361,7 +361,7 @@ Pra mudar a porta, defina `PORT` antes (no PowerShell: `$env:PORT=3000`). O serv
 
 <br>
 
-## Variáveis de ambiente
+## 🔐 Variáveis de ambiente
 
 Ficam no `.env.local` (teste, fora do Git) e no projeto da Vercel (produção e preview).
 
@@ -369,7 +369,7 @@ Ficam no `.env.local` (teste, fora do Git) e no projeto da Vercel (produção e 
 | --- | :---: | --- |
 | `DATABASE_URL` | produção | Banco Neon de produção. |
 | `Homolog_DB_DATABASE_URL` | preview | Banco Neon das versões de teste. |
-| `SESSION_SECRET` | sim | Assina a sessão. Mínimo de 32 caracteres; sem ela o login dá erro. |
+| `SESSION_SECRET` | ✅ | Assina a sessão. Mínimo de 32 caracteres; sem ela o login dá erro. |
 | `SESSION_TTL_HOURS` | | Duração da sessão em horas (padrão `12`). |
 | `GEIKO_API_KEY` · `GEIKO_API_URL` | | Acesso à API do Geiko. Sem elas o bloqueio por fila fica desligado. |
 | `RECORDS_OWNER` | | Usuário da conta dona, a única que edita recordes, lê tickets e liga o bloqueio geral (padrão `paulo`). |
@@ -377,11 +377,11 @@ Ficam no `.env.local` (teste, fora do Git) e no projeto da Vercel (produção e 
 | `PORT` | | Porta do servidor local (padrão `8080`). |
 | `MICROGAME_DIST` | | `1` faz o servidor local servir a `dist/` em vez da `public/`. |
 
-> Nunca commite `.env*`, `*.db`, backups (`*backup*.json`) nem `contas-*.csv`: eles têm senhas e nomes do pessoal. Tudo isso já está no `.gitignore`.
+> ⚠️ Nunca commite `.env*`, `*.db`, backups (`*backup*.json`) nem `contas-*.csv`: eles têm senhas e nomes do pessoal. Tudo isso já está no `.gitignore`.
 
 <br>
 
-## Scripts
+## 📜 Scripts
 
 | Comando | O que faz |
 | --- | --- |
@@ -394,7 +394,7 @@ Ficam no `.env.local` (teste, fora do Git) e no projeto da Vercel (produção e 
 
 <br>
 
-## Testes
+## 🧪 Testes
 
 ```bash
 npm test
@@ -414,7 +414,7 @@ Roda duas coisas:
 
 <br>
 
-## Backups
+## 💾 Backups
 
 Os recordes e as contas têm cópia numa tabela do próprio banco (`backups`), pra proteger contra apagar ou editar por engano:
 
@@ -426,7 +426,7 @@ No painel admin dá pra baixar o JSON, importar ou restaurar as partidas de qual
 
 <br>
 
-## Estrutura de pastas
+## 🗂️ Estrutura de pastas
 
 ```
 .
@@ -490,7 +490,7 @@ A pasta `.claude/` e as pastas `design/`, `production/` e `studio-tests/` são d
 
 <br>
 
-## Bibliotecas e créditos
+## 📦 Bibliotecas e créditos
 
 Phaser, Zdog e Vanilla-Tilt ficam no próprio site (`public/vendor/`, com o jsdelivr de reserva); só o web-vitals vem por CDN.
 
@@ -513,6 +513,6 @@ No servidor, as únicas dependências são [`@neondatabase/serverless`](https://
 
 <div align="center">
 
-Feito pra dar uma pausa no meio do expediente.
+Feito pra dar uma pausa no meio do expediente. ☕🎮
 
 </div>
