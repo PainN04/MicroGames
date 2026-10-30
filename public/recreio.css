@@ -71,6 +71,7 @@ html[data-skin="recreio"] .link-btn { color: var(--primary); font-weight: 700; }
   /* fila do Geiko do mesmo tamanho do som e do tema */
   html[data-skin="recreio"] .gate-pill { min-height: 44px; padding: 0 1em; border-radius: 99px; font-size: .9rem; gap: .45em; }
   html[data-skin="recreio"] .gate-pill .i { width: 18px; height: 18px; }
+  html[data-skin="recreio"] .gate-pill.icon-only { padding: 0; width: 44px; }
   html[data-skin="recreio"] main { max-width: 1180px; }
 }
 /* PC com tela baixa: itens do menu da conta mais juntos, pra caber inteiro sem rolar */
