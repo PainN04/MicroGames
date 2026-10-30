@@ -71,6 +71,7 @@ html[data-skin="recreio"] .link-btn { color: var(--primary); font-weight: 700; }
   /* fila do Geiko do mesmo tamanho do som e do tema */
   html[data-skin="recreio"] .gate-pill { min-height: 44px; padding: 0 1em; border-radius: 99px; font-size: .9rem; gap: .45em; }
   html[data-skin="recreio"] .gate-pill .i { width: 18px; height: 18px; }
+  html[data-skin="recreio"] .gate-pill.icon-only { padding: 0; width: 44px; }
   html[data-skin="recreio"] main { max-width: 1180px; }
 }
 /* PC com tela baixa: itens do menu da conta mais juntos, pra caber inteiro sem rolar */
@@ -307,6 +308,7 @@ html[data-skin="recreio"] .side-fold { display: none; }
   html.side-mini[data-skin="recreio"] .who { flex-direction: column; align-items: center; }
   html.side-mini[data-skin="recreio"] .who .acct { flex: none; order: 0; }
   html.side-mini[data-skin="recreio"] .gate-pill { flex-direction: column; gap: 2px; width: 52px; min-height: 52px; padding: 6px 0; border-radius: 16px; font-size: .78rem; }
+  html.side-mini[data-skin="recreio"] .gate-pill.icon-only { width: 48px; min-height: 48px; height: 48px; padding: 0; border-radius: 50%; }
   html.side-mini[data-skin="recreio"] .acct-btn { width: 52px; min-height: 52px; padding: 0; justify-content: center; }
   html.side-mini[data-skin="recreio"] .acct-btn :is(#pname, .chev) { display: none; }
   html.side-mini[data-skin="recreio"] .acct-btn .nbadge { position: absolute; top: 2px; right: 2px; }

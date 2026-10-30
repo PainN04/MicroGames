@@ -19,7 +19,7 @@ const { handle } = require('../lib/router');
 const { ensureSchema } = require('../lib/schema');
 const { sql, getStore } = require('../lib/store');
 const auth = require('../lib/auth');
-const { weigh, freeWindow, DEFAULT_RULES } = require('../lib/geiko');
+const { weigh, freeWindow, findInChat, gateFor, DEFAULT_RULES } = require('../lib/geiko');
 
 let server, base;
 
@@ -510,6 +510,51 @@ test('horário livre: das 18h às 8h (Brasília) e fim de semana libera todo mun
   assert.equal(freeWindow(off, at('2026-10-25T14:00:00')), null, 'desligado no painel');
   const noWeekend = { ...DEFAULT_RULES, freeHours: { ...DEFAULT_RULES.freeHours, weekends: false } };
   assert.equal(freeWindow(noWeekend, at('2026-10-25T14:00:00')), null, 'sem fim de semana: domingo 14h bloqueia');
+});
+
+test('chat do Geiko: acha a conta pelo ID do Geiko ou pelo nome de usuário', () => {
+  const list = [{ code: '1214', username: 'Danielly.Nascimento', visible: true }, { code: '1212', username: 'cristiane.silva', visible: false }];
+  assert.equal(findInChat(list, { geikoId: '1214', username: 'outra' }).code, '1214');
+  assert.equal(findInChat(list, { geikoId: null, username: 'Cristiane.Silva' }).code, '1212', 'sem ID: pelo usuário, sem diferenciar maiúscula');
+  assert.equal(findInChat(list, { geikoId: '999', username: 'ninguem' }), null);
+});
+
+test('chat do Geiko: chat aberto com cliente bloqueia, até no horário livre; sem chat libera', async () => {
+  // respostas no formato do Monitor Chat (wschat.geiko.com.br); a API pública devolve fila vazia
+  const chats = { 1214: [{ customer: 'BENEFICIADORA SAO JOSE   ', product_name: 'SIMPag   ', ticket_code: 483726, created_at: '2026-10-30T11:30:04.647Z' }], 1216: [] };
+  const realFetch = global.fetch;
+  global.fetch = async (url, opts) => {
+    const u = new URL(String(url));
+    const json = body => new Response(JSON.stringify(body), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    if (u.hostname === 'wschat.geiko.com.br' && u.pathname === '/attendant/allAttendants') {
+      assert.equal(u.searchParams.get('company_code'), '94');
+      return json({ allAttendantsInChat: [{ CD_USUARIO: 1214, FLAG_VISIVEL: true, USUARIO: 'Danielly.Nascimento' }, { CD_USUARIO: 1216, FLAG_VISIVEL: true, USUARIO: 'Gabryel.Silva' }] });
+    }
+    if (u.hostname === 'wschat.geiko.com.br' && u.pathname === '/attendances') return json({ attendances: chats[u.searchParams.get('attendant_code')] || [] });
+    if (u.hostname.endsWith('geiko.com.br')) return json(u.pathname.includes('situation') ? { data: [] } : { data: { attendances: [] } });
+    return realFetch(url, opts);
+  };
+  process.env.GEIKO_API_KEY = 'chave-de-teste';
+  try {
+    const busy = await gateFor({ geikoId: '1214', username: 'danielly' });
+    assert.equal(busy.blocked, true);
+    assert.equal(busy.chat.chats.length, 1);
+    assert.equal(busy.chat.chats[0].customer, 'BENEFICIADORA SAO JOSE');
+    assert.equal(busy.chat.chats[0].product, 'SIMPag');
+    if (busy.free) assert.equal(busy.blocked, true, 'horário livre não libera chat aberto');
+
+    const idle = await gateFor({ geikoId: null, username: 'gabryel.silva' });
+    assert.equal(idle.blocked, false);
+    assert.deepEqual(idle.chat.chats, []);
+    assert.equal(idle.linked, false, 'sem ID do Geiko: só o chat vale');
+
+    const outside = await gateFor({ geikoId: null, username: 'quem-nao-atende' });
+    assert.equal(outside.chat, undefined);
+    assert.equal(outside.blocked, false);
+  } finally {
+    global.fetch = realFetch;
+    delete process.env.GEIKO_API_KEY;
+  }
 });
 
 test('bootstrap do banco de teste: não existe na produção nem quando já há contas', async () => {
