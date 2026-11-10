@@ -114,7 +114,7 @@ const greetWord = () => { const h = new Date().getHours(); return h < 5 ? 'Boa n
 function greetHtml() {
   const first = player.split(' ')[0], streak = me ? dailyTabStreak(me.name) : 0;
   return `<h1>${first ? `${greetWord()}, <em>${esc(first)}</em>` : 'Hora do <em>intervalo</em>'}</h1>
-    ${streak ? `<span class="rc-streak" title="Dias seguidos jogando os jogos diários">${icon('flame')} ${streak} ${streak === 1 ? 'dia seguido' : 'dias seguidos'}</span>` : ''}`;
+    ${workChipHtml()}${streak ? `<span class="rc-streak" title="Dias seguidos jogando os jogos diários">${icon('flame')} ${streak} ${streak === 1 ? 'dia seguido' : 'dias seguidos'}</span>` : ''}`;
 }
 // quando o login ou o ranking chegam (refreshMenu)
 function refreshGreeting() {
