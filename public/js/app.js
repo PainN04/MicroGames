@@ -738,7 +738,8 @@ function gatePillHtml() {
   const block = gateBlockIcon();
   if (block) return icon(block);
   if (gate.error) return `${icon('triangle-alert')} <span>Geiko</span>`;
-  if (!gate.linked || !gate.enabled) return gate.work && !gate.work.exempt ? `${icon('hourglass')} <span>${workLeft(gate.work).replace('menos de ', '<')}</span>` : icon('circle-check');
+  // com o limite do expediente o selo fica só no ícone: o tempo que sobra aparece ao lado da saudação e no topo do jogo
+  if (!gate.linked || !gate.enabled) return gate.work && !gate.work.exempt ? icon('hourglass') : icon('circle-check');
   return `${icon('circle-check')} <span>${fmtW(gate.total)}<small>/${fmtW(gate.limit)}</small></span>`;
 }
 // o tempo que sobra no expediente entra em cima dos botões de qualquer painel liberado
@@ -823,9 +824,9 @@ function renderGate() {
   if (show) {
     const pill = $('#gatePill');
     const block = gateBlockIcon();
-    pill.className = `gate-pill ${gate.blocked || block ? 'blocked' : gate.error ? 'warn' : 'ok'}${block || (!gate.error && !(gate.linked && gate.enabled) && !(gate.work && !gate.work.exempt)) ? ' icon-only' : ''}`;
+    pill.className = `gate-pill ${gate.blocked || block ? 'blocked' : gate.error ? 'warn' : 'ok'}${block || (!gate.error && !(gate.linked && gate.enabled)) ? ' icon-only' : ''}`;
     pill.innerHTML = gatePillHtml();
-    pill.title = `${BLOCK_LABEL[block] || (gate.free ? 'Horário livre' : gate.work && !(gate.linked && gate.enabled) ? 'Tempo de jogo no expediente' : 'Sua fila no Geiko')} — clique pra ver`;
+    pill.title = `${BLOCK_LABEL[block] || (gate.free ? 'Horário livre' : gate.work && !gate.work.exempt && !(gate.linked && gate.enabled) ? `Tempo de jogo no expediente: ${workLeft(gate.work)}` : 'Sua fila no Geiko')} — clique pra ver`;
     pill.setAttribute('aria-label', pill.title);
     pill.onclick = () => toggleGatePop();
     const pop = $('#gatePop');
