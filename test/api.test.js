@@ -253,6 +253,98 @@ test('bloqueio geral: só a dona liga; ninguém mais joga até ela liberar', asy
   await owner('/api/admin/site-lock', { method: 'PUT', body: { on: false } });
 });
 
+test('limite do expediente: janela no horário de Brasília, só a parte dentro dela e sem pausas longas', () => {
+  const wl = require('../lib/worklimit');
+  const cfg = { ...wl.DEFAULT };
+  const at = (iso) => Date.parse(iso); // horários em -03:00 = horário de Brasília
+  // terça 10/11/2026: janela 08:00–17:30
+  const w = wl.windowOf(cfg, at('2026-11-10T12:00:00-03:00'));
+  assert.equal(w.start, at('2026-11-10T08:00:00-03:00'));
+  assert.equal(w.end, at('2026-11-10T17:30:00-03:00'));
+  // 23h de Brasília já é o dia seguinte em UTC: continua sendo o dia 10 aqui
+  assert.equal(wl.dayOf(at('2026-11-10T23:30:00-03:00')), '2026-11-10');
+  // sábado: sem limite (a não ser que a regra valha no fim de semana)
+  assert.equal(wl.windowOf(cfg, at('2026-11-14T12:00:00-03:00')), null);
+  assert.ok(wl.windowOf({ ...cfg, weekends: true }, at('2026-11-14T12:00:00-03:00')));
+  assert.equal(wl.windowOf({ ...cfg, enabled: false }, at('2026-11-10T12:00:00-03:00')), null);
+  // 20s de jogo no meio do dia contam inteiros; antes das 8h e depois das 17:30 não contam
+  assert.equal(wl.countable(cfg, at('2026-11-10T10:00:00-03:00'), at('2026-11-10T10:00:20-03:00')), 20_000);
+  assert.equal(wl.countable(cfg, at('2026-11-10T07:59:50-03:00'), at('2026-11-10T08:00:10-03:00')), 10_000);
+  assert.equal(wl.countable(cfg, at('2026-11-10T17:29:50-03:00'), at('2026-11-10T17:30:10-03:00')), 10_000);
+  assert.equal(wl.countable(cfg, at('2026-11-10T18:00:00-03:00'), at('2026-11-10T18:00:20-03:00')), 0);
+  // pausa maior que a folga (aba escondida, saiu e voltou) não vira tempo de jogo
+  assert.equal(wl.countable(cfg, at('2026-11-10T10:00:00-03:00'), at('2026-11-10T10:05:00-03:00')), 0);
+  // situação: bloqueia ao chegar nos 30 min, até o fim da janela; fora da janela, nada
+  const noon = at('2026-11-10T12:00:00-03:00');
+  assert.deepEqual(wl.statusOf(cfg, 29 * 60_000, noon), { used: 29 * 60_000, limit: 30 * 60_000, left: 60_000, blocked: false, from: '08:00', to: '17:30', until: w.end });
+  assert.equal(wl.statusOf(cfg, 30 * 60_000, noon).blocked, true);
+  assert.equal(wl.statusOf(cfg, 99 * 60_000, at('2026-11-10T17:30:00-03:00')), null);
+  assert.equal(wl.statusOf(cfg, 99 * 60_000, at('2026-11-10T07:59:00-03:00')), null);
+});
+
+test('limite do expediente: o servidor conta o tempo de jogo e fecha os jogos no limite', async () => {
+  const owner = await login('paulo', 'senha-dono-123');
+  const adm = await login('outroadm', 'senha-adm-123');
+  const c = await login('bia', 'senha-bia-123');
+  const [bia] = await sql`SELECT id FROM users WHERE username = 'bia'`;
+  // só a conta dona mexe na regra; valores inválidos são recusados
+  assert.equal((await adm('/api/admin/work-limit')).status, 403);
+  assert.equal((await c('/api/admin/work-limit', { method: 'PUT', body: { enabled: true, minutes: 1, from: '00:00', to: '24:00' } })).status, 403);
+  assert.equal((await owner('/api/admin/work-limit')).body.config.minutes, 30);
+  assert.equal((await owner('/api/admin/work-limit', { method: 'PUT', body: { enabled: true, minutes: 0, from: '08:00', to: '17:30' } })).status, 400);
+  assert.equal((await owner('/api/admin/work-limit', { method: 'PUT', body: { enabled: true, minutes: 30, from: '17:30', to: '08:00' } })).status, 400);
+  // o dia inteiro, todo dia, 1 minuto: o teste não depende da hora em que roda
+  const saved = await owner('/api/admin/work-limit', { method: 'PUT', body: { enabled: true, minutes: 1, from: '00:00', to: '24:00', weekends: true } });
+  assert.equal(saved.status, 200);
+  assert.deepEqual(saved.body.config, { enabled: true, minutes: 1, from: 0, to: 1440, weekends: true });
+  // no menu não conta; dentro de um jogo, conta o tempo entre as conferências
+  await c('/api/auth/ping?view=menu');
+  await sql`UPDATE users SET last_seen = last_seen - 20000 WHERE id = ${bia.id}`;
+  assert.equal((await c('/api/auth/ping?view=snake')).body.work.used, 0);
+  await sql`UPDATE users SET last_seen = last_seen - 20000 WHERE id = ${bia.id}`;
+  const p1 = (await c('/api/auth/ping?view=snake')).body.work;
+  assert.ok(p1.used >= 20_000 && p1.used < 21_000, `contou ${p1.used}`);
+  assert.equal(p1.blocked, false);
+  assert.equal((await c('/api/gate')).body.work.left, p1.left);
+  // pausa longa (aba escondida) não conta
+  await sql`UPDATE users SET last_seen = last_seen - 300000 WHERE id = ${bia.id}`;
+  assert.equal((await c('/api/auth/ping?view=snake')).body.work.used, p1.used);
+  // saiu do jogo: o pedaço até sair conta
+  await sql`UPDATE users SET last_seen = last_seen - 30000 WHERE id = ${bia.id}`;
+  const p2 = (await c('/api/auth/ping?view=menu')).body.work;
+  assert.ok(p2.used >= 50_000, `contou ${p2.used}`);
+  assert.equal((await play(c, 'snake', 5)).status, 201);
+  await sql`UPDATE users SET last_seen = ${Date.now() - 20000}, last_view = 'snake' WHERE id = ${bia.id}`;
+  // passou de 1 minuto: fecha tudo (abrir, gravar, rodada do servidor) e a página fica sabendo
+  assert.equal((await c('/api/auth/ping?view=snake')).body.work.blocked, true);
+  const r = await play(c, 'snake', 5);
+  assert.equal(r.status, 423);
+  assert.match(r.body.error, /expediente/);
+  assert.equal((await c('/api/rounds', { method: 'POST', body: { game: 'quiz' } })).status, 423);
+  const gate = (await c('/api/gate')).body;
+  assert.equal(gate.blocked, true);
+  assert.equal(gate.work.blocked, true);
+  assert.equal((await c('/api/auth/me')).body.gate.work.blocked, true);
+  // a conta dona não tem limite; o painel mostra quem jogou quanto
+  await sql`UPDATE users SET last_seen = ${Date.now() - 20000}, last_view = 'snake' WHERE username = 'paulo'`;
+  const ow = (await owner('/api/auth/ping?view=snake')).body.work;
+  assert.equal(ow.exempt, true); assert.equal(ow.blocked, false); assert.equal(ow.used, 0);
+  assert.equal((await play(owner, 'snake', 5)).status, 201);
+  const usage = (await owner('/api/admin/work-limit')).body.usage;
+  assert.deepEqual(usage.map(u => u.name), ['Bia']);
+  // zerar o tempo de hoje libera na hora
+  assert.equal((await owner('/api/admin/work-limit/reset', { method: 'POST', body: { userId: bia.id } })).status, 200);
+  assert.equal((await play(c, 'snake', 5)).status, 201);
+  // regra desligada: sem limite
+  await sql`INSERT INTO work_play (user_id, day, ms) VALUES (${bia.id}, ${require('../lib/worklimit').dayOf(Date.now())}, ${999_999})`;
+  assert.equal((await play(c, 'snake', 5)).status, 423);
+  await owner('/api/admin/work-limit', { method: 'PUT', body: { enabled: false, minutes: 30, from: '08:00', to: '17:30' } });
+  assert.equal((await c('/api/auth/ping?view=menu')).body.work, null);
+  assert.equal((await play(c, 'snake', 5)).status, 201);
+  await sql`DELETE FROM settings WHERE key = 'work_limit'`;
+  await sql`DELETE FROM work_play`;
+});
+
 /* ---------- permissões ---------- */
 
 test('permissões: jogador não entra no admin; só o dono edita recordes', async () => {
@@ -802,7 +894,7 @@ test('duelo: desafio, só vale partida depois do desafio, vence a melhor, avisa 
 
 test('torneio semanal: 3 jogos por semana, pontos por posição, pódio fechado uma vez só com aviso e troféu', async () => {
   const social = require('../lib/social');
-  const week = social.TOURNEY_FIRST_WEEK + 3;
+  const week = social.TOURNEY_FIRST_WEEK + 200; // semana longe da atual: as partidas que os outros testes gravam agora não entram
   const games = await social.tournamentGames(week);
   assert.equal(games.length, 3);
   assert.ok(!games.includes('termo'));

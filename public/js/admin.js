@@ -19,6 +19,7 @@ function showAdmin() {
         <div class="title"><h1>${icon('settings')} Administração</h1><p>Contas de quem joga, vínculo com o Geiko e a regra de bloqueio por fila.</p></div>
       </div>
       ${me?.canEditRecords ? '<section class="glass site-lock-adm" id="siteLockAdm"><p class="hint" style="text-align:left">Carregando...</p></section>' : ''}
+      ${me?.canEditRecords ? '<section class="glass work-limit-adm" id="workLimitAdm"><p class="hint" style="text-align:left">Carregando...</p></section>' : ''}
       ${adminTabsHtml(adminPane)}
       <section class="glass" data-pane="online"${adminPane === 'online' ? '' : ' hidden'}>
         <div class="acc-head">
@@ -76,7 +77,7 @@ function showAdmin() {
     $('#ansNext').onclick = () => loadAnswers(ansDay + 1);
     $('#ansToday').onclick = () => loadAnswers(null);
     if (adminPane === 'respostas') loadAnswers(ansDay);
-    if (me?.canEditRecords) { bindTicketsPane(); if (adminPane === 'tickets') loadTickets(); loadSiteLock(); }
+    if (me?.canEditRecords) { bindTicketsPane(); if (adminPane === 'tickets') loadTickets(); loadSiteLock(); loadWorkLimit(); }
     $('#accNew').onclick = () => accountModal();
     $('#accQ').oninput = renderUsers;
     main.querySelectorAll('[data-accf]').forEach(b => b.onclick = () => {
@@ -130,6 +131,51 @@ async function loadSiteLock(lock) {
     const endOfDay = () => { const d = new Date(); d.setHours(23, 59, 0, 0); return Math.max(1, Math.round((d - Date.now()) / 60000)); };
     save(true, f.get('reason'), v === 'eod' ? endOfDay() : Number(v));
   };
+}
+
+// ---------- limite de jogo no expediente (só a conta dona): minutos por dia dentro do horário de trabalho ----------
+const hm = mins => `${String(Math.floor(mins / 60)).padStart(2, '0')}:${String(mins % 60).padStart(2, '0')}`;
+async function loadWorkLimit(data) {
+  const box = $('#workLimitAdm');
+  if (!box) return;
+  if (!data) {
+    try { data = await api('api/admin/work-limit'); } catch (err) { box.innerHTML = `<p class="err">${esc(err.message)}</p>`; return; }
+  }
+  const { config: c, usage } = data, limit = c.minutes * 60_000;
+  const mins = ms => (ms < 60_000 ? '<1' : Math.floor(ms / 60_000));
+  box.classList.toggle('on', c.enabled);
+  box.innerHTML = `<div class="sl-txt"><h2>${icon('hourglass')} Limite no expediente</h2>
+      <p class="note">${c.enabled
+        ? `Cada pessoa joga no máximo <b>${c.minutes} min</b> por dia das <b>${hm(c.from)}</b> às <b>${hm(c.to)}</b>${c.weekends ? ', todos os dias' : ', de segunda a sexta'}. Fora desse horário não tem limite. O servidor conta o tempo dentro dos jogos; quem chegar no limite sai da partida e só volta a jogar às ${hm(c.to)}. Você não entra no limite.`
+        : 'Desligado: ninguém tem limite de tempo de jogo.'}</p></div>
+    <form class="sl-form wl-form" id="wlForm">
+      <label class="chk"><input type="checkbox" name="enabled"${c.enabled ? ' checked' : ''}> Ligado</label>
+      <label>Minutos por dia <input type="number" name="minutes" min="1" max="600" step="1" value="${c.minutes}" required></label>
+      <label>Das <input type="time" name="from" value="${hm(c.from)}" required></label>
+      <label>às <input type="time" name="to" value="${hm(c.to)}" required></label>
+      <label class="chk"><input type="checkbox" name="weekends"${c.weekends ? ' checked' : ''}> Vale no fim de semana</label>
+      <span id="wlMsg" class="hint" role="status"></span><button class="btn">${icon('circle-check')} Salvar</button>
+    </form>
+    <div class="wl-usage"><h3>Hoje no expediente</h3>${usage.length
+      ? `<ul>${usage.map(u => `<li><span class="wl-name">${esc(u.name)}</span>
+          <span class="meter" aria-hidden="true"><i style="width:${Math.min(100, (u.ms / limit) * 100)}%"${u.ms >= limit ? ' class="full"' : ''}></i></span>
+          <span class="wl-min">${mins(u.ms)} / ${c.minutes} min</span>
+          <button class="btn ghost wl-reset" data-uid="${u.userId}" title="Zerar o tempo de hoje de ${esc(u.name)}">${icon('rotate-ccw')} Zerar</button></li>`).join('')}</ul>`
+      : '<p class="hint" style="text-align:left">Ninguém jogou no expediente hoje.</p>'}</div>`;
+  $('#wlForm').onsubmit = async e => {
+    e.preventDefault();
+    const f = new FormData(e.target), btn = e.target.querySelector('button');
+    btn.disabled = true;
+    try {
+      loadWorkLimit(await api('api/admin/work-limit', { method: 'PUT', body: {
+        enabled: f.get('enabled') === 'on', minutes: Number(f.get('minutes')), from: f.get('from'), to: f.get('to'), weekends: f.get('weekends') === 'on' } }));
+    } catch (err) { $('#wlMsg').textContent = err.message; btn.disabled = false; }
+  };
+  box.querySelectorAll('.wl-reset').forEach(b => b.onclick = async () => {
+    b.disabled = true;
+    try { const { usage: u } = await api('api/admin/work-limit/reset', { method: 'POST', body: { userId: Number(b.dataset.uid) } }); loadWorkLimit({ config: c, usage: u }); }
+    catch (err) { $('#wlMsg').textContent = err.message; b.disabled = false; }
+  });
 }
 
 // ---------- duplas (moderação) ----------
