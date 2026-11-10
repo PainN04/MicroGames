@@ -307,6 +307,7 @@ function play(id) {
           <span class="gtile" id="gtile" aria-hidden="true">${icon(g.icon)}</span>
           <div class="title"><h1>${g.name}</h1><p title="${esc(g.desc)}">${firstSentence(g.desc)}</p></div>
           <div class="head-acts">
+            <span class="work-slot" id="workChip">${workChipHtml()}</span>
             <button class="btn ghost" id="how" aria-label="Como jogar" title="Como jogar">${icon('circle-help')}<span>Como jogar</span></button>
             ${g.daily ? '' : `<button class="btn ghost" id="restart" aria-label="Reiniciar">${icon('rotate-ccw')}<span>Reiniciar</span></button>`}
           </div>
@@ -698,8 +699,21 @@ const gateVisible = () => !!gate && (!!gate.site || !!gate.manual || !!gate.work
 const workMins = ms => Math.round(ms / 60_000);
 const workLeft = w => (w.left < 60_000 ? 'menos de 1 min' : `${Math.floor(w.left / 60_000)} min`);
 const workAt = w => untilText(w.until).replace('até', 'às');
+// selo do tempo que sobra: ao lado da saudação no menu e no topo da tela do jogo (some fora do expediente)
+function workChipHtml() {
+  const w = gate?.work;
+  if (!w || w.blocked) return '';
+  if (w.exempt) return `<span class="work-chip exempt" title="Os outros jogam ${workMins(w.limit)} min por dia das ${w.from} às ${w.to}">${icon('hourglass')} Sem limite de tempo (conta dona)</span>`;
+  const low = w.left <= 5 * 60_000;
+  return `<span class="work-chip${low ? ' low' : ''}" title="No expediente (${w.from} às ${w.to}) cada um joga ${workMins(w.limit)} min por dia">${icon('hourglass')} <b>${workLeft(w)}</b><span class="wc-tx">de jogo hoje</span></span>`;
+}
+function renderWorkChips() {
+  const head = $('#workChip');
+  if (head) head.innerHTML = workChipHtml();
+  if (typeof refreshGreeting === 'function' && currentView === 'menu') refreshGreeting();
+}
 const workBlockText = w => `Você já usou os ${workMins(w.limit)} minutos de jogo de hoje no horário de expediente (${w.from} às ${w.to}). Os jogos voltam ${workAt(w)}.`;
-const workNote = () => (gate.work && !gate.work.blocked
+const workNote = () => (gate.work && !gate.work.blocked && !gate.work.exempt
   ? `<p class="work-note">${icon('hourglass')} <span>Expediente: ainda tem <b>${workLeft(gate.work)}</b> de jogo hoje (${workMins(gate.work.limit)} min por dia, das ${gate.work.from} às ${gate.work.to}).</span></p>` : '');
 const chatCount = () => gate?.chat?.chats.length || 0;
 const hhmm = iso => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -724,7 +738,7 @@ function gatePillHtml() {
   const block = gateBlockIcon();
   if (block) return icon(block);
   if (gate.error) return `${icon('triangle-alert')} <span>Geiko</span>`;
-  if (!gate.linked || !gate.enabled) return gate.work ? `${icon('hourglass')} <span>${workLeft(gate.work).replace('menos de ', '<')}</span>` : icon('circle-check');
+  if (!gate.linked || !gate.enabled) return gate.work && !gate.work.exempt ? `${icon('hourglass')} <span>${workLeft(gate.work).replace('menos de ', '<')}</span>` : icon('circle-check');
   return `${icon('circle-check')} <span>${fmtW(gate.total)}<small>/${fmtW(gate.limit)}</small></span>`;
 }
 // o tempo que sobra no expediente entra em cima dos botões de qualquer painel liberado
@@ -809,7 +823,7 @@ function renderGate() {
   if (show) {
     const pill = $('#gatePill');
     const block = gateBlockIcon();
-    pill.className = `gate-pill ${gate.blocked || block ? 'blocked' : gate.error ? 'warn' : 'ok'}${block || (!gate.error && !(gate.linked && gate.enabled) && !gate.work) ? ' icon-only' : ''}`;
+    pill.className = `gate-pill ${gate.blocked || block ? 'blocked' : gate.error ? 'warn' : 'ok'}${block || (!gate.error && !(gate.linked && gate.enabled) && !(gate.work && !gate.work.exempt)) ? ' icon-only' : ''}`;
     pill.innerHTML = gatePillHtml();
     pill.title = `${BLOCK_LABEL[block] || (gate.free ? 'Horário livre' : gate.work && !(gate.linked && gate.enabled) ? 'Tempo de jogo no expediente' : 'Sua fila no Geiko')} — clique pra ver`;
     pill.setAttribute('aria-label', pill.title);
@@ -822,6 +836,7 @@ function renderGate() {
   } else toggleGatePop(false);
   document.querySelectorAll('.card').forEach(c => c.classList.toggle('locked', !!gate?.blocked));
   renderSiteLock();
+  renderWorkChips();
 }
 // aviso no topo do menu enquanto o bloqueio geral estiver ligado
 function renderSiteLock() {

@@ -327,7 +327,8 @@ test('limite do expediente: o servidor conta o tempo de jogo e fecha os jogos no
   assert.equal((await c('/api/auth/me')).body.gate.work.blocked, true);
   // a conta dona não tem limite; o painel mostra quem jogou quanto
   await sql`UPDATE users SET last_seen = ${Date.now() - 20000}, last_view = 'snake' WHERE username = 'paulo'`;
-  assert.equal((await owner('/api/auth/ping?view=snake')).body.work, null);
+  const ow = (await owner('/api/auth/ping?view=snake')).body.work;
+  assert.equal(ow.exempt, true); assert.equal(ow.blocked, false); assert.equal(ow.used, 0);
   assert.equal((await play(owner, 'snake', 5)).status, 201);
   const usage = (await owner('/api/admin/work-limit')).body.usage;
   assert.deepEqual(usage.map(u => u.name), ['Bia']);
