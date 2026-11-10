@@ -550,20 +550,38 @@ function showNotes(notes) {
 async function pingSession() {
   if (!me || document.hidden) return;
   try {
-    const { block, site, notes, unread } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' || currentView === 'report' ? 'admin' : currentView));
+    const { block, site, work, notes, unread } = await api('api/auth/ping?view=' + encodeURIComponent(currentView === 'records' || currentView === 'report' ? 'admin' : currentView));
     if (notes?.length) { showNotes(notes); loadSocial().then(() => currentView === 'menu' && refreshMenu()); }
     setUnread(unread);
     // admin bloqueou (ou liberou) a conta ou o site inteiro: atualiza; se estava jogando, encerra a partida
-    if (!!block !== !!gate?.manual || !!site !== !!gate?.site) {
+    // limite do expediente: o tempo restante vem em cada conferência; acabou no meio da partida, sai do jogo
+    const workBlocked = !!work?.blocked;
+    if (!!block !== !!gate?.manual || !!site !== !!gate?.site || workBlocked !== !!gate?.work?.blocked || (!site && !!work !== !!gate?.work)) {
       const playing = GAMES[currentView];
       await refreshGate(true);
-      if ((block || site) && playing) { stop(); showMenu(); gateDialog(); }
+      if ((block || site || workBlocked) && playing) { stop(); showMenu(); gateDialog(); }
       else if (currentView === 'menu') renderSiteLock();
-    }
+    } else if (work && gate) { gate.work = work; renderGate(); }
+    if (work) workWarn(work);
   }
   catch (err) { if (err.status === 401) kicked(err.reason === 'other-device' ? err.message : 'Sua sessão expirou. Entre de novo.'); }
 }
 setInterval(pingSession, 20_000);
+// aviso de "faltam 5 minutos" (uma vez por dia, só durante uma partida)
+function workWarn(work) {
+  if (work.blocked || work.left > 5 * 60_000 || !GAMES[currentView]) return;
+  const key = 'mg-work-warn', day = new Date().toDateString();
+  try { if (localStorage.getItem(key) === day) return; localStorage.setItem(key, day); } catch { if (workWarn.done === day) return; workWarn.done = day; }
+  let box = $('#toasts');
+  if (!box) { box = document.createElement('div'); box.id = 'toasts'; box.setAttribute('aria-live', 'polite'); document.body.appendChild(box); }
+  const t = document.createElement('button');
+  t.className = 'toast glass';
+  t.innerHTML = `<span class="ic">${icon('hourglass')}</span><span><b>Faltam ${workLeft(work)} de jogo hoje.</b> No expediente cada um tem ${workMins(work.limit)} min por dia.</span>`;
+  t.onclick = () => t.remove();
+  box.appendChild(t);
+  setTimeout(() => t.remove(), 12_000);
+  sfx.bad?.();
+}
 addEventListener('visibilitychange', () => { if (!document.hidden) pingSession(); });
 
 // Janela modal genérica. `locked` = não fecha com Esc/clique fora (login e troca de senha obrigatória).
@@ -675,7 +693,14 @@ function untilText(ms) {
 }
 // Status da fila do Geiko: selo pequeno no header (só pra quem tem ID do Geiko ou foi bloqueado pelo admin);
 // clicar abre o painel com os detalhes.
-const gateVisible = () => !!gate && (!!gate.site || !!gate.manual || !!gate.chat || (gate.linked && gate.enabled));
+const gateVisible = () => !!gate && (!!gate.site || !!gate.manual || !!gate.work || !!gate.chat || (gate.linked && gate.enabled));
+// limite de jogo no expediente (o servidor conta): "12 min", "menos de 1 min"
+const workMins = ms => Math.round(ms / 60_000);
+const workLeft = w => (w.left < 60_000 ? 'menos de 1 min' : `${Math.floor(w.left / 60_000)} min`);
+const workAt = w => untilText(w.until).replace('até', 'às');
+const workBlockText = w => `Você já usou os ${workMins(w.limit)} minutos de jogo de hoje no horário de expediente (${w.from} às ${w.to}). Os jogos voltam ${workAt(w)}.`;
+const workNote = () => (gate.work && !gate.work.blocked
+  ? `<p class="work-note">${icon('hourglass')} <span>Expediente: ainda tem <b>${workLeft(gate.work)}</b> de jogo hoje (${workMins(gate.work.limit)} min por dia, das ${gate.work.from} às ${gate.work.to}).</span></p>` : '');
 const chatCount = () => gate?.chat?.chats.length || 0;
 const hhmm = iso => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 // chats abertos com cliente no Monitor Chat do Geiko (bloqueiam até no horário livre)
@@ -687,21 +712,32 @@ const siteReason = () => gate.site.reason ? `<p><b>Motivo:</b> ${esc(gate.site.r
 // Bloqueado: só o ícone do motivo, pra não apertar o botão da conta (chat, tickets, os dois, admin ou manutenção)
 function gateBlockIcon() {
   if (gate.site) return 'wrench';
+  if (gate.work?.blocked) return 'hourglass';
   if (gate.manual) return 'shield';
   const chat = chatCount() > 0, queue = gate.linked && gate.enabled && gate.total > gate.limit;
   if (chat && queue) return 'lock';
   if (chat) return 'message-circle';
   return gate.blocked ? 'ticket' : null;
 }
-const BLOCK_LABEL = { wrench: 'Site em manutenção', shield: 'Bloqueado pelo admin', lock: 'Chat aberto e fila cheia', 'message-circle': 'Em atendimento no chat', ticket: 'Fila de tickets cheia' };
+const BLOCK_LABEL = { wrench: 'Site em manutenção', hourglass: 'Tempo de jogo do expediente acabou', shield: 'Bloqueado pelo admin', lock: 'Chat aberto e fila cheia', 'message-circle': 'Em atendimento no chat', ticket: 'Fila de tickets cheia' };
 function gatePillHtml() {
   const block = gateBlockIcon();
   if (block) return icon(block);
   if (gate.error) return `${icon('triangle-alert')} <span>Geiko</span>`;
-  if (!gate.linked || !gate.enabled) return icon('circle-check');
+  if (!gate.linked || !gate.enabled) return gate.work ? `${icon('hourglass')} <span>${workLeft(gate.work).replace('menos de ', '<')}</span>` : icon('circle-check');
   return `${icon('circle-check')} <span>${fmtW(gate.total)}<small>/${fmtW(gate.limit)}</small></span>`;
 }
+// o tempo que sobra no expediente entra em cima dos botões de qualquer painel liberado
 function gatePopHtml() {
+  if (gate.work?.blocked) {
+    return `<b>${icon('hourglass')} Tempo de jogo acabou</b>
+      <p>${workBlockText(gate.work)}</p>
+      <div class="acts"><button class="btn ghost" id="gateRefresh">${icon('refresh-cw')} Atualizar</button></div>`;
+  }
+  const html = gatePopBase();
+  return gate.site || gate.manual ? html : html.replace('<div class="acts">', workNote() + '<div class="acts">');
+}
+function gatePopBase() {
   if (gate.site) {
     return `<b>${icon('lock')} Site em manutenção</b>
       <p>Os jogos estão fechados pra todo mundo ${untilText(gate.site.until)}.</p>${siteReason()}
@@ -719,7 +755,7 @@ function gatePopHtml() {
   }
   if (!gate.linked || !gate.enabled) {
     return `<b>${icon('circle-check')} Liberado pra jogar</b>
-      <p>Nenhum chat aberto com cliente no Geiko.</p>
+      <p>${gate.work ? 'Pode jogar.' : 'Nenhum chat aberto com cliente no Geiko.'}</p>
       <div class="acts"><button class="btn ghost" id="gateRefresh">${icon('refresh-cw')} Atualizar</button></div>`;
   }
   const pct = Math.min(100, gate.limit ? (gate.total / gate.limit) * 100 : 100);
@@ -773,9 +809,9 @@ function renderGate() {
   if (show) {
     const pill = $('#gatePill');
     const block = gateBlockIcon();
-    pill.className = `gate-pill ${gate.blocked || block ? 'blocked' : gate.error ? 'warn' : 'ok'}${block || (!gate.error && !(gate.linked && gate.enabled)) ? ' icon-only' : ''}`;
+    pill.className = `gate-pill ${gate.blocked || block ? 'blocked' : gate.error ? 'warn' : 'ok'}${block || (!gate.error && !(gate.linked && gate.enabled) && !gate.work) ? ' icon-only' : ''}`;
     pill.innerHTML = gatePillHtml();
-    pill.title = `${BLOCK_LABEL[block] || (gate.free ? 'Horário livre' : 'Sua fila no Geiko')} — clique pra ver`;
+    pill.title = `${BLOCK_LABEL[block] || (gate.free ? 'Horário livre' : gate.work && !(gate.linked && gate.enabled) ? 'Tempo de jogo no expediente' : 'Sua fila no Geiko')} — clique pra ver`;
     pill.setAttribute('aria-label', pill.title);
     pill.onclick = () => toggleGatePop();
     const pop = $('#gatePop');
@@ -791,8 +827,10 @@ function renderGate() {
 function renderSiteLock() {
   const bar = $('#siteLock');
   if (!bar) return;
-  bar.hidden = !gate?.site;
-  if (gate?.site) bar.innerHTML = `<span class="ic">${icon('lock')}</span><span class="tx"><b>Site em manutenção</b>
+  bar.hidden = !gate?.site && !gate?.work?.blocked;
+  if (!gate?.site && gate?.work?.blocked) bar.innerHTML = `<span class="ic">${icon('hourglass')}</span><span class="tx"><b>Tempo de jogo de hoje acabou</b>
+    <span>${workBlockText(gate.work)}</span></span>`;
+  else if (gate?.site) bar.innerHTML = `<span class="ic">${icon('lock')}</span><span class="tx"><b>Site em manutenção</b>
     <span>Os jogos estão fechados pra todo mundo ${untilText(gate.site.until)}.${gate.site.reason ? ` Motivo: ${esc(gate.site.reason)}` : ''}</span></span>`;
 }
 
@@ -804,6 +842,13 @@ function ticketsTable(tickets) {
 }
 function gateDialog() {
   if (!gate) return;
+  if (gate.work?.blocked && !gate.site) {
+    const { el, close } = modal(`<h2>${icon('hourglass')} Tempo de jogo acabou</h2>
+      <p>${workBlockText(gate.work)}</p>
+      <p class="hint" style="text-align:left">Fora do expediente não tem limite.</p>
+      <button class="btn" id="gclose">Ok</button>`);
+    return (el.querySelector('#gclose').onclick = close);
+  }
   if (gate.site) {
     const { el, close } = modal(`<h2>${icon('lock')} Site em manutenção</h2>
       <p>Os jogos estão fechados pra todo mundo ${untilText(gate.site.until)}. Assim que liberar, é só voltar.</p>${siteReason()}
